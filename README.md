@@ -2,33 +2,100 @@
 
 Solanaを活用して日本を中心とする社会課題の解決につながるサービスを発想・検証し、そのアイデアを実際のプロダクトへ落とし込むための研究・設計・実装リポジトリです。
 
+このリポジトリは**人間だけでなく、ChatGPT / Codex / Claude Code / OpenClaw等のAIエージェントが同じ前提・出典・判断基準を共有して作業できるknowledge base**として運用します。
+
+> AIエージェントは最初に [`AGENTS.md`](AGENTS.md) を読んでください。
+
 ## このリポジトリの目的
 
-このリポジトリでは、次の3つを継続的に行います。
+1. **社会課題の調査** — 行政機関、自治体、大学・研究機関、シンクタンク、国際機関等の信頼性が高い資料を中心に課題を特定する。
+2. **Solanaを使った解決策の設計** — blockchain採用自体を目的にせず、複数主体間の信頼、監査可能性、改ざん耐性、少額・高頻度決済、デジタル証明、インセンティブ等で合理性がある場合のみ使う。
+3. **競合・市場調査** — 既存サービス、行政制度、blockchain先行事例を調べ、「何が既に解決され、何がまだ空いているか」を確認する。
+4. **実装** — 有望案について要件定義、architecture、Solana Program、frontend、backend、test、運用設計、MVPまで進める。
 
-1. **社会課題の調査**
-   - 日本国内の行政機関、自治体、大学・研究機関、シンクタンク、国際機関などの信頼性が高い資料を中心に、解決すべき課題を特定する。
-2. **Solanaを使った解決策の設計**
-   - 「ブロックチェーンを使うこと」自体を目的にせず、複数主体間の信頼、監査可能性、改ざん耐性、少額・高頻度決済、デジタル証明、インセンティブ設計など、Solanaを使う合理性がある場合にのみ採用する。
-3. **実装**
-   - 有望なアイデアについて、要件定義、アーキテクチャ、Solana Program、フロントエンド、バックエンド、テスト、運用設計まで進め、MVPを構築する。
+---
 
-## 研究・開発の原則
+# Knowledge Map
 
-各アイデアは、原則として次の順番で検証します。
+## 共通調査
 
-1. 社会課題は実際に存在するか
-2. 誰が困っているのか
-3. 既存制度・既存サービスではなぜ十分でないのか
-4. 通常の中央集権型データベースだけでは不足する理由があるか
-5. ブロックチェーンを使う必要性があるか
-6. その中でSolanaを使う利点があるか
-7. 個人情報・機密情報をオンチェーンに保存せずに設計できるか
-8. 日本の法令・行政制度・業界規制と両立できるか
-9. 小規模なMVPで効果を検証できるか
-10. 社会的効果をKPIで測定できるか
+- [Solana技術調査 2026-09-11](docs/solana-research-2026-09-11.md)
+- [日本の社会課題調査 2026-09-11](docs/japan-social-issues-2026-09-11.md)
+- [競合・類似サービス・市場/課題規模調査 2026-09-11](docs/competitive-landscape-and-market-size-2026-09-11.md)
+- [AIエージェント作業ルール](AGENTS.md)
 
-> **重要:** 公開ブロックチェーンに個人情報、医療情報、住所、避難者情報、企業秘密などを直接保存しない。原則としてオンチェーンにはハッシュ、状態、証明、決済情報など必要最小限のみを記録し、機微情報は適切なアクセス制御を備えたオフチェーン環境で管理する。
+## サービス案
+
+| # | Idea | 一言でいうと | 主な既存・類似事例 | 詳細 |
+|---|---|---|---|---|
+| 1 | CircularTrace Japan | 製品・素材の循環履歴を企業横断で証明 | Ouranos / EU DPP・Battery Passport | [詳細](ideas/01-circulartrace-japan.md) |
+| 2 | RuralRide Ledger | 自治体の交通補助を複数交通会社で共通利用・精算 | GunMaaS / 自治体交通助成 | [詳細](ideas/02-ruralride-ledger.md) |
+| 3 | FoodRescue Proof | 食品寄附・受領を証明しESG/監査へ利用 | Kuradashi / Too Good To Go / food banks | [詳細](ideas/03-foodrescue-proof.md) |
+| 4 | ReliefPass | 災害時の用途限定voucherと支援組織間調整 | WFP Building Blocks / UNHCR+Stellar | [詳細](ideas/04-reliefpass.md) |
+| 5 | PharmaTrace Proof Layer | 医薬品物流・温度・custodyの真正性を証明 | MediLedger / FDA DSCSA / Ouranos | [詳細](ideas/05-pharmatrace.md) |
+| 6 | Local Carbon Proof | 地域の小口環境行動を証明・reward | JPX carbon market / Energy Web | [詳細](ideas/06-local-carbon-proof.md) |
+
+従来の初期案まとめ: [ideas/initial-service-ideas.md](ideas/initial-service-ideas.md)
+
+---
+
+# 現時点の主要な規模指標
+
+**注意: 下記の数字は同じ意味ではありません。** 市場規模、対象産業規模、社会的損失、取引量、支援資金を混同しないでください。分類ルールは`AGENTS.md`と競合調査文書を参照。
+
+| Idea | 参考値 | 正しい解釈 |
+|---|---:|---|
+| CircularTrace | 日本CE 2020年50兆円 / 2030年80兆円 / 2050年120兆円 | サーキュラーエコノミー関連産業全体の規模 |
+| RuralRide | 約10兆円/年 | 交通空白による経済・社会的影響額 |
+| FoodRescue | 464万t/年、経済損失約4兆円/年 | 食品ロスの課題規模 |
+| ReliefPass | WFP Building Blocks累計$555M / 25M tx | blockchain人道支援の処理実績 |
+| PharmaTrace | 医薬品国内出荷12兆8,160億円 | 対象産業の規模 |
+| Local Carbon | JPX累計1,003,412 t-CO2、参加359者 | carbon-credit市場の取引量・参加者 |
+
+これらを各プロダクトのTAMとしてそのまま引用しないこと。
+
+---
+
+# 現時点の優先順位
+
+## 技術・政策的な独自性
+
+1. **CircularTrace Japan**
+2. **ReliefPass**
+3. **RuralRide Ledger**
+4. **FoodRescue Proof**
+5. **PharmaTrace Proof Layer**
+6. **Local Carbon Proof**
+
+## MVPの作りやすさ
+
+1. **FoodRescue Proof**
+2. **CircularTrace Japan**
+3. **Local Carbon Proof**
+4. **RuralRide Ledger**
+5. **ReliefPass**
+6. **PharmaTrace Proof Layer**
+
+優先順位は固定ではなく、新規調査・法改正・競合・PoC結果で更新します。
+
+---
+
+# 研究・開発の原則
+
+各アイデアは次の順で反証・検証します。
+
+1. 社会課題は実在するか。
+2. 誰が困っているか。
+3. 既存制度・既存サービスではなぜ十分でないか。
+4. 通常の中央集権型DBだけでは不足する理由があるか。
+5. blockchainを使う必要性があるか。
+6. その中でなぜSolanaなのか。
+7. 個人情報・機密情報をon-chainへ保存せず設計できるか。
+8. 日本の法令・行政制度・業界規制と両立するか。
+9. 小規模なMVPで効果を検証できるか。
+10. 社会的効果をKPIで測定できるか。
+
+> **重要:** 公開blockchainに個人情報、医療情報、住所、避難者情報、企業秘密等を直接保存しない。on-chainにはhash、pseudonymous ID、state、proof、signature、settlement等の必要最小限のみを置き、機微情報は適切なaccess controlを備えたoff-chain環境で管理する。
 
 ---
 
@@ -36,78 +103,54 @@ Solanaを活用して日本を中心とする社会課題の解決につなが�
 
 調査基準日: **2026-09-11**
 
-詳細は [`docs/solana-research-2026-09-11.md`](docs/solana-research-2026-09-11.md) を参照。
+詳細: [`docs/solana-research-2026-09-11.md`](docs/solana-research-2026-09-11.md)
 
-## Solanaとは
+Solanaは、高throughput、低transaction cost、低latencyを重視して設計されたPermissionless Layer 1 blockchainです。
 
-Solanaは、高いスループット、低い取引コスト、低遅延を重視して設計されたPermissionless Layer 1 blockchainです。
+重要なのは、**Proof of History（PoH）はコンセンサスそのものではない**ことです。PoHはイベントの順序と時間経過を検証可能にする仕組みで、現在のnetworkではProof of StakeとTower BFTを組み合わせて合意形成します。
 
-Solanaを理解するときに重要なのは、**Proof of History（PoH）はコンセンサスそのものではない**ことです。PoHはイベントの順序と時間経過を検証可能にする仕組みであり、現在のネットワークではProof of StakeとTower BFTを組み合わせて合意形成を行っています。
+### このリポジトリで重視するSolanaの性質
 
-## 主な技術的特徴
+- Account / Program model
+- 競合しないtransactionの並列実行
+- 低feeでの多数event記録
+- digital asset / voucher / settlement
+- fee sponsorshipによるwalletlessに近いUX
+- public verification
+- Programによるstate transition control
 
-### Proof of History
+### 2026-09-11時点の注意
 
-連続した暗号学的計算によって、イベントの順序と時間経過を検証可能にする仕組みです。ノード間で時間・順序について行う調整を減らすことを狙っています。
-
-### Accounts / Programs
-
-Solanaでは状態はAccountに保存され、Program（スマートコントラクト）は原則としてステートレスです。ProgramはsBPFへコンパイルされ、Instructionを通じてAccountの状態を操作します。
-
-### 並列実行
-
-Transactionが読み書きするAccountを事前に明示する設計により、競合しない処理を並列実行できます。この特徴は、高頻度の決済、インセンティブ配布、証明記録、物流イベント記録など、多数の独立した処理を扱う社会インフラ型サービスと相性があります。
-
-### 手数料
-
-2026-09-11時点の公式ドキュメントでは、基本手数料は原則として**署名1件あたり5,000 lamports**で、必要に応じてpriority feeを追加します。第三者をfee payerとするfee sponsorshipも可能であり、一般利用者にSOLの保有を意識させないUXも設計可能です。
-
-## 2026年の主なネットワーク変更
-
-- 2026年7月: Mainnetのblock limitが **60M CUから100M CU**へ引き上げ。
-- 2026年8月28日: Mainnetのtarget slot timeが **300ms**へ短縮。
-- Transaction V1では最大transaction sizeを **1,232 bytesから4,096 bytes**へ拡張予定。2026-09-11時点ではMainnet activationは**2026-09-15予定**で、まだ完全移行前。
-- 次世代コンセンサス **Alpenglow** は約**150ms finality**を目標としているが、2026-09-11時点ではMainnetで未稼働。Agave 4.3 / 2026年10月ごろの導入が予定されている。
-
-## リスク・注意点
-
-- validator運用に比較的高性能なハードウェアが必要
-- stakeの集中度、validator clientの多様性
-- 過去のネットワーク停止実績
-- Programの脆弱性や鍵管理リスク
-- bot / MEV / spam transaction
-- 公開チェーンにおけるプライバシー
-- 日本国内での暗号資産、資金決済、金融商品、個人情報、医療・公共分野等の規制
-- 公式な行政台帳・法定登録簿をブロックチェーンで勝手に置き換えないこと
-
-2024-02-06にはMainnetが約5時間停止しており、LoadedProgramsに関するバグが原因でした。公共性の高いサービスではネットワーク障害を前提にfallback設計も必要です。
+- 2026年7月: Mainnet block limit 60M CU → 100M CU。
+- 2026年8月: target slot time 300msへ短縮。
+- Transaction V1の最大transaction size 4,096 bytes化は2026-09-15のMainnet activation予定で、この基準日では未完了。
+- Alpenglowは約150ms finalityを目標とする次世代consensusだが、この基準日ではMainnet未稼働。
+- 過去にnetwork outage実績があるため公共サービスはfallbackを設計する。
 
 ---
 
-# 日本の社会課題 × Solana
+# 現在の設計思想
 
-日本国内の社会課題について、行政機関・研究機関等の資料を基に、Solanaを使う合理性が比較的高いものだけを選定しています。
+このリポジトリで最も重要な共通パターンは、**既存の行政・企業システムをblockchainで全面置換しない**ことです。
 
-詳細: [`docs/japan-social-issues-2026-09-11.md`](docs/japan-social-issues-2026-09-11.md)
+```text
+Existing System / Government DB / ERP / WMS / Data Space
+                         │
+                         │ detailed / private data
+                         ▼
+                   Off-chain Layer
+                         │
+                         │ hash / proof / state
+                         ▼
+                     Solana
+                         │
+                         ├─ verification
+                         ├─ settlement
+                         ├─ voucher
+                         └─ incentive
+```
 
-初期サービス案: [`ideas/initial-service-ideas.md`](ideas/initial-service-ideas.md)
-
-| 優先 | 社会課題 | Solana活用の方向 |
-|---|---|---|
-| A | 資源循環・リサイクルのトレーサビリティ | 製品・素材の回収、再利用、再資源化イベントの改ざん困難な証明とインセンティブ |
-| A | 地方の「交通空白」 | 複数交通事業者・自治体をまたぐ利用証明、補助金・交通バウチャー・精算 |
-| A | 食品ロス | 食品寄附・回収・受渡し証明と店舗・利用者へのインセンティブ |
-| B | 災害時の支援・情報連携 | 支援物資・支援金・用途限定バウチャーの監査可能な配布記録 |
-| B | 医薬品の安定供給・物流 | ロット・受渡し・温度等の真正性を示すハッシュ証明と企業間連携 |
-| C | 地域脱炭素・環境価値 | 小口の環境行動の証明、インセンティブ、公式制度に接続する監査レイヤー |
-
-## 最初に検討する有望テーマ
-
-現時点では **「資源循環・リサイクルのトレーサビリティ」** を最有力候補とします。
-
-経済産業省のサーキュラーエコノミー情報流通プラットフォーム関連資料では、ブロックチェーンについて、**高TPS、情報の信頼性、可監査性、情報入力者の認証、持続可能性**を含めて具体的に検討する必要性が示されています。これはSolanaの技術特性と直接重なります。
-
-既存のウラノス・エコシステム等との相互運用を前提にし、Solanaを行政・産業基盤の代替ではなく、**証明・監査・インセンティブ用の補完レイヤー**として使う方向から検討します。
+Solanaは「全データを保存するDB」より、**複数組織間のproof / state / settlementの共通レイヤー**として使うことを第一仮説とします。
 
 ---
 
@@ -116,29 +159,37 @@ Transactionが読み書きするAccountを事前に明示する設計により�
 ```text
 Solana-idea/
 ├── README.md
+├── AGENTS.md
 ├── docs/
 │   ├── solana-research-YYYY-MM-DD.md
-│   └── japan-social-issues-YYYY-MM-DD.md
+│   ├── japan-social-issues-YYYY-MM-DD.md
+│   └── competitive-landscape-and-market-size-YYYY-MM-DD.md
 ├── ideas/
-│   └── initial-service-ideas.md
-├── specs/          # 将来: 要件定義・仕様書
+│   ├── 01-circulartrace-japan.md
+│   ├── 02-ruralride-ledger.md
+│   ├── 03-foodrescue-proof.md
+│   ├── 04-reliefpass.md
+│   ├── 05-pharmatrace.md
+│   └── 06-local-carbon-proof.md
+├── specs/          # 将来: projectごとの要件定義・設計
 ├── programs/       # 将来: Solana Programs
-├── app/            # 将来: フロントエンド
-├── backend/        # 将来: API・off-chain DB・indexer
-└── tests/          # 将来: テスト
+├── app/            # 将来: frontend
+├── backend/        # 将来: API / off-chain DB / indexer
+└── tests/          # 将来: test
 ```
+
+---
 
 # 出典ポリシー
 
-社会課題の事実認定には、原則として次を優先します。
+社会課題の事実認定には原則として、日本国政府・省庁・自治体、公的研究機関、国際機関、大学・査読論文、信頼性の高いシンクタンクを優先します。競合自身の導入実績等は企業の一次資料を利用できます。
 
-1. 日本国政府・省庁・自治体
-2. 独立行政法人・公的研究機関
-3. 大学・査読論文
-4. 国際機関
-5. 信頼性の高いシンクタンク
-6. 一次資料
+Solana仕様はSolana公式documentation、Solana Foundation、whitepaper、official upgrade/changelog、査読研究等を優先します。
 
-Solanaの仕様については、Solana公式ドキュメント、Solana Foundation、原著ホワイトペーパー、公式upgrade/changelog、査読研究等を優先します。
+一般ニュース、暗号資産系SEOメディア、価格予想サイト、無署名ブログは主要根拠にしません。
 
-一般ニュース、暗号資産系SEOメディア、価格予想サイト、無署名ブログなどは、原則として主要な根拠には使用しません。
+---
+
+# 次の開発段階
+
+実装候補を1つ選定したら、`specs/<project>/` 以下にproblem、users/stakeholders、requirements、architecture、on-chain/off-chain data model、privacy/security、legal checklist、competitor differentiation、MVP plan、KPIを作成し、その後Program / app / backend実装へ進みます。
