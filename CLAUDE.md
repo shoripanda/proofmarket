@@ -24,3 +24,12 @@ ProofMarketではコードを書き始める前に、最低限以下を確認す
 - `specs/proofmarket/acceptance-criteria.md`
 
 Technology stackはClaude Code側で選定してよいが、P0 requirementsやsecurity/privacy constraintを変更する場合は、先に仕様文書側へ理由と変更を反映する。
+
+
+## 失敗ルート台帳
+
+- 2026-10-02 [Anchor 1.2 / anchor-spl] `features = ["token", "associated_token"]` だけで `token::mint` / `token::authority` 制約を使う → derive が `anchor_spl::token_interface` を参照してコンパイルエラー → `token_2022` feature も有効にする
+- 2026-10-02 [Anchor 1.2 / IDL] 命令引数の構造体に `Option<(Pubkey, Pubkey)>` などのタプル型を入れる → IDL build が `Unsupported type` で失敗 → タプルをやめて別々のフィールドにする
+- 2026-10-02 [TypeScript 5.9 / monorepo] `import "./x.ts"` の形で書く → TS5097 → `allowImportingTsExtensions: true`（`noEmit` と併用）を tsconfig.base.json に入れる
+- 2026-10-02 [pnpm 12] 依存の postinstall（esbuild 等）が自動で止められる → `pnpm-workspace.yaml` の `allowBuilds` で許可（不要なものは false）
+- 2026-10-02 [CI / gitleaks-action@v2] ワークフロー全体を `permissions: contents: read` にして PR で実行 → PR のコミット一覧 API が 403 で失敗 → secrets ジョブに `pull-requests: read` を足す
