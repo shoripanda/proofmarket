@@ -6,6 +6,15 @@
   "description": "Operator scripts (run locally with tsx). Keys are read from ~/.config/proofmarket/, never from the repo.",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "echo 'no script tests'"
+    "test": "echo 'no script tests'",
+    "run": "tsx --conditions=react-server"
+  },
+  "dependencies": {
+    "@proofmarket/core": "workspace:*",
+    "@proofmarket/db": "workspace:*",
+    "drizzle-orm": "^0.45.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
   }
 }

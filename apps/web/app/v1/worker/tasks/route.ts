@@ -1,5 +1,6 @@
-// GET /v1/worker/tasks — 05 §3.2 (P0). Auth: worker. Implementation: PR-05.
-// Query location arrives pre-rounded to 3 decimals; never stored or logged.
-import { notImplemented } from "@/lib/http";
+// GET /v1/worker/tasks — 05 §3.2 (P0). Location arrives rounded; never stored or logged. Auth: worker (Privy).
+import { appContext } from "@/lib/context";
+import { handleListTasks } from "@/lib/handlers/worker";
+import { route } from "@/lib/http";
 
-export const GET = notImplemented("PR-05");
+export const GET = route(async (req) => handleListTasks(appContext(), req));

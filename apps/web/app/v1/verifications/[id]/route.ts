@@ -1,5 +1,8 @@
-// GET /v1/verifications/{id} — 05 §2.2 (P0). Auth: requester. Implementation: PR-04.
-// Owner credential only; others get 404. Side-effect free.
-import { notImplemented } from "@/lib/http";
+// GET /v1/verifications/{id} — 05 §2.2 (P0). Auth: requester. Owner credential only; others get 404.
+import { appContext } from "@/lib/context";
+import { handleGet } from "@/lib/handlers/requester";
+import { type IdParams, route } from "@/lib/http";
 
-export const GET = notImplemented("PR-04");
+export const GET = route<IdParams>(async (req, { params }) =>
+  handleGet(appContext(), req, (await params).id),
+);

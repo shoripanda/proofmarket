@@ -10,3 +10,17 @@ describe("error catalog (05 §8)", () => {
     }
   });
 });
+
+import { fromMicro, toMicro } from "../src/domain/money.ts";
+
+describe("money", () => {
+  it("converts decimal strings to base units and back without floats", () => {
+    expect(toMicro("0.50")).toBe(500_000n);
+    expect(toMicro("12.345678")).toBe(12_345_678n);
+    expect(toMicro("-1.5")).toBe(-1_500_000n);
+    expect(fromMicro(500_000n)).toBe("0.5");
+    expect(fromMicro(3_000_000n)).toBe("3");
+    expect(fromMicro(-1_500_000n)).toBe("-1.5");
+    expect(() => toMicro("abc")).toThrow();
+  });
+});

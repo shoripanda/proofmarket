@@ -40,7 +40,12 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+/** bytea as Buffer for every driver (postgres-js returns Buffer, PGlite returns Uint8Array). */
+const bytea = customType<{ data: Buffer; driverData: Uint8Array }>({
+  dataType: () => "bytea",
+  fromDriver: (v) => (Buffer.isBuffer(v) ? v : Buffer.from(v)),
+  toDriver: (v) => v,
+});
 const tsz = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 const money = (name: string) => numeric(name, { precision: 20, scale: 6 });
 

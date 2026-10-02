@@ -1,5 +1,6 @@
-// POST /v1/verifications — 05 §2.1 (P0). Auth: requester. Implementation: PR-04.
-// Create verification. Idempotency-Key required. Lock requester_credentials row before limit checks (02 §4.2).
-import { notImplemented } from "@/lib/http";
+// POST /v1/verifications — 05 §2.1 (P0). Auth: requester. Idempotency-Key required.
+import { appContext } from "@/lib/context";
+import { handleCreate } from "@/lib/handlers/requester";
+import { route } from "@/lib/http";
 
-export const POST = notImplemented("PR-04");
+export const POST = route(async (req) => handleCreate(appContext(), req));

@@ -24,6 +24,15 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ha, hb);
 }
 
+/** AES-256-GCM. Layout: iv(12) | tag(16) | ciphertext. */
+export function encryptBytes(key: Buffer, data: Buffer): Buffer {
+  if (key.length !== 32) throw new Error("encryption key must be 32 bytes");
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", key, iv);
+  const ct = Buffer.concat([c.update(data), c.final()]);
+  return Buffer.concat([iv, c.getAuthTag(), ct]);
+}
+
 /** AES-256-GCM(lat,lng) with LOCATION_ENC_KEY (04 §3.11). Layout: iv(12) | tag(16) | ciphertext. */
 export function encryptLocation(key: Buffer, lat: number, lng: number): Buffer {
   if (key.length !== 32) throw new Error("LOCATION_ENC_KEY must be 32 bytes");
