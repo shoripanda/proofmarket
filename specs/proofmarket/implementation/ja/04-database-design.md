@@ -104,7 +104,7 @@ create table places (
 );
 ```
 
-依頼の位置から 30 m 以内に active な地点が一つも無ければ、作成を断る（REQ-X-T-104）。登録は `scripts/register-place.ts` で行い、audit_events に残す。
+依頼の位置から 30 m 以内に active な地点が一つも無ければ、作成を断る（REQ-X-T-104）。照合した地点は `verification_requests.place_id` に記録する。登録は `scripts/register-place.ts` で行い、audit_events に残す。
 
 ### 3.4 verification_requests（VerificationRequest）
 
@@ -118,6 +118,7 @@ create table verification_requests (
   answer_values           text[] not null,            -- 例 {OPEN,CLOSED,UNCLEAR}
   target_lat              double precision not null,  -- 公開の店舗位置。worker には見せる
   target_lng              double precision not null,
+  place_id                text not null references places(id), -- 照合した許可リストの地点（G-14、REQ-X-T-104）
   radius_m                int not null check (radius_m between 25 and 500),
   deadline                timestamptz not null,
   freshness_max_age_s     int not null check (freshness_max_age_s between 60 and 900),

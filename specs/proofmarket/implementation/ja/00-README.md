@@ -32,6 +32,7 @@
 | 8 | [08-security-privacy-operations.md](08-security-privacy-operations.md) | 脅威と対策の対応、鍵管理、保持期間、障害時の手順 |
 | 9 | [09-test-plan.md](09-test-plan.md) | テスト計画と受け入れ基準の対応表 |
 | 10 | [10-implementation-plan.md](10-implementation-plan.md) | 10/2〜10/12 の日程、作業分割、人間の担当 |
+| 11 | [11-code-skeleton.md](11-code-skeleton.md) | 設計とコードの対応表、骨組みの検証結果、開発環境の準備 |
 
 ## 決定事項一覧
 

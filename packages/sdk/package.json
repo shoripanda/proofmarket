@@ -1,0 +1,17 @@
+{
+  "name": "@proofmarket/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Typed REST client for requesters (used by packages/mcp and scripts/demo-agent.ts).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "echo 'sdk tests: PR-13'"
+  },
+  "dependencies": {
+    "@proofmarket/core": "workspace:*"
+  }
+}

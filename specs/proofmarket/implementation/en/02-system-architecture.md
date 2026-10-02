@@ -15,12 +15,13 @@ The top priority is that one person (and Claude Code) can finish building it in 
 | DB | Supabase PostgreSQL | Row locks, unique constraints, and transactions prevent idempotency violations and double settlement. pg_cron is available | Firestore etc. (weak unique constraints and transactions) |
 | ORM | Drizzle ORM + drizzle-kit (migrations) | Close to SQL, and typed | Prisma (heavy generated artifacts) |
 | Object storage | Supabase Storage private bucket | Has signed upload URLs and avoids Vercel's 4.5MB limit | S3 (adds another account) |
-| Worker auth and wallet | Privy (`@privy-io/react-auth`, and `@privy-io/server-auth` on the server) | Email/Google login and automatic Solana embedded wallet creation come in one package | Creating and holding keypairs ourselves (would become custody) |
+| Worker auth and wallet | Privy (`@privy-io/react-auth`, and `@privy-io/node` on the server; the older `@privy-io/server-auth` is deprecated as of 2026-10) | Email/Google login and automatic Solana embedded wallet creation come in one package | Creating and holding keypairs ourselves (would become custody) |
 | Solana program | Anchor 1.2.x (Rust) | Stable version as of 2026-10. Account validation can be written declaratively | Plain Rust (higher risk of missed validation) |
 | Solana client | `@anchor-lang/core`, `@solana/web3.js` v1, `@solana/spl-token` | Because the Anchor 1.x TS client assumes web3.js v1 | `@solana/kit` alone (mixing with the Anchor client would duplicate types) |
 | Image processing | sharp | Re-encoding, EXIF removal, resizing, preprocessing for perceptual hashing | — |
 | MCP | `@modelcontextprotocol/sdk` (stdio server) | Runs on the agent developer's machine using their API key | — |
-| Testing | Vitest (TS), LiteSVM (program), Playwright (end-to-end screen checks, P1) | Anchor 1.x defaults to LiteSVM | — |
+| Testing | Vitest (TS), LiteSVM (program), PGlite (migration SQL and DB constraints), Playwright (end-to-end screen checks, P1) | Anchor 1.x defaults to LiteSVM. PGlite lets CI exercise PostgreSQL constraints without Docker | — |
+| Language / lint | TypeScript 5.9, Biome (lint and format), Node.js 24+ | TypeScript 7 is not yet verified with Next.js, so 5.9 is pinned. Biome needs a single config file | ESLint + Prettier |
 | Package management | pnpm workspaces | Monorepo | — |
 | CI | GitHub Actions (lint, type check, tests, gitleaks, `anchor build`) | — | — |
 
@@ -202,6 +203,7 @@ Variables other than those starting with `NEXT_PUBLIC_` are server-only. Put `im
 | `PILOT_BBOX` | Target area (`minLat,minLng,maxLat,maxLng`) | No |
 | `MAX_WITNESSES` | Upper limit of `required_witnesses` accepted. 1 until PR-14 | No |
 | `ANTHROPIC_API_KEY` | AI image consistency check (P1, optional) | Yes |
+| `APP_ENV` | `local`, `preview` or `demo`. The dev settlement stub refuses to start in `demo` | No |
 
 The config's admin key is not placed on Vercel. It is used only when running `scripts/devnet-setup.ts` locally.
 

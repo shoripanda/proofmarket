@@ -13,12 +13,13 @@
 | DB | Supabase の PostgreSQL | 行ロック・一意制約・トランザクションで冪等性と二重決済を防げる。pg_cron が使える | Firestore 等（一意制約とトランザクションが弱い） |
 | ORM | Drizzle ORM + drizzle-kit（マイグレーション） | SQL に近く、型が付く | Prisma（生成物が重い） |
 | オブジェクトストレージ | Supabase Storage の private bucket | 署名つきアップロード URL があり、Vercel の 4.5MB 制限を避けられる | S3（アカウントが増える） |
-| worker 認証とウォレット | Privy（`@privy-io/react-auth`、サーバーは `@privy-io/server-auth`） | メール/Google ログインと Solana 埋め込みウォレットの自動作成が 1 つで済む | 自前でキーペアを作って預かる（カストディになる） |
+| worker 認証とウォレット | Privy（`@privy-io/react-auth`、サーバーは `@privy-io/node`。旧 `@privy-io/server-auth` は 2026-10 時点で非推奨） | メール/Google ログインと Solana 埋め込みウォレットの自動作成が 1 つで済む | 自前でキーペアを作って預かる（カストディになる） |
 | Solana プログラム | Anchor 1.2 系（Rust） | 2026-10 時点の安定版。アカウント検証を宣言的に書ける | 素の Rust（検証漏れの危険が増える） |
 | Solana クライアント | `@anchor-lang/core`、`@solana/web3.js` v1、`@solana/spl-token` | Anchor 1.x の TS クライアントが web3.js v1 前提のため | `@solana/kit` 単独（Anchor クライアントと混ぜると型が二重になる） |
 | 画像処理 | sharp | 再エンコード、EXIF 除去、縮小、知覚ハッシュの下処理 | — |
 | MCP | `@modelcontextprotocol/sdk`（stdio サーバー） | エージェント開発者の手元で API キーを使って動かす | — |
-| テスト | Vitest（TS）、LiteSVM（プログラム）、Playwright（画面の通し確認、P1） | Anchor 1.x の既定がLiteSVM | — |
+| テスト | Vitest（TS）、LiteSVM（プログラム）、PGlite（移行 SQL と DB 制約の確認）、Playwright（画面の通し確認、P1） | Anchor 1.x の既定が LiteSVM。PGlite は Docker なしで CI から PostgreSQL の制約を試せる | — |
+| 言語・lint | TypeScript 5.9、Biome（lint と整形）、Node.js 24 以上 | TypeScript 7 は Next.js との組み合わせが未検証のため 5.9 に固定。Biome は設定が 1 ファイルで済む | ESLint + Prettier |
 | パッケージ管理 | pnpm workspaces | モノレポ | — |
 | CI | GitHub Actions（lint、型検査、テスト、gitleaks、`anchor build`） | — | — |
 
@@ -200,6 +201,7 @@ Mainnet の環境は作らない。
 | `PILOT_BBOX` | 対象地域（`minLat,minLng,maxLat,maxLng`） | いいえ |
 | `MAX_WITNESSES` | 受け付ける `required_witnesses` の上限。PR-14 までは 1 | いいえ |
 | `ANTHROPIC_API_KEY` | AI 画像整合チェック（P1、任意） | はい |
+| `APP_ENV` | `local`・`preview`・`demo`。開発用の決済スタブは `demo` では起動を拒否する | いいえ |
 
 config の admin 鍵は Vercel に置かない。`scripts/devnet-setup.ts` を手元で実行するときだけ使う。
 

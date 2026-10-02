@@ -1,0 +1,21 @@
+{
+  "name": "@proofmarket/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP stdio server exposing request/get/cancel_reality_verification (05 §6). Runs on the agent developer's machine.",
+  "bin": {
+    "proofmarket-mcp": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "tsx src/index.ts",
+    "test": "echo 'mcp tests: PR-13'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "@proofmarket/core": "workspace:*",
+    "@proofmarket/sdk": "workspace:*",
+    "zod": "^4.6.5"
+  }
+}
