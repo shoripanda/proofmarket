@@ -1,5 +1,7 @@
 // Evidence bundle, evidence_root and result_hash (07 §5). Canonicalization: RFC 8785 (npm `canonicalize`).
 
+import { createHash } from "node:crypto";
+import canonicalize from "canonicalize";
 import type { AnswerValue, CheckStatus, Outcome } from "../domain/enums.ts";
 
 export const EVIDENCE_BUNDLE_SCHEMA = "proofmarket.evidence-bundle.v1" as const;
@@ -37,14 +39,40 @@ export interface EvidenceBundle {
   finalized_at: string; // decided once by the app, stored identically in DB (04 §3.13)
 }
 
+const sha256 = (data: string | Uint8Array): Uint8Array =>
+  new Uint8Array(createHash("sha256").update(data).digest());
+
+/** RFC 8785 canonical JSON. Throws on values JCS cannot represent (undefined, NaN, Infinity). */
+export function jcs(value: unknown): string {
+  const out = canonicalize(value);
+  if (out === undefined) throw new Error("value cannot be canonicalized");
+  return out;
+}
+
 /** SHA-256("proofmarket:task:v1:" + verification_id). Used as the Task PDA seed. */
-export function taskIdHash(_verificationId: string): Uint8Array {
-  throw new Error("NOT_IMPLEMENTED: taskIdHash (PR-08)");
+export function taskIdHash(verificationId: string): Uint8Array {
+  return sha256(TASK_ID_HASH_DOMAIN + verificationId);
+}
+
+export function questionHash(question: string): Sha256Hex {
+  return toSha256Hex(sha256(question));
+}
+
+/** Sort submissions and answer_values as 07 §5.1 requires, without mutating the input. */
+export function normalizeBundle(bundle: EvidenceBundle): EvidenceBundle {
+  const submissions = [...bundle.submissions]
+    .map((s) => ({ ...s, evidence_sha256: [...s.evidence_sha256].sort() }))
+    .sort(
+      (a, b) =>
+        a.server_received_at.localeCompare(b.server_received_at) ||
+        (a.evidence_sha256[0] ?? "").localeCompare(b.evidence_sha256[0] ?? ""),
+    );
+  return { ...bundle, answer_values: [...bundle.answer_values].sort(), submissions };
 }
 
 /** evidence_root = SHA-256(JCS(bundle)). Golden-vector test: U-JCS-01. */
-export function evidenceRoot(_bundle: EvidenceBundle): Uint8Array {
-  throw new Error("NOT_IMPLEMENTED: evidenceRoot (PR-08)");
+export function evidenceRoot(bundle: EvidenceBundle): Uint8Array {
+  return sha256(jcs(normalizeBundle(bundle)));
 }
 
 /** Fields of VerificationResult excluded from result_hash input (07 §5.2, U-JCS-02). */
@@ -57,10 +85,20 @@ export const RESULT_HASH_EXCLUDED_FIELDS = [
 ] as const;
 
 /** result_hash = SHA-256(JCS(result without RESULT_HASH_EXCLUDED_FIELDS)). */
-export function resultHash(_result: Record<string, unknown>): Uint8Array {
-  throw new Error("NOT_IMPLEMENTED: resultHash (PR-08)");
+export function resultHash(result: Record<string, unknown>): Uint8Array {
+  const input = Object.fromEntries(
+    Object.entries(result).filter(([k]) => !(RESULT_HASH_EXCLUDED_FIELDS as readonly string[]).includes(k)),
+  );
+  return sha256(jcs(input));
 }
 
-export function toSha256Hex(_bytes: Uint8Array): Sha256Hex {
-  throw new Error("NOT_IMPLEMENTED: toSha256Hex (PR-08)");
+export function toSha256Hex(bytes: Uint8Array): Sha256Hex {
+  if (bytes.length !== 32) throw new Error("sha256 digest must be 32 bytes");
+  return `sha256:${Buffer.from(bytes).toString("hex")}`;
+}
+
+export function fromSha256Hex(hex: Sha256Hex): Uint8Array {
+  const m = /^sha256:([0-9a-f]{64})$/.exec(hex);
+  if (!m?.[1]) throw new Error("malformed sha256 hex");
+  return new Uint8Array(Buffer.from(m[1], "hex"));
 }
