@@ -1,0 +1,1 @@
+ALTER TABLE "verification_requests" ADD COLUMN "evidence_access_revoked" boolean DEFAULT false NOT NULL;

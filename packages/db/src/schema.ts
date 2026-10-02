@@ -192,6 +192,8 @@ export const verificationRequests = pgTable(
     requestHash: bytea("request_hash").notNull(),
     policyRuleVersion: text("policy_rule_version").notNull(),
     callbackEndpointId: text("callback_endpoint_id").references(() => webhookEndpoints.id),
+    /** Operator stopped evidence access for this verification (08 §6). */
+    evidenceAccessRevoked: boolean("evidence_access_revoked").notNull().default(false),
     createdAt: tsz("created_at").notNull().defaultNow(),
     updatedAt: tsz("updated_at").notNull().defaultNow(),
   },

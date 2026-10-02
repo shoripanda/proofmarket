@@ -18,6 +18,7 @@
     "@proofmarket/db": "workspace:*",
     "@proofmarket/solana": "workspace:*",
     "@supabase/supabase-js": "^2.117.2",
+    "bs58": "^6.0.0",
     "canonicalize": "^5.1.0",
     "drizzle-orm": "^0.45.3",
     "next": "^16.3.8",
