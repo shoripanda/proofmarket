@@ -3,6 +3,8 @@
 import type { ApiErrorBody } from "@proofmarket/core";
 import type { CreateVerificationRequest, GetVerificationResponse } from "@proofmarket/core/schemas/api";
 
+export type { CreateVerificationRequest, GetVerificationResponse };
+
 export interface ProofMarketClientOptions {
   baseUrl: string;
   /** pm_test_<prefix>_<secret> */
@@ -16,6 +18,13 @@ export class ProofMarketApiError extends Error {
     readonly body: ApiErrorBody,
   ) {
     super(`${body.error.code}: ${body.error.message}`);
+    this.name = "ProofMarketApiError";
+  }
+  get code() {
+    return this.body.error.code;
+  }
+  get retryable() {
+    return this.body.error.retryable;
   }
 }
 
@@ -28,35 +37,102 @@ export interface CreateVerificationResult {
   replayed: boolean;
 }
 
+const FINAL_TASK_STATUSES = new Set(["SETTLED", "REJECTED", "EXPIRED", "CANCELLED", "REFUNDED"]);
+
+/** True once the verification has an outcome (or was cancelled) — the agent can act on it. */
+export function isDecided(v: GetVerificationResponse): boolean {
+  return v.result !== null || FINAL_TASK_STATUSES.has(v.status);
+}
+
 export class ProofMarketClient {
-  constructor(readonly options: ProofMarketClientOptions) {}
+  private readonly f: typeof fetch;
+  constructor(readonly options: ProofMarketClientOptions) {
+    this.f = options.fetch ?? fetch;
+  }
+
+  private async request<T>(
+    method: string,
+    path: string,
+    init: { body?: unknown; headers?: Record<string, string> } = {},
+  ) {
+    const res = await this.f(new URL(path, this.options.baseUrl), {
+      method,
+      headers: {
+        authorization: `Bearer ${this.options.apiKey}`,
+        ...(init.body !== undefined ? { "content-type": "application/json" } : {}),
+        ...(init.headers ?? {}),
+      },
+      ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
+    });
+    const json = (await res.json().catch(() => null)) as unknown;
+    if (!res.ok) {
+      const body =
+        json && typeof json === "object" && "error" in json
+          ? (json as ApiErrorBody)
+          : ({
+              error: {
+                code: "INTERNAL_ERROR",
+                message: `HTTP ${res.status}`,
+                retryable: res.status >= 500,
+                details: {},
+              },
+            } as ApiErrorBody);
+      throw new ProofMarketApiError(res.status, body);
+    }
+    return { json: json as T, res };
+  }
 
   /** POST /v1/verifications. idempotencyKey is required by the API (REQ-A-004). */
-  createVerification(
-    _body: CreateVerificationRequest,
-    _idempotencyKey: string,
+  async createVerification(
+    body: CreateVerificationRequest,
+    idempotencyKey: string,
   ): Promise<CreateVerificationResult> {
-    throw new Error("NOT_IMPLEMENTED: createVerification (PR-12/13)");
+    const { json, res } = await this.request<Omit<CreateVerificationResult, "replayed">>(
+      "POST",
+      "/v1/verifications",
+      {
+        body,
+        headers: { "idempotency-key": idempotencyKey },
+      },
+    );
+    return { ...json, replayed: res.headers.get("idempotent-replayed") === "true" };
   }
 
   /** GET /v1/verifications/{id}. Side-effect free; safe to poll (REQ-N-005). */
-  getVerification(_id: string): Promise<GetVerificationResponse> {
-    throw new Error("NOT_IMPLEMENTED: getVerification (PR-12/13)");
-  }
-
-  /**
-   * Poll until result.status is VERIFIED / REJECTED / EXPIRED or the task is CANCELLED/REFUNDED,
-   * or until timeoutMs elapses (returns the latest state; never fabricates completion).
-   */
-  waitForResult(
-    _id: string,
-    _opts: { timeoutMs: number; intervalMs?: number },
-  ): Promise<GetVerificationResponse> {
-    throw new Error("NOT_IMPLEMENTED: waitForResult (PR-12)");
+  async getVerification(id: string): Promise<GetVerificationResponse> {
+    return (await this.request<GetVerificationResponse>("GET", `/v1/verifications/${encodeURIComponent(id)}`))
+      .json;
   }
 
   /** POST /v1/verifications/{id}/cancel */
-  cancelVerification(_id: string): Promise<GetVerificationResponse> {
-    throw new Error("NOT_IMPLEMENTED: cancelVerification (PR-13)");
+  async cancelVerification(id: string): Promise<GetVerificationResponse> {
+    return (
+      await this.request<GetVerificationResponse>(
+        "POST",
+        `/v1/verifications/${encodeURIComponent(id)}/cancel`,
+      )
+    ).json;
+  }
+
+  /**
+   * Poll until the verification is decided or timeoutMs elapses; returns the latest state either way.
+   * Never fabricates completion.
+   */
+  async waitForResult(
+    id: string,
+    opts: { timeoutMs: number; intervalMs?: number; onUpdate?: (v: GetVerificationResponse) => void },
+  ): Promise<GetVerificationResponse> {
+    const deadline = Date.now() + opts.timeoutMs;
+    let last = await this.getVerification(id);
+    opts.onUpdate?.(last);
+    while (!isDecided(last) && Date.now() < deadline) {
+      await new Promise((r) =>
+        setTimeout(r, Math.min(opts.intervalMs ?? 5000, Math.max(0, deadline - Date.now()))),
+      );
+      const next = await this.getVerification(id);
+      if (next.status !== last.status || next.updated_at !== last.updated_at) opts.onUpdate?.(next);
+      last = next;
+    }
+    return last;
   }
 }

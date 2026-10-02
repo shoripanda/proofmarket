@@ -6,6 +6,7 @@ import { authenticateRequester } from "../auth/requester";
 import type { AppContext } from "../context";
 import { readJson } from "../http";
 import { withIdempotency } from "../services/idempotency";
+import { evidenceUrls, publicResult } from "../services/public-service";
 import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
 import {
   cancelVerification,
@@ -48,4 +49,15 @@ export async function handleCancel(app: AppContext, req: Request, rawId: string)
   const rl = await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
   const view = await cancelVerification(app, auth, verificationId(rawId));
   return Response.json(view, { headers: rateLimitHeaders(rl) });
+}
+
+export async function handleEvidenceUrls(app: AppContext, req: Request, rawId: string): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  return Response.json(await evidenceUrls(app, auth, rawId));
+}
+
+export async function handlePublicResult(app: AppContext, _req: Request, rawId: string): Promise<Response> {
+  return Response.json(await publicResult(app, rawId), {
+    headers: { "Cache-Control": "public, max-age=10" },
+  });
 }

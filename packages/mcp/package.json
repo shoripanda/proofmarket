@@ -16,6 +16,11 @@
     "@modelcontextprotocol/sdk": "^1.31.0",
     "@proofmarket/core": "workspace:*",
     "@proofmarket/sdk": "workspace:*",
+    "canonicalize": "^5.1.0",
     "zod": "^4.6.5"
+  },
+  "exports": {
+    ".": "./src/server.ts",
+    "./tools": "./src/tools.ts"
   }
 }

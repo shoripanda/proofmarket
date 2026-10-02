@@ -12,6 +12,7 @@
   "dependencies": {
     "@proofmarket/core": "workspace:*",
     "@proofmarket/db": "workspace:*",
+    "@proofmarket/sdk": "workspace:*",
     "drizzle-orm": "^0.45.3"
   },
   "devDependencies": {
