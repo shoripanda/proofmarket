@@ -76,3 +76,12 @@ MVPの中心は `PLACE_STATUS_VERIFICATION`。
 Crypto World's Fair submission deadline: **2026-10-12**。
 
 Submission-readyの意味は `acceptance-criteria.md` に従う。
+
+## Implementation design (2026-10-02)
+
+技術選定・DB・API詳細・Solana Program・判定・テスト・日程を定めた実装設計書と要件定義書は `implementation/` にある。日本語版が正本、英語版は対訳。
+
+- 日本語（正本）: [`implementation/ja/00-README.md`](implementation/ja/00-README.md)
+- English (translation): [`implementation/en/00-README.md`](implementation/en/00-README.md)
+
+これらは上記の仕様を弱めず、曖昧だった点の解釈を決めたものである。優先順位は上の Precedence に従う。
