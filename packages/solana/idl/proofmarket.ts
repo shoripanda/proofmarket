@@ -233,6 +233,9 @@ export type Proofmarket = {
         },
         {
           name: "vault";
+          docs: [
+            "Read only after the status check, so a refund after the vault was closed fails with InvalidStatus (D9).",
+          ];
           writable: true;
           pda: {
             seeds: [
@@ -314,6 +317,9 @@ export type Proofmarket = {
         },
         {
           name: "vault";
+          docs: [
+            "Read only after the status check, so a settle after the vault was closed fails with InvalidStatus (D8, D10).",
+          ];
           writable: true;
           pda: {
             seeds: [

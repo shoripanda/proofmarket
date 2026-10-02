@@ -168,6 +168,18 @@ operator は Funded のタスクをいつでもキャンセル扱いで返金で
 
 `Paused`、`Unauthorized`、`InvalidMint`、`InvalidTreasury`、`InvalidAmount`、`InvalidWitnessConfig`、`DeadlineInPast`、`AmountOverflow`、`InvalidStatus`、`InvalidRoot`、`InvalidRecipients`、`RecipientCountMismatch`、`RecipientAccountMismatch`、`InsufficientVaultBalance`、`NotExpired`
 
+専用のコードを足さず、既存のコードで返すものは次のとおり。
+
+| 状況 | 返すコード |
+|---|---|
+| operator と verifier が同じ鍵、またはどちらかが既定値（全 0）の鍵 | `Unauthorized` |
+| `max_witnesses` が 1〜5 の範囲外（initialize_config・update_config） | `InvalidWitnessConfig` |
+| update_config で `bounty_mint` と `treasury` の片方だけを指定 | `InvalidTreasury` |
+| finalize の outcome が `None`（どの受取人数でも成り立たない） | `InvalidRecipients` |
+| refund の reason が `None` | `InvalidStatus` |
+
+settle と refund は、状態の検査を vault の読み込みより先に行う。settle か refund が済むと vault は閉じている。そのため 2 回目の settle や settle 後の refund も、口座の読み込みエラーにはならず `InvalidStatus` で失敗する（09 章 D8〜D10）。
+
 ## 4. 取引の組み立て
 
 | outbox ジョブ | 取引に入れる命令 | 署名者 |

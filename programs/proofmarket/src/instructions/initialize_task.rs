@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use crate::{
     constants::*,
     error::ProofMarketError,
-    state::{Config, Task},
+    events::TaskInitialized,
+    state::{Config, Outcome, RefundReason, Task, TaskStatus},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -50,11 +51,73 @@ pub struct InitializeTask<'info> {
     pub system_program: Program<'info, System>,
 }
 
-/// PR-09 (06 §3.2):
+/// 06 §3.2:
 /// - !config.paused; amount_per_witness > 0; 1 <= quorum <= required_witnesses <= config.max_witnesses
 /// - deadline > Clock::unix_timestamp; total = amount_per_witness.checked_mul(required_witnesses)
 /// - transfer total treasury -> vault (operator signs as treasury owner)
 /// - write Task (status = Funded, outcome = None, refund_reason = None, requester = operator), emit TaskInitialized
-pub fn handle_initialize_task(_ctx: Context<InitializeTask>, _args: InitializeTaskArgs) -> Result<()> {
-    todo!("PR-09: initialize_task")
+pub fn handle_initialize_task(
+    ctx: Context<InitializeTask>,
+    args: InitializeTaskArgs,
+) -> Result<()> {
+    let config = &ctx.accounts.config;
+    require!(!config.paused, ProofMarketError::Paused);
+    require!(args.amount_per_witness > 0, ProofMarketError::InvalidAmount);
+    require!(
+        args.quorum >= 1
+            && args.quorum <= args.required_witnesses
+            && args.required_witnesses <= config.max_witnesses,
+        ProofMarketError::InvalidWitnessConfig
+    );
+    let now = Clock::get()?.unix_timestamp;
+    require!(args.deadline > now, ProofMarketError::DeadlineInPast);
+    let amount_total = args
+        .amount_per_witness
+        .checked_mul(u64::from(args.required_witnesses))
+        .ok_or(ProofMarketError::AmountOverflow)?;
+
+    token::transfer(
+        CpiContext::new(
+            ctx.accounts.token_program.key(),
+            Transfer {
+                from: ctx.accounts.treasury.to_account_info(),
+                to: ctx.accounts.vault.to_account_info(),
+                authority: ctx.accounts.operator.to_account_info(),
+            },
+        ),
+        amount_total,
+    )?;
+
+    let task_key = ctx.accounts.task.key();
+    let task = &mut ctx.accounts.task;
+    task.version = TASK_VERSION;
+    task.bump = ctx.bumps.task;
+    task.vault_bump = ctx.bumps.vault;
+    task.task_id_hash = args.task_id_hash;
+    task.requester = ctx.accounts.operator.key();
+    task.requester_ref_hash = args.requester_ref_hash;
+    task.mint = ctx.accounts.mint.key();
+    task.amount_per_witness = args.amount_per_witness;
+    task.required_witnesses = args.required_witnesses;
+    task.quorum = args.quorum;
+    task.deadline = args.deadline;
+    task.status = TaskStatus::Funded;
+    task.outcome = Outcome::None;
+    task.refund_reason = RefundReason::None;
+    task.evidence_root = [0; 32];
+    task.result_hash = [0; 32];
+    task.recipient_count = 0;
+    task.recipients = [Pubkey::default(); MAX_RECIPIENTS];
+    task.paid_total = 0;
+    task.created_at = now;
+    task.finalized_at = 0;
+    task.closed_at = 0;
+
+    emit!(TaskInitialized {
+        task: task_key,
+        task_id_hash: args.task_id_hash,
+        amount_total,
+        deadline: args.deadline,
+    });
+    Ok(())
 }
