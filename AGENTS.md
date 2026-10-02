@@ -22,6 +22,10 @@ ChatGPT、Codex、Claude Code、OpenClaw、その他AIエージェントは、�
 - `ideas/04-reliefpass.md`
 - `ideas/05-pharmatrace.md`
 - `ideas/06-local-carbon-proof.md`
+- `ideas/07-learnpass-japan.md`
+- `ideas/08-proofmarket.md`
+
+ProofMarketを実装・変更する場合は、上記に加えて **`specs/proofmarket/README.md` とそこから参照される仕様一式を必ず読むこと。**
 
 ## 2. リポジトリの目的
 
@@ -117,7 +121,7 @@ ChatGPT、Codex、Claude Code、OpenClaw、その他AIエージェントは、�
 - 契約書本文
 - 大容量raw data
 
-## 7. 現在の6案と主仮説
+## 7. 現在の8案と主仮説
 
 ### CircularTrace Japan
 
@@ -143,7 +147,21 @@ ERP/WMSの置換ではなく、医薬品物流の**custody / sensor-hash / recal
 
 J-クレジットの無断tokenizationではなく、**local environmental action proof + reward**。CircularTraceとのmodule統合も検討する。
 
+### LearnPass Japan
+
+大学・資格・企業研修等に分散するcredentialを本人中心に統合する構想。Open Badge / VCで十分かを先に反証し、Solanaは必要最小限のproof layerとして検討する。
+
+### ProofMarket
+
+汎用gig marketplaceではなく、**AI agentが物理世界のfresh factを人間へ検証依頼し、machine-readable resultを得るReality Verification Network**。MVPは `PLACE_STATUS_VERIFICATION` に限定する。raw photo / GPSはoff-chain、Solanaはsettlement / attestationの最小レイヤーとする。
+
 ## 8. 現時点の優先順位
+
+### 2026秋 Hackathon
+
+**ProofMarketを主要実装候補として進める。** 実装判断は `specs/proofmarket/requirements.md` と `specs/proofmarket/acceptance-criteria.md` を優先する。
+
+既存案のresearch上の参考順位:
 
 技術・政策的独自性:
 
@@ -242,6 +260,6 @@ AIエージェントが新しい重要文書を追加した場合、必要に応
 
 ## 14. 現在の基準日
 
-このAGENTS.mdに記載した競合・統計・Solana仕様の主な基準日は **2026-09-11**。
+既存7案の競合・統計・Solana仕様の主な基準日は **2026-09-11**。ProofMarketの仕様・競合・法務チェックの基準日は **2026-10-02**。
 
 将来の作業では、時間依存する数字・制度・Solana network仕様は必ず最新の一次資料で再確認すること。

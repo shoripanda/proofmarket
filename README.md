@@ -36,8 +36,21 @@ Solanaを活用して日本を中心とする社会課題の解決につなが�
 | 5 | PharmaTrace Proof Layer | 医薬品物流・温度・custodyの真正性を証明 | MediLedger / FDA DSCSA / Ouranos | [詳細](ideas/05-pharmatrace.md) |
 | 6 | Local Carbon Proof | 地域の小口環境行動を証明・reward | JPX carbon market / Energy Web | [詳細](ideas/06-local-carbon-proof.md) |
 | 7 | LearnPass Japan | 学位・資格・企業研修・e-learningを統合する生涯学習Credential基盤 | Open Badge / CloudCerts / Parchment / Credly / Europass | [詳細](ideas/07-learnpass-japan.md) |
+| 8 | **ProofMarket** | AI agentが現実世界の事実を人間に検証依頼し、証拠付きのmachine-readable resultを受け取る | Taskin / RentAHuman / NeedaHuman / Human4Hire | [詳細](ideas/08-proofmarket.md) |
 
 従来の初期案まとめ: [ideas/initial-service-ideas.md](ideas/initial-service-ideas.md)
+
+## 2026秋 Hackathon 現在の実装候補
+
+**ProofMarket** を Crypto World's Fair 2026 向けの主要実装候補として仕様化した。
+
+ProofMarketは汎用的な「AIが人間を雇うマーケットプレイス」ではなく、**AI agent向けReality Verification API / Network**として定義する。最初のMVPは `PLACE_STATUS_VERIFICATION` に限定し、実在する人間によるfresh photo / location / nonce等のevidenceからmachine-readableな検証結果を生成し、Solana Devnet上のsettlement / attestationへ接続する。
+
+実装時のsource of truth:
+- [ProofMarket Specifications](specs/proofmarket/README.md)
+- [Requirements](specs/proofmarket/requirements.md)
+- [API Contract](specs/proofmarket/api-contract.md)
+- [Acceptance Criteria](specs/proofmarket/acceptance-criteria.md)
 
 ---
 
@@ -91,8 +104,9 @@ Solanaには個人情報や証明書本文を保存せず、credential hash、is
 
 優先順位は固定せず、新規調査・法改正・競合・PoC結果で更新する。
 
-特に現在は、以下を有望候補として継続調査する。
+**2026-10-02時点では、Crypto World's Fair向けにProofMarketを主要実装候補として進める。** 既存7案はresearch backlogとして維持する。
 
+- **ProofMarket** — AI agent向けphysical-world verification / human oracle network
 - **CircularTrace Japan** — 企業横断の資源循環proof layer
 - **ReliefPass** — 災害支援voucher / settlement
 - **RuralRide Ledger** — 自治体交通補助の事業者横断settlement
@@ -197,8 +211,10 @@ Solana-idea/
 │   ├── 04-reliefpass.md
 │   ├── 05-pharmatrace.md
 │   ├── 06-local-carbon-proof.md
-│   └── 07-learnpass-japan.md
-├── specs/          # 将来: projectごとの要件定義・設計
+│   ├── 07-learnpass-japan.md
+│   └── 08-proofmarket.md
+├── specs/
+│   └── proofmarket/ # requirements / API / data model / security / MVP / KPI
 ├── programs/       # 将来: Solana Programs
 ├── app/            # 将来: frontend
 ├── backend/        # 将来: API / off-chain DB / indexer
@@ -221,4 +237,4 @@ Solana仕様はSolana公式documentation、Solana Foundation、whitepaper、offi
 
 # 次の開発段階
 
-実装候補を1つ選定したら、`specs/<project>/` 以下にproblem、users/stakeholders、requirements、architecture、on-chain/off-chain data model、privacy/security、legal checklist、competitor differentiation、MVP plan、KPIを作成し、その後Program / app / backend実装へ進みます。
+ProofMarketについては `specs/proofmarket/` の仕様一式を作成済み。次はClaude Code等の実装エージェントが仕様を読み、P0 acceptance criteriaを満たすthin vertical sliceからProgram / app / backend / test実装へ進む。その他の候補は選定時に同じ標準仕様セットを作成する。

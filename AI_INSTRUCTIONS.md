@@ -11,6 +11,7 @@
 3. `docs/japan-social-issues-2026-09-11.md`
 4. `docs/competitive-landscape-and-market-size-2026-09-11.md`
 5. 対象となる `ideas/*.md`
+6. ProofMarketを扱う場合は `specs/proofmarket/README.md` とそのread order
 
 重要原則:
 
@@ -21,3 +22,12 @@
 - `MARKET_SIZE` / `INDUSTRY_SCALE` / `PROBLEM_SCALE` / `TRANSACTION_SCALE` / `AID_SCALE` / `ADOPTION` を混同しない。
 - 個人情報、医療情報、住所、企業秘密等をpublic chainへ保存しない。
 - 実装・調査ルールの詳細は必ず`AGENTS.md`を優先する。
+
+
+## Current implementation focus — 2026-10-02
+
+Crypto World's Fair向けの主要実装候補は **ProofMarket**。
+
+ProofMarket実装では、汎用agent-to-human marketplaceへscopeを広げず、まず `PLACE_STATUS_VERIFICATION` のend-to-end flowを完成させる。
+
+Definition of Doneは `specs/proofmarket/acceptance-criteria.md`、外部contractは `specs/proofmarket/api-contract.md` を正とする。
