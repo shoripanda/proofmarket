@@ -1,0 +1,183 @@
+import "server-only";
+// Consensus and result persistence (07 §4-5, 03 T08-T12).
+
+import {
+  type AnswerValue,
+  type CheckStatus,
+  consensusRatio,
+  decide,
+  EVIDENCE_BUNDLE_SCHEMA,
+  type EvidenceBundle,
+  evidenceRoot,
+  questionHash,
+  resultHash,
+  toSha256Hex,
+} from "@proofmarket/core";
+import { type Db, schema } from "@proofmarket/db";
+import { and, count, eq, inArray } from "drizzle-orm";
+import type { AppContext } from "../context";
+import { witnessRef } from "./crypto";
+import { applyTaskEvent, type TaskRow } from "./task-engine";
+
+const BUNDLE_CHECKS = ["freshness", "geofence", "media_schema", "replay", "task_nonce", "duplicate"] as const;
+const RESULT_CHECKS = [
+  "geofence",
+  "freshness",
+  "task_nonce",
+  "replay",
+  "media_schema",
+  "duplicate",
+  "vision_consistency",
+] as const;
+
+const worst = (s: CheckStatus[]): CheckStatus => {
+  for (const x of ["fail", "warning", "pass"] as const) if (s.includes(x)) return x;
+  return "not_run";
+};
+
+/** Build bundle + hashes and insert verification_results. finalized_at is decided here once (07 §5.2). */
+export async function saveResult(
+  tx: Db,
+  app: AppContext,
+  task: TaskRow,
+  outcome: {
+    status: "VERIFIED" | "REJECTED" | "EXPIRED";
+    reason: "NO_CONSENSUS" | "INSUFFICIENT_WITNESSES" | null;
+    answer: string | null;
+  },
+): Promise<void> {
+  const finalizedAt = new Date(Math.floor(app.now().getTime() / 1000) * 1000);
+  const valid = await tx
+    .select()
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.verificationId, task.id),
+        eq(schema.witnessSubmissions.state, "VALID"),
+      ),
+    );
+  const ids = valid.map((v) => v.id);
+  const evidence = ids.length
+    ? await tx.select().from(schema.evidenceObjects).where(inArray(schema.evidenceObjects.submissionId, ids))
+    : [];
+  const checks = ids.length
+    ? await tx.select().from(schema.evidenceChecks).where(inArray(schema.evidenceChecks.submissionId, ids))
+    : [];
+  const rejected = await tx
+    .select({ reason: schema.witnessSubmissions.reasonCode, n: count() })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.verificationId, task.id),
+        eq(schema.witnessSubmissions.state, "INVALID"),
+      ),
+    )
+    .groupBy(schema.witnessSubmissions.reasonCode);
+
+  const answerCounts: Record<string, number> = {};
+  for (const v of valid) answerCounts[v.answer] = (answerCounts[v.answer] ?? 0) + 1;
+
+  const bundle: EvidenceBundle = {
+    schema: EVIDENCE_BUNDLE_SCHEMA,
+    verification_id: task.id,
+    task_id_hash: toSha256Hex(task.taskIdHash),
+    type: "PLACE_STATUS_VERIFICATION",
+    question_hash: questionHash(task.question),
+    answer_values: task.answerValues as AnswerValue[],
+    assurance: { required_witnesses: task.requiredWitnesses, quorum: task.quorum },
+    submissions: valid.map((v) => ({
+      witness_ref: witnessRef(app.config.workerRefSalt, v.workerId, task.id),
+      answer: v.answer as AnswerValue,
+      evidence_sha256: evidence.filter((e) => e.submissionId === v.id).map((e) => toSha256Hex(e.sha256)),
+      server_received_at: new Date(Math.floor(v.serverReceivedAt.getTime() / 1000) * 1000)
+        .toISOString()
+        .replace(".000Z", "Z"),
+      checks: Object.fromEntries(
+        BUNDLE_CHECKS.map((t) => [
+          t,
+          (checks.find((c) => c.submissionId === v.id && c.checkType === t)?.status ??
+            "not_run") as CheckStatus,
+        ]),
+      ),
+    })),
+    outcome: outcome.status,
+    final_answer: (outcome.answer as AnswerValue | null) ?? null,
+    finalized_at: finalizedAt.toISOString().replace(".000Z", "Z"),
+  };
+  const root = evidenceRoot(bundle);
+  // Same field set the API returns minus RESULT_HASH_EXCLUDED_FIELDS, so anyone can recompute it (U-JCS-02).
+  const hashInput = {
+    verification_id: task.id,
+    status: outcome.status,
+    reason: outcome.reason,
+    answer: outcome.answer,
+    witnesses: { valid: valid.length, required: task.requiredWitnesses, quorum: task.quorum },
+    answer_counts: answerCounts,
+    checks: Object.fromEntries(
+      RESULT_CHECKS.map((t) => [
+        t,
+        worst(checks.filter((c) => c.checkType === t).map((c) => c.status as CheckStatus)),
+      ]),
+    ),
+    rejected_submissions: Object.fromEntries(
+      rejected.filter((r) => r.reason).map((r) => [r.reason, Number(r.n)]),
+    ),
+    evidence_root: toSha256Hex(root),
+  };
+  await tx.insert(schema.verificationResults).values({
+    verificationId: task.id,
+    outcome: outcome.status,
+    outcomeReason: outcome.reason,
+    finalAnswer: outcome.answer,
+    validWitnessCount: valid.length,
+    requiredWitnesses: task.requiredWitnesses,
+    quorum: task.quorum,
+    consensusRatio: String(consensusRatio(answerCounts) ?? 0),
+    answerCounts,
+    acceptedSubmissionIds: ids,
+    evidenceBundle: bundle,
+    evidenceRoot: Buffer.from(root),
+    resultHash: Buffer.from(resultHash(hashInput)),
+    finalizedAt,
+  });
+}
+
+/** Task is VERIFYING: decide and apply T09 / T10. */
+export async function evaluateConsensus(tx: Db, app: AppContext, task: TaskRow): Promise<void> {
+  const valid = await tx
+    .select({ answer: schema.witnessSubmissions.answer })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.verificationId, task.id),
+        eq(schema.witnessSubmissions.state, "VALID"),
+      ),
+    );
+  const d = decide(valid, task.quorum);
+  const verified = d.kind === "VERIFIED";
+  await saveResult(tx, app, task, {
+    status: verified ? "VERIFIED" : "REJECTED",
+    reason: verified ? null : "NO_CONSENSUS",
+    answer: verified ? d.answer : null,
+  });
+  await applyTaskEvent(tx, app, task, verified ? "CONSENSUS_REACHED" : "CONSENSUS_FAILED", {
+    actorType: "system",
+    actorRef: null,
+    correlationId: task.id,
+    metadata: { answer_counts: d.answerCounts },
+  });
+}
+
+/** Deadline handling for one task (T08 / T11 / T12). Caller holds the row lock. */
+export async function handleDeadline(tx: Db, app: AppContext, task: TaskRow): Promise<void> {
+  const r = await applyTaskEvent(tx, app, task, "DEADLINE_REACHED", {
+    actorType: "system",
+    actorRef: null,
+    correlationId: task.id,
+  });
+  if (r.rule.id === "T08") {
+    await evaluateConsensus(tx, app, task);
+  } else {
+    await saveResult(tx, app, task, { status: "EXPIRED", reason: "INSUFFICIENT_WITNESSES", answer: null });
+  }
+}
