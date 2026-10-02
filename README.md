@@ -237,4 +237,4 @@ Solana仕様はSolana公式documentation、Solana Foundation、whitepaper、offi
 
 # 次の開発段階
 
-ProofMarketについては `specs/proofmarket/` の仕様一式を作成済み。次はClaude Code等の実装エージェントが仕様を読み、P0 acceptance criteriaを満たすthin vertical sliceからProgram / app / backend / test実装へ進む。その他の候補は選定時に同じ標準仕様セットを作成する。
+ProofMarketについては `specs/proofmarket/` の仕様一式と、技術選定・DB・API・Solana Program・テスト・日程まで決めた実装設計書（[`specs/proofmarket/implementation/`](specs/proofmarket/implementation/ja/00-README.md)、日本語正本＋英語版）を作成済み。次はClaude Code等の実装エージェントが仕様を読み、P0 acceptance criteriaを満たすthin vertical sliceからProgram / app / backend / test実装へ進む。その他の候補は選定時に同じ標準仕様セットを作成する。
