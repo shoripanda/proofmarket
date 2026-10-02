@@ -170,6 +170,18 @@ Event: `TaskRefunded { task, amount, reason }`
 
 `Paused`, `Unauthorized`, `InvalidMint`, `InvalidTreasury`, `InvalidAmount`, `InvalidWitnessConfig`, `DeadlineInPast`, `AmountOverflow`, `InvalidStatus`, `InvalidRoot`, `InvalidRecipients`, `RecipientCountMismatch`, `RecipientAccountMismatch`, `InsufficientVaultBalance`, `NotExpired`
 
+The following cases reuse an existing code instead of adding a dedicated one.
+
+| Case | Code |
+|---|---|
+| operator and verifier are the same key, or either is the default (all-zero) key | `Unauthorized` |
+| `max_witnesses` outside 1–5 (initialize_config, update_config) | `InvalidWitnessConfig` |
+| update_config sets only one of `bounty_mint` and `treasury` | `InvalidTreasury` |
+| finalize with outcome `None` (no recipient count is valid for it) | `InvalidRecipients` |
+| refund with reason `None` | `InvalidStatus` |
+
+settle and refund check the status before reading the vault. Once a task is settled or refunded its vault is closed, so a second settle, or a refund after a settle, fails with `InvalidStatus` rather than with an account-deserialization error (Chapter 09, D8–D10).
+
 ## 4. Building Transactions
 
 | outbox job | Instructions in the transaction | Signers |

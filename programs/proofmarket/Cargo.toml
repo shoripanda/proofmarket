@@ -24,11 +24,15 @@ anchor-lang = "1.2.0"
 anchor-spl = { version = "1.2.0", default-features = false, features = ["token", "token_2022", "associated_token"] }
 
 [dev-dependencies]
-litesvm = "0.10.0"
-solana-message = "3.0.1"
-solana-transaction = "3.0.2"
-solana-signer = "3.0.0"
-solana-keypair = "3.0.1"
+# 0.14+ (Agave 4.1 runtime) is needed to load the SBPF v3 binary that `anchor build` 1.2 produces by default;
+# 0.10 (Agave 3.1) rejects it with InvalidAccountData.
+litesvm = "0.17.0"
+solana-transaction = "4.1.5"
+solana-signer = "3.0.1"
+solana-keypair = "3.1.2"
+solana-account = "4.3.0"
+solana-transaction-error = "3.3.1"
+base64 = "0.22.1"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
