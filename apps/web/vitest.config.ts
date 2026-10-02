@@ -1,0 +1,13 @@
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      // `server-only` throws outside React Server Components; tests run server code directly.
+      "server-only": fileURLToPath(new URL("./test/support/empty.ts", import.meta.url)),
+      "@": fileURLToPath(new URL("./", import.meta.url)),
+    },
+  },
+  test: { include: ["test/**/*.test.ts"], testTimeout: 20_000 },
+});

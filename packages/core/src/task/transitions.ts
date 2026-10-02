@@ -281,18 +281,4 @@ export type TransitionResult =
   | { ok: true; rule: TransitionRule; next: TaskStatus }
   | { ok: false; reason: "NO_RULE" | "GUARD_FAILED"; candidates: readonly TransitionRule["id"][] };
 
-/** Pure: find the rule for (status, event) whose guard holds. Implementation: PR-03 (U-SM-ALL, U-SM-CAN). */
-export function transition(
-  _status: TaskStatus,
-  _event: TaskEvent,
-  _ctx: TransitionContext,
-): TransitionResult {
-  throw new Error("NOT_IMPLEMENTED: transition (PR-03)");
-}
-
-/** open_slots = required_witnesses − valid − active claims (03 §2.1). */
-export function openSlots(
-  _ctx: Pick<TransitionContext, "requiredWitnesses" | "validCount" | "activeClaimCount">,
-): number {
-  throw new Error("NOT_IMPLEMENTED: openSlots (PR-03)");
-}
+export { openSlots, transition } from "./evaluate.ts";
