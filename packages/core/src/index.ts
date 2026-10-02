@@ -1,5 +1,6 @@
 export * from "./domain/enums.ts";
 export * from "./domain/limits.ts";
+export * from "./domain/money.ts";
 export * from "./errors.ts";
 export * from "./evidence/bundle.ts";
 export * from "./ids.ts";
