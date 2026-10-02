@@ -214,12 +214,16 @@ Solana-idea/
 │   ├── 07-learnpass-japan.md
 │   └── 08-proofmarket.md
 ├── specs/
-│   └── proofmarket/ # requirements / API / data model / security / MVP / KPI
-├── programs/       # 将来: Solana Programs
-├── app/            # 将来: frontend
-├── backend/        # 将来: API / off-chain DB / indexer
-└── tests/          # 将来: test
+│   └── proofmarket/        # requirements / API / data model / security / MVP / KPI
+│       └── implementation/ # 実装設計書（ja 正本 + en）
+├── apps/web/               # ProofMarket: Next.js（worker 画面・/v1 API・公開結果ページ）
+├── packages/               # ProofMarket: core（ドメイン）/ db / solana / sdk / mcp
+├── programs/proofmarket/   # ProofMarket: Anchor プログラム
+├── scripts/                # ProofMarket: 運用スクリプト
+└── tests/                  # E2E（P1）
 ```
+
+ProofMarket のコード構成と開発手順は [`specs/proofmarket/implementation/ja/11-code-skeleton.md`](specs/proofmarket/implementation/ja/11-code-skeleton.md) を参照。
 
 ---
 

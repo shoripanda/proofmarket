@@ -1,0 +1,3 @@
+// pnpm tsx scripts/register-webhook.ts --credential key_... --url https://... --events verification.verified,...
+// Validates https + public DNS (05 §5), stores an encrypted per-endpoint secret and prints it once. PR-14.
+throw new Error("NOT_IMPLEMENTED: register-webhook (PR-14)");

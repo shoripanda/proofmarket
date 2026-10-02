@@ -1,0 +1,20 @@
+{
+  "name": "@proofmarket/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure domain logic: state machine, checks, consensus, canonicalization, policy, API schemas. No DB / Solana deps.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "openapi": "tsx src/openapi/build.ts"
+  },
+  "dependencies": {
+    "canonicalize": "^5.1.0",
+    "zod": "^4.6.5"
+  }
+}

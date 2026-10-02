@@ -1,0 +1,22 @@
+{
+  "name": "@proofmarket/solana",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Settlement Adapter: builds, sends and confirms ProofMarket program transactions (06 §4-5). Server-only.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./idl": "./idl/proofmarket.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "echo 'adapter tests are integration tests (I-RPC-*, I-SET-*), PR-11'"
+  },
+  "dependencies": {
+    "@anchor-lang/core": "1.2.0",
+    "@proofmarket/core": "workspace:*",
+    "@solana/spl-token": "^0.4.15",
+    "@solana/web3.js": "^1.99.0",
+    "server-only": "^0.0.1"
+  }
+}

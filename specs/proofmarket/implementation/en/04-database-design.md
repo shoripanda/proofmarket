@@ -106,7 +106,7 @@ create table places (
 );
 ```
 
-If there is no active place within 30 m of the requested location, the creation is rejected (REQ-X-T-104). Registration is done with `scripts/register-place.ts` and recorded in audit_events.
+If there is no active place within 30 m of the requested location, the creation is rejected (REQ-X-T-104). The matched place is recorded in `verification_requests.place_id`. Registration is done with `scripts/register-place.ts` and recorded in audit_events.
 
 ### 3.4 verification_requests (VerificationRequest)
 
@@ -120,6 +120,7 @@ create table verification_requests (
   answer_values           text[] not null,            -- e.g. {OPEN,CLOSED,UNCLEAR}
   target_lat              double precision not null,  -- public location of the place. Shown to workers
   target_lng              double precision not null,
+  place_id                text not null references places(id), -- allowlisted place that matched (G-14, REQ-X-T-104)
   radius_m                int not null check (radius_m between 25 and 500),
   deadline                timestamptz not null,
   freshness_max_age_s     int not null check (freshness_max_age_s between 60 and 900),

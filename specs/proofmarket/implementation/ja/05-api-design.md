@@ -38,7 +38,7 @@
 | 利用者 | ヘッダー | 検証 |
 |---|---|---|
 | requester | `Authorization: Bearer pm_test_<key_prefix>_<secret>` | SHA-256(secret) を `requester_credentials.secret_hash` と照合。`status = active` かつ `revoked_at is null`。principal も active であること |
-| worker | `Authorization: Bearer <Privy access token>` | `@privy-io/server-auth` の `verifyAuthToken` で検証し、`privy_user_id` から worker を引く。identity token は受け付けない |
+| worker | `Authorization: Bearer <Privy access token>` | `@privy-io/node` でアクセストークンを検証し、`privy_user_id` から worker を引く。identity token は受け付けない |
 | operator | `Authorization: Bearer <ADMIN_TOKEN>` | 定数時間比較 |
 | cron | `X-Internal-Secret: <INTERNAL_CRON_SECRET>` | 定数時間比較 |
 

@@ -34,6 +34,7 @@ Priority follows the Precedence in the existing `specs/proofmarket/README.md`.
 | 8 | [08-security-privacy-operations.md](08-security-privacy-operations.md) | Mapping of threats to countermeasures, key management, retention periods, failure procedures |
 | 9 | [09-test-plan.md](09-test-plan.md) | Test plan and mapping to acceptance criteria |
 | 10 | [10-implementation-plan.md](10-implementation-plan.md) | Schedule for 10/2 to 10/12, work breakdown, human responsibilities |
+| 11 | [11-code-skeleton.md](11-code-skeleton.md) | Design-to-code map, skeleton verification results, development setup |
 
 ## List of decisions
 

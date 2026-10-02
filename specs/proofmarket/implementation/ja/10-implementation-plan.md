@@ -28,7 +28,7 @@ Claude Code が実装を担い、人間（以下「オーナー」）はアカ�
 
 | PR | 内容 | 依存 | 完了の条件 |
 |---|---|---|---|
-| PR-01 | モノレポの土台（pnpm、Next.js、`packages/*`、ESLint、Vitest、CI、gitleaks、`.gitignore`） | — | CI が緑。空の `/v1/health` が demo 環境で返る |
+| PR-01 | モノレポの土台（pnpm、Next.js、`packages/*`、Biome、Vitest、CI、gitleaks、`.gitignore`） | — | CI が緑。空の `/v1/health` が demo 環境で返る |
 | PR-02 | DB スキーマとマイグレーション、seed、ID 生成、エラー形式 | PR-01 | `pnpm db:migrate` が Supabase に当たる。U-ERR-01 |
 | PR-03 | `packages/core` の状態遷移表とポリシー規則 | PR-01 | U-SM-ALL、U-SM-CAN、U-POL-* |
 | PR-04 | requester API（作成・取得・キャンセル）、API キー認証、冪等性、上限、店舗の許可リスト、`scripts/issue-api-key.ts`・`register-place.ts` | PR-02・03 | I-IDEM-01・02、I-LIM-01、I-RACE-03、I-CRT-05・06 |

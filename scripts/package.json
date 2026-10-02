@@ -1,0 +1,11 @@
+{
+  "name": "@proofmarket/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Operator scripts (run locally with tsx). Keys are read from ~/.config/proofmarket/, never from the repo.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "echo 'no script tests'"
+  }
+}

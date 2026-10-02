@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+  - scripts
+
+# Dependencies allowed to run install scripts (pnpm blocks them by default).
+allowBuilds:
+  esbuild: true
+  sharp: true
+  # Optional native accelerators / postinstall hooks with pure-JS fallbacks: keep disabled.
+  bigint-buffer: false
+  utf-8-validate: false
+  bufferutil: false
+  keccak: false
+  "@reown/appkit": false

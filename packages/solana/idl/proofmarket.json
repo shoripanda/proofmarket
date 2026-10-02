@@ -1,0 +1,973 @@
+{
+  "address": "A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s",
+  "metadata": {
+    "name": "proofmarket",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "ProofMarket escrow + attestation program (specs/proofmarket/implementation/ja/06-solana-program-design.md)"
+  },
+  "instructions": [
+    {
+      "name": "finalize_verification",
+      "docs": [
+        "verifier: write outcome, evidence_root, result_hash, recipients. Funded -> Finalized. No time limit (D-11)."
+      ],
+      "discriminator": [17, 156, 245, 109, 209, 118, 72, 240],
+      "accounts": [
+        {
+          "name": "verifier",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "task",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [116, 97, 115, 107]
+              },
+              {
+                "kind": "account",
+                "path": "task.task_id_hash",
+                "account": "Task"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "FinalizeVerificationArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "docs": ["admin: create Config (06 §3.1)."],
+      "discriminator": [208, 127, 21, 1, 194, 190, 196, 70],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bounty_mint"
+        },
+        {
+          "name": "treasury"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeConfigArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_task",
+      "docs": [
+        "operator: create Task + vault, move amount_per_witness * N from treasury into the vault. -> Funded"
+      ],
+      "discriminator": [96, 206, 3, 20, 245, 167, 60, 125],
+      "accounts": [
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "task",
+          "docs": [
+            "`init` fails if the PDA exists: the same task can never be funded twice (P-INIT-02, I-IDEM-03)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [116, 97, 115, 107]
+              },
+              {
+                "kind": "arg",
+                "path": "args.task_id_hash"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116]
+              },
+              {
+                "kind": "account",
+                "path": "task"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeTaskArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "refund",
+      "docs": ["operator: return everything to treasury, close vault. Funded -> Refunded."],
+      "discriminator": [2, 96, 183, 251, 63, 208, 46, 46],
+      "accounts": [
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "task",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [116, 97, 115, 107]
+              },
+              {
+                "kind": "account",
+                "path": "task.task_id_hash",
+                "account": "Task"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116]
+              },
+              {
+                "kind": "account",
+                "path": "task"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "reason",
+          "type": {
+            "defined": {
+              "name": "RefundReason"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "settle",
+      "docs": [
+        "operator: pay each recipient amount_per_witness, return remainder, close vault. Finalized -> Settled.",
+        "remaining_accounts = recipients' ATAs in the order of task.recipients."
+      ],
+      "discriminator": [175, 42, 185, 87, 144, 131, 102, 212],
+      "accounts": [
+        {
+          "name": "operator",
+          "docs": ["Also receives the vault's rent when it is closed."],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "task",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [116, 97, 115, 107]
+              },
+              {
+                "kind": "account",
+                "path": "task.task_id_hash",
+                "account": "Task"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116]
+              },
+              {
+                "kind": "account",
+                "path": "task"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_config",
+      "docs": [
+        "admin: rotate operator / verifier, pause, change max_witnesses (<= MAX_RECIPIENTS) or bounty mint."
+      ],
+      "discriminator": [29, 158, 252, 191, 10, 83, 219, 99],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": ["config"]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateConfigArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [155, 12, 170, 224, 30, 250, 204, 130]
+    },
+    {
+      "name": "Task",
+      "discriminator": [79, 34, 229, 55, 88, 90, 55, 84]
+    }
+  ],
+  "events": [
+    {
+      "name": "TaskInitialized",
+      "discriminator": [250, 247, 188, 82, 39, 147, 253, 145]
+    },
+    {
+      "name": "TaskRefunded",
+      "discriminator": [49, 230, 123, 76, 62, 16, 104, 128]
+    },
+    {
+      "name": "TaskSettled",
+      "discriminator": [161, 220, 91, 215, 23, 253, 247, 65]
+    },
+    {
+      "name": "VerificationFinalized",
+      "discriminator": [86, 204, 238, 243, 86, 75, 243, 13]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Paused",
+      "msg": "Program is paused"
+    },
+    {
+      "code": 6001,
+      "name": "Unauthorized",
+      "msg": "Signer is not authorized for this instruction"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidMint",
+      "msg": "Mint is not the configured bounty mint"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidTreasury",
+      "msg": "Treasury account does not match config"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidWitnessConfig",
+      "msg": "Require 1 <= quorum <= required_witnesses <= max_witnesses"
+    },
+    {
+      "code": 6006,
+      "name": "DeadlineInPast",
+      "msg": "Deadline must be in the future"
+    },
+    {
+      "code": 6007,
+      "name": "AmountOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidStatus",
+      "msg": "Instruction not allowed in the current task status"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidRoot",
+      "msg": "evidence_root and result_hash must be non-zero"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidRecipients",
+      "msg": "Recipients are duplicated, default, too many or too few for the outcome"
+    },
+    {
+      "code": 6011,
+      "name": "RecipientCountMismatch",
+      "msg": "remaining_accounts length differs from recipient_count"
+    },
+    {
+      "code": 6012,
+      "name": "RecipientAccountMismatch",
+      "msg": "Recipient token account is not the expected ATA / mint / owner"
+    },
+    {
+      "code": 6013,
+      "name": "InsufficientVaultBalance",
+      "msg": "Vault balance is insufficient for the payout"
+    },
+    {
+      "code": 6014,
+      "name": "NotExpired",
+      "msg": "Task deadline has not passed"
+    }
+  ],
+  "types": [
+    {
+      "name": "Config",
+      "docs": ["seeds = [CONFIG_SEED]"],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "verifier",
+            "type": "pubkey"
+          },
+          {
+            "name": "bounty_mint",
+            "docs": ["Circle Devnet USDC or an own test mint (06 §6)."],
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "docs": ["operator-owned ATA of bounty_mint."],
+            "type": "pubkey"
+          },
+          {
+            "name": "max_witnesses",
+            "docs": ["<= MAX_RECIPIENTS."],
+            "type": "u8"
+          },
+          {
+            "name": "paused",
+            "docs": [
+              "true: initialize_task is rejected. finalize/settle/refund keep working so workers still get paid."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FinalizeVerificationArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "outcome",
+            "type": {
+              "defined": {
+                "name": "Outcome"
+              }
+            }
+          },
+          {
+            "name": "evidence_root",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "result_hash",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "recipients",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "verifier",
+            "type": "pubkey"
+          },
+          {
+            "name": "max_witnesses",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeTaskArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "task_id_hash",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "requester_ref_hash",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "amount_per_witness",
+            "type": "u64"
+          },
+          {
+            "name": "required_witnesses",
+            "type": "u8"
+          },
+          {
+            "name": "quorum",
+            "type": "u8"
+          },
+          {
+            "name": "deadline",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Outcome",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Verified"
+          },
+          {
+            "name": "NoConsensus"
+          },
+          {
+            "name": "InsufficientWitnesses"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RefundReason",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Cancelled"
+          },
+          {
+            "name": "Expired"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Task",
+      "docs": [
+        "seeds = [TASK_SEED, task_id_hash]. Kept forever as the public receipt; only the vault is closed."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          },
+          {
+            "name": "task_id_hash",
+            "docs": ["SHA-256(\"proofmarket:task:v1:\" + verification_id)"],
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "requester",
+            "docs": [
+              "Funding source. MVP: treasury owner (operator) as custodian of the requester's prepaid balance (D-05)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "requester_ref_hash",
+            "docs": ["SHA-256(credential_id), for per-requester aggregation without identity."],
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_per_witness",
+            "docs": ["Base units (USDC: 10^-6)."],
+            "type": "u64"
+          },
+          {
+            "name": "required_witnesses",
+            "type": "u8"
+          },
+          {
+            "name": "quorum",
+            "type": "u8"
+          },
+          {
+            "name": "deadline",
+            "docs": ["Unix seconds. Used only for refund(Expired); finalize has no time limit (D-11)."],
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "TaskStatus"
+              }
+            }
+          },
+          {
+            "name": "outcome",
+            "type": {
+              "defined": {
+                "name": "Outcome"
+              }
+            }
+          },
+          {
+            "name": "refund_reason",
+            "type": {
+              "defined": {
+                "name": "RefundReason"
+              }
+            }
+          },
+          {
+            "name": "evidence_root",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "result_hash",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "recipient_count",
+            "type": "u8"
+          },
+          {
+            "name": "recipients",
+            "type": {
+              "array": ["pubkey", 5]
+            }
+          },
+          {
+            "name": "paid_total",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "finalized_at",
+            "type": "i64"
+          },
+          {
+            "name": "closed_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "task",
+            "type": "pubkey"
+          },
+          {
+            "name": "task_id_hash",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "amount_total",
+            "type": "u64"
+          },
+          {
+            "name": "deadline",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskRefunded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "task",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "reason",
+            "type": {
+              "defined": {
+                "name": "RefundReason"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "task",
+            "type": "pubkey"
+          },
+          {
+            "name": "paid_total",
+            "type": "u64"
+          },
+          {
+            "name": "remainder",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskStatus",
+      "docs": ["Off-chain mapping: 03-state-machine.md §4.3."],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Funded"
+          },
+          {
+            "name": "Finalized"
+          },
+          {
+            "name": "Settled"
+          },
+          {
+            "name": "Refunded"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateConfigArgs",
+      "docs": [
+        "None = unchanged. bounty_mint and treasury must be changed together (06 §6 own-mint fallback)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "verifier",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "paused",
+            "type": {
+              "option": "bool"
+            }
+          },
+          {
+            "name": "max_witnesses",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "bounty_mint",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "treasury",
+            "type": {
+              "option": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "VerificationFinalized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "task",
+            "type": "pubkey"
+          },
+          {
+            "name": "outcome",
+            "type": {
+              "defined": {
+                "name": "Outcome"
+              }
+            }
+          },
+          {
+            "name": "evidence_root",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "result_hash",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "recipient_count",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "CONFIG_SEED",
+      "type": "bytes",
+      "value": "[99, 111, 110, 102, 105, 103]"
+    },
+    {
+      "name": "TASK_SEED",
+      "type": "bytes",
+      "value": "[116, 97, 115, 107]"
+    },
+    {
+      "name": "VAULT_SEED",
+      "type": "bytes",
+      "value": "[118, 97, 117, 108, 116]"
+    }
+  ]
+}

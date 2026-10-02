@@ -40,7 +40,7 @@ This chapter adds the details needed for implementation without changing the ext
 | Caller | Header | Verification |
 |---|---|---|
 | requester | `Authorization: Bearer pm_test_<key_prefix>_<secret>` | Compare SHA-256(secret) with `requester_credentials.secret_hash`. `status = active` and `revoked_at is null`. The principal must also be active |
-| worker | `Authorization: Bearer <Privy access token>` | Verify with `verifyAuthToken` from `@privy-io/server-auth`, then look up the worker by `privy_user_id`. Identity tokens are not accepted |
+| worker | `Authorization: Bearer <Privy access token>` | Verify the access token with `@privy-io/node`, then look up the worker by `privy_user_id`. Identity tokens are not accepted |
 | operator | `Authorization: Bearer <ADMIN_TOKEN>` | Constant-time comparison |
 | cron | `X-Internal-Secret: <INTERNAL_CRON_SECRET>` | Constant-time comparison |
 

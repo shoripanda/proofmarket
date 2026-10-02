@@ -1,0 +1,17 @@
+# --- ProofMarket ---
+node_modules/
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+# Solana / Anchor
+target/
+.anchor/
+test-ledger/
+*-keypair.json
+*.keypair.json
+id.json
+next-env.d.ts

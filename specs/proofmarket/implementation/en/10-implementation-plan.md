@@ -30,7 +30,7 @@ At the end of each day, that day's PRs should have passed CI, been merged into m
 
 | PR | Content | Depends on | Done when |
 |---|---|---|---|
-| PR-01 | Monorepo foundation (pnpm, Next.js, `packages/*`, ESLint, Vitest, CI, gitleaks, `.gitignore`) | — | CI is green. An empty `/v1/health` responds in the demo environment |
+| PR-01 | Monorepo foundation (pnpm, Next.js, `packages/*`, Biome, Vitest, CI, gitleaks, `.gitignore`) | — | CI is green. An empty `/v1/health` responds in the demo environment |
 | PR-02 | DB schema and migrations, seed, ID generation, error format | PR-01 | `pnpm db:migrate` applies to Supabase. U-ERR-01 |
 | PR-03 | State transition table and policy rules in `packages/core` | PR-01 | U-SM-ALL, U-SM-CAN, U-POL-* |
 | PR-04 | requester API (create, get, cancel), API key authentication, idempotency, limits, shop allowlist, `scripts/issue-api-key.ts` and `register-place.ts` | PR-02, 03 | I-IDEM-01 and 02, I-LIM-01, I-RACE-03, I-CRT-05 and 06 |

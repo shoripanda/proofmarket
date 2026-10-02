@@ -1,0 +1,33 @@
+{
+  "name": "@proofmarket/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Next.js app: worker web (PWA), /v1 REST API, public result page, internal tick (02 §2-3).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@privy-io/node": "^0.35.0",
+    "@privy-io/react-auth": "^3.46.0",
+    "@proofmarket/core": "workspace:*",
+    "@proofmarket/db": "workspace:*",
+    "@proofmarket/solana": "workspace:*",
+    "@supabase/supabase-js": "^2.117.2",
+    "canonicalize": "^5.1.0",
+    "next": "^16.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0"
+  }
+}
