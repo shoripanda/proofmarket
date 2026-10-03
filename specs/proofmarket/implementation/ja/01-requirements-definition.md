@@ -105,6 +105,17 @@ requester がキャンセルできるのは「進行中のクレームが 0 件�
 | Storage の制限 | bucket 自体に `file_size_limit = 8 MiB`、`allowed_mime_types = image/jpeg` を設定する。署名 URL は申告したサイズを強制しないため |
 | 依頼できる場所 | 運営者が登録した公開店舗の許可リストの地点から 30 m 以内（REQ-X-T-104） |
 
+### 4.8 依頼の種類の追加（2026-10-04）
+
+MVP の中心は `PLACE_STATUS_VERIFICATION` のまま変えない。同じ撮影・判定・決済の仕組みで確かめられ、店の外から見えることだけを問う種類を 2 つ足す。API キーの `allowed_task_types` で許可したものだけを受け付け、既定は従来どおり `PLACE_STATUS_VERIFICATION` だけにする。
+
+| type | 問うこと | 回答 |
+|---|---|---|
+| `QUEUE_LENGTH` | 店の外に並んでいる人の数 | `NO_QUEUE`・`SHORT_QUEUE`（5 人くらいまで）・`LONG_QUEUE`（6 人以上）・`UNCLEAR` |
+| `NOTICE_POSTED` | 質問で名指しした掲示（臨時休業のお知らせなど）が店頭に出ているか | `POSTED`・`NOT_POSTED`・`UNCLEAR` |
+
+見送ったもの: 在庫の有無は店内に入る必要があり、撮影の決まり（店内に入らない）と両立しない。価格は選択肢で答えられない。混み具合は人を写すことが主になるため、写り込みの扱いを決めてから検討する。行列も人が写るので、worker には後ろから顔が写らないように撮るよう表示する。
+
 ## 5. 業務フロー
 
 ### 5.1 正常系（1 witness）

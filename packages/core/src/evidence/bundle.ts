@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
-import type { AnswerValue, CheckStatus, Outcome } from "../domain/enums.ts";
+import type { AnswerValue, CheckStatus, Outcome, TaskType } from "../domain/enums.ts";
 
 export const EVIDENCE_BUNDLE_SCHEMA = "proofmarket.evidence-bundle.v1" as const;
 export const TASK_ID_HASH_DOMAIN = "proofmarket:task:v1:" as const;
@@ -29,7 +29,7 @@ export interface EvidenceBundle {
   schema: typeof EVIDENCE_BUNDLE_SCHEMA;
   verification_id: string;
   task_id_hash: Sha256Hex;
-  type: "PLACE_STATUS_VERIFICATION";
+  type: TaskType;
   question_hash: Sha256Hex;
   answer_values: AnswerValue[];
   assurance: { required_witnesses: number; quorum: number };

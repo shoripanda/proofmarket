@@ -4,7 +4,7 @@
 export const POLICY_RULE_VERSION = "2026-10-02" as const;
 
 export const POLICY_RULES = {
-  TYPE_ALLOWLIST: "Only PLACE_STATUS_VERIFICATION is accepted",
+  TYPE_ALLOWLIST: "Only the task types allowed for the API key are accepted",
   PERSON_TRACKING: "Tracking or identifying a specific person",
   PRIVATE_RESIDENCE: "Private residences",
   TRESPASS: "Entering restricted or private property",

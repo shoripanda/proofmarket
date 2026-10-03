@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleGet } from "../lib/handlers/requester";
 import { handleClaimDetail, handleOnboarding } from "../lib/handlers/worker";
+import { setAllowedTaskTypes } from "../lib/services/admin-service";
 import { issueInvite } from "../lib/services/worker-service";
 import { call, createTestApp, jsonReq, SHOP } from "./support/app";
 import { onboardWorker, openTask, photo, W, witness } from "./support/worker";
@@ -85,6 +86,22 @@ describe("worker flow", () => {
     const jobs = (await t.db.select().from(schema.outboxJobs)).map((j) => j.dedupeKey);
     expect(jobs).toContain(`FINALIZE_AND_SETTLE:${id}`);
     expect(await (await W(t, bob).list()).json()).toEqual({ tasks: [] }); // no open slot left
+  });
+
+  it("01 §4.8: a QUEUE_LENGTH task carries its type and answers to the worker and verifies with them", async () => {
+    await setAllowedTaskTypes(t.db, t.credentialId, ["PLACE_STATUS_VERIFICATION", "QUEUE_LENGTH"], "test");
+    const values = ["NO_QUEUE", "SHORT_QUEUE", "LONG_QUEUE", "UNCLEAR"];
+    const id = await openTask(t, { type: "QUEUE_LENGTH", answer_schema: { type: "enum", values } });
+    const list = (await (await W(t, alice).list()).json()) as {
+      tasks: { type: string; answer_values: string[] }[];
+    };
+    expect(list.tasks[0]).toMatchObject({ type: "QUEUE_LENGTH", answer_values: values });
+    const bad = await witness(t, alice, id, { answer: "OPEN" });
+    expect(bad.res.status).toBe(400);
+    const { body } = await witness(t, alice, id, { answer: "LONG_QUEUE", claimId: bad.claimId });
+    expect(body).toMatchObject({ state: "VALID" });
+    const v = await getView(id);
+    expect(v).toMatchObject({ type: "QUEUE_LENGTH", status: "VERIFIED", result: { answer: "LONG_QUEUE" } });
   });
 
   it("I-PRIV-01: requester view has no worker coordinates, worker IDs, pubkeys or photo URLs", async () => {

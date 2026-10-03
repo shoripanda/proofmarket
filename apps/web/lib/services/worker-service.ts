@@ -117,6 +117,7 @@ export async function workerMe(app: AppContext, privyUserId: string) {
 function workerTaskView(t: TaskRow, distanceM: number, slots: number) {
   return {
     verification_id: t.id,
+    type: t.type,
     question: t.question,
     answer_values: t.answerValues,
     location: { lat: t.targetLat, lng: t.targetLng, radius_m: t.radiusM },
@@ -333,6 +334,13 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
     .from(schema.verificationResults)
     .where(eq(schema.verificationResults.verificationId, claim.verificationId));
   const accepted = subs.some((s) => s.state === "VALID");
+  const [task] = await app.db
+    .select({
+      type: schema.verificationRequests.type,
+      answerValues: schema.verificationRequests.answerValues,
+    })
+    .from(schema.verificationRequests)
+    .where(eq(schema.verificationRequests.id, claim.verificationId));
   return {
     claim_id: claim.id,
     verification_id: claim.verificationId,
@@ -350,5 +358,7 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
       ),
     })),
     task_result: result && accepted ? { status: result.outcome, answer: result.finalAnswer } : null,
+    type: task?.type ?? "PLACE_STATUS_VERIFICATION",
+    answer_values: task?.answerValues ?? [],
   };
 }

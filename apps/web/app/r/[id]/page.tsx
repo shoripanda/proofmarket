@@ -1,6 +1,7 @@
 // Public result page — 02 §5, REQ-X-R-101. Answer, witnesses, checks, evidence root, explorer link, and a
 // disclosure that the verifier is a single platform key. Never photos, coordinates, question text or workers.
 import { OnchainCheck } from "@/components/onchain-check";
+import { answerJa } from "@/lib/answers";
 import { appContext } from "@/lib/context";
 import { env, isDev } from "@/lib/env";
 import { publicResult } from "@/lib/services/public-service";
@@ -49,6 +50,7 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
               {r.status}
               {r.answer ? ` / ${r.answer}` : ""}
             </p>
+            <p className="mt-1 text-lg font-semibold text-slate-700">{answerJa(r.answer) ?? ""}</p>
             <p className="mt-2 text-sm text-slate-600">
               有効な証言 {r.witnesses.valid} / 必要 {r.witnesses.required}（合意に必要 {r.witnesses.quorum}）
               {r.consensus_ratio !== null ? `・一致率 ${Math.round(r.consensus_ratio * 100)}%` : ""}

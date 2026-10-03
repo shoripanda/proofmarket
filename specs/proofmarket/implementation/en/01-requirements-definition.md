@@ -107,6 +107,17 @@ The same worker can claim the same task only once. A retry is treated as an atte
 | Storage limits | Set `file_size_limit = 8 MiB` and `allowed_mime_types = image/jpeg` on the bucket itself, because signed URLs do not enforce the declared size |
 | Where requests can be made | Within 30 m of a point on the allowlist of public stores registered by the operator (REQ-X-T-104) |
 
+### 4.8 Additional task types (2026-10-04)
+
+`PLACE_STATUS_VERIFICATION` stays the centre of the MVP. Two more types are added that use the same capture, checks and settlement and ask only about what can be seen from outside a shop. They are accepted only for API keys whose `allowed_task_types` include them; the default stays `PLACE_STATUS_VERIFICATION` only.
+
+| type | Asks | Answers |
+|---|---|---|
+| `QUEUE_LENGTH` | How many people are queuing outside the shop | `NO_QUEUE`, `SHORT_QUEUE` (up to about 5), `LONG_QUEUE` (6 or more), `UNCLEAR` |
+| `NOTICE_POSTED` | Whether the notice named in the question (e.g. a temporary closure) is posted at the storefront | `POSTED`, `NOT_POSTED`, `UNCLEAR` |
+
+Not added: stock availability needs entering the shop, which the photo rules forbid. Prices cannot be answered with choices. Crowd level is mostly about photographing people, so it waits until bystander handling is decided. Queues also show people, so workers are told to shoot from behind without faces.
+
 ## 5. Business flow
 
 ### 5.1 Normal case (1 witness)

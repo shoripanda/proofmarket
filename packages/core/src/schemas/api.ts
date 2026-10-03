@@ -14,6 +14,7 @@ import {
   OUTCOMES,
   SUBMISSION_STATES,
   TASK_STATUSES,
+  TASK_TYPES,
   WEBHOOK_EVENTS,
 } from "../domain/enums.ts";
 import { LIMITS } from "../domain/limits.ts";
@@ -100,11 +101,12 @@ export const AssuranceInputSchema = z
 
 export const CreateVerificationRequestSchema = z
   .object({
-    type: z.literal("PLACE_STATUS_VERIFICATION"),
+    type: z.enum(TASK_TYPES),
     question: z.string().min(1).max(LIMITS.question.maxChars),
     answer_schema: z.object({
       type: z.literal("enum"),
-      values: z.array(AnswerValueSchema).min(2).max(3),
+      // Must be a subset of TASK_TYPE_ANSWERS[type]; checked in the service (05 §2.1 row 7).
+      values: z.array(AnswerValueSchema).min(2).max(4),
     }),
     location: z.object({
       lat: Lat,
@@ -188,7 +190,7 @@ export type VerificationResult = z.infer<typeof VerificationResultSchema>;
 
 export const GetVerificationResponseSchema = z.object({
   verification_id: VerificationIdSchema,
-  type: z.literal("PLACE_STATUS_VERIFICATION"),
+  type: z.enum(TASK_TYPES),
   status: z.enum(TASK_STATUSES),
   question: z.string(),
   answer_schema: CreateVerificationRequestSchema.shape.answer_schema,
@@ -260,6 +262,7 @@ export const WorkerTaskQuerySchema = z.object({
 
 export const WorkerTaskSchema = z.object({
   verification_id: VerificationIdSchema,
+  type: z.enum(TASK_TYPES),
   question: z.string(),
   answer_values: z.array(AnswerValueSchema),
   location: CreateVerificationRequestSchema.shape.location,
@@ -343,6 +346,8 @@ export const ClaimDetailResponseSchema = z.object({
   attempts_remaining: z.number().int(),
   submissions: z.array(SubmitEvidenceResponseSchema.omit({ claim_state: true, attempts_remaining: true })),
   task_result: z.object({ status: z.enum(OUTCOMES), answer: AnswerValueSchema.nullable() }).nullable(),
+  type: z.enum(TASK_TYPES),
+  answer_values: z.array(AnswerValueSchema),
 });
 
 export const PayoutsResponseSchema = z.object({

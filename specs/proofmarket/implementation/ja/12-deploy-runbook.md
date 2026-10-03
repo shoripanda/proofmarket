@@ -113,6 +113,8 @@ $R issue-invite.ts --uses 1 --days 14   # worker ごとに1つ
 
 API キーと招待コードは表示されたときにしか見られない。
 
+行列（`QUEUE_LENGTH`）と店頭の掲示（`NOTICE_POSTED`）の依頼も受けるキーにするときは、発行時に `--task-types PLACE_STATUS_VERIFICATION,QUEUE_LENGTH,NOTICE_POSTED` を付ける。発行済みのキーは `$R set-task-types.ts --credential key_... --types ... --by <自分の名前>` で変える（01 章 4.8 節）。
+
 サイトの `/join` から届いた申し込みは、次で読む（メールアドレスを復号して表示するので、出力をどこにも貼らない）。連絡したら `--mark <id> --as contacted` で印を付ける。申し込みは 90 日で自動的に消える。
 
 ```bash

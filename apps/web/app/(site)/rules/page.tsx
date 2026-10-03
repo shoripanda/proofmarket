@@ -1,9 +1,10 @@
 // S-08 依頼と撮影の決まり — what may be asked, what is refused (core policy rules), photo rules, and removal requests.
-import type { PolicyRuleId } from "@proofmarket/core";
+import { type PolicyRuleId, TASK_TYPE_ANSWERS, type TaskType } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { RemovalForm } from "@/components/removal-form";
 import { SAFETY_NOTES } from "@/components/safety";
 import { PageHero, Section } from "@/components/site";
+import { answerJa, TASK_TYPE_JA } from "@/lib/answers";
 
 export const metadata: Metadata = { title: "依頼と撮影の決まり | ProofMarket" };
 
@@ -35,8 +36,22 @@ export default function RulesPage() {
 
       <Section
         title="受けられる依頼"
-        lead="試験運用中は、運営者が登録した店舗について「いま営業しているか」を確かめる依頼だけを受けます。答えは「営業中」「閉まっている」「わからない」のどれかです。"
-      />
+        lead="試験運用中は、運営者が登録した店舗について、店の外から見て分かることだけを確かめます。どの種類にも「分からない」という答えがあり、無理に決めなくて構いません。"
+      >
+        <dl className="divide-y divide-slate-200 rounded-2xl border border-slate-200 text-sm">
+          {(Object.keys(TASK_TYPE_JA) as TaskType[]).map((t) => (
+            <div key={t} className="grid gap-1 p-4 sm:grid-cols-[12rem_1fr]">
+              <dt className="font-semibold">{TASK_TYPE_JA[t].name}</dt>
+              <dd className="leading-relaxed text-slate-600">
+                {TASK_TYPE_JA[t].howTo} 答え: {TASK_TYPE_ANSWERS[t].map((v) => answerJa(v)).join("・")}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3 text-sm text-slate-600">
+          在庫の有無は店内に入らないと分からないため、受けません。
+        </p>
+      </Section>
 
       <Section
         title="受けない依頼"

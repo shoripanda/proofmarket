@@ -10,7 +10,10 @@ export const REQUEST_TOOL = {
     "Ask a real human witness to check a fact about a public physical place (for example, whether a shop is open right now). " +
     "This is asynchronous: a person must travel to the location, so results typically take 10–60 minutes. " +
     "This tool returns a verification_id immediately; call get_reality_verification to read the result. " +
-    "Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED.",
+    "Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED. " +
+    "Types: PLACE_STATUS_VERIFICATION (answers OPEN / CLOSED / UNCLEAR), QUEUE_LENGTH (NO_QUEUE / SHORT_QUEUE = up to about 5 people / LONG_QUEUE = 6 or more / UNCLEAR, people queuing outside), " +
+    "NOTICE_POSTED (POSTED / NOT_POSTED / UNCLEAR, whether the notice named in the question is posted at the storefront). " +
+    "An API key may allow only some types.",
   inputSchema: {
     ...CreateVerificationRequestSchema.omit({ principal_ref: true }).shape,
     principal_ref: CreateVerificationRequestSchema.shape.principal_ref

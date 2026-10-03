@@ -3,7 +3,14 @@ import "server-only";
 // Operator-side provisioning used by scripts/ and tests (04 §5): principals, API keys, places, top-ups.
 
 import { randomBytes } from "node:crypto";
-import { ApiError, newId, PLATFORM_FLAGS, type PlatformFlag } from "@proofmarket/core";
+import {
+  ApiError,
+  newId,
+  PLATFORM_FLAGS,
+  type PlatformFlag,
+  TASK_TYPES,
+  type TaskType,
+} from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
 import { and, eq } from "drizzle-orm";
 import { appendAudit } from "./audit";
@@ -27,9 +34,14 @@ export async function issueApiKey(
     maxTaskAmount: string;
     dailySpendLimit: string;
     rateLimitPerMin?: number;
+    /** Defaults to the DB default (PLACE_STATUS_VERIFICATION only, 01 §4.8). */
+    allowedTaskTypes?: TaskType[];
     operator: string;
   },
 ): Promise<{ credentialId: string; apiKey: string }> {
+  if (o.allowedTaskTypes && !o.allowedTaskTypes.every((t) => (TASK_TYPES as readonly string[]).includes(t))) {
+    throw new ApiError("VALIDATION_FAILED", { field: "types", allowed: TASK_TYPES });
+  }
   const prefix = randomBytes(4).toString("hex");
   const secret = randomToken();
   const credentialId = newId("credential");
@@ -42,6 +54,7 @@ export async function issueApiKey(
     maxTaskAmount: o.maxTaskAmount,
     dailySpendLimit: o.dailySpendLimit,
     rateLimitPerMin: o.rateLimitPerMin ?? 30,
+    ...(o.allowedTaskTypes ? { allowedTaskTypes: o.allowedTaskTypes } : {}),
   });
   await appendAudit(db, {
     verificationId: null,
@@ -182,4 +195,18 @@ export async function requeueJob(db: Db, jobId: number, by: string, now: Date) {
     .returning();
   if (!r.length) throw new ApiError("VALIDATION_FAILED", { job: jobId, reason: "not a DEAD job" });
   await audit(db, by, "requeue_job", String(jobId));
+}
+
+/** Replace the task types an API key may create (01 §4.8). */
+export async function setAllowedTaskTypes(db: Db, credentialId: string, types: TaskType[], by: string) {
+  if (!types.length || !types.every((t) => (TASK_TYPES as readonly string[]).includes(t))) {
+    throw new ApiError("VALIDATION_FAILED", { field: "types", allowed: TASK_TYPES });
+  }
+  const r = await db
+    .update(schema.requesterCredentials)
+    .set({ allowedTaskTypes: types })
+    .where(eq(schema.requesterCredentials.id, credentialId))
+    .returning({ id: schema.requesterCredentials.id });
+  if (!r.length) throw new ApiError("VALIDATION_FAILED", { credential: credentialId, reason: "not found" });
+  await audit(db, by, "set_task_types", credentialId, { types });
 }

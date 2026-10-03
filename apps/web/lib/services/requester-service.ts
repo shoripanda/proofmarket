@@ -11,6 +11,7 @@ import {
   newId,
   POLICY_RULE_VERSION,
   SPEND_LIMIT_TIMEZONE,
+  TASK_TYPE_ANSWERS,
   taskIdHash,
   toMicro,
 } from "@proofmarket/core";
@@ -108,6 +109,14 @@ export async function createVerification(
   if (body.principal_ref !== auth.principalId) throw new ApiError("PRINCIPAL_MISMATCH");
   if (new Set(body.answer_schema.values).size !== body.answer_schema.values.length) {
     throw new ApiError("VALIDATION_FAILED", { field: "answer_schema.values", reason: "duplicates" });
+  }
+  const allowedAnswers: readonly string[] = TASK_TYPE_ANSWERS[body.type];
+  if (!body.answer_schema.values.every((v) => allowedAnswers.includes(v))) {
+    throw new ApiError("VALIDATION_FAILED", {
+      field: "answer_schema.values",
+      reason: "not_for_type",
+      allowed: allowedAnswers,
+    });
   }
   const deadline = new Date(body.deadline);
   const minMs = LIMITS.deadlineFromNow.minMinutes * 60_000;

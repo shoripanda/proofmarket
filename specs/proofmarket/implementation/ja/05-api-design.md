@@ -101,7 +101,7 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 | 4 | JSON スキーマ（型・必須・余分な項目なし） | 400 `VALIDATION_FAILED` |
 | 5 | `type` が API キーの許可種別に含まれる | 400 `UNSUPPORTED_TASK_TYPE` |
 | 6 | `principal_ref` が API キーの principal と一致 | 403 `PRINCIPAL_MISMATCH` |
-| 7 | `answer_schema.values` が `OPEN`・`CLOSED`・`UNCLEAR` の部分集合で、2 個以上 | 400 `VALIDATION_FAILED` |
+| 7 | `answer_schema.values` が `type` ごとの回答（01 §4.8）の部分集合で、2 個以上 | 400 `VALIDATION_FAILED`（`details.allowed` 付き） |
 | 8 | `deadline` が今から 10 分以上 24 時間以内 | 400 `DEADLINE_OUT_OF_RANGE` |
 | 9 | `radius_m` が 25〜500、`freshness.max_age_seconds` が 60〜900 | 400 `VALIDATION_FAILED` |
 | 10 | 位置が対象地域（API キーの矩形、なければ `PILOT_BBOX`）の中 | 400 `LOCATION_OUT_OF_PILOT_AREA` |
@@ -352,7 +352,7 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 
 `request_reality_verification` の説明文（英語でそのまま登録する）:
 
-> Ask a real human witness to check a fact about a public physical place (for example, whether a shop is open right now). This is asynchronous: a person must travel to the location, so results typically take 10–60 minutes. This tool returns a verification_id immediately; call get_reality_verification to read the result. Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED.
+> Ask a real human witness to check a fact about a public physical place (for example, whether a shop is open right now). This is asynchronous: a person must travel to the location, so results typically take 10–60 minutes. This tool returns a verification_id immediately; call get_reality_verification to read the result. Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED. Types: PLACE_STATUS_VERIFICATION (answers OPEN / CLOSED / UNCLEAR), QUEUE_LENGTH (NO_QUEUE / SHORT_QUEUE = up to about 5 people / LONG_QUEUE = 6 or more / UNCLEAR, people queuing outside), NOTICE_POSTED (POSTED / NOT_POSTED / UNCLEAR, whether the notice named in the question is posted at the storefront). An API key may allow only some types.
 
 ツールは待ちきれなかった場合も現在の状態をそのまま返し、完了を装わない（`api-contract.md` 10 節）。
 

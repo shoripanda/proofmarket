@@ -115,6 +115,8 @@ $R issue-invite.ts --uses 1 --days 14   # one per worker
 
 API keys and invite codes are shown only once.
 
+To let a key also create queue (`QUEUE_LENGTH`) and storefront notice (`NOTICE_POSTED`) tasks, add `--task-types PLACE_STATUS_VERIFICATION,QUEUE_LENGTH,NOTICE_POSTED` when issuing it. For an existing key use `$R set-task-types.ts --credential key_... --types ... --by <your name>` (01 §4.8).
+
 Sign-ups from the site's `/join` are read with the command below. It prints decrypted email addresses, so do not paste the output anywhere. After contacting someone, mark it with `--mark <id> --as contacted`. Sign-ups are deleted automatically after 90 days.
 
 ```bash

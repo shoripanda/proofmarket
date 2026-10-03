@@ -57,11 +57,30 @@ export type ChallengeState = (typeof CHALLENGE_STATES)[number];
 export const UPLOAD_STATES = ["PENDING", "FINALIZED", "DISCARDED"] as const;
 export type UploadState = (typeof UPLOAD_STATES)[number];
 
-/** Task types. MVP accepts exactly one (REQ-T-001). */
-export const TASK_TYPES = ["PLACE_STATUS_VERIFICATION"] as const;
+/**
+ * Task types. The MVP type is PLACE_STATUS_VERIFICATION (REQ-T-001); the other two were added 2026-10-04 (01 §4.8)
+ * and are only accepted for API keys whose allowed_task_types include them. All are visible from outside the shop.
+ */
+export const TASK_TYPES = ["PLACE_STATUS_VERIFICATION", "QUEUE_LENGTH", "NOTICE_POSTED"] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
 
-export const ANSWER_VALUES = ["OPEN", "CLOSED", "UNCLEAR"] as const;
+/** Answers each type may use. UNCLEAR is always available so nobody is pushed into guessing. */
+export const TASK_TYPE_ANSWERS = {
+  PLACE_STATUS_VERIFICATION: ["OPEN", "CLOSED", "UNCLEAR"],
+  QUEUE_LENGTH: ["NO_QUEUE", "SHORT_QUEUE", "LONG_QUEUE", "UNCLEAR"],
+  NOTICE_POSTED: ["POSTED", "NOT_POSTED", "UNCLEAR"],
+} as const satisfies Record<TaskType, readonly string[]>;
+
+export const ANSWER_VALUES = [
+  "OPEN",
+  "CLOSED",
+  "NO_QUEUE",
+  "SHORT_QUEUE",
+  "LONG_QUEUE",
+  "POSTED",
+  "NOT_POSTED",
+  "UNCLEAR",
+] as const;
 export type AnswerValue = (typeof ANSWER_VALUES)[number];
 
 /** Evidence checks (07 §3, 04 §3.12). Order of CHECK_ORDER is the execution order after pre-checks. */

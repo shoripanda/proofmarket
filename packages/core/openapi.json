@@ -60,7 +60,9 @@
                   "type": {
                     "type": "string",
                     "enum": [
-                      "PLACE_STATUS_VERIFICATION"
+                      "PLACE_STATUS_VERIFICATION",
+                      "QUEUE_LENGTH",
+                      "NOTICE_POSTED"
                     ]
                   },
                   "question": {
@@ -79,13 +81,18 @@
                       },
                       "values": {
                         "minItems": 2,
-                        "maxItems": 3,
+                        "maxItems": 4,
                         "type": "array",
                         "items": {
                           "type": "string",
                           "enum": [
                             "OPEN",
                             "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
                             "UNCLEAR"
                           ]
                         }
@@ -412,7 +419,9 @@
                     "type": {
                       "type": "string",
                       "enum": [
-                        "PLACE_STATUS_VERIFICATION"
+                        "PLACE_STATUS_VERIFICATION",
+                        "QUEUE_LENGTH",
+                        "NOTICE_POSTED"
                       ]
                     },
                     "status": {
@@ -446,13 +455,18 @@
                         },
                         "values": {
                           "minItems": 2,
-                          "maxItems": 3,
+                          "maxItems": 4,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "enum": [
                               "OPEN",
                               "CLOSED",
+                              "NO_QUEUE",
+                              "SHORT_QUEUE",
+                              "LONG_QUEUE",
+                              "POSTED",
+                              "NOT_POSTED",
                               "UNCLEAR"
                             ]
                           }
@@ -640,6 +654,11 @@
                           "enum": [
                             "OPEN",
                             "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
                             "UNCLEAR"
                           ]
                         },
@@ -678,6 +697,11 @@
                           "required": [
                             "OPEN",
                             "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
                             "UNCLEAR"
                           ]
                         },
@@ -1034,7 +1058,9 @@
                     "type": {
                       "type": "string",
                       "enum": [
-                        "PLACE_STATUS_VERIFICATION"
+                        "PLACE_STATUS_VERIFICATION",
+                        "QUEUE_LENGTH",
+                        "NOTICE_POSTED"
                       ]
                     },
                     "status": {
@@ -1068,13 +1094,18 @@
                         },
                         "values": {
                           "minItems": 2,
-                          "maxItems": 3,
+                          "maxItems": 4,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "enum": [
                               "OPEN",
                               "CLOSED",
+                              "NO_QUEUE",
+                              "SHORT_QUEUE",
+                              "LONG_QUEUE",
+                              "POSTED",
+                              "NOT_POSTED",
                               "UNCLEAR"
                             ]
                           }
@@ -1262,6 +1293,11 @@
                           "enum": [
                             "OPEN",
                             "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
                             "UNCLEAR"
                           ]
                         },
@@ -1300,6 +1336,11 @@
                           "required": [
                             "OPEN",
                             "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
                             "UNCLEAR"
                           ]
                         },
@@ -2114,6 +2155,14 @@
                             "type": "string",
                             "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "PLACE_STATUS_VERIFICATION",
+                              "QUEUE_LENGTH",
+                              "NOTICE_POSTED"
+                            ]
+                          },
                           "question": {
                             "type": "string"
                           },
@@ -2124,6 +2173,11 @@
                               "enum": [
                                 "OPEN",
                                 "CLOSED",
+                                "NO_QUEUE",
+                                "SHORT_QUEUE",
+                                "LONG_QUEUE",
+                                "POSTED",
+                                "NOT_POSTED",
                                 "UNCLEAR"
                               ]
                             }
@@ -2209,6 +2263,7 @@
                         },
                         "required": [
                           "verification_id",
+                          "type",
                           "question",
                           "answer_values",
                           "location",
@@ -2341,6 +2396,14 @@
                       "type": "string",
                       "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
                     },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "PLACE_STATUS_VERIFICATION",
+                        "QUEUE_LENGTH",
+                        "NOTICE_POSTED"
+                      ]
+                    },
                     "question": {
                       "type": "string"
                     },
@@ -2351,6 +2414,11 @@
                         "enum": [
                           "OPEN",
                           "CLOSED",
+                          "NO_QUEUE",
+                          "SHORT_QUEUE",
+                          "LONG_QUEUE",
+                          "POSTED",
+                          "NOT_POSTED",
                           "UNCLEAR"
                         ]
                       }
@@ -2436,6 +2504,7 @@
                   },
                   "required": [
                     "verification_id",
+                    "type",
                     "question",
                     "answer_values",
                     "location",
@@ -3031,6 +3100,11 @@
                     "enum": [
                       "OPEN",
                       "CLOSED",
+                      "NO_QUEUE",
+                      "SHORT_QUEUE",
+                      "LONG_QUEUE",
+                      "POSTED",
+                      "NOT_POSTED",
                       "UNCLEAR"
                     ]
                   },
@@ -3410,6 +3484,11 @@
                           "enum": [
                             "OPEN",
                             "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
                             "UNCLEAR"
                           ]
                         }
@@ -3418,6 +3497,30 @@
                         "status",
                         "answer"
                       ]
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "PLACE_STATUS_VERIFICATION",
+                        "QUEUE_LENGTH",
+                        "NOTICE_POSTED"
+                      ]
+                    },
+                    "answer_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "OPEN",
+                          "CLOSED",
+                          "NO_QUEUE",
+                          "SHORT_QUEUE",
+                          "LONG_QUEUE",
+                          "POSTED",
+                          "NOT_POSTED",
+                          "UNCLEAR"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -3427,7 +3530,9 @@
                     "expires_at",
                     "attempts_remaining",
                     "submissions",
-                    "task_result"
+                    "task_result",
+                    "type",
+                    "answer_values"
                   ]
                 }
               }
@@ -3646,6 +3751,11 @@
                           "enum": [
                             "OPEN",
                             "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
                             "UNCLEAR"
                           ]
                         }
@@ -3654,6 +3764,30 @@
                         "status",
                         "answer"
                       ]
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "PLACE_STATUS_VERIFICATION",
+                        "QUEUE_LENGTH",
+                        "NOTICE_POSTED"
+                      ]
+                    },
+                    "answer_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "OPEN",
+                          "CLOSED",
+                          "NO_QUEUE",
+                          "SHORT_QUEUE",
+                          "LONG_QUEUE",
+                          "POSTED",
+                          "NOT_POSTED",
+                          "UNCLEAR"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -3663,7 +3797,9 @@
                     "expires_at",
                     "attempts_remaining",
                     "submissions",
-                    "task_result"
+                    "task_result",
+                    "type",
+                    "answer_values"
                   ]
                 }
               }
@@ -3955,6 +4091,11 @@
                       "enum": [
                         "OPEN",
                         "CLOSED",
+                        "NO_QUEUE",
+                        "SHORT_QUEUE",
+                        "LONG_QUEUE",
+                        "POSTED",
+                        "NOT_POSTED",
                         "UNCLEAR"
                       ]
                     },
@@ -3993,6 +4134,11 @@
                       "required": [
                         "OPEN",
                         "CLOSED",
+                        "NO_QUEUE",
+                        "SHORT_QUEUE",
+                        "LONG_QUEUE",
+                        "POSTED",
+                        "NOT_POSTED",
                         "UNCLEAR"
                       ]
                     },

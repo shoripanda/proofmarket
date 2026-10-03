@@ -64,6 +64,13 @@
       "when": 1791049274008,
       "tag": "0008_push_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791049785746,
+      "tag": "0009_task_types",
+      "breakpoints": true
     }
   ]
 }
