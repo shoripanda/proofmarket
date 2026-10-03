@@ -40,3 +40,6 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-02 [ローカル検証 / 空き容量] 空き 3.7GB の Mac で solana-test-validator（台帳上限なし）と cargo build-sbf を同時に回す → ENOSPC でディスクが満杯になり、ツール出力すら書けず作業が止まった → 着手前に `df -h` で 8GB 以上あるか確認。バリデータは `--limit-ledger-size 50000000` と scratchpad の台帳で動かし、終わったら台帳を消す。不要な `target/debug` は先に削除
 - 2026-10-02 [ローカル検証 / .so] main に PR-09 を取り込んだ後も target/deploy/proofmarket.so が骨組み時代のままで、devnet-setup が `not yet implemented` で panic → ソースを取り込んだら `cargo build-sbf --manifest-path programs/proofmarket/Cargo.toml` で .so を作り直してからバリデータに載せる
 - 2026-10-03 [cargo build-sbf] 素の `cargo build-sbf` が既定の platform-tools v1.54 を取りに行き、ダウンロードが途中で切れて失敗 → `--tools-version v1.57`（導入済み）を明示する
+- 2026-10-03 [Next.js / @anchor-lang/core 1.2] `import { Wallet } from "@anchor-lang/core"` は Node（CJS）では動くが、Next.js が選ぶ ESM ビルドには `Wallet` が無く、ルートが 500 になる → 自前の最小ウォレット（publicKey と sign 関数）を渡す。テストが Node だけだと見逃すので、next dev / next build で実際に読み込んで確かめる
+- 2026-10-03 [Next.js / シングルトン] lib/context.ts のモジュール変数で AppContext を1つにしたつもりが、API ルートとページ（RSC）が別バンドルのため2つでき、DEV_MODE では同じ PGlite ディレクトリを2インスタンスが開いて公開結果ページが空になった → globalThis に置いてプロセスで1つにする
+- 2026-10-03 [Playwright / 偽カメラ] Chromium 組み込みの偽カメラ映像で e2e を繰り返す → 毎回ほぼ同じ絵のため、2回目以降はサーバーが正しく EVIDENCE_REPLAYED / EVIDENCE_NEAR_DUPLICATE で弾く → globalSetup で乱数の MJPEG を作り `--use-file-for-fake-video-capture` で流す

@@ -1,7 +1,7 @@
 // Real SettlementAdapter over @anchor-lang/core + web3.js v1 (06 §4-5).
 // Every method reads the Task account first and only sends what the on-chain state still needs.
 
-import { AnchorProvider, BN, Program, Wallet } from "@anchor-lang/core";
+import { AnchorProvider, BN, Program } from "@anchor-lang/core";
 import {
   createAssociatedTokenAccountIdempotentInstruction,
   getAssociatedTokenAddressSync,
@@ -62,7 +62,7 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
   const verifier = Keypair.fromSecretKey(cfg.verifierSecretKey);
   const programId = new PublicKey(cfg.programId);
   const mint = new PublicKey(cfg.bountyMint);
-  const provider = new AnchorProvider(connection, new Wallet(operator), { commitment: "confirmed" });
+  const provider = new AnchorProvider(connection, keypairWallet(operator), { commitment: "confirmed" });
   const program = new Program<Proofmarket>(
     { ...(idl as Proofmarket), address: programId.toBase58() },
     provider,
@@ -290,4 +290,31 @@ function bs58encode(bytes: Uint8Array): string {
     out = `1${out}`;
   }
   return out;
+}
+
+/**
+ * Minimal Anchor wallet. `Wallet` is only exported from the CJS build of @anchor-lang/core, so bundlers that
+ * pick the ESM build (Next.js) cannot import it. We sign transactions ourselves; this only satisfies Provider.
+ */
+function keypairWallet(kp: Keypair) {
+  return {
+    publicKey: kp.publicKey,
+    payer: kp,
+    async signTransaction<T extends VersionedTransaction | import("@solana/web3.js").Transaction>(
+      tx: T,
+    ): Promise<T> {
+      if (tx instanceof VersionedTransaction) tx.sign([kp]);
+      else tx.partialSign(kp);
+      return tx;
+    },
+    async signAllTransactions<T extends VersionedTransaction | import("@solana/web3.js").Transaction>(
+      txs: T[],
+    ): Promise<T[]> {
+      for (const tx of txs) {
+        if (tx instanceof VersionedTransaction) tx.sign([kp]);
+        else tx.partialSign(kp);
+      }
+      return txs;
+    },
+  };
 }

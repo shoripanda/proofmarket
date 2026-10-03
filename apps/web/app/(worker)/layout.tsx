@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
+import { AuthProvider } from "@/lib/client/auth";
+import { Gate } from "./gate";
 
-// PR-05: wrap with PrivyProvider (client component) configured with
-// embeddedWallets.solana.createOnLogin = "users-without-wallets" and email/Google login only.
+// Every worker screen requires login and onboarding (W-01 / W-02), handled by Gate.
 export default function WorkerLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return (
+    <AuthProvider>
+      <Gate>{children}</Gate>
+    </AuthProvider>
+  );
 }
