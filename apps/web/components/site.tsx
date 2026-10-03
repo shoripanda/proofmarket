@@ -3,7 +3,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 /** Pages listed in the header. Add a page here when it exists, never before. */
-export const SITE_NAV: { href: string; label: string }[] = [{ href: "/", label: "トップ" }];
+export const SITE_NAV: { href: string; label: string }[] = [
+  { href: "/", label: "トップ" },
+  { href: "/developers", label: "開発者向け" },
+];
 
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
