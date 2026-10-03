@@ -196,6 +196,8 @@ export const verificationRequests = pgTable(
     policyRuleVersion: text("policy_rule_version").notNull(),
     callbackEndpointId: text("callback_endpoint_id").references(() => webhookEndpoints.id),
     /** Operator stopped evidence access for this verification (08 §6). */
+    /** This task is the recheck of a disputed task (01 §4.12). One recheck per original. */
+    recheckOf: text("recheck_of").unique(),
     /** Only workers at or above this tier may take the task (01 §4.11). Null = anyone. */
     minWorkerTier: text("min_worker_tier"),
     /** Other requesters may reuse this result (01 §4.9). */

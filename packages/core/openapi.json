@@ -384,6 +384,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -550,6 +551,62 @@
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
+                    "recheck_of": {
+                      "nullable": true,
+                      "type": "string",
+                      "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                    },
+                    "recheck": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "verification_id": {
+                          "type": "string",
+                          "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "CREATED",
+                            "FUNDED",
+                            "OPEN",
+                            "CLAIMED",
+                            "SUBMITTED",
+                            "VERIFYING",
+                            "VERIFIED",
+                            "SETTLED",
+                            "REJECTED",
+                            "EXPIRED",
+                            "CANCELLED",
+                            "REFUNDED"
+                          ]
+                        },
+                        "answer": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "OPEN",
+                            "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
+                            "UNCLEAR"
+                          ]
+                        },
+                        "matches_original": {
+                          "nullable": true,
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "verification_id",
+                        "status",
+                        "answer",
+                        "matches_original"
+                      ]
+                    },
                     "worker_requirements": {
                       "nullable": true,
                       "type": "object",
@@ -991,6 +1048,8 @@
                     "answer_schema",
                     "location",
                     "deadline",
+                    "recheck_of",
+                    "recheck",
                     "worker_requirements",
                     "assurance",
                     "bounty",
@@ -1041,6 +1100,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -1207,6 +1267,62 @@
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
+                    "recheck_of": {
+                      "nullable": true,
+                      "type": "string",
+                      "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                    },
+                    "recheck": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "verification_id": {
+                          "type": "string",
+                          "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "CREATED",
+                            "FUNDED",
+                            "OPEN",
+                            "CLAIMED",
+                            "SUBMITTED",
+                            "VERIFYING",
+                            "VERIFIED",
+                            "SETTLED",
+                            "REJECTED",
+                            "EXPIRED",
+                            "CANCELLED",
+                            "REFUNDED"
+                          ]
+                        },
+                        "answer": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "OPEN",
+                            "CLOSED",
+                            "NO_QUEUE",
+                            "SHORT_QUEUE",
+                            "LONG_QUEUE",
+                            "POSTED",
+                            "NOT_POSTED",
+                            "UNCLEAR"
+                          ]
+                        },
+                        "matches_original": {
+                          "nullable": true,
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "verification_id",
+                        "status",
+                        "answer",
+                        "matches_original"
+                      ]
+                    },
                     "worker_requirements": {
                       "nullable": true,
                       "type": "object",
@@ -1648,6 +1764,8 @@
                     "answer_schema",
                     "location",
                     "deadline",
+                    "recheck_of",
+                    "recheck",
                     "worker_requirements",
                     "assurance",
                     "bounty",
@@ -1698,6 +1816,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -1839,6 +1958,197 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verifications/{id}/dispute": {
+      "post": {
+        "summary": "Dispute a result once within 24 h; creates a recheck task you pay for",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "assurance": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "required_witnesses": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "quorum": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          }
+                        },
+                        "required": [
+                          "required_witnesses",
+                          "quorum"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "fast",
+                              "standard",
+                              "high"
+                            ],
+                            "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                          }
+                        },
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "deadline_minutes": {
+                    "type": "integer",
+                    "minimum": 10,
+                    "maximum": 1440
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verification_id": {
+                      "type": "string",
+                      "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                    },
+                    "recheck_verification_id": {
+                      "type": "string",
+                      "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                    }
+                  },
+                  "required": [
+                    "verification_id",
+                    "recheck_verification_id"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -2282,6 +2592,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -2458,6 +2769,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -2634,6 +2946,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -2823,6 +3136,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -3053,6 +3367,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -3319,6 +3634,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -3555,6 +3871,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -3712,6 +4029,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -3843,6 +4161,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -4013,6 +4332,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -4310,6 +4630,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -4578,6 +4899,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -4846,6 +5168,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5004,6 +5327,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5377,6 +5701,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5501,6 +5826,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5605,6 +5931,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5709,6 +6036,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5813,6 +6141,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5917,6 +6246,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -6021,6 +6351,7 @@
                             "TASK_NOT_CLAIMABLE",
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",

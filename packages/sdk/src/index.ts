@@ -118,6 +118,20 @@ export class ProofMarketClient {
     ).json;
   }
 
+  /** POST /v1/verifications/{id}/dispute — once, within 24 h of the result; creates a recheck task (01 §4.12). */
+  async disputeVerification(
+    id: string,
+    body: { reason?: string; assurance?: unknown; deadline_minutes?: number } = {},
+  ): Promise<{ verification_id: string; recheck_verification_id: string }> {
+    return (
+      await this.request<{ verification_id: string; recheck_verification_id: string }>(
+        "POST",
+        `/v1/verifications/${encodeURIComponent(id)}/dispute`,
+        { body },
+      )
+    ).json;
+  }
+
   /**
    * Poll until the verification is decided or timeoutMs elapses; returns the latest state either way.
    * Never fabricates completion.

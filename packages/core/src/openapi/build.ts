@@ -57,6 +57,15 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "post",
+    path: "/v1/verifications/{id}/dispute",
+    auth: "requester",
+    priority: "Stretch",
+    summary: "Dispute a result once within 24 h; creates a recheck task you pay for",
+    body: S.DisputeRequestSchema,
+    ok: { status: 201, schema: S.DisputeResponseSchema },
+  },
+  {
+    method: "post",
     path: "/v1/schedules",
     auth: "requester",
     priority: "Stretch",

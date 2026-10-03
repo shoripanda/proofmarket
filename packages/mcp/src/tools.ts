@@ -1,6 +1,10 @@
 // MCP tool definitions (05 §6, api-contract.md §10). Descriptions are registered verbatim.
 
-import { CreateVerificationRequestSchema, VerificationIdSchema } from "@proofmarket/core/schemas/api";
+import {
+  AssuranceInputSchema,
+  CreateVerificationRequestSchema,
+  VerificationIdSchema,
+} from "@proofmarket/core/schemas/api";
 import { z } from "zod";
 
 export const REQUEST_TOOL = {
@@ -50,4 +54,20 @@ export const CANCEL_TOOL = {
     "Cancel a verification that no witness has started. Fails with TASK_NOT_CANCELLABLE once a witness is on the way " +
     "or a valid submission exists. Funds are refunded to the prepaid balance.",
   inputSchema: { verification_id: VerificationIdSchema },
+} as const;
+
+export const DISPUTE_TOOL = {
+  name: "dispute_reality_verification",
+  title: "Dispute a real-world verification",
+  description:
+    "Ask for a recheck of a VERIFIED or REJECTED result you doubt, once and within 24 hours of the result. " +
+    "This creates a new verification at the same place with the same question (default: two witnesses must agree), " +
+    "which you pay for like any request. Returns recheck_verification_id; poll it with get_reality_verification. " +
+    "The original result and its payments stay as they are.",
+  inputSchema: {
+    verification_id: VerificationIdSchema,
+    reason: z.string().max(500).optional(),
+    assurance: AssuranceInputSchema.optional(),
+    deadline_minutes: z.number().int().min(10).max(1440).optional(),
+  },
 } as const;

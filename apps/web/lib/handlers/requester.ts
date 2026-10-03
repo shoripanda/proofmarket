@@ -11,6 +11,7 @@ import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
 import {
   cancelVerification,
   createVerification,
+  disputeVerification,
   getVerification,
   parseCreateBody,
 } from "../services/requester-service";
@@ -80,4 +81,16 @@ export async function handleListSchedules(app: AppContext, req: Request): Promis
 export async function handleStopSchedule(app: AppContext, req: Request, rawId: string): Promise<Response> {
   const auth = await authenticateRequester(app, req);
   return Response.json(await stopSchedule(app, auth, rawId));
+}
+
+export async function handleDispute(app: AppContext, req: Request, rawId: string): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  const rl = await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
+  const out = await disputeVerification(
+    app,
+    auth,
+    verificationId(rawId),
+    await readJson(req).catch(() => ({})),
+  );
+  return Response.json(out, { status: 201, headers: rateLimitHeaders(rl) });
 }

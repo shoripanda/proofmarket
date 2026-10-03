@@ -212,6 +212,17 @@ export const GetVerificationResponseSchema = z.object({
   answer_schema: CreateVerificationRequestSchema.shape.answer_schema,
   location: CreateVerificationRequestSchema.shape.location,
   deadline: IsoDateTime,
+  /** Set on a task created by a dispute: the original task (01 §4.12). */
+  recheck_of: VerificationIdSchema.nullable(),
+  /** Set on a disputed task: its recheck and whether the answers matched. */
+  recheck: z
+    .object({
+      verification_id: VerificationIdSchema,
+      status: z.enum(TASK_STATUSES),
+      answer: AnswerValueSchema.nullable(),
+      matches_original: z.boolean().nullable(),
+    })
+    .nullable(),
   worker_requirements: z.object({ min_tier: z.enum(REQUIRABLE_TIERS) }).nullable(),
   assurance: z.object({
     required_witnesses: z.number().int(),
@@ -440,3 +451,16 @@ export const ScheduleSchema = z.object({
   last_error: z.string().nullable(),
 });
 export const ScheduleListResponseSchema = z.object({ schedules: z.array(ScheduleSchema) });
+
+// ---------- disputes (01 §4.12) ----------
+export const DisputeRequestSchema = z
+  .object({
+    reason: z.string().trim().max(500).optional(),
+    assurance: AssuranceInputSchema.optional(),
+    deadline_minutes: z.number().int().min(10).max(1440).optional(),
+  })
+  .strict();
+export const DisputeResponseSchema = z.object({
+  verification_id: VerificationIdSchema,
+  recheck_verification_id: VerificationIdSchema,
+});

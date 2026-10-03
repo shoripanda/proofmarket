@@ -140,6 +140,7 @@ create table verification_requests (
   request_hash            bytea not null,             -- SHA-256 of the normalized request body
   policy_rule_version     text not null,
   callback_endpoint_id    text references webhook_endpoints(id),
+  recheck_of              text unique references verification_requests(id), -- original task when this is a dispute recheck (01 §4.12)
   min_worker_tier         text check (min_worker_tier in ('standard','trusted')), -- 01 §4.11; null = no requirement
   allow_reuse             boolean not null default false, -- other requesters may reuse the result (01 §4.9)
   evidence_access_revoked boolean not null default false, -- operator stopped evidence access (08 §6)

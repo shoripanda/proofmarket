@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { jcs } from "@proofmarket/core";
 import { ProofMarketApiError, type ProofMarketClient } from "@proofmarket/sdk";
-import { CANCEL_TOOL, GET_TOOL, REQUEST_TOOL } from "./tools.ts";
+import { CANCEL_TOOL, DISPUTE_TOOL, GET_TOOL, REQUEST_TOOL } from "./tools.ts";
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
@@ -42,6 +42,7 @@ export function createServer(
   const { name: rName, ...rDef } = REQUEST_TOOL;
   const { name: gName, ...gDef } = GET_TOOL;
   const { name: cName, ...cDef } = CANCEL_TOOL;
+  const { name: dName, ...dDef } = DISPUTE_TOOL;
 
   server.registerTool(rName, rDef, async (args) => {
     try {
@@ -84,5 +85,13 @@ export function createServer(
       return err(e);
     }
   });
+  server.registerTool(dName, dDef, async ({ verification_id, ...body }) => {
+    try {
+      return ok(await client.disputeVerification(verification_id, body));
+    } catch (e) {
+      return err(e);
+    }
+  });
+
   return server;
 }

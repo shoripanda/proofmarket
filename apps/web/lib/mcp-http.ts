@@ -5,7 +5,13 @@ import { createServer } from "@proofmarket/mcp";
 import { ProofMarketClient } from "@proofmarket/sdk";
 import { authenticateRequester } from "./auth/requester";
 import type { AppContext } from "./context";
-import { handleCancel, handleCreate, handleGet, handlePublicResult } from "./handlers/requester";
+import {
+  handleCancel,
+  handleCreate,
+  handleDispute,
+  handleGet,
+  handlePublicResult,
+} from "./handlers/requester";
 import { route } from "./http";
 import { publicBase, resourceMetadataUrl } from "./services/oauth-service";
 
@@ -16,6 +22,7 @@ const TABLE: [string, RegExp, H][] = [
   ["POST", /^\/v1\/verifications$/, (a, r) => handleCreate(a, r)],
   ["GET", /^\/v1\/verifications\/([^/]+)$/, handleGet],
   ["POST", /^\/v1\/verifications\/([^/]+)\/cancel$/, handleCancel],
+  ["POST", /^\/v1\/verifications\/([^/]+)\/dispute$/, handleDispute],
   ["GET", /^\/v1\/public\/verifications\/([^/]+)$/, handlePublicResult],
 ];
 
@@ -32,6 +39,9 @@ export function inProcessFetch(app: AppContext, kick: Kick = () => {}): typeof f
       if (m === "POST" && res.status === 201 && !match[1]) {
         const { verification_id } = (await res.clone().json()) as { verification_id: string };
         kick([`FUND_TASK:${verification_id}`]);
+      } else if (m === "POST" && res.status === 201 && path.endsWith("/dispute")) {
+        const { recheck_verification_id } = (await res.clone().json()) as { recheck_verification_id: string };
+        kick([`FUND_TASK:${recheck_verification_id}`]);
       } else if (m === "POST" && res.ok && match[1]) {
         kick([`REFUND_TASK:${match[1]}`]);
       }

@@ -29,6 +29,7 @@ This chapter adds the details needed for implementation without changing the ext
 | GET | `/v1/worker/payouts` | worker | P1 | Added |
 | PUT | `/v1/worker/payout-preference` | worker | P2 | Added 2026-10-04. `{"yen_interest": true}` registers interest in yen payouts (01 §4.10). `/v1/worker/me` returns `yen_payout_interest` |
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | Added 2026-10-04. GET says whether push is available, PUT registers an endpoint and areas, DELETE removes it. Without VAPID keys GET returns `available: false` |
+| POST | `/v1/verifications/{id}/dispute` | requester | P2 | Added 2026-10-04. Once, within 24 hours of finalization. Creates a recheck task (01 §4.12). Fails with 409 `DISPUTE_NOT_ALLOWED` |
 | POST / GET | `/v1/schedules` | requester | P2 | Added 2026-10-04. Create and list recurring checks (04 §3.23) |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | Added. Stop a recurring check |
 | GET | `/v1/public/verifications/{id}` | Anyone | P1 | Added. Only fields that may be made public |
@@ -358,6 +359,7 @@ The body does not include the whole result. The receiver fetches it again with G
 | `request_reality_verification` | POST /v1/verifications | The body of the creation API. `principal_ref` is optional (filled in from the `PROOFMARKET_PRINCIPAL_REF` environment variable). `idempotency_key` is optional; if omitted, the SHA-256 of the normalized JSON of the arguments is used |
 | `get_reality_verification` | GET /v1/verifications/{id} | `verification_id`, `wait_seconds` (0 to 20. If specified, waits up to that many seconds for the state to change before returning) |
 | `cancel_reality_verification` | POST /v1/verifications/{id}/cancel | `verification_id` |
+| `dispute_reality_verification` | POST /v1/verifications/{id}/dispute | `verification_id`, `reason`, `assurance`, `deadline_minutes` (01 §4.12) |
 
 Description text of `request_reality_verification` (registered as is, in English):
 
@@ -432,6 +434,7 @@ x402 is used only for deposits into the balance and is kept separate from the pe
 | `EVIDENCE_ACCESS_REVOKED` | 403 | false | Evidence retrieval |
 | `TASK_NOT_CLAIMABLE` | 409 | false | Claim |
 | `NO_OPEN_SLOT` | 409 | true | Claim |
+| `DISPUTE_NOT_ALLOWED` | 409 | false | Dispute (no result, past 24 hours, or already disputed, 01 §4.12) |
 | `WORKER_NOT_ELIGIBLE` | 403 | false | Claim (trust tier below the task's requirement, 01 §4.11) |
 | `ALREADY_CLAIMED` | 409 | false | Claim |
 | `TASK_EXPIRED` | 410 | false | worker |

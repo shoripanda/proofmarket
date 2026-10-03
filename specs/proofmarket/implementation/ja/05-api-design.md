@@ -27,6 +27,7 @@
 | GET | `/v1/worker/payouts` | worker | P1 | 追加 |
 | PUT | `/v1/worker/payout-preference` | worker | P2 | 追加（2026-10-04）。`{"yen_interest": true}` で円での受け取りを希望（01 §4.10）。`/v1/worker/me` が `yen_payout_interest` を返す |
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | 追加（2026-10-04）。GET は通知が使えるか、PUT は宛先と地域の登録、DELETE は解除。VAPID の鍵が無い環境では GET が `available: false` を返す |
+| POST | `/v1/verifications/{id}/dispute` | requester | P2 | 追加（2026-10-04）。確定から 24 時間以内に 1 回。再確認の依頼を作る（01 §4.12）。失敗は 409 `DISPUTE_NOT_ALLOWED` |
 | POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23） |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
@@ -354,6 +355,7 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 | `request_reality_verification` | POST /v1/verifications | 作成 API の本文。`principal_ref` は省略可（環境変数 `PROOFMARKET_PRINCIPAL_REF` で補う）。`idempotency_key` は省略可で、省略時は引数を正規化した JSON の SHA-256 を使う |
 | `get_reality_verification` | GET /v1/verifications/{id} | `verification_id`、`wait_seconds`（0〜20。指定すると状態が変わるまで最大その秒数だけ待ってから返す） |
 | `cancel_reality_verification` | POST /v1/verifications/{id}/cancel | `verification_id` |
+| `dispute_reality_verification` | POST /v1/verifications/{id}/dispute | `verification_id`, `reason`, `assurance`, `deadline_minutes` (01 §4.12) |
 
 `request_reality_verification` の説明文（英語でそのまま登録する）:
 
@@ -428,6 +430,7 @@ x402 は残高への入金にだけ使い、タスクごとのエスクローと
 | `EVIDENCE_ACCESS_REVOKED` | 403 | false | 証拠の取得 |
 | `TASK_NOT_CLAIMABLE` | 409 | false | クレーム |
 | `NO_OPEN_SLOT` | 409 | true | クレーム |
+| `DISPUTE_NOT_ALLOWED` | 409 | false | 異議（結果が無い、24 時間を過ぎた、すでに異議を出した。01 §4.12） |
 | `WORKER_NOT_ELIGIBLE` | 403 | false | クレーム（信頼度が依頼の条件に届かない。01 §4.11） |
 | `ALREADY_CLAIMED` | 409 | false | クレーム |
 | `TASK_EXPIRED` | 410 | false | worker |

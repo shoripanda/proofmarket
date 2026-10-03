@@ -17,6 +17,7 @@ import {
 import { type Db, schema } from "@proofmarket/db";
 import { and, count, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
+import { appendAudit } from "./audit";
 import { witnessRef } from "./crypto";
 import { applyTaskEvent, type TaskRow } from "./task-engine";
 
@@ -141,6 +142,30 @@ export async function saveResult(
     resultHash: Buffer.from(resultHash(hashInput)),
     finalizedAt,
   });
+  // 01 §4.12: a recheck that disagrees with the disputed result is flagged for operator review.
+  if (task.recheckOf && outcome.status === "VERIFIED") {
+    const [orig] = await tx
+      .select({ answer: schema.verificationResults.finalAnswer })
+      .from(schema.verificationResults)
+      .where(eq(schema.verificationResults.verificationId, task.recheckOf));
+    if (orig && orig.answer !== outcome.answer) {
+      await appendAudit(tx, {
+        verificationId: task.recheckOf,
+        actorType: "system",
+        actorRef: null,
+        eventType: "operator_action",
+        beforeState: null,
+        afterState: null,
+        correlationId: task.recheckOf,
+        metadata: {
+          action: "recheck_mismatch",
+          recheck: task.id,
+          original: orig.answer,
+          recheck_answer: outcome.answer,
+        },
+      });
+    }
+  }
 }
 
 /** Task is VERIFYING: decide and apply T09 / T10. */

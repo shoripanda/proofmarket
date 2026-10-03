@@ -138,6 +138,7 @@ create table verification_requests (
   request_hash            bytea not null,             -- 正規化した依頼本文の SHA-256
   policy_rule_version     text not null,
   callback_endpoint_id    text references webhook_endpoints(id),
+  recheck_of              text unique references verification_requests(id), -- 異議で作った再確認なら元の依頼（01 §4.12）
   min_worker_tier         text check (min_worker_tier in ('standard','trusted')), -- 01 §4.11。null は条件なし
   allow_reuse             boolean not null default false, -- 他の依頼者への再利用を許す（01 §4.9）
   evidence_access_revoked boolean not null default false, -- 運営者が証拠の閲覧を止めた（08 §6）

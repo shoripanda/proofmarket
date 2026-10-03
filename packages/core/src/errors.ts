@@ -72,6 +72,11 @@ export const ERROR_CATALOG = {
   TASK_NOT_CLAIMABLE: { http: 409, retryable: false, message: "The task is not open for claims." },
   NO_OPEN_SLOT: { http: 409, retryable: true, message: "No witness slot is currently open." },
   ALREADY_CLAIMED: { http: 409, retryable: false, message: "You have already claimed this task." },
+  DISPUTE_NOT_ALLOWED: {
+    http: 409,
+    retryable: false,
+    message: "This result cannot be disputed (no result yet, more than 24 hours old, or already disputed).",
+  },
   WORKER_NOT_ELIGIBLE: {
     http: 403,
     retryable: false,

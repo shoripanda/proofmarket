@@ -153,6 +153,16 @@ Each worker gets a trust tier from their submission record, and requesters can r
 - Restricted workers cannot take single-witness tasks (`required_witnesses = 1`); they can still take multi-witness tasks, where answers are cross-checked
 - Workers see their tier and the reasons on the rewards screen, and may appeal to the operator (worker terms §5)
 
+### 4.12 Disputes and rechecks (2026-10-04)
+
+A requester who doubts a result may dispute it once, within 24 hours of finalization. A dispute creates a new "recheck" task with the same place, type and question.
+
+- `POST /v1/verifications/{id}/dispute`. Body: `reason` (up to 500 characters, optional), `assurance` (default `{ "level": "standard" }`), `deadline_minutes` (10-1440, default 60)
+- The recheck is created as a normal task (balance, limits, policy checks and funding all apply). The disputing requester pays for it
+- Payments to the original task's workers are not reversed; completed work that met the conditions is paid (4.2). Nobody is penalized automatically
+- GET of the original shows `recheck` (ID, status, answer, whether it matched the original); GET of the recheck shows `recheck_of`
+- If the recheck answer differs from the original, an audit event is written so the operator can review the original submissions
+
 ## 5. Business flow
 
 ### 5.1 Normal case (1 witness)
