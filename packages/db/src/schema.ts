@@ -196,6 +196,8 @@ export const verificationRequests = pgTable(
     policyRuleVersion: text("policy_rule_version").notNull(),
     callbackEndpointId: text("callback_endpoint_id").references(() => webhookEndpoints.id),
     /** Operator stopped evidence access for this verification (08 §6). */
+    /** Only workers at or above this tier may take the task (01 §4.11). Null = anyone. */
+    minWorkerTier: text("min_worker_tier"),
     /** Other requesters may reuse this result (01 §4.9). */
     allowReuse: boolean("allow_reuse").notNull().default(false),
     evidenceAccessRevoked: boolean("evidence_access_revoked").notNull().default(false),
@@ -205,6 +207,7 @@ export const verificationRequests = pgTable(
     updatedAt: tsz("updated_at").notNull().defaultNow(),
   },
   (t) => [
+    check("vr_min_tier_chk", sql`min_worker_tier is null or min_worker_tier in ('standard','trusted')`),
     check("vr_type_chk", oneOf("type", TASK_TYPES)),
     check("vr_question_len_chk", sql`char_length(question) <= 280`),
     check("vr_radius_chk", sql`radius_m between 25 and 500`),

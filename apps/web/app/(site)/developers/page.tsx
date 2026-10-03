@@ -51,6 +51,10 @@ const FIELDS: [string, string][] = [
     `何人に確かめてもらうか（required_witnesses、最大${LIMITS.witnesses.max}人）と、何人の答えがそろえば確定か（quorum）。{ "level": "fast" | "standard" | "high" } と書けば、それぞれ1人・2人一致・3人中2人になる`,
   ],
   ["bounty", "1人あたりの報酬。試験運用中は Solana Devnet のテスト用 USDC"],
+  [
+    "worker_requirements（任意）",
+    '{ "min_tier": "standard" | "trusted" } で、引き受けられる worker を記録の良い人に絞る。trusted は有効な提出が10件以上で、複数人の依頼での一致率が90%以上の人',
+  ],
 ];
 
 const OUTCOMES: [string, string][] = [

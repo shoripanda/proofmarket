@@ -153,6 +153,9 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
     answer_schema: { type: "enum", values: task.answerValues as AnswerValue[] },
     location: { lat: task.targetLat, lng: task.targetLng, radius_m: task.radiusM },
     deadline: task.deadline.toISOString(),
+    worker_requirements: task.minWorkerTier
+      ? { min_tier: task.minWorkerTier as "standard" | "trusted" }
+      : null,
     assurance: {
       required_witnesses: task.requiredWitnesses,
       quorum: task.quorum,

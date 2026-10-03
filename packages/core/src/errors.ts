@@ -72,6 +72,11 @@ export const ERROR_CATALOG = {
   TASK_NOT_CLAIMABLE: { http: 409, retryable: false, message: "The task is not open for claims." },
   NO_OPEN_SLOT: { http: 409, retryable: true, message: "No witness slot is currently open." },
   ALREADY_CLAIMED: { http: 409, retryable: false, message: "You have already claimed this task." },
+  WORKER_NOT_ELIGIBLE: {
+    http: 403,
+    retryable: false,
+    message: "Your trust tier does not meet this task's requirement.",
+  },
   TASK_EXPIRED: { http: 410, retryable: false, message: "The task deadline has passed." },
   CLAIM_NOT_ACTIVE: { http: 409, retryable: false, message: "The claim is not active." },
   NONCE_INVALID: { http: 400, retryable: false, message: "The challenge nonce is invalid." },

@@ -253,6 +253,7 @@ export async function createVerification(
       policyRuleVersion: POLICY_RULE_VERSION,
       callbackEndpointId: await activeEndpoint(tx, auth.credentialId),
       allowReuse: body.allow_reuse ?? false,
+      minWorkerTier: body.worker_requirements?.min_tier ?? null,
       createdAt: now,
       updatedAt: now,
     })

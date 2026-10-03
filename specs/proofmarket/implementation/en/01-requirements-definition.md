@@ -137,6 +137,22 @@ To make it easier for workers without a wallet to join, we want a way to receive
 
 When yen payouts begin, the first choice is to have a licensed provider make the payments, avoiding a setup where the operator holds requesters' funds and pays them out.
 
+### 4.11 Worker trust tiers (2026-10-04)
+
+Each worker gets a trust tier from their submission record, and requesters can require one. There is no score; the four tiers can each be explained.
+
+| Tier | Condition (last 90 days) |
+|---|---|
+| restricted | A submission failed for photo reuse (`EVIDENCE_REPLAYED`) or a near-identical photo (`EVIDENCE_NEAR_DUPLICATE`) |
+| new | Fewer than 3 valid submissions |
+| trusted | 10 or more valid submissions and 90%+ agreement on multi-witness tasks (at least 3 comparable tasks) |
+| standard | Everything else |
+
+- Agreement is the share of VERIFIED multi-witness tasks where the worker's answer matched the final answer. Minority answers are still paid (4.2), so agreement never affects pay
+- Requesters may add `worker_requirements: { "min_tier": "standard" | "trusted" }`. Workers below it do not see the task, and claiming returns 403 `WORKER_NOT_ELIGIBLE`
+- Restricted workers cannot take single-witness tasks (`required_witnesses = 1`); they can still take multi-witness tasks, where answers are cross-checked
+- Workers see their tier and the reasons on the rewards screen, and may appeal to the operator (worker terms §5)
+
 ## 5. Business flow
 
 ### 5.1 Normal case (1 witness)
