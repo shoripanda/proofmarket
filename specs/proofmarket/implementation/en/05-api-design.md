@@ -354,6 +354,17 @@ Description text of `request_reality_verification` (registered as is, in English
 
 If the tool could not wait long enough, it also returns the current state as is and does not pretend the verification is complete (Section 10 of `api-contract.md`).
 
+### 6.1 MCP over HTTP (added 2026-10-03)
+
+The stdio server only works on the machine that runs it. To let AI agents on other people's computers and phones place requests, the web app exposes the same tools over HTTP.
+
+- Endpoint: `POST /mcp`, MCP Streamable HTTP, stateless. GET and DELETE return 405
+- Auth: `Authorization: Bearer <API key>`. Same keys as REST; suspension, revocation, rate limits and idempotency follow the REST rules. A missing or invalid key returns 401 with `WWW-Authenticate: Bearer`
+- When `principal_ref` is omitted it is filled with the key owner's principal
+- The three tools are the same as the stdio server. They call the REST handlers in the same process, so the rules live in one place
+- `get_reality_verification` may wait up to 20 s, so the function's max duration is 60 s
+- The Claude and ChatGPT phone apps have no field for an API key and connect with OAuth instead; that is added in 6.2
+
 ## 7. x402 V2 (Stretch)
 
 x402 is used only for deposits into the balance and is kept separate from the per-task escrow (Section 6 of `architecture.md`).

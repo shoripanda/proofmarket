@@ -350,6 +350,17 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 
 ツールは待ちきれなかった場合も現在の状態をそのまま返し、完了を装わない（`api-contract.md` 10 節）。
 
+### 6.1 HTTP で公開する MCP（2026-10-03 追加）
+
+stdio 版は、動かす人の手元でしか使えない。他人の PC やスマホの AI エージェントからも依頼を出せるように、同じツールを Web アプリから HTTP で公開する。
+
+- 入口は `POST /mcp`。MCP の Streamable HTTP で、セッションの状態は持たない。GET と DELETE は 405 を返す
+- 認証は `Authorization: Bearer <API キー>`。REST と同じ鍵を使い、停止・失効・レート制限・冪等性も REST と同じ規則で判定する。鍵が無いか無効なら 401 と `WWW-Authenticate: Bearer` を返す
+- `principal_ref` を省略したら、鍵の持ち主の principal で補う
+- ツールは stdio 版と同じ3つ。中では REST のハンドラを同じプロセスで呼ぶので、判定の規則は REST と一か所にまとまる
+- `get_reality_verification` は最大20秒待つので、この関数の実行時間の上限は60秒にする
+- Claude や ChatGPT のスマホアプリは API キーを書く欄が無く、OAuth で接続する。これは 6.2 で足す
+
 ## 7. x402 V2（Stretch）
 
 x402 は残高への入金にだけ使い、タスクごとのエスクローとは分ける（`architecture.md` 6 節）。
