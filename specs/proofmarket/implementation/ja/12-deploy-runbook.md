@@ -111,6 +111,12 @@ API キーと招待コードは表示されたときにしか見られない。
 LOCATION_ENC_KEY=... $R list-participation.ts
 ```
 
+`/rules` から届く写真の削除依頼は `list-removal.ts` で読み、08 章 6 節の手順で対応してから `--mark <id> --as handled` を付ける。目安は 1 営業日以内。
+
+```bash
+LOCATION_ENC_KEY=... $R list-removal.ts
+```
+
 ## 7. 動作確認
 
 ```bash

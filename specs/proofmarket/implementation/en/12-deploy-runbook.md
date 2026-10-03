@@ -113,6 +113,12 @@ Sign-ups from the site's `/join` are read with the command below. It prints decr
 LOCATION_ENC_KEY=... $R list-participation.ts
 ```
 
+Photo removal requests from `/rules` are read with `list-removal.ts`. Handle them as in 08 §6, then mark with `--mark <id> --as handled`. Aim for one business day.
+
+```bash
+LOCATION_ENC_KEY=... $R list-removal.ts
+```
+
 ## 7. Smoke test
 
 ```bash

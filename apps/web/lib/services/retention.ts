@@ -7,11 +7,12 @@ import { and, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
 import { purgeExpiredParticipation } from "./participation-service";
+import { purgeExpiredRemoval } from "./removal-service";
 
 export async function purgeExpiredEvidence(
   app: AppContext,
   batch = 200,
-): Promise<{ evidence: number; locations: number; participation: number }> {
+): Promise<{ evidence: number; locations: number; participation: number; removal: number }> {
   const now = app.now();
   const due = await app.db
     .select()
@@ -44,6 +45,7 @@ export async function purgeExpiredEvidence(
     )
     .returning({ id: schema.locationObservations.submissionId });
   const participation = await purgeExpiredParticipation(app);
+  const removal = await purgeExpiredRemoval(app);
   await appendAudit(app.db, {
     verificationId: null,
     actorType: "system",
@@ -57,7 +59,8 @@ export async function purgeExpiredEvidence(
       evidence: due.length,
       locations: locs.length,
       participation,
+      removal,
     },
   });
-  return { evidence: due.length, locations: locs.length, participation };
+  return { evidence: due.length, locations: locs.length, participation, removal };
 }

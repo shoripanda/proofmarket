@@ -654,3 +654,23 @@ export const participationRequests = pgTable(
     check("participation_status_chk", oneOf("status", ["new", "contacted", "closed"])),
   ],
 );
+
+// ---------- 3.21 removal_requests ----------
+export const removalRequests = pgTable(
+  "removal_requests",
+  {
+    id: text("id").primaryKey(),
+    contactEnc: bytea("contact_enc").notNull(),
+    verificationId: text("verification_id"),
+    placeNote: text("place_note"),
+    reason: text("reason").notNull(),
+    status: text("status").notNull().default("new"),
+    createdAt: tsz("created_at").notNull().defaultNow(),
+    deleteAfter: tsz("delete_after").notNull(),
+  },
+  (_t) => [
+    check("removal_place_note_chk", sql`place_note is null or char_length(place_note) <= 200`),
+    check("removal_reason_chk", sql`char_length(reason) between 1 and 1000`),
+    check("removal_status_chk", oneOf("status", ["new", "handled", "rejected"])),
+  ],
+);

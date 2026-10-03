@@ -126,6 +126,7 @@ This maps the "must be able to do" list in `privacy-security.md` Section 8 to th
 | Revoke an API key | `POST /v1/admin/credentials/{id}/revoke` | 1 minute |
 | Identify affected requests | A SQL query that searches audit_events by `actor_ref` is prepared in `docs/runbook.md` | 10 minutes |
 | Stop evidence disclosure | `POST /v1/admin/verifications/{id}/evidence/revoke-access`; for everything, set `public_evidence_enabled` to false | 1 minute |
+| A shop or a person in a photo asks for removal | Received via the `/rules` form and read with `list-removal.ts`. Apply `revoke-access` to the task, delete the raw and derived images from Storage if needed, then `--mark <id> --as handled` | 1 business day |
 | Rerun a DEAD job | Fix the cause, then `POST /v1/admin/jobs/{id}/requeue` | 5 minutes |
 | A key leaked | Replace operator / verifier with `update_config`, update the Vercel environment variables, and move the old key's Devnet funds | 30 minutes |
 

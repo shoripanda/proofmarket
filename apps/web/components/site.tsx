@@ -10,6 +10,7 @@ export const SITE_NAV: { href: string; label: string }[] = [
   { href: "/developers", label: "開発者向け" },
   { href: "/pricing", label: "料金" },
   { href: "/workers", label: "worker 向け" },
+  { href: "/rules", label: "決まり" },
   { href: "/join", label: "申し込み" },
 ];
 
