@@ -45,7 +45,9 @@ describe("participation requests", () => {
     expect(await err(createParticipationRequest(t.app, { ...ok, website: "x" }, "ip"))).toBe(
       "VALIDATION_FAILED",
     );
-    expect(await err(createParticipationRequest(t.app, { ...ok, lat: 35.6 }, "ip"))).toBe("VALIDATION_FAILED");
+    expect(await err(createParticipationRequest(t.app, { ...ok, lat: 35.6 }, "ip"))).toBe(
+      "VALIDATION_FAILED",
+    );
     await createParticipationRequest(t.app, { ...ok, role: "requester" }, "ip2");
     const [row] = await t.db.select().from(schema.participationRequests);
     expect(row?.area).toBeNull();

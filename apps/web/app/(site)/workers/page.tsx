@@ -2,8 +2,8 @@
 import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHero, Section } from "@/components/site";
 import { SAFETY_NOTES } from "@/components/safety";
+import { PageHero, Section } from "@/components/site";
 
 export const metadata: Metadata = { title: "worker として参加する | ProofMarket" };
 
