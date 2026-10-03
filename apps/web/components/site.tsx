@@ -6,6 +6,8 @@ import type { ReactNode } from "react";
 export const SITE_NAV: { href: string; label: string }[] = [
   { href: "/", label: "トップ" },
   { href: "/developers", label: "開発者向け" },
+  { href: "/workers", label: "worker 向け" },
+  { href: "/join", label: "申し込み" },
 ];
 
 export function SiteShell({ children }: { children: ReactNode }) {
@@ -13,10 +15,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
     <div className="min-h-dvh bg-white">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
-          <Link href="/" className="text-lg font-bold tracking-tight text-slate-900">
+          <Link href="/" className="mr-auto text-lg font-bold tracking-tight text-slate-900 sm:mr-0">
             ProofMarket
           </Link>
-          <nav className="flex flex-1 flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+          <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-4 overflow-x-auto whitespace-nowrap px-4 text-sm text-slate-600 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0">
             {SITE_NAV.filter((n) => n.href !== "/").map((n) => (
               <Link key={n.href} href={n.href} className="hover:text-teal-700">
                 {n.label}

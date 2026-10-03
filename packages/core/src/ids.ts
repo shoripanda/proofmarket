@@ -19,6 +19,7 @@ export const ID_PREFIXES = {
   invite: "inv",
   oauthClient: "ocl",
   oauthGrant: "ogr",
+  participation: "par",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

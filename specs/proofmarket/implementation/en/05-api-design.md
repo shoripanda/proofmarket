@@ -28,6 +28,7 @@ This chapter adds the details needed for implementation without changing the ext
 | GET | `/v1/worker/claims/{claim_id}` | worker | P0 | Added. Decision result and reason |
 | GET | `/v1/worker/payouts` | worker | P1 | Added |
 | GET | `/v1/public/verifications/{id}` | Anyone | P1 | Added. Only fields that may be made public |
+| POST | `/v1/public/participation-requests` | Anyone | P2 | Added. Sign-up for workers and API keys (04 §3.20). 5 per minute per IP |
 | POST | `/v1/admin/flags` | operator | P0 | Added |
 | POST | `/v1/admin/{credentials|workers}/{id}/suspend` | operator | P0 | Added |
 | POST | `/v1/admin/credentials/{id}/revoke` | operator | P0 | Added |

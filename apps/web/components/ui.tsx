@@ -87,9 +87,4 @@ export function remaining(iso: string, now: number) {
 
 export const yen = (usdc: string) => `${usdc} USDC`;
 
-export const SAFETY_NOTES = [
-  "店頭・看板・営業時間の掲示を写してください。",
-  "人の顔が大きく写らないようにしてください。",
-  "店内や立入禁止の場所には入らないでください。",
-  "危ないと感じたら、いつでもやめて構いません。",
-];
+export { SAFETY_NOTES } from "./safety";

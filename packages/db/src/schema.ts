@@ -11,6 +11,8 @@ import {
   OUTBOX_JOB_KINDS,
   OUTCOME_REASONS,
   OUTCOMES,
+  PARTICIPATION_AREAS,
+  PARTICIPATION_ROLES,
   PAYMENT_KINDS,
   PLATFORM_FLAGS,
   SETTLEMENT_STATUSES,
@@ -628,5 +630,27 @@ export const oauthTokens = pgTable(
   (t) => [
     check("oauth_tokens_kind_chk", oneOf("kind", ["access", "refresh"])),
     index("oauth_tokens_grant_idx").on(t.grantId),
+  ],
+);
+
+// ---------- 3.20 participation_requests ----------
+export const participationRequests = pgTable(
+  "participation_requests",
+  {
+    id: text("id").primaryKey(),
+    role: text("role").notNull(),
+    contactEnc: bytea("contact_enc").notNull(),
+    area: text("area"),
+    note: text("note"),
+    consentVersion: text("consent_version").notNull(),
+    status: text("status").notNull().default("new"),
+    createdAt: tsz("created_at").notNull().defaultNow(),
+    deleteAfter: tsz("delete_after").notNull(),
+  },
+  (_t) => [
+    check("participation_role_chk", oneOf("role", PARTICIPATION_ROLES)),
+    check("participation_area_chk", sql`area is null or ${oneOf("area", PARTICIPATION_AREAS)}`),
+    check("participation_note_chk", sql`note is null or char_length(note) <= 500`),
+    check("participation_status_chk", oneOf("status", ["new", "contacted", "closed"])),
   ],
 );

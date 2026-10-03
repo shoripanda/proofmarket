@@ -180,3 +180,9 @@ export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];
 
 export const ACTOR_TYPES = ["requester", "worker", "system", "operator"] as const;
 export type ActorType = (typeof ACTOR_TYPES)[number];
+
+/** participation_requests (04 §3.20): who is signing up, and the rough pilot area for workers. */
+export const PARTICIPATION_ROLES = ["worker", "requester"] as const;
+export type ParticipationRole = (typeof PARTICIPATION_ROLES)[number];
+export const PARTICIPATION_AREAS = ["shibuya", "shinjuku", "other"] as const;
+export type ParticipationArea = (typeof PARTICIPATION_AREAS)[number];

@@ -478,6 +478,24 @@ create table rate_limit_counters (
 
 レート制限は 1 分の固定窓で、`insert ... on conflict do update set count = count + 1 returning count` の 1 文で数える。
 
+### 3.20 participation_requests（参加の申し込み、2026-10-04 追加）
+
+サイトの `/join` から届く、worker としての参加と API キーの申し込み。運営者が読んで招待コードや API キーを出す。
+
+```sql
+create table participation_requests (
+  id           text primary key,                 -- par_<ULID>
+  role         text not null check (role in ('worker','requester')),
+  contact_enc  bytea not null,                   -- AES-256-GCM(メールアドレス)。鍵は LOCATION_ENC_KEY
+  area         text check (area in ('shibuya','shinjuku','other')),  -- worker のみ。正確な位置は取らない
+  note         text check (char_length(note) <= 500),
+  consent_version text not null,                 -- 同意した説明文の版
+  status       text not null default 'new' check (status in ('new','contacted','closed')),
+  created_at   timestamptz not null default now(),
+  delete_after timestamptz not null              -- created_at + 90 日
+);
+```
+
 ## 4. 保持期間と削除
 
 | 保持区分 | 対象 | 期間 | 削除のしかた |
@@ -487,6 +505,7 @@ create table rate_limit_counters (
 | task_metadata | 依頼・結果・判定 | 1 年 | 行を消す（本番の期間は法務確認後） |
 | payment | payment_records、requester_ledger | 1 年 | 同上 |
 | audit | audit_events | 1 年 | 同上 |
+| participation | participation_requests | 90 日 | 行を消す |
 
 削除は outbox の `PURGE_EVIDENCE` ジョブが 1 日 1 回行い、件数を audit_events に残す。
 
