@@ -11,6 +11,7 @@ export const SITE_NAV: { href: string; label: string }[] = [
   { href: "/pricing", label: "料金" },
   { href: "/workers", label: "worker 向け" },
   { href: "/rules", label: "決まり" },
+  { href: "/faq", label: "よくある質問" },
   { href: "/join", label: "申し込み" },
 ];
 
