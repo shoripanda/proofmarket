@@ -30,6 +30,7 @@ This chapter adds the details needed for implementation without changing the ext
 | PUT | `/v1/worker/payout-preference` | worker | P2 | Added 2026-10-04. `{"yen_interest": true}` registers interest in yen payouts (01 §4.10). `/v1/worker/me` returns `yen_payout_interest` |
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | Added 2026-10-04. GET says whether push is available, PUT registers an endpoint and areas, DELETE removes it. Without VAPID keys GET returns `available: false` |
 | POST | `/v1/verifications/{id}/dispute` | requester | P2 | Added 2026-10-04. Once, within 24 hours of finalization. Creates a recheck task (01 §4.12). Fails with 409 `DISPUTE_NOT_ALLOWED` |
+| POST | `/v1/console/session`, `/v1/console/logout`, `/v1/console/schedules/{id}/stop` | API key / console session | P2 | Added 2026-10-04. Sign in, sign out and stop a recurring check from the requester console (01 §4.14). Same Origin only. Sign-in limited to 10 per minute per IP |
 | POST / GET | `/v1/schedules` | requester | P2 | Added 2026-10-04. Create and list recurring checks (04 §3.23) |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | Added. Stop a recurring check |
 | GET | `/v1/public/verifications/{id}` | Anyone | P1 | Added. Only fields that may be made public |

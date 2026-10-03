@@ -759,3 +759,14 @@ export const placeStatusReports = pgTable(
     index("place_status_reports_place_created_idx").on(t.placeId, t.createdAt),
   ],
 );
+
+// ---------- 3.25 console_sessions ----------
+export const consoleSessions = pgTable("console_sessions", {
+  id: text("id").primaryKey(),
+  credentialId: text("credential_id")
+    .notNull()
+    .references(() => requesterCredentials.id),
+  tokenHash: bytea("token_hash").notNull().unique(),
+  createdAt: tsz("created_at").notNull().defaultNow(),
+  expiresAt: tsz("expires_at").notNull(),
+});

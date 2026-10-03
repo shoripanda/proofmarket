@@ -28,6 +28,7 @@
 | PUT | `/v1/worker/payout-preference` | worker | P2 | 追加（2026-10-04）。`{"yen_interest": true}` で円での受け取りを希望（01 §4.10）。`/v1/worker/me` が `yen_payout_interest` を返す |
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | 追加（2026-10-04）。GET は通知が使えるか、PUT は宛先と地域の登録、DELETE は解除。VAPID の鍵が無い環境では GET が `available: false` を返す |
 | POST | `/v1/verifications/{id}/dispute` | requester | P2 | 追加（2026-10-04）。確定から 24 時間以内に 1 回。再確認の依頼を作る（01 §4.12）。失敗は 409 `DISPUTE_NOT_ALLOWED` |
+| POST | `/v1/console/session`・`/v1/console/logout`・`/v1/console/schedules/{id}/stop` | API キー / 画面のセッション | P2 | 追加（2026-10-04）。requester 用画面のログイン・ログアウト・定期確認の停止（01 §4.14）。Origin が同じときだけ。ログインは IP ごとに 1 分 10 回まで |
 | POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23） |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |

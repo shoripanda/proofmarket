@@ -13,6 +13,7 @@ export const SITE_NAV: { href: string; label: string }[] = [
   { href: "/rules", label: "決まり" },
   { href: "/faq", label: "よくある質問" },
   { href: "/join", label: "申し込み" },
+  { href: "/console", label: "依頼者の画面" },
 ];
 
 export function SiteShell({ children }: { children: ReactNode }) {

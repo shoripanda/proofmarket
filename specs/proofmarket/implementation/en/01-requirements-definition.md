@@ -172,6 +172,15 @@ Registered shops can report "closed today" or "open as usual" themselves; reques
 - It is never used to decide a result; results still come from people on site. GET of a task carries `store_report` (status and time) as a separate field, outside `result_hash`
 - Workers do not see it, so they answer what they see rather than what the shop said
 
+### 4.14 Requester console (2026-10-04)
+
+The API alone makes it hard to see what is going on, so `/console` lets a requester view their API key's state in a browser.
+
+- Sign-in is pasting the API key once. The server checks it and keeps a session in a cookie JS cannot read (httpOnly, SameSite=Strict, 12 hours). The key itself is not kept in the browser
+- Shows: key details (prefix, limits, allowed types, status), balance and today's spend, recent tasks, webhook delivery status, recurring checks
+- The only actions are stopping a recurring check and signing out. Issuing or rotating keys stays with the operator
+- POSTs are accepted only when Origin matches this site
+
 ## 5. Business flow
 
 ### 5.1 Normal case (1 witness)

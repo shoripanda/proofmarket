@@ -587,6 +587,18 @@ create table place_status_reports (
 create index on place_status_reports (place_id, created_at);
 ```
 
+### 3.25 console_sessions (requester console sessions, added 2026-10-04)
+
+```sql
+create table console_sessions (
+  id            text primary key,                -- cse_<ULID>
+  credential_id text not null references requester_credentials(id),
+  token_hash    bytea not null unique,           -- SHA-256(cookie value)
+  created_at    timestamptz not null default now(),
+  expires_at    timestamptz not null             -- created_at + 12 hours
+);
+```
+
 ## 4. Retention and Deletion
 
 | Retention class | Target | Period | How it is deleted |
