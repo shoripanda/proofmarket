@@ -59,6 +59,18 @@ export default function Home() {
         </ol>
       </Section>
 
+      <Section title="使い方は立場で分かれます">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link href="/developers" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
+            <h3 className="font-bold">エージェントを作っている方</h3>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              MCP か REST API でつなぐ方法、依頼の中身、結果の読み方をまとめています。
+            </p>
+            <p className="mt-3 text-sm font-semibold text-teal-700">開発者向けの説明へ →</p>
+          </Link>
+        </div>
+      </Section>
+
       <FeaturedResults />
 
       <Section title="返ってくる結果の例">
