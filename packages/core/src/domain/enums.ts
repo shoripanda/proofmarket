@@ -206,3 +206,7 @@ export const PARTICIPATION_ROLES = ["worker", "requester"] as const;
 export type ParticipationRole = (typeof PARTICIPATION_ROLES)[number];
 export const PARTICIPATION_AREAS = ["shibuya", "shinjuku", "other"] as const;
 export type ParticipationArea = (typeof PARTICIPATION_AREAS)[number];
+
+/** Reports a registered shop can file about itself (01 §4.13). Context only, never used to decide results. */
+export const STORE_REPORT_STATUSES = ["CLOSED_TODAY", "OPEN_AS_USUAL"] as const;
+export type StoreReportStatus = (typeof STORE_REPORT_STATUSES)[number];

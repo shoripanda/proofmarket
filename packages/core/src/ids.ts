@@ -23,6 +23,8 @@ export const ID_PREFIXES = {
   removal: "rmv",
   pushSubscription: "psb",
   schedule: "sch",
+  placeOwnerToken: "pot",
+  placeStatusReport: "psr",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

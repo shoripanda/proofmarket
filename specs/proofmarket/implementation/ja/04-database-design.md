@@ -562,6 +562,29 @@ create index on verification_schedules (active, next_run_at);
 
 API キー 1 つあたり、動いている予定は 10 件まで。キーが止められたら予定も止める。
 
+### 3.24 place_owner_tokens と place_status_reports（店舗からの申告、2026-10-04 追加）
+
+```sql
+create table place_owner_tokens (
+  id          text primary key,                  -- pot_<ULID>
+  place_id    text not null references places(id),
+  token_hash  bytea not null unique,             -- SHA-256(token)。token そのものは発行時に一度だけ表示
+  created_at  timestamptz not null default now(),
+  revoked_at  timestamptz
+);
+
+create table place_status_reports (
+  id          text primary key,                  -- psr_<ULID>
+  place_id    text not null references places(id),
+  token_id    text not null references place_owner_tokens(id),
+  status      text not null check (status in ('CLOSED_TODAY','OPEN_AS_USUAL')),
+  valid_until timestamptz not null,
+  note        text check (char_length(note) <= 200), -- 運営者だけが見る
+  created_at  timestamptz not null default now()
+);
+create index on place_status_reports (place_id, created_at);
+```
+
 ## 4. 保持期間と削除
 
 | 保持区分 | 対象 | 期間 | 削除のしかた |

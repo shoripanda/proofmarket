@@ -163,6 +163,15 @@ A requester who doubts a result may dispute it once, within 24 hours of finaliza
 - GET of the original shows `recheck` (ID, status, answer, whether it matched the original); GET of the recheck shows `recheck_of`
 - If the recheck answer differs from the original, an audit event is written so the operator can review the original submissions
 
+### 4.13 Reports from shops (2026-10-04)
+
+Registered shops can report "closed today" or "open as usual" themselves; requesters receive it as context.
+
+- The operator issues each shop a secret link (`/store/<token>`). No login. Only the token hash is stored and the operator can revoke it
+- A report is CLOSED_TODAY or OPEN_AS_USUAL with an expiry (default end of the day, JST). The shop's note (up to 200 characters) is visible to the operator only
+- It is never used to decide a result; results still come from people on site. GET of a task carries `store_report` (status and time) as a separate field, outside `result_hash`
+- Workers do not see it, so they answer what they see rather than what the shop said
+
 ## 5. Business flow
 
 ### 5.1 Normal case (1 witness)

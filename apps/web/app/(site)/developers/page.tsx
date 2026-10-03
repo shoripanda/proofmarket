@@ -190,7 +190,8 @@ export default async function DevelopersPage() {
           に記録した証拠のハッシュと取引の URL
           が入ります。写真と正確な位置は入りません。写真を見たいときは、自分の依頼に限って
           <code className="mx-1 font-mono">GET /v1/verifications/{"{id}"}/evidence</code>
-          で5分間だけ有効な URL を取れます。
+          で5分間だけ有効な URL を取れます。店舗が自分で「本日臨時休業」などと申告していれば、GET の
+          store_report に参考として入ります。判定には使っていません。
         </p>
       </Section>
 
