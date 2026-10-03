@@ -2,7 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Workspace packages are TypeScript sources.
-  transpilePackages: ["@proofmarket/core", "@proofmarket/db", "@proofmarket/solana"],
+  transpilePackages: [
+    "@proofmarket/core",
+    "@proofmarket/db",
+    "@proofmarket/solana",
+    "@proofmarket/mcp",
+    "@proofmarket/sdk",
+  ],
   serverExternalPackages: ["sharp"],
   poweredByHeader: false,
   async headers() {
