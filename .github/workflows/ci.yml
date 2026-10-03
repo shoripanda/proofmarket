@@ -30,9 +30,13 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: "1"
       - name: No key-like strings in the client bundle (08 §1.5)
+        # A base58 key stands alone; runs inside base64 blobs (fonts) and pure hex (curve constants) are not keys.
         run: |
-          if grep -rEo '(pm_test_[A-Za-z0-9_-]{8,}|sk-[A-Za-z0-9]{20,}|[1-9A-HJ-NP-Za-km-z]{87,88})' apps/web/.next/static; then
-            echo "secret-looking string found in client bundle"; exit 1
+          B58='[1-9A-HJ-NP-Za-km-z]{87,88}'
+          hits=$(grep -rEoI "(pm_test_[A-Za-z0-9_-]{8,}|sk-[A-Za-z0-9]{20,}|(^|[^A-Za-z0-9+/=_-])${B58}([^A-Za-z0-9+/=_-]|$))" apps/web/.next/static \
+            | grep -vE ':[^A-Za-z0-9]?x?[0-9a-fA-F]+[^A-Za-z0-9]?$' || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"; echo "secret-looking string found in client bundle"; exit 1
           fi
 
   program:
