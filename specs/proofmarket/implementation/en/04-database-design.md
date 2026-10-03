@@ -564,6 +564,29 @@ create index on verification_schedules (active, next_run_at);
 
 At most 10 active schedules per API key. Suspending the key stops its schedules.
 
+### 3.24 place_owner_tokens and place_status_reports (reports from shops, added 2026-10-04)
+
+```sql
+create table place_owner_tokens (
+  id          text primary key,                  -- pot_<ULID>
+  place_id    text not null references places(id),
+  token_hash  bytea not null unique,             -- SHA-256(token); the token is shown once when issued
+  created_at  timestamptz not null default now(),
+  revoked_at  timestamptz
+);
+
+create table place_status_reports (
+  id          text primary key,                  -- psr_<ULID>
+  place_id    text not null references places(id),
+  token_id    text not null references place_owner_tokens(id),
+  status      text not null check (status in ('CLOSED_TODAY','OPEN_AS_USUAL')),
+  valid_until timestamptz not null,
+  note        text check (char_length(note) <= 200), -- operator only
+  created_at  timestamptz not null default now()
+);
+create index on place_status_reports (place_id, created_at);
+```
+
 ## 4. Retention and Deletion
 
 | Retention class | Target | Period | How it is deleted |

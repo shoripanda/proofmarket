@@ -16,6 +16,7 @@ import {
   PAYMENT_KINDS,
   PLATFORM_FLAGS,
   SETTLEMENT_STATUSES,
+  STORE_REPORT_STATUSES,
   SUBMISSION_STATES,
   TASK_STATUSES,
   TASK_TYPES,
@@ -723,5 +724,38 @@ export const verificationSchedules = pgTable(
   (t) => [
     check("schedule_deadline_chk", sql`deadline_minutes between 10 and 1440`),
     index("verification_schedules_active_next_idx").on(t.active, t.nextRunAt),
+  ],
+);
+
+// ---------- 3.24 place_owner_tokens / place_status_reports ----------
+export const placeOwnerTokens = pgTable("place_owner_tokens", {
+  id: text("id").primaryKey(),
+  placeId: text("place_id")
+    .notNull()
+    .references(() => places.id),
+  tokenHash: bytea("token_hash").notNull().unique(),
+  createdAt: tsz("created_at").notNull().defaultNow(),
+  revokedAt: tsz("revoked_at"),
+});
+
+export const placeStatusReports = pgTable(
+  "place_status_reports",
+  {
+    id: text("id").primaryKey(),
+    placeId: text("place_id")
+      .notNull()
+      .references(() => places.id),
+    tokenId: text("token_id")
+      .notNull()
+      .references(() => placeOwnerTokens.id),
+    status: text("status").notNull(),
+    validUntil: tsz("valid_until").notNull(),
+    note: text("note"),
+    createdAt: tsz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("psr_status_chk", oneOf("status", STORE_REPORT_STATUSES)),
+    check("psr_note_chk", sql`note is null or char_length(note) <= 200`),
+    index("place_status_reports_place_created_idx").on(t.placeId, t.createdAt),
   ],
 );

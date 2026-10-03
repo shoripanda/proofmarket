@@ -100,6 +100,7 @@ Keyword matching has gaps, so the MVP supplements it with three things. First, t
 | Worker email address | Login | Privy and the operator | While the account exists |
 | Worker payout address | Payment | The operator. It appears in on-chain transfers and is the same value across tasks, so it can be linked in an Explorer (Chapter 00 G-11) | While the account exists |
 | Current location during list search | Sort by nearest | No one (rounded to about 100 m on the client before sending, and not stored) | Not stored |
+| Shop reports and notes (added 2026-10-04) | Context for requesters | Reports: the requester and the operator; notes: operator only | Same as the related tasks (1 year) |
 | Push endpoint and areas (added 2026-10-04) | Notify about new nearby tasks | Operator only (endpoint encrypted). Areas are coarse ones the worker picks, such as "around Shibuya"; no location is used | Until the worker turns notifications off or the endpoint becomes invalid |
 | Location at submission | Geofence check | Operator only (encrypted) | 30 days |
 | Photo (original) | Verification, incident investigation | Operator only | 30 days |

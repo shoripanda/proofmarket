@@ -31,6 +31,7 @@
 | POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23） |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
+| GET / POST | `/v1/store/{token}` | 店舗のリンク | P2 | 追加（2026-10-04）。GET は店舗名と今の申告、POST は申告（01 §4.13）。token ごとに 1 分 10 件まで |
 | POST | `/v1/public/removal-requests` | 誰でも | P2 | 追加。写真の削除・公開停止の依頼（04 §3.21）。IP ごとに 1 分 5 件まで |
 | POST | `/v1/public/participation-requests` | 誰でも | P2 | 追加。参加・API キーの申し込み（04 §3.20）。IP ごとに 1 分 5 件まで |
 | POST | `/v1/admin/flags` | operator | P0 | 追加 |

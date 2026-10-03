@@ -33,6 +33,7 @@ This chapter adds the details needed for implementation without changing the ext
 | POST / GET | `/v1/schedules` | requester | P2 | Added 2026-10-04. Create and list recurring checks (04 §3.23) |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | Added. Stop a recurring check |
 | GET | `/v1/public/verifications/{id}` | Anyone | P1 | Added. Only fields that may be made public |
+| GET / POST | `/v1/store/{token}` | Shop link | P2 | Added 2026-10-04. GET returns the shop name and current report, POST files a report (01 §4.13). 10 per minute per token |
 | POST | `/v1/public/removal-requests` | Anyone | P2 | Added. Requests to remove or stop showing a photo (04 §3.21). 5 per minute per IP |
 | POST | `/v1/public/participation-requests` | Anyone | P2 | Added. Sign-up for workers and API keys (04 §3.20). 5 per minute per IP |
 | POST | `/v1/admin/flags` | operator | P0 | Added |

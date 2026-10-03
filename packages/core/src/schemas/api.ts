@@ -12,6 +12,7 @@ import {
   FUNDING_STATUSES,
   OUTCOME_REASONS,
   OUTCOMES,
+  STORE_REPORT_STATUSES,
   SUBMISSION_STATES,
   TASK_STATUSES,
   TASK_TYPES,
@@ -221,6 +222,14 @@ export const GetVerificationResponseSchema = z.object({
       status: z.enum(TASK_STATUSES),
       answer: AnswerValueSchema.nullable(),
       matches_original: z.boolean().nullable(),
+    })
+    .nullable(),
+  /** What the shop itself reported, if anything (01 §4.13). Context only: not part of the result or its hash. */
+  store_report: z
+    .object({
+      status: z.enum(STORE_REPORT_STATUSES),
+      reported_at: IsoDateTime,
+      valid_until: IsoDateTime,
     })
     .nullable(),
   worker_requirements: z.object({ min_tier: z.enum(REQUIRABLE_TIERS) }).nullable(),

@@ -18,6 +18,7 @@ import {
 } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
 import { and, count, eq, inArray } from "drizzle-orm";
+import { activeReport } from "./store-service";
 import type { TaskRow } from "./task-engine";
 
 const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
@@ -123,6 +124,15 @@ export async function buildResult(db: Db, task: TaskRow): Promise<VerificationRe
   };
 }
 
+/** 01 §4.13: the shop's report as of the result (or now while the task is still running). */
+async function reportTime(db: Db, task: TaskRow): Promise<Date> {
+  const [r] = await db
+    .select({ at: schema.verificationResults.finalizedAt })
+    .from(schema.verificationResults)
+    .where(eq(schema.verificationResults.verificationId, task.id));
+  return r?.at ?? new Date();
+}
+
 /** 01 §4.12: the recheck created by a dispute of this task, if any. */
 async function recheckView(db: Db, task: TaskRow): Promise<GetVerificationResponse["recheck"]> {
   const [child] = await db
@@ -177,6 +187,7 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
     deadline: task.deadline.toISOString(),
     recheck_of: (task.recheckOf as GetVerificationResponse["recheck_of"]) ?? null,
     recheck: await recheckView(db, task),
+    store_report: await activeReport(db, task.placeId, await reportTime(db, task)),
     worker_requirements: task.minWorkerTier
       ? { min_tier: task.minWorkerTier as "standard" | "trusted" }
       : null,
