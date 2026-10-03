@@ -21,6 +21,7 @@ export const ID_PREFIXES = {
   oauthGrant: "ogr",
   participation: "par",
   removal: "rmv",
+  pushSubscription: "psb",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

@@ -127,6 +127,7 @@ export const OUTBOX_JOB_KINDS = [
   "REFUND_TASK",
   "DELIVER_WEBHOOK",
   "PURGE_EVIDENCE",
+  "NOTIFY_WORKERS",
 ] as const;
 export type OutboxJobKind = (typeof OUTBOX_JOB_KINDS)[number];
 

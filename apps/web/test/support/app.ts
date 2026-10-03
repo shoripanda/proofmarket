@@ -5,7 +5,7 @@ import type { AppContext } from "../../lib/context";
 import { route } from "../../lib/http";
 import { createPrincipal, issueApiKey, registerPlace, topUp } from "../../lib/services/admin-service";
 import { FakeChain } from "./chain";
-import { FakeIdentity, FakeStorage } from "./fakes";
+import { FakeIdentity, FakePush, FakeStorage } from "./fakes";
 
 export const SHOP = { lat: 35.6595, lng: 139.7005 };
 
@@ -15,12 +15,14 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
   const identity = new FakeIdentity();
   const storage = new FakeStorage(() => now);
   const chain = new FakeChain();
+  const push = new FakePush();
   const app: AppContext = {
     db,
     now: () => now,
     identity,
     storage,
     settlement: () => chain,
+    push,
     config: {
       appEnv: "test",
       pilotBBox: { minLat: 35.6, minLng: 139.65, maxLat: 35.72, maxLng: 139.78 },
@@ -46,6 +48,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
     identity,
     storage,
     chain,
+    push,
     principalId,
     credentialId,
     apiKey,

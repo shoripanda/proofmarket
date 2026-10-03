@@ -1,4 +1,4 @@
-import type { EvidenceStorage, IdentityProvider } from "../../lib/ports";
+import type { EvidenceStorage, IdentityProvider, PushSender } from "../../lib/ports";
 
 /** Tokens look like `tok:<userId>`; addresses come from the map. */
 export class FakeIdentity implements IdentityProvider {
@@ -34,5 +34,16 @@ export class FakeStorage implements EvidenceStorage {
   }
   async remove(bucket: "evidence-raw" | "evidence-derived", keys: string[]) {
     for (const k of keys) (bucket === "evidence-raw" ? this.raw : this.derived).delete(k);
+  }
+}
+
+/** Records pushes; endpoints in `gone` answer like a 410. */
+export class FakePush implements PushSender {
+  sent: { endpoint: string; payload: string }[] = [];
+  gone = new Set<string>();
+  async send(sub: { endpoint: string }, payload: string) {
+    if (this.gone.has(sub.endpoint)) return { ok: false as const, gone: true };
+    this.sent.push({ endpoint: sub.endpoint, payload });
+    return { ok: true as const };
   }
 }

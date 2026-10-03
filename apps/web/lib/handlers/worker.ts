@@ -15,6 +15,7 @@ import { readJson } from "../http";
 import { submitEvidence } from "../services/evidence-service";
 import { withIdempotency } from "../services/idempotency";
 import { workerPayouts } from "../services/public-service";
+import { deletePushSubscription, pushStatus, savePushSubscription } from "../services/push-service";
 import {
   abandonClaim,
   claimDetail,
@@ -128,4 +129,17 @@ export async function handleClaimDetail(app: AppContext, req: Request, id: strin
 export async function handlePayouts(app: AppContext, req: Request) {
   const w = await requireWorker(app, req);
   return Response.json(await workerPayouts(app, w.workerId));
+}
+
+export async function handlePushStatus(app: AppContext, req: Request) {
+  await requireWorker(app, req);
+  return Response.json(pushStatus(app));
+}
+export async function handlePushSave(app: AppContext, req: Request) {
+  const w = await requireWorker(app, req);
+  return Response.json(await savePushSubscription(app, w.workerId, await readJson(req)));
+}
+export async function handlePushDelete(app: AppContext, req: Request) {
+  const w = await requireWorker(app, req);
+  return Response.json(await deletePushSubscription(app, w.workerId, await readJson(req)));
 }

@@ -674,3 +674,17 @@ export const removalRequests = pgTable(
     check("removal_status_chk", oneOf("status", ["new", "handled", "rejected"])),
   ],
 );
+
+// ---------- 3.22 push_subscriptions ----------
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: text("id").primaryKey(),
+  workerId: text("worker_id")
+    .notNull()
+    .references(() => workers.id),
+  endpointHash: bytea("endpoint_hash").notNull().unique(),
+  endpointEnc: bytea("endpoint_enc").notNull(),
+  areas: text("areas").array().notNull(),
+  failures: integer("failures").notNull().default(0),
+  createdAt: tsz("created_at").notNull().defaultNow(),
+  lastSentAt: tsz("last_sent_at"),
+});

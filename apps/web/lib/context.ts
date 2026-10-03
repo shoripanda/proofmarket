@@ -8,8 +8,9 @@ import bs58 from "bs58";
 import { assertDevAllowed, devChain, devIdentity, localStorage } from "./adapters/dev";
 import { createPrivyIdentity } from "./adapters/privy";
 import { createSupabaseStorage } from "./adapters/supabase-storage";
+import { createWebPushSender } from "./adapters/web-push";
 import { env, isDev } from "./env";
-import type { EvidenceStorage, IdentityProvider } from "./ports";
+import type { EvidenceStorage, IdentityProvider, PushSender } from "./ports";
 
 /** Everything a service needs, injected so integration tests can use PGlite and fakes. */
 export interface AppContext {
@@ -20,6 +21,8 @@ export interface AppContext {
   storage: EvidenceStorage;
   /** Lazy: only chain jobs need it, and it validates the RPC/config on first use (06 §5.2). */
   settlement: () => SettlementAdapter;
+  /** Null when VAPID keys are not configured: push is simply unavailable. */
+  push: PushSender | null;
 }
 
 export interface AppConfig {
@@ -65,6 +68,7 @@ function buildContext(): AppContext {
       identity: devIdentity,
       storage: localStorage(join(DEV_DATA_DIR, "storage"), e.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"),
       settlement: () => chain,
+      push: pushFromEnv(e),
     };
     return ctx;
   }
@@ -88,8 +92,16 @@ function buildContext(): AppContext {
         verifierSecretKey: bs58.decode(e.VERIFIER_SECRET_KEY),
       }),
     ),
+    push: pushFromEnv(e),
   };
   return ctx;
+}
+
+function pushFromEnv(e: ReturnType<typeof env>): PushSender | null {
+  const publicKey = e.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const privateKey = e.VAPID_PRIVATE_KEY;
+  const subject = e.VAPID_SUBJECT;
+  return publicKey && privateKey && subject ? createWebPushSender({ publicKey, privateKey, subject }) : null;
 }
 
 function once<T>(f: () => T): () => T {

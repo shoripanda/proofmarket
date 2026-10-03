@@ -7,6 +7,7 @@ import { schema } from "@proofmarket/db";
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
+import { runNotifyWorkers } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
 import { type JobOutcome, runFinalizeAndSettle, runFundTask, runRefund } from "./settlement-jobs";
 import { lockTask } from "./task-engine";
@@ -66,6 +67,10 @@ const HANDLERS: Record<OutboxJobKind, Handler> = {
     ),
   PURGE_EVIDENCE: async (app) => {
     await purgeExpiredEvidence(app);
+    return { kind: "done" };
+  },
+  NOTIFY_WORKERS: async (app, p) => {
+    await runNotifyWorkers(app, String(p.verification_id));
     return { kind: "done" };
   },
 };

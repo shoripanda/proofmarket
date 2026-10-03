@@ -9,6 +9,13 @@ const Common = {
   PILOT_BBOX: z.string().regex(/^-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}$/),
   MAX_WITNESSES: z.coerce.number().int().min(1).max(5),
   NEXT_PUBLIC_BASE_URL: z.url().optional(),
+  // Web Push (04 §3.22). All three or none; without them push is unavailable.
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+  VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+  VAPID_SUBJECT: z
+    .string()
+    .regex(/^(mailto:|https:)/)
+    .optional(),
 };
 
 const FullSchema = z.object({

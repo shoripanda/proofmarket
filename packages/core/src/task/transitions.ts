@@ -49,7 +49,7 @@ export type Effect =
   | { kind: "expireActiveClaims" }
   | { kind: "runConsensus" }
   | { kind: "saveResult"; outcome: "VERIFIED" | "REJECTED" | "EXPIRED" }
-  | { kind: "enqueue"; job: "FUND_TASK" | "FINALIZE_AND_SETTLE" | "REFUND_TASK" }
+  | { kind: "enqueue"; job: "FUND_TASK" | "FINALIZE_AND_SETTLE" | "REFUND_TASK" | "NOTIFY_WORKERS" }
   | { kind: "cancelJob"; job: "FUND_TASK" }
   | { kind: "ledger"; entry: "RELEASE" | "REFUND" }
   | { kind: "webhook"; event: WebhookEvent }
@@ -80,7 +80,10 @@ export const TRANSITIONS: readonly TransitionRule[] = [
     event: "OPEN",
     guard: "deadlineInFuture",
     to: "OPEN",
-    effects: [{ kind: "webhook", event: "verification.open" }],
+    effects: [
+      { kind: "webhook", event: "verification.open" },
+      { kind: "enqueue", job: "NOTIFY_WORKERS" },
+    ],
   },
   {
     id: "T03",

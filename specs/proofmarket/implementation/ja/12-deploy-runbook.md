@@ -49,6 +49,12 @@ pnpm --filter @proofmarket/scripts run run gen-secrets.ts
 
 `~/.config/proofmarket/env.secrets` に `LOCATION_ENC_KEY`・`WORKER_REF_SALT`・`WEBHOOK_SIGNING_SECRET_PEPPER`・`INTERNAL_CRON_SECRET`・`ADMIN_TOKEN` ができる。一度作ったら作り直さない（位置の暗号鍵を変えると既存の暗号文が読めなくなる）。
 
+プッシュ通知を使うなら、VAPID の鍵も一度だけ作る（作り直すと worker の通知登録がすべて無効になる）。`--subject` は連絡先の URL か mailto で、通知のたびにブラウザの通知サービスへ送られる。
+
+```bash
+pnpm --filter @proofmarket/scripts run run gen-vapid.ts --subject https://<連絡先のページ>
+```
+
 ## 3. Supabase
 
 1. （オーナー）プロジェクトを作り、リージョンは東京にする
@@ -88,6 +94,7 @@ pnpm --filter @proofmarket/scripts run run gen-secrets.ts
 | `LOCATION_ENC_KEY`、`WORKER_REF_SALT`、`WEBHOOK_SIGNING_SECRET_PEPPER`、`INTERNAL_CRON_SECRET`、`ADMIN_TOKEN` | `~/.config/proofmarket/env.secrets` |
 | `PILOT_BBOX` | `35.60,139.65,35.72,139.78`（渋谷・新宿を含む東京都心） |
 | `MAX_WITNESSES` | `5` |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`、`VAPID_PRIVATE_KEY`、`VAPID_SUBJECT` | `~/.config/proofmarket/env.vapid`。3つとも無いとプッシュ通知は出ない（ほかは動く） |
 | `OPERATOR_NAME`、`OPERATOR_CONTACT_EMAIL` | `/legal/operator` に出す運営者の名前と連絡先。未設定なら「公開前に記載します」と出る |
 
 `DEV_MODE` と `NEXT_PUBLIC_DEV_MODE` は入れない。入れると起動を拒否する。
