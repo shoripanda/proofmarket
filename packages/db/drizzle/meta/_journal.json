@@ -71,6 +71,13 @@
       "when": 1791049785746,
       "tag": "0009_task_types",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791050150028,
+      "tag": "0010_verification_schedules",
+      "breakpoints": true
     }
   ]
 }

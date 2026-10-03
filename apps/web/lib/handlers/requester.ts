@@ -14,6 +14,7 @@ import {
   getVerification,
   parseCreateBody,
 } from "../services/requester-service";
+import { createSchedule, listSchedules, stopSchedule } from "../services/schedule-service";
 
 function verificationId(raw: string): string {
   const id = parseId("verification", raw);
@@ -60,4 +61,23 @@ export async function handlePublicResult(app: AppContext, _req: Request, rawId: 
   return Response.json(await publicResult(app, rawId), {
     headers: { "Cache-Control": "public, max-age=10" },
   });
+}
+
+export async function handleCreateSchedule(app: AppContext, req: Request): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  const rl = await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
+  return Response.json(await createSchedule(app, auth, await readJson(req)), {
+    status: 201,
+    headers: rateLimitHeaders(rl),
+  });
+}
+
+export async function handleListSchedules(app: AppContext, req: Request): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  return Response.json(await listSchedules(app, auth));
+}
+
+export async function handleStopSchedule(app: AppContext, req: Request, rawId: string): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  return Response.json(await stopSchedule(app, auth, rawId));
 }

@@ -689,3 +689,30 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   createdAt: tsz("created_at").notNull().defaultNow(),
   lastSentAt: tsz("last_sent_at"),
 });
+
+// ---------- 3.23 verification_schedules ----------
+export const verificationSchedules = pgTable(
+  "verification_schedules",
+  {
+    id: text("id").primaryKey(),
+    credentialId: text("credential_id")
+      .notNull()
+      .references(() => requesterCredentials.id),
+    template: jsonb("template").notNull(),
+    deadlineMinutes: integer("deadline_minutes").notNull(),
+    timesJst: text("times_jst").array().notNull(),
+    daysJst: smallint("days_jst").array().notNull(),
+    endsAt: tsz("ends_at"),
+    active: boolean("active").notNull().default(true),
+    nextRunAt: tsz("next_run_at").notNull(),
+    lastRunAt: tsz("last_run_at"),
+    lastVerificationId: text("last_verification_id"),
+    lastError: text("last_error"),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    createdAt: tsz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("schedule_deadline_chk", sql`deadline_minutes between 10 and 1440`),
+    index("verification_schedules_active_next_idx").on(t.active, t.nextRunAt),
+  ],
+);

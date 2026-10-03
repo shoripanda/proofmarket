@@ -9,6 +9,7 @@ import type { AppContext } from "../context";
 import { log } from "../log";
 import { runNotifyWorkers } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
+import { runDueSchedules } from "./schedule-service";
 import { type JobOutcome, runFinalizeAndSettle, runFundTask, runRefund } from "./settlement-jobs";
 import { lockTask } from "./task-engine";
 import { handleDeadline } from "./verification-service";
@@ -166,7 +167,9 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
     .insert(schema.outboxJobs)
     .values({ kind: "PURGE_EVIDENCE", dedupeKey: `PURGE_EVIDENCE:${day}`, payload: {}, state: "PENDING" })
     .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey });
-  // 4. Drain jobs.
+  // 4. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
+  await runDueSchedules(app);
+  // 5. Drain jobs.
   const runner = `tick:${crypto.randomUUID()}`;
   let jobsRun = 0;
   for (; jobsRun < maxJobs; jobsRun++) {

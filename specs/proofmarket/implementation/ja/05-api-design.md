@@ -26,6 +26,8 @@
 | GET | `/v1/worker/claims/{claim_id}` | worker | P0 | 追加。判定結果と理由 |
 | GET | `/v1/worker/payouts` | worker | P1 | 追加 |
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | 追加（2026-10-04）。GET は通知が使えるか、PUT は宛先と地域の登録、DELETE は解除。VAPID の鍵が無い環境では GET が `available: false` を返す |
+| POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23） |
+| DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
 | POST | `/v1/public/removal-requests` | 誰でも | P2 | 追加。写真の削除・公開停止の依頼（04 §3.21）。IP ごとに 1 分 5 件まで |
 | POST | `/v1/public/participation-requests` | 誰でも | P2 | 追加。参加・API キーの申し込み（04 §3.20）。IP ごとに 1 分 5 件まで |
