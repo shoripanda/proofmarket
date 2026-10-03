@@ -194,6 +194,8 @@ export const verificationRequests = pgTable(
     callbackEndpointId: text("callback_endpoint_id").references(() => webhookEndpoints.id),
     /** Operator stopped evidence access for this verification (08 §6). */
     evidenceAccessRevoked: boolean("evidence_access_revoked").notNull().default(false),
+    /** Operator featured this result on the site's top page (05 §4). Null = not listed. */
+    featuredAt: tsz("featured_at"),
     createdAt: tsz("created_at").notNull().defaultNow(),
     updatedAt: tsz("updated_at").notNull().defaultNow(),
   },

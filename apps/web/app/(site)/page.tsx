@@ -1,6 +1,10 @@
 // S-01 トップ — what ProofMarket is, in four steps, and where each reader goes next.
 import Link from "next/link";
+import { FeaturedResults } from "@/components/featured-results";
 import { PageHero, Section } from "@/components/site";
+
+// Featured results are read from the DB per request.
+export const dynamic = "force-dynamic";
 
 const STEPS = [
   {
@@ -54,6 +58,8 @@ export default function Home() {
           ))}
         </ol>
       </Section>
+
+      <FeaturedResults />
 
       <Section title="返ってくる結果の例">
         <div className="grid gap-6 lg:grid-cols-2">

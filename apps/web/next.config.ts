@@ -9,7 +9,8 @@ const nextConfig: NextConfig = {
     "@proofmarket/mcp",
     "@proofmarket/sdk",
   ],
-  serverExternalPackages: ["sharp"],
+  // PGlite (DEV_MODE only) resolves its wasm via import.meta.url, which breaks when bundled into the RSC graph.
+  serverExternalPackages: ["sharp", "@electric-sql/pglite"],
   // Dev server only: lets a Cloudflare quick tunnel load dev assets and HMR (phone / claude.ai testing).
   allowedDevOrigins: ["*.trycloudflare.com"],
   poweredByHeader: false,

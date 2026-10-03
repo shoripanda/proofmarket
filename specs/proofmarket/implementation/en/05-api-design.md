@@ -32,6 +32,7 @@ This chapter adds the details needed for implementation without changing the ext
 | POST | `/v1/admin/{credentials|workers}/{id}/suspend` | operator | P0 | Added |
 | POST | `/v1/admin/credentials/{id}/revoke` | operator | P0 | Added |
 | POST | `/v1/admin/verifications/{id}/evidence/revoke-access` | operator | P0 | Added |
+| POST | `/v1/admin/verifications/{id}/feature` | operator | P2 | Added. `{"featured": true}` lists it on the top page, false removes it. Tasks without a result cannot be featured |
 | POST | `/v1/admin/jobs/{id}/requeue` | operator | P0 | Added. Returns a DEAD outbox job to PENDING |
 | POST | `/api/internal/tick` | pg_cron | P0 | Added. Treated as not publicly exposed (shared secret) |
 
@@ -319,6 +320,8 @@ The `reason_message_ja` value is a Japanese UI string shown to the worker and is
 ## 4. Public API and Operator API
 
 `GET /v1/public/verifications/{id}` returns the VerificationResult in Section 2.4 with the following removed: per-submission information other than the breakdown in `checks`, the question text, the location, and evidence URLs. It assumes that only people who know the ID can view it, and no list API is built.
+
+As an exception, the site's top page (S-01) lists only results the operator has marked as featured (added 2026-10-04). The operator decides each one with `POST /v1/admin/verifications/{id}/feature`, so a requester's task never appears there without their knowledge. The listed fields are a subset of the public result above: answer, status, witness counts, consensus ratio, verified time, settlement status and Explorer URL. There is still no list API; the page reads them on the server.
 
 The operator API is used for the incident response in Chapter 08, Section 6. All calls are recorded in audit_events with `actor_type = operator`.
 

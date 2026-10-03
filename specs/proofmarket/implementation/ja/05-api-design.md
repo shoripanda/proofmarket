@@ -30,6 +30,7 @@
 | POST | `/v1/admin/{credentials|workers}/{id}/suspend` | operator | P0 | 追加 |
 | POST | `/v1/admin/credentials/{id}/revoke` | operator | P0 | 追加 |
 | POST | `/v1/admin/verifications/{id}/evidence/revoke-access` | operator | P0 | 追加 |
+| POST | `/v1/admin/verifications/{id}/feature` | operator | P2 | 追加。`{"featured": true}` でトップに掲載、false で外す。結果が無い依頼は掲載できない |
 | POST | `/v1/admin/jobs/{id}/requeue` | operator | P0 | 追加。DEAD の outbox ジョブを PENDING に戻す |
 | POST | `/api/internal/tick` | pg_cron | P0 | 追加。外部公開しない扱い（共有シークレット） |
 
@@ -315,6 +316,8 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 ## 4. 公開 API と運営者 API
 
 `GET /v1/public/verifications/{id}` は 2.4 の VerificationResult から次を除いて返す: `checks` の内訳以外の提出ごとの情報、質問文、位置、証拠の URL。ID を知っている人だけが見られる前提で、一覧の API は作らない。
+
+例外として、サイトのトップ（S-01）には運営者が「掲載」にした結果だけを並べる（2026-10-04 追加）。掲載は `POST /v1/admin/verifications/{id}/feature` で運営者が1件ずつ決め、requester の依頼が本人の知らないうちに並ぶことはない。並べる項目は上の公開結果と同じ範囲から、答え・状態・証言の数・一致率・確定時刻・決済の状態・Explorer の URL に絞る。一覧の API は作らず、ページのサーバー側で読む。
 
 運営者 API は 08 章 6 節の障害対応で使う。すべて audit_events に `actor_type = operator` で残す。
 

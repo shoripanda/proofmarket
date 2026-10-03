@@ -160,6 +160,20 @@ export async function revokeEvidenceAccess(db: Db, verificationId: string, by: s
   await audit(db, by, "revoke_evidence_access", verificationId);
 }
 
+/** List (or unlist) a result on the site's top page (05 §4). Only tasks that already have a result. */
+export async function setFeatured(db: Db, verificationId: string, featured: boolean, by: string, now: Date) {
+  const [res] = await db
+    .select({ id: schema.verificationResults.verificationId })
+    .from(schema.verificationResults)
+    .where(eq(schema.verificationResults.verificationId, verificationId));
+  if (!res) throw new ApiError("VERIFICATION_NOT_FOUND", { reason: "no_result_yet" });
+  await db
+    .update(schema.verificationRequests)
+    .set({ featuredAt: featured ? now : null })
+    .where(eq(schema.verificationRequests.id, verificationId));
+  await audit(db, by, featured ? "feature_result" : "unfeature_result", verificationId);
+}
+
 export async function requeueJob(db: Db, jobId: number, by: string, now: Date) {
   const r = await db
     .update(schema.outboxJobs)
