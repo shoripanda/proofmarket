@@ -50,7 +50,10 @@ export function createServer(
       const r = await client.createVerification(body, idempotency_key ?? defaultIdempotencyKey(body));
       return ok({
         ...r,
-        note: "A human witness must travel to the place. Poll get_reality_verification for the result.",
+        note: r.reused
+          ? "A recent shared result for this place was reused; it is final and nobody was sent. " +
+            "This verification belongs to another requester, so read it here (or via the public result) rather than get_reality_verification."
+          : "A human witness must travel to the place. Poll get_reality_verification for the result.",
       });
     } catch (e) {
       return err(e);

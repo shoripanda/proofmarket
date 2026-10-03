@@ -135,15 +135,25 @@ export const CreateVerificationRequestSchema = z
       network: z.literal("solana-devnet"),
     }),
     principal_ref: PrincipalRefSchema,
+    /** Let other requesters receive this result through `reuse` (01 §4.9). */
+    allow_reuse: z.boolean().optional(),
+    /** Return a recent shared VERIFIED result for the same place instead of sending someone (01 §4.9). */
+    reuse: z
+      .object({ max_age_seconds: z.number().int().min(60).max(3600) })
+      .strict()
+      .optional(),
   })
   .strict();
 export type CreateVerificationRequest = z.infer<typeof CreateVerificationRequestSchema>;
 
 export const CreateVerificationResponseSchema = z.object({
   verification_id: VerificationIdSchema,
-  status: z.literal("CREATED"),
+  status: z.enum(["CREATED", "VERIFIED"]),
   created_at: IsoDateTime,
-  funding: z.object({ status: z.literal("PENDING") }),
+  funding: z.object({ status: z.enum(["PENDING", "NONE"]) }),
+  /** true: an existing shared result was returned (01 §4.9); `verification_id` is that task and `result` is final. */
+  reused: z.boolean().optional(),
+  result: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ---------- requester: result ----------

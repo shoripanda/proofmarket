@@ -118,6 +118,16 @@ The same worker can claim the same task only once. A retry is treated as an atte
 
 Not added: stock availability needs entering the shop, which the photo rules forbid. Prices cannot be answered with choices. Crowd level is mostly about photographing people, so it waits until bystander handling is decided. Queues also show people, so workers are told to shoot from behind without faces.
 
+### 4.9 Result reuse (2026-10-04)
+
+If a result for the same shop was finalized a moment ago, return it without sending anyone. This avoids sending workers to the same shop again and again, and saves the requester money and waiting time.
+
+- Adding `reuse: { "max_age_seconds": 60-3600 }` to the request body makes the API look for a reusable result before creating a task
+- Only tasks whose original requester set `allow_reuse: true` are reused (default false), so a result someone paid for is never handed to others without their consent
+- Conditions: same registered place, same `type`, same answer choices, result VERIFIED, finalized within `max_age_seconds`. `NOTICE_POSTED` is excluded because the question decides which notice
+- If found, respond 200 with `reused: true`, the source `verification_id` and the public result (the same fields as 05 §4). No task is created and no balance moves (free during the pilot)
+- Otherwise a task is created as usual
+
 ## 5. Business flow
 
 ### 5.1 Normal case (1 witness)

@@ -30,11 +30,15 @@ export class ProofMarketApiError extends Error {
 
 export interface CreateVerificationResult {
   verification_id: string;
-  status: "CREATED";
+  status: "CREATED" | "VERIFIED";
   created_at: string;
-  funding: { status: "PENDING" };
+  funding: { status: "PENDING" | "NONE" };
   /** true when the server replayed a stored response (Idempotent-Replayed header). */
   replayed: boolean;
+  /** true when a recent shared result was returned instead of a new task (01 §4.9). */
+  reused?: boolean;
+  /** The final public result when `reused` is true. */
+  result?: Record<string, unknown>;
 }
 
 const FINAL_TASK_STATUSES = new Set(["SETTLED", "REJECTED", "EXPIRED", "CANCELLED", "REFUNDED"]);

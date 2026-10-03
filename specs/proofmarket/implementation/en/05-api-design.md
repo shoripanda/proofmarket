@@ -114,6 +114,7 @@ The request body is as in Section 1 of `api-contract.md`. The following checks a
 | 12 | `1 ≤ quorum ≤ required_witnesses ≤ MAX_WITNESSES` (1 until PR-14, 5 afterward). `assurance` either gives the counts directly or picks `{ "level": "fast" | "standard" | "high" }` (added 2026-10-04): fast = 1 witness, standard = 2 agreeing, high = 2 of 3. The level is replaced by counts before storage; GET returns the level matching the counts | 400 `VALIDATION_FAILED` |
 | 13 | `bounty.asset = "USDC"`, `network = "solana-devnet"`, `amount > 0`, at most 6 decimal places | 400 `VALIDATION_FAILED` |
 | 14 | Policy check of the question text (Chapter 08, Section 3) | 422 `TASK_POLICY_VIOLATION` (with `details.rule_id`) |
+| 14a | If `reuse` is set, look for a reusable result (01 §4.9). If found, return 200 here and skip 15 onward | 200 `reused: true` |
 | — | Here, lock the `requester_credentials` row with `FOR UPDATE` (protects 15 to 17 from concurrent execution) | — |
 | 15 | Total ≤ `max_task_amount` | 403 `TASK_AMOUNT_LIMIT_EXCEEDED` |
 | 16 | Today's (Japan-time calendar day) reserved total + total ≤ `daily_spend_limit` | 403 `DAILY_SPEND_LIMIT_EXCEEDED` |

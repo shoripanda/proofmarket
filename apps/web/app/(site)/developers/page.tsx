@@ -201,6 +201,20 @@ export default async function DevelopersPage() {
       </Section>
 
       <Section
+        title="少し前の結果があれば、それを受け取る"
+        lead="依頼に reuse を付けると、同じ店について少し前に確定した結果を探し、あれば人を出さずにその場で返します。待ち時間がなく、試験運用中は費用もかかりません。"
+      >
+        <Code>{`"reuse": { "max_age_seconds": 600 },   // 10分以内の結果があれば使う
+"allow_reuse": true                     // 自分の結果をほかの依頼者に使わせてよい`}</Code>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
+          使われるのは、元の依頼者が allow_reuse
+          を付けた結果だけです。店・種類・答えの選択肢が同じで、VERIFIED のものに限ります。見つかれば 200 で
+          reused: true と結果そのものが返り、新しい依頼は作られません。NOTICE_POSTED
+          は質問ごとに見る掲示が違うので対象外です。
+        </p>
+      </Section>
+
+      <Section
         title="決まった時刻に繰り返し確かめる"
         lead="「平日の朝 9 時に、この店が開いているか」のような確認は、予定として登録できます。時刻が来るたびに通常の依頼が1件作られるので、残高や上限、確認の手順はふつうの依頼と同じです。"
       >

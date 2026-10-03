@@ -239,6 +239,23 @@
                   "principal_ref": {
                     "type": "string",
                     "pattern": "^prn_[0-9A-HJKMNP-TV-Z]{26}$"
+                  },
+                  "allow_reuse": {
+                    "type": "boolean"
+                  },
+                  "reuse": {
+                    "type": "object",
+                    "properties": {
+                      "max_age_seconds": {
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 3600
+                      }
+                    },
+                    "required": [
+                      "max_age_seconds"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -272,7 +289,8 @@
                     "status": {
                       "type": "string",
                       "enum": [
-                        "CREATED"
+                        "CREATED",
+                        "VERIFIED"
                       ]
                     },
                     "created_at": {
@@ -286,13 +304,21 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "PENDING"
+                            "PENDING",
+                            "NONE"
                           ]
                         }
                       },
                       "required": [
                         "status"
                       ]
+                    },
+                    "reused": {
+                      "type": "boolean"
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": {}
                     }
                   },
                   "required": [
@@ -2000,6 +2026,23 @@
                       "principal_ref": {
                         "type": "string",
                         "pattern": "^prn_[0-9A-HJKMNP-TV-Z]{26}$"
+                      },
+                      "allow_reuse": {
+                        "type": "boolean"
+                      },
+                      "reuse": {
+                        "type": "object",
+                        "properties": {
+                          "max_age_seconds": {
+                            "type": "integer",
+                            "minimum": 60,
+                            "maximum": 3600
+                          }
+                        },
+                        "required": [
+                          "max_age_seconds"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [

@@ -196,6 +196,8 @@ export const verificationRequests = pgTable(
     policyRuleVersion: text("policy_rule_version").notNull(),
     callbackEndpointId: text("callback_endpoint_id").references(() => webhookEndpoints.id),
     /** Operator stopped evidence access for this verification (08 §6). */
+    /** Other requesters may reuse this result (01 §4.9). */
+    allowReuse: boolean("allow_reuse").notNull().default(false),
     evidenceAccessRevoked: boolean("evidence_access_revoked").notNull().default(false),
     /** Operator featured this result on the site's top page (05 §4). Null = not listed. */
     featuredAt: tsz("featured_at"),
