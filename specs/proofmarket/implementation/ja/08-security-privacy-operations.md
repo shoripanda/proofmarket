@@ -124,6 +124,7 @@ requester に worker の位置・自宅・移動履歴を返す API はない（
 | API キーを失効させる | `POST /v1/admin/credentials/{id}/revoke` | 1 分 |
 | 影響した依頼を特定する | audit_events を `actor_ref` で検索する SQL を `docs/runbook.md` に用意 | 10 分 |
 | 証拠の公開を止める | `POST /v1/admin/verifications/{id}/evidence/revoke-access`、全体なら `public_evidence_enabled` を false | 1 分 |
+| 店舗や写り込んだ人から削除を求められた | `/rules` のフォームで受け、`list-removal.ts` で読む。該当の依頼に `revoke-access` をかけ、必要なら元写真と派生画像を Storage から消して `--mark <id> --as handled` | 1 営業日 |
 | DEAD になったジョブを再実行する | 原因を直してから `POST /v1/admin/jobs/{id}/requeue` | 5 分 |
 | 鍵が漏れた | `update_config` で operator / verifier を差し替え、Vercel の環境変数を更新、旧鍵の Devnet 資金を移す | 30 分 |
 

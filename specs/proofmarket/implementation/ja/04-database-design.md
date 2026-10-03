@@ -496,6 +496,23 @@ create table participation_requests (
 );
 ```
 
+### 3.21 removal_requests（写真の削除依頼、2026-10-04 追加）
+
+サイトの `/rules` から届く、店舗や写り込んだ人からの削除・公開停止の依頼。運営者が読み、`revoke-access` などで対応する（08 §6）。
+
+```sql
+create table removal_requests (
+  id              text primary key,              -- rmv_<ULID>
+  contact_enc     bytea not null,                -- AES-256-GCM(メールアドレス)。鍵は LOCATION_ENC_KEY
+  verification_id text,                          -- 分かれば。外部キーにはしない（誤った ID でも受け付ける）
+  place_note      text check (char_length(place_note) <= 200),
+  reason          text not null check (char_length(reason) between 1 and 1000),
+  status          text not null default 'new' check (status in ('new','handled','rejected')),
+  created_at      timestamptz not null default now(),
+  delete_after    timestamptz not null           -- created_at + 365 日（対応の記録として残す）
+);
+```
+
 ## 4. 保持期間と削除
 
 | 保持区分 | 対象 | 期間 | 削除のしかた |
@@ -506,6 +523,7 @@ create table participation_requests (
 | payment | payment_records、requester_ledger | 1 年 | 同上 |
 | audit | audit_events | 1 年 | 同上 |
 | participation | participation_requests | 90 日 | 行を消す |
+| removal | removal_requests | 1 年 | 行を消す |
 
 削除は outbox の `PURGE_EVIDENCE` ジョブが 1 日 1 回行い、件数を audit_events に残す。
 

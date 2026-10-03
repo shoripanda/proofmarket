@@ -6,6 +6,7 @@ import {
   listParticipationRequests,
   setParticipationStatus,
 } from "../lib/services/participation-service";
+import { createRemovalRequest, listRemovalRequests, setRemovalStatus } from "../lib/services/removal-service";
 import { purgeExpiredEvidence } from "../lib/services/retention";
 import { createTestApp } from "./support/app";
 
@@ -66,5 +67,34 @@ describe("participation requests", () => {
     t.advance(2 * 86_400_000);
     expect((await purgeExpiredEvidence(t.app)).participation).toBe(1);
     expect(await t.db.select().from(schema.participationRequests)).toEqual([]);
+  });
+});
+
+describe("removal requests", () => {
+  const base = {
+    email: "Shop@Example.com",
+    reason: "店の写真を消してください",
+    verification_id: "ver_01ABC",
+  };
+  it("stores the address encrypted and lists it for the operator", async () => {
+    await createRemovalRequest(t.app, base, "ip");
+    const [row] = await t.db.select().from(schema.removalRequests);
+    expect(row?.contactEnc.toString("utf8")).not.toContain("example.com");
+    const list = await listRemovalRequests(t.db, t.app.config.locationEncKey);
+    expect(list).toMatchObject([{ email: "shop@example.com", verification_id: "ver_01ABC" }]);
+    await setRemovalStatus(t.db, list[0]?.id ?? "", "handled");
+    expect(await listRemovalRequests(t.db, t.app.config.locationEncKey)).toEqual([]);
+  });
+
+  it("needs a reason, rejects odd IDs, and is kept for a year", async () => {
+    expect(await err(createRemovalRequest(t.app, { ...base, reason: " " }, "ip"))).toBe("VALIDATION_FAILED");
+    expect(await err(createRemovalRequest(t.app, { ...base, verification_id: "x;drop" }, "ip"))).toBe(
+      "VALIDATION_FAILED",
+    );
+    await createRemovalRequest(t.app, base, "ip");
+    t.advance(364 * 86_400_000);
+    expect((await purgeExpiredEvidence(t.app)).removal).toBe(0);
+    t.advance(2 * 86_400_000);
+    expect((await purgeExpiredEvidence(t.app)).removal).toBe(1);
   });
 });

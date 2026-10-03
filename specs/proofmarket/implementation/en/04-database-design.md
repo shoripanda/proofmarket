@@ -498,6 +498,23 @@ create table participation_requests (
 );
 ```
 
+### 3.21 removal_requests (photo removal requests, added 2026-10-04)
+
+Requests from shops or people in a photo to remove or stop showing evidence, sent from the site's `/rules`. The operator reads them and acts, e.g. with `revoke-access` (08 §6).
+
+```sql
+create table removal_requests (
+  id              text primary key,              -- rmv_<ULID>
+  contact_enc     bytea not null,                -- AES-256-GCM(email address), key LOCATION_ENC_KEY
+  verification_id text,                          -- if known; not a foreign key (a wrong ID is still accepted)
+  place_note      text check (char_length(place_note) <= 200),
+  reason          text not null check (char_length(reason) between 1 and 1000),
+  status          text not null default 'new' check (status in ('new','handled','rejected')),
+  created_at      timestamptz not null default now(),
+  delete_after    timestamptz not null           -- created_at + 365 days (kept as a record of handling)
+);
+```
+
 ## 4. Retention and Deletion
 
 | Retention class | Target | Period | How it is deleted |
@@ -508,6 +525,7 @@ create table participation_requests (
 | payment | payment_records, requester_ledger | 1 year | Same as above |
 | audit | audit_events | 1 year | Same as above |
 | participation | participation_requests | 90 days | Delete the rows |
+| removal | removal_requests | 1 year | Delete the rows |
 
 Deletion is performed once a day by the outbox `PURGE_EVIDENCE` job, and the counts are recorded in audit_events.
 
