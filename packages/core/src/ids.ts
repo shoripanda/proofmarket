@@ -17,6 +17,8 @@ export const ID_PREFIXES = {
   webhookEndpoint: "whk",
   webhookEvent: "evt",
   invite: "inv",
+  oauthClient: "ocl",
+  oauthGrant: "ogr",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

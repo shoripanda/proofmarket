@@ -2,7 +2,7 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { ApiError } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
-import { eq } from "drizzle-orm";
+import { eq, type SQL } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { sha256 } from "../services/crypto";
 
@@ -27,23 +27,53 @@ export function parseApiKey(raw: string): { prefix: string; secret: string } | n
   return m?.[1] && m[2] ? { prefix: m[1], secret: m[2] } : null;
 }
 
-/** `Authorization: Bearer pm_test_<prefix>_<secret>` -> SHA-256(secret) compare (05 §1.2). */
-export async function authenticateRequester(app: AppContext, req: Request): Promise<RequesterAuth> {
-  const header = req.headers.get("authorization") ?? "";
-  const parsed = parseApiKey(header.replace(/^Bearer\s+/i, ""));
-  if (!parsed) throw new ApiError("UNAUTHENTICATED");
+/** OAuth access tokens issued to MCP clients (05 §6.2). */
+export const ACCESS_TOKEN_PREFIX = "pm_oat_";
 
-  const rows = await app.db
-    .select({ cred: schema.requesterCredentials, principalStatus: schema.principals.status })
-    .from(schema.requesterCredentials)
-    .innerJoin(schema.principals, eq(schema.principals.id, schema.requesterCredentials.principalId))
-    .where(eq(schema.requesterCredentials.keyPrefix, parsed.prefix));
-  const row = rows[0];
+/** `Authorization: Bearer <API key | OAuth access token>` (05 §1.2, §6.2). */
+export async function authenticateRequester(app: AppContext, req: Request): Promise<RequesterAuth> {
+  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (token.startsWith(ACCESS_TOKEN_PREFIX)) return authenticateAccessToken(app, token);
+  return authenticateApiKey(app, token);
+}
+
+/** `pm_test_<prefix>_<secret>` -> SHA-256(secret) compare. */
+export async function authenticateApiKey(app: AppContext, raw: string): Promise<RequesterAuth> {
+  const parsed = parseApiKey(raw);
+  if (!parsed) throw new ApiError("UNAUTHENTICATED");
+  const row = await loadCredential(app, eq(schema.requesterCredentials.keyPrefix, parsed.prefix));
   const expected = row?.cred.secretHash;
   const actual = sha256(parsed.secret);
   if (!row || !expected || expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
     throw new ApiError("UNAUTHENTICATED");
   }
+  return toAuth(row);
+}
+
+/** A live access token stands for the API key that granted it; suspending or revoking the key stops it. */
+async function authenticateAccessToken(app: AppContext, raw: string): Promise<RequesterAuth> {
+  const [tok] = await app.db
+    .select()
+    .from(schema.oauthTokens)
+    .where(eq(schema.oauthTokens.tokenHash, sha256(raw)));
+  if (!tok || tok.kind !== "access" || tok.revokedAt || tok.expiresAt <= app.now()) {
+    throw new ApiError("UNAUTHENTICATED");
+  }
+  const row = await loadCredential(app, eq(schema.requesterCredentials.id, tok.credentialId));
+  if (!row) throw new ApiError("UNAUTHENTICATED");
+  return toAuth(row);
+}
+
+async function loadCredential(app: AppContext, where: SQL) {
+  const rows = await app.db
+    .select({ cred: schema.requesterCredentials, principalStatus: schema.principals.status })
+    .from(schema.requesterCredentials)
+    .innerJoin(schema.principals, eq(schema.principals.id, schema.requesterCredentials.principalId))
+    .where(where);
+  return rows[0];
+}
+
+function toAuth(row: NonNullable<Awaited<ReturnType<typeof loadCredential>>>): RequesterAuth {
   if (row.cred.status !== "active" || row.cred.revokedAt || row.principalStatus !== "active") {
     throw new ApiError("CREDENTIAL_SUSPENDED");
   }

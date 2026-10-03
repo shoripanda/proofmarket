@@ -361,6 +361,26 @@ stdio 版は、動かす人の手元でしか使えない。他人の PC やス�
 - `get_reality_verification` は最大20秒待つので、この関数の実行時間の上限は60秒にする
 - Claude や ChatGPT のスマホアプリは API キーを書く欄が無く、OAuth で接続する。これは 6.2 で足す
 
+### 6.2 スマホの AI アプリ向けの OAuth（2026-10-03 追加）
+
+Claude や ChatGPT のアプリは、MCP の認可仕様（OAuth 2.1）に沿って接続する。ProofMarket が認可サーバーを兼ね、利用者は接続のときに API キーを1回だけ入れる。
+
+| 入口 | 役割 |
+|---|---|
+| `GET /.well-known/oauth-protected-resource` | `resource`（`<BASE>/mcp`）と認可サーバー（`<BASE>`）を返す（RFC 9728） |
+| `GET /.well-known/oauth-authorization-server` | 各入口・`code_challenge_methods_supported: ["S256"]`・`token_endpoint_auth_methods_supported: ["none"]` を返す（RFC 8414） |
+| `POST /oauth/register` | 動的クライアント登録（RFC 7591）。公開クライアントだけ。`redirect_uris` は https か、`http://localhost`・`http://127.0.0.1` に限る。1〜5個。IP ごとに1分10回まで |
+| `GET /oauth/authorize` | 承認画面。接続先の名前と戻り先のホストを見せ、API キーを入れさせる。`client_id` か `redirect_uri` が不正なら戻り先へ飛ばさず、その場でエラーを出す |
+| `POST /oauth/authorize` | API キーを REST と同じ規則で確かめ、認可コード（10分・1回限り）を付けて戻り先へ返す。`code_challenge`（S256）は必須 |
+| `POST /oauth/token` | `authorization_code`（PKCE を検証）と `refresh_token` に応じる |
+
+- アクセストークン（`pm_oat_…`）は1時間、リフレッシュトークン（`pm_ort_…`）は30日。どちらもハッシュだけを保存する。リフレッシュトークンは使うたびに取り替え、使用済みのものが再び来たら、その接続のトークンをすべて無効にする
+- トークンは発行元の API キーに結び付く。キーの停止・失効で、トークンもすぐ使えなくなる。レート制限・日次上限・ポリシーもキーと共有する
+- `/mcp` は API キーとアクセストークンのどちらも受け付ける。401 には `WWW-Authenticate: Bearer resource_metadata="<BASE>/.well-known/oauth-protected-resource"` を付ける
+- `resource` パラメータ（RFC 8707）が来たら `<BASE>/mcp` と一致するかを確かめる
+- 承認画面は `frame-ancestors 'none'` で他サイトに埋め込ませない。承認は監査ログに `oauth_granted`（キーの先頭8文字とクライアント名）で残す
+- テーブル: `oauth_clients`（登録したクライアント）、`oauth_codes`（認可コードのハッシュ）、`oauth_tokens`（トークンのハッシュ・期限・取り消し・同じ接続をまとめる `grant_id`）
+
 ## 7. x402 V2（Stretch）
 
 x402 は残高への入金にだけ使い、タスクごとのエスクローとは分ける（`architecture.md` 6 節）。

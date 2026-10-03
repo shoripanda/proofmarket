@@ -47,6 +47,9 @@ For each threat in `privacy-security.md`, this chapter maps which mechanism in w
 | Webhook spoofing | HMAC signature and timestamp; the body carries no result and the receiver re-fetches with GET |
 | SSRF via callback URL | Pre-registration only, https only, no sending to private addresses, no redirects |
 | Viewing someone else's request | 404 for anyone other than the owner |
+| Phishing that imitates the OAuth consent page | The consent page lives only on our domain, shows the client name and redirect host, and tells users not to enter a key for a connection they did not start. `frame-ancestors 'none'` |
+| Open redirect through OAuth | Exact match against registered `redirect_uri`; invalid requests are never redirected |
+| Theft of OAuth tokens | 1-hour access tokens, stored as hashes; refresh tokens rotate and a reuse revokes the whole grant |
 | XSS | React's default escaping. `dangerouslySetInnerHTML` is not used. CSP is set |
 
 ### 1.5 Attacks on Payment
