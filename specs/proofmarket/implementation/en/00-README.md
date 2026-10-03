@@ -35,6 +35,7 @@ Priority follows the Precedence in the existing `specs/proofmarket/README.md`.
 | 9 | [09-test-plan.md](09-test-plan.md) | Test plan and mapping to acceptance criteria |
 | 10 | [10-implementation-plan.md](10-implementation-plan.md) | Schedule for 10/2 to 10/12, work breakdown, human responsibilities |
 | 11 | [11-code-skeleton.md](11-code-skeleton.md) | Design-to-code map, skeleton verification results, development setup |
+| 12 | [12-deploy-runbook.md](12-deploy-runbook.md) | First deployment to Devnet, Supabase, Privy and Vercel |
 
 ## List of decisions
 

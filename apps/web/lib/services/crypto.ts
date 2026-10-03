@@ -33,6 +33,12 @@ export function encryptBytes(key: Buffer, data: Buffer): Buffer {
   return Buffer.concat([iv, c.getAuthTag(), ct]);
 }
 
+export function decryptBytes(key: Buffer, blob: Buffer): Buffer {
+  const d = createDecipheriv("aes-256-gcm", key, blob.subarray(0, 12));
+  d.setAuthTag(blob.subarray(12, 28));
+  return Buffer.concat([d.update(blob.subarray(28)), d.final()]);
+}
+
 /** AES-256-GCM(lat,lng) with LOCATION_ENC_KEY (04 §3.11). Layout: iv(12) | tag(16) | ciphertext. */
 export function encryptLocation(key: Buffer, lat: number, lng: number): Buffer {
   if (key.length !== 32) throw new Error("LOCATION_ENC_KEY must be 32 bytes");

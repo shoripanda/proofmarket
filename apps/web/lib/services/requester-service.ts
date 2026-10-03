@@ -34,6 +34,7 @@ import {
   type TaskRow,
 } from "./task-engine";
 import { buildVerificationView } from "./views";
+import { activeEndpoint } from "./webhook-service";
 
 export function parseCreateBody(raw: unknown): CreateVerificationRequest {
   const r = CreateVerificationRequestSchema.safeParse(raw);
@@ -182,6 +183,7 @@ export async function createVerification(
       idempotencyKeyHash: idemHash,
       requestHash: reqHash,
       policyRuleVersion: POLICY_RULE_VERSION,
+      callbackEndpointId: await activeEndpoint(tx, auth.credentialId),
       createdAt: now,
       updatedAt: now,
     })

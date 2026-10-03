@@ -2,7 +2,7 @@ import "server-only";
 // Outbox runner and periodic tick (02 §4.1, 04 §3.17). Jobs are leased with a short committed UPDATE so no DB
 // transaction stays open while waiting for chain confirmation; expired leases are reclaimed.
 
-import { LIMITS, OUTBOX_RETRY, type OutboxJobKind } from "@proofmarket/core";
+import { LIMITS, OUTBOX_RETRY, type OutboxJobKind, type WebhookEvent } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
@@ -11,6 +11,7 @@ import { purgeExpiredEvidence } from "./retention";
 import { type JobOutcome, runFinalizeAndSettle, runFundTask, runRefund } from "./settlement-jobs";
 import { lockTask } from "./task-engine";
 import { handleDeadline } from "./verification-service";
+import { type DeliverDeps, deliverWebhook } from "./webhook-service";
 
 export interface LeasedJob {
   id: number;
@@ -45,14 +46,24 @@ export async function leaseNextJob(
   return row ? { ...row, id: Number(row.id), attempts: Number(row.attempts) } : null;
 }
 
+let webhookDeps: DeliverDeps = {};
+/** Test hook: inject fetch / DNS for webhook delivery. */
+export function __setWebhookDeps(d: DeliverDeps): void {
+  webhookDeps = d;
+}
+
 type Handler = (app: AppContext, payload: Record<string, unknown>, attempts: number) => Promise<JobOutcome>;
 
 const HANDLERS: Record<OutboxJobKind, Handler> = {
   FUND_TASK: (app, p, attempts) => runFundTask(app, String(p.verification_id), attempts),
   FINALIZE_AND_SETTLE: (app, p) => runFinalizeAndSettle(app, String(p.verification_id)),
   REFUND_TASK: (app, p) => runRefund(app, String(p.verification_id)),
-  // PR-14 (webhooks). Until then deliveries are acknowledged without sending.
-  DELIVER_WEBHOOK: async () => ({ kind: "done" }),
+  DELIVER_WEBHOOK: (app, p) =>
+    deliverWebhook(
+      app,
+      p as { verification_id: string; endpoint_id: string; event: WebhookEvent },
+      webhookDeps,
+    ),
   PURGE_EVIDENCE: async (app) => {
     await purgeExpiredEvidence(app);
     return { kind: "done" };
