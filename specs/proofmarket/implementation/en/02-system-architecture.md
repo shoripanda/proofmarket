@@ -158,7 +158,7 @@ Only portrait smartphone screens are assumed. The words Solana, wallet, and SOL 
 |---|---|---|---|
 | W-01 | Login | `/login` | Privy email/Google login |
 | W-02 | First-time registration | `/onboarding` | Invite code entry, consent to terms of use and safety rules, explanation of location and camera permissions |
-| W-03 | Task list | `/tasks` | Nearest first from the current location. Reward, distance, time remaining, required evidence |
+| W-03 | Task list | `/tasks` | Nearest first from the current location. Reward, distance, time remaining, required evidence. While the screen is visible it refetches every 30 s, marks newly appeared tasks "new" and vibrates the device (added 2026-10-03) |
 | W-04 | Task detail | `/tasks/[id]` | Question, store location (link to a maps app), radius, reward, deadline, shooting cautions (capture the storefront and signboard, avoid people's faces), "Claim" button |
 | W-05 | In transit | `/claims/[id]` | Time remaining, "I have arrived" button, "Give up" button |
 | W-06 | Capture and answer | `/claims/[id]/capture` | Live camera, capture, choosing OPEN/CLOSED/UNCLEAR, submit |
