@@ -74,3 +74,22 @@ Devnet の鍵（admin・operator・verifier・プログラム）は `~/.config/p
 骨組みは 10 章の PR-01 と、PR-02・PR-09 の一部（スキーマ、アカウント構造）にあたる。次は PR-02（ID 生成・DB 接続・監査ログ）と PR-03（遷移の評価とポリシー規則）を埋め、雛形のテストを通していく。
 
 実装に入る前に、オーナーに用意してもらうものは 00 章の末尾のとおり。Supabase と Privy のアカウントは PR-04・05 の前に要る。
+
+## 6. 手元だけで動かす開発モード（2026-10-03 追加）
+
+Privy・Supabase・Solana のアカウントが無くても、worker 画面を最後まで動かせる。`APP_ENV=local` と `DEV_MODE=1` のときだけ有効で、ほかの環境では起動を拒否する。
+
+| 本番 | 開発モードでの代わり |
+|---|---|
+| Privy のログイン | 名前を入れるだけのログイン（トークンは `dev:<名前>`） |
+| Supabase の PostgreSQL | ファイルに保存する PGlite（`apps/web/.data/pglite`） |
+| Supabase Storage | `apps/web/.data/storage` と開発専用のアップロード用ルート |
+| Solana Devnet | メモリ上の偽チェーン（本物と同じ冪等性の規則） |
+
+```bash
+pnpm dev:seed     # ローカル DB を作り、API キー・店舗・招待コードを apps/web/.data/dev.json に書き出す
+pnpm dev:local    # http://localhost:3917 で起動
+pnpm --filter @proofmarket/web e2e   # 偽カメラと偽位置で画面を通しで操作（Playwright）
+```
+
+Playwright の偽カメラ・偽位置はテスト専用で、デモや実利用の証拠には使わない（`acceptance-criteria.md` A2）。

@@ -76,3 +76,22 @@ Devnet keys (admin, operator, verifier, program) live in `~/.config/proofmarket/
 The skeleton covers PR-01 from Chapter 10 plus parts of PR-02 and PR-09 (schema and account structures). Next, fill in PR-02 (ID generation, DB connection, audit log) and PR-03 (transition evaluation and policy rules) and make the stub tests pass.
 
 What the owner needs to provide before implementation is listed at the end of Chapter 00. Supabase and Privy accounts are needed before PR-04 and PR-05.
+
+## 6. Local-only development mode (added 2026-10-03)
+
+The worker screens run end to end without Privy, Supabase or Solana accounts. Enabled only with `APP_ENV=local` and `DEV_MODE=1`; any other environment refuses to start in this mode.
+
+| Production | Development mode substitute |
+|---|---|
+| Privy login | Name-only login (token `dev:<name>`) |
+| Supabase PostgreSQL | File-backed PGlite (`apps/web/.data/pglite`) |
+| Supabase Storage | `apps/web/.data/storage` plus dev-only upload routes |
+| Solana Devnet | In-memory fake chain (same idempotency rules as the real one) |
+
+```bash
+pnpm dev:seed     # creates the local DB and writes API key, places and invite codes to apps/web/.data/dev.json
+pnpm dev:local    # starts on http://localhost:3917
+pnpm --filter @proofmarket/web e2e   # drives the screens end to end with a fake camera and location (Playwright)
+```
+
+Playwright's fake camera and location are for testing only and never count as demo or pilot evidence (`acceptance-criteria.md` A2).

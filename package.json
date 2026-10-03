@@ -1,7 +1,7 @@
 {
   "name": "proofmarket",
   "private": true,
-  "description": "ProofMarket — real-world fact verification for AI agents (Crypto World's Fair 2026). Specs: specs/proofmarket/",
+  "description": "ProofMarket \u2014 real-world fact verification for AI agents (Crypto World's Fair 2026). Specs: specs/proofmarket/",
   "packageManager": "pnpm@12.8.1",
   "engines": {
     "node": ">=24"
@@ -16,7 +16,9 @@
     "db:migrate": "pnpm --filter @proofmarket/db run migrate",
     "openapi": "pnpm --filter @proofmarket/core run openapi",
     "program:build": "anchor build",
-    "program:test": "cargo test -p proofmarket"
+    "program:test": "cargo test -p proofmarket",
+    "dev:seed": "pnpm --filter @proofmarket/scripts run run dev-seed.ts",
+    "dev:local": "pnpm --filter @proofmarket/web run dev:local"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

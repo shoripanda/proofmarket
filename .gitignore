@@ -16,3 +16,6 @@ test-ledger/
 id.json
 next-env.d.ts
 .claude/worktrees/
+apps/web/.data/
+apps/web/test-results/
+apps/web/playwright-report/

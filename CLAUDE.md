@@ -37,3 +37,11 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-02 [LiteSVM 0.14] 0.10 から 0.14 に上げる → 依存が `^` 指定のため agave 4.3 系まで解決され、litesvm 自体が wincode の型エラーでコンパイル不可 → 依存を `~` で固定している 0.17 を使う
 - 2026-10-02 [Anchor 1.2 / テスト] `anchor_lang::solana_program::instruction::InstructionError` を import → 存在しない → `anchor_lang::solana_program::instruction::error::InstructionError` を使う
 - 2026-10-02 [手元 / cargo test] LiteSVM 入りのテストを既定の dev プロファイルでビルド → debuginfo で target/debug が 2GB を超えディスクが尽きる（No space left on device） → `CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 cargo test -p proofmarket` で約 700MB に収まる
+- 2026-10-02 [ローカル検証 / 空き容量] 空き 3.7GB の Mac で solana-test-validator（台帳上限なし）と cargo build-sbf を同時に回す → ENOSPC でディスクが満杯になり、ツール出力すら書けず作業が止まった → 着手前に `df -h` で 8GB 以上あるか確認。バリデータは `--limit-ledger-size 50000000` と scratchpad の台帳で動かし、終わったら台帳を消す。不要な `target/debug` は先に削除
+- 2026-10-02 [ローカル検証 / .so] main に PR-09 を取り込んだ後も target/deploy/proofmarket.so が骨組み時代のままで、devnet-setup が `not yet implemented` で panic → ソースを取り込んだら `cargo build-sbf --manifest-path programs/proofmarket/Cargo.toml` で .so を作り直してからバリデータに載せる
+- 2026-10-03 [cargo build-sbf] 素の `cargo build-sbf` が既定の platform-tools v1.54 を取りに行き、ダウンロードが途中で切れて失敗 → `--tools-version v1.57`（導入済み）を明示する
+- 2026-10-03 [Next.js / @anchor-lang/core 1.2] `import { Wallet } from "@anchor-lang/core"` は Node（CJS）では動くが、Next.js が選ぶ ESM ビルドには `Wallet` が無く、ルートが 500 になる → 自前の最小ウォレット（publicKey と sign 関数）を渡す。テストが Node だけだと見逃すので、next dev / next build で実際に読み込んで確かめる
+- 2026-10-03 [Next.js / シングルトン] lib/context.ts のモジュール変数で AppContext を1つにしたつもりが、API ルートとページ（RSC）が別バンドルのため2つでき、DEV_MODE では同じ PGlite ディレクトリを2インスタンスが開いて公開結果ページが空になった → globalThis に置いてプロセスで1つにする
+- 2026-10-03 [Playwright / 偽カメラ] Chromium 組み込みの偽カメラ映像で e2e を繰り返す → 毎回ほぼ同じ絵のため、2回目以降はサーバーが正しく EVIDENCE_REPLAYED / EVIDENCE_NEAR_DUPLICATE で弾く → globalSetup で乱数の MJPEG を作り `--use-file-for-fake-video-capture` で流す
+- 2026-10-03 [Next.js build / 確認不足] `next build 2>&1 | grep ... | head -5` で "Compiled successfully" だけを見て成功と判断した → その後の静的事前描画で /login が Privy の App ID 不足により失敗していた（CI で発覚）→ ビルドは終了コードで判定する。worker 画面は force-dynamic にし、App ID が無いときは Privy を初期化しない
+- 2026-10-03 [CI / 鍵らしき文字列の検査] base58 の 87〜88 字をそのまま grep した → Privy の依存（@base-org/account）が埋め込む base64 フォントの一部と、暗号ライブラリの16進定数（16進の字は base58 にも含まれる）に当たって CI が落ちた → 前後に base64 の字が無い単独の並びだけを拾い、16進だけの並びは除く。直したら偽の鍵を置いて、まだ捕まることを確かめる
