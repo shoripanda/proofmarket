@@ -336,11 +336,11 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 
 ## 6. MCP（P1）
 
-`packages/mcp` は stdio で動く MCP サーバーで、環境変数 `PROOFMARKET_API_KEY` と `PROOFMARKET_BASE_URL` を読み、`packages/sdk` 経由で REST を呼ぶ。
+`packages/mcp` は stdio で動く MCP サーバーで、環境変数 `PROOFMARKET_API_KEY`・`PROOFMARKET_BASE_URL`・`PROOFMARKET_PRINCIPAL_REF` を読み、`packages/sdk` 経由で REST を呼ぶ。
 
 | ツール | 対応 API | 入力 |
 |---|---|---|
-| `request_reality_verification` | POST /v1/verifications | 作成 API の本文。`principal_ref` は省略可（API キーから補う）。`idempotency_key` は省略可で、省略時は引数を正規化した JSON の SHA-256 を使う |
+| `request_reality_verification` | POST /v1/verifications | 作成 API の本文。`principal_ref` は省略可（環境変数 `PROOFMARKET_PRINCIPAL_REF` で補う）。`idempotency_key` は省略可で、省略時は引数を正規化した JSON の SHA-256 を使う |
 | `get_reality_verification` | GET /v1/verifications/{id} | `verification_id`、`wait_seconds`（0〜20。指定すると状態が変わるまで最大その秒数だけ待ってから返す） |
 | `cancel_reality_verification` | POST /v1/verifications/{id}/cancel | `verification_id` |
 

@@ -245,6 +245,8 @@ export async function submitEvidence(
     () => ({ type: "vision_consistency", status: "not_run" }),
   ]);
 
+  // A replayed file has no evidence row (unique sha256), so nothing would ever purge it: delete it now.
+  if (replayConflict) await app.storage.remove("evidence-raw", [upload.objectKey]);
   // Derived image only for decodable, non-replayed photos.
   if (img?.derived && !replayConflict) await app.storage.putDerived(upload.objectKey, img.derived);
 

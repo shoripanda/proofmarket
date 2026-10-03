@@ -49,7 +49,7 @@ export interface RefundInput {
 
 /** What the job records in payment_records. */
 export type ChainResult =
-  | { kind: "confirmed"; signature: string | null; alreadyDone: boolean; slot?: number }
+  | { kind: "confirmed"; signature: string | null; alreadyDone: boolean; taskAccount: string; slot?: number }
   | { kind: "retry"; signature: string | null; error: string } // blockhash expired, RPC down, not finalized in 60 s
   | { kind: "halt"; error: string }; // must not continue automatically: on-chain/DB mismatch (I-SET-05), refund of a Finalized task
 

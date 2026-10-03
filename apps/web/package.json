@@ -18,6 +18,7 @@
     "@proofmarket/db": "workspace:*",
     "@proofmarket/solana": "workspace:*",
     "@supabase/supabase-js": "^2.117.2",
+    "bs58": "^6.0.0",
     "canonicalize": "^5.1.0",
     "drizzle-orm": "^0.45.3",
     "next": "^16.3.8",
@@ -29,6 +30,9 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "@proofmarket/mcp": "workspace:*",
+    "@proofmarket/sdk": "workspace:*",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "vitest": "^5.0.3"

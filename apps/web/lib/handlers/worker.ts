@@ -14,6 +14,7 @@ import type { AppContext } from "../context";
 import { readJson } from "../http";
 import { submitEvidence } from "../services/evidence-service";
 import { withIdempotency } from "../services/idempotency";
+import { workerPayouts } from "../services/public-service";
 import {
   abandonClaim,
   claimDetail,
@@ -122,4 +123,9 @@ export async function handleAbandon(app: AppContext, req: Request, id: string) {
 export async function handleClaimDetail(app: AppContext, req: Request, id: string) {
   const w = await requireWorker(app, req);
   return Response.json(await claimDetail(app, w.workerId, claimId(id)));
+}
+
+export async function handlePayouts(app: AppContext, req: Request) {
+  const w = await requireWorker(app, req);
+  return Response.json(await workerPayouts(app, w.workerId));
 }

@@ -15,6 +15,13 @@
       "when": 1790934183171,
       "tag": "0001_custom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790941395915,
+      "tag": "0002_evidence_access_revoked",
+      "breakpoints": true
     }
   ]
 }

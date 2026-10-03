@@ -1,5 +1,10 @@
-// POST /api/internal/tick — 02 §4.1 (P0). Auth: cron. Implementation: PR-07.
-// X-Internal-Secret. Expire tasks/claims/nonces, run leased outbox jobs, daily purge.
-import { notImplemented } from "@/lib/http";
+// POST /api/internal/tick — 02 §4.1 (P0). Called every minute by Supabase pg_cron + pg_net. Auth: cron secret.
+import { appContext } from "@/lib/context";
+import { env } from "@/lib/env";
+import { handleTick } from "@/lib/handlers/operator";
+import { route } from "@/lib/http";
 
-export const POST = notImplemented("PR-07");
+const secrets = () => ({ adminToken: env().ADMIN_TOKEN, cronSecret: env().INTERNAL_CRON_SECRET });
+export const POST = route(async (req) => handleTick(appContext(), secrets(), req));
+
+export const maxDuration = 300;

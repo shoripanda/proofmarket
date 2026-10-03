@@ -74,7 +74,7 @@ describe("POST /v1/verifications", () => {
 
   it("requires auth, Idempotency-Key and a valid body", async () => {
     expect(
-      await errCode(await create(createBody(t.principalId), "k", "pm_test_deadbeef_" + "x".repeat(43))),
+      await errCode(await create(createBody(t.principalId), "k", `pm_test_deadbeef_${"x".repeat(43)}`)),
     ).toBe("UNAUTHENTICATED");
     const noIdem = await call(
       (r) => handleCreate(t.app, r),

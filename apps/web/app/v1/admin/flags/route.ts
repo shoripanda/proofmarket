@@ -1,5 +1,8 @@
-// POST /v1/admin/flags — 08 §6 (P0). Auth: operator. Implementation: PR-07.
-// Kill switches. Audited as operator_action.
-import { notImplemented } from "@/lib/http";
+// POST /v1/admin/flags — 08 §6 (P0). Kill switches. Auth: operator.
+import { appContext } from "@/lib/context";
+import { env } from "@/lib/env";
+import { handleSetFlag } from "@/lib/handlers/operator";
+import { route } from "@/lib/http";
 
-export const POST = notImplemented("PR-07");
+const secrets = () => ({ adminToken: env().ADMIN_TOKEN, cronSecret: env().INTERNAL_CRON_SECRET });
+export const POST = route(async (req) => handleSetFlag(appContext(), secrets(), req));

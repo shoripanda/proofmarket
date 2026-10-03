@@ -340,11 +340,11 @@ The body does not include the whole result. The receiver fetches it again with G
 
 ## 6. MCP (P1)
 
-`packages/mcp` is an MCP server that runs over stdio. It reads the environment variables `PROOFMARKET_API_KEY` and `PROOFMARKET_BASE_URL` and calls REST through `packages/sdk`.
+`packages/mcp` is an MCP server that runs over stdio. It reads the environment variables `PROOFMARKET_API_KEY`, `PROOFMARKET_BASE_URL` and `PROOFMARKET_PRINCIPAL_REF` and calls REST through `packages/sdk`.
 
 | Tool | Corresponding API | Input |
 |---|---|---|
-| `request_reality_verification` | POST /v1/verifications | The body of the creation API. `principal_ref` is optional (filled in from the API key). `idempotency_key` is optional; if omitted, the SHA-256 of the normalized JSON of the arguments is used |
+| `request_reality_verification` | POST /v1/verifications | The body of the creation API. `principal_ref` is optional (filled in from the `PROOFMARKET_PRINCIPAL_REF` environment variable). `idempotency_key` is optional; if omitted, the SHA-256 of the normalized JSON of the arguments is used |
 | `get_reality_verification` | GET /v1/verifications/{id} | `verification_id`, `wait_seconds` (0 to 20. If specified, waits up to that many seconds for the state to change before returning) |
 | `cancel_reality_verification` | POST /v1/verifications/{id}/cancel | `verification_id` |
 

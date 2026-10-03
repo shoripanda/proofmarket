@@ -1,5 +1,6 @@
-// GET /v1/worker/payouts — 05 §3.7 (P1). Auth: worker. Implementation: PR-12.
-// Payout history with explorer URLs.
-import { notImplemented } from "@/lib/http";
+// GET /v1/worker/payouts — 05 §3.7 (P1). Auth: worker (Privy).
+import { appContext } from "@/lib/context";
+import { handlePayouts } from "@/lib/handlers/worker";
+import { route } from "@/lib/http";
 
-export const GET = notImplemented("PR-12");
+export const GET = route(async (req) => handlePayouts(appContext(), req));
