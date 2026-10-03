@@ -10,9 +10,14 @@
     "run": "tsx --conditions=react-server"
   },
   "dependencies": {
+    "@anchor-lang/core": "1.2.0",
     "@proofmarket/core": "workspace:*",
     "@proofmarket/db": "workspace:*",
     "@proofmarket/sdk": "workspace:*",
+    "@proofmarket/solana": "workspace:*",
+    "@solana/spl-token": "^0.4.15",
+    "@solana/web3.js": "^1.99.0",
+    "bs58": "^6.0.0",
     "drizzle-orm": "^0.45.3"
   },
   "devDependencies": {

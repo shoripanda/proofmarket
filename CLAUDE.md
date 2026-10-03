@@ -37,3 +37,6 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-02 [LiteSVM 0.14] 0.10 から 0.14 に上げる → 依存が `^` 指定のため agave 4.3 系まで解決され、litesvm 自体が wincode の型エラーでコンパイル不可 → 依存を `~` で固定している 0.17 を使う
 - 2026-10-02 [Anchor 1.2 / テスト] `anchor_lang::solana_program::instruction::InstructionError` を import → 存在しない → `anchor_lang::solana_program::instruction::error::InstructionError` を使う
 - 2026-10-02 [手元 / cargo test] LiteSVM 入りのテストを既定の dev プロファイルでビルド → debuginfo で target/debug が 2GB を超えディスクが尽きる（No space left on device） → `CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 cargo test -p proofmarket` で約 700MB に収まる
+- 2026-10-02 [ローカル検証 / 空き容量] 空き 3.7GB の Mac で solana-test-validator（台帳上限なし）と cargo build-sbf を同時に回す → ENOSPC でディスクが満杯になり、ツール出力すら書けず作業が止まった → 着手前に `df -h` で 8GB 以上あるか確認。バリデータは `--limit-ledger-size 50000000` と scratchpad の台帳で動かし、終わったら台帳を消す。不要な `target/debug` は先に削除
+- 2026-10-02 [ローカル検証 / .so] main に PR-09 を取り込んだ後も target/deploy/proofmarket.so が骨組み時代のままで、devnet-setup が `not yet implemented` で panic → ソースを取り込んだら `cargo build-sbf --manifest-path programs/proofmarket/Cargo.toml` で .so を作り直してからバリデータに載せる
+- 2026-10-03 [cargo build-sbf] 素の `cargo build-sbf` が既定の platform-tools v1.54 を取りに行き、ダウンロードが途中で切れて失敗 → `--tools-version v1.57`（導入済み）を明示する

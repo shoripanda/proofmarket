@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "echo 'adapter tests are integration tests (I-RPC-*, I-SET-*), PR-11'"
+    "test": "vitest run"
   },
   "dependencies": {
     "@anchor-lang/core": "1.2.0",
@@ -18,5 +18,9 @@
     "@solana/spl-token": "^0.4.15",
     "@solana/web3.js": "^1.99.0",
     "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "bs58": "^6.0.0",
+    "vitest": "^5.0.3"
   }
 }

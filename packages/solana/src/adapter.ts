@@ -3,6 +3,7 @@
 // sends a transaction if the on-chain state requires it (REQ-X-P-103).
 
 import type { Outcome } from "@proofmarket/core";
+import { createAnchorAdapter } from "./anchor-adapter.ts";
 
 export type OnChainTaskStatus = "Funded" | "Finalized" | "Settled" | "Refunded";
 export type OnChainOutcome = "None" | "Verified" | "NoConsensus" | "InsufficientWitnesses";
@@ -78,8 +79,8 @@ export interface SettlementAdapter {
   balances(): Promise<{ operatorLamports: bigint; treasuryAmount: bigint }>;
 }
 
-/** Real implementation over @anchor-lang/core + web3.js v1. PR-11. */
-export function createSettlementAdapter(_cfg: {
+/** Real implementation over @anchor-lang/core + web3.js v1 (anchor-adapter.ts). */
+export function createSettlementAdapter(cfg: {
   rpcUrl: string;
   expectedGenesisHash: string;
   programId: string;
@@ -87,7 +88,7 @@ export function createSettlementAdapter(_cfg: {
   operatorSecretKey: Uint8Array;
   verifierSecretKey: Uint8Array;
 }): SettlementAdapter {
-  throw new Error("NOT_IMPLEMENTED: createSettlementAdapter (PR-11)");
+  return createAnchorAdapter(cfg);
 }
 
 /**
