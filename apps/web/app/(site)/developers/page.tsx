@@ -75,7 +75,15 @@ export default async function DevelopersPage() {
 
       <Section
         title="つなぎ方は3通りあります"
-        lead="どれを選んでも、使えるキーと上限は同じです。試験運用中は API キー（pm_test_ で始まる）を運営者が発行します。"
+        lead={
+          <>
+            どれを選んでも、使えるキーと上限は同じです。試験運用中は API キー（pm_test_
+            で始まる）を運営者が発行します。
+            <a href="/join?role=requester" className="ml-1 font-semibold text-teal-700 underline">
+              API キーを申し込む
+            </a>
+          </>
+        }
       >
         <div className="space-y-8">
           <div>

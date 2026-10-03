@@ -68,6 +68,13 @@ export default function Home() {
             </p>
             <p className="mt-3 text-sm font-semibold text-teal-700">開発者向けの説明へ →</p>
           </Link>
+          <Link href="/workers" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
+            <h3 className="font-bold">現地で確かめる方（worker）</h3>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              仕事の流れ、報酬、安全の決まり、写真と位置の扱いをまとめています。
+            </p>
+            <p className="mt-3 text-sm font-semibold text-teal-700">worker 向けの説明へ →</p>
+          </Link>
         </div>
       </Section>
 

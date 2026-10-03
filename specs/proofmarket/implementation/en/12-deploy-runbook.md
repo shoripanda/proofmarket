@@ -107,6 +107,12 @@ $R issue-invite.ts --uses 1 --days 14   # one per worker
 
 API keys and invite codes are shown only once.
 
+Sign-ups from the site's `/join` are read with the command below. It prints decrypted email addresses, so do not paste the output anywhere. After contacting someone, mark it with `--mark <id> --as contacted`. Sign-ups are deleted automatically after 90 days.
+
+```bash
+LOCATION_ENC_KEY=... $R list-participation.ts
+```
+
 ## 7. Smoke test
 
 ```bash

@@ -26,6 +26,7 @@
 | GET | `/v1/worker/claims/{claim_id}` | worker | P0 | 追加。判定結果と理由 |
 | GET | `/v1/worker/payouts` | worker | P1 | 追加 |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
+| POST | `/v1/public/participation-requests` | 誰でも | P2 | 追加。参加・API キーの申し込み（04 §3.20）。IP ごとに 1 分 5 件まで |
 | POST | `/v1/admin/flags` | operator | P0 | 追加 |
 | POST | `/v1/admin/{credentials|workers}/{id}/suspend` | operator | P0 | 追加 |
 | POST | `/v1/admin/credentials/{id}/revoke` | operator | P0 | 追加 |

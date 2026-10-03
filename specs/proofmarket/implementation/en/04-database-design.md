@@ -480,6 +480,24 @@ create table rate_limit_counters (
 
 Rate limiting uses a fixed 1-minute window and counts with a single statement: `insert ... on conflict do update set count = count + 1 returning count`.
 
+### 3.20 participation_requests (sign-ups, added 2026-10-04)
+
+Requests to join as a worker or to get an API key, sent from the site's `/join`. The operator reads them and issues invite codes or API keys.
+
+```sql
+create table participation_requests (
+  id           text primary key,                 -- par_<ULID>
+  role         text not null check (role in ('worker','requester')),
+  contact_enc  bytea not null,                   -- AES-256-GCM(email address), key LOCATION_ENC_KEY
+  area         text check (area in ('shibuya','shinjuku','other')),  -- workers only; no precise location
+  note         text check (char_length(note) <= 500),
+  consent_version text not null,                 -- version of the notice the person agreed to
+  status       text not null default 'new' check (status in ('new','contacted','closed')),
+  created_at   timestamptz not null default now(),
+  delete_after timestamptz not null              -- created_at + 90 days
+);
+```
+
 ## 4. Retention and Deletion
 
 | Retention class | Target | Period | How it is deleted |
@@ -489,6 +507,7 @@ Rate limiting uses a fixed 1-minute window and counts with a single statement: `
 | task_metadata | requests, results, decisions | 1 year | Delete the rows (the production period is subject to legal review) |
 | payment | payment_records, requester_ledger | 1 year | Same as above |
 | audit | audit_events | 1 year | Same as above |
+| participation | participation_requests | 90 days | Delete the rows |
 
 Deletion is performed once a day by the outbox `PURGE_EVIDENCE` job, and the counts are recorded in audit_events.
 

@@ -6,11 +6,12 @@ import { schema } from "@proofmarket/db";
 import { and, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
+import { purgeExpiredParticipation } from "./participation-service";
 
 export async function purgeExpiredEvidence(
   app: AppContext,
   batch = 200,
-): Promise<{ evidence: number; locations: number }> {
+): Promise<{ evidence: number; locations: number; participation: number }> {
   const now = app.now();
   const due = await app.db
     .select()
@@ -42,6 +43,7 @@ export async function purgeExpiredEvidence(
       ),
     )
     .returning({ id: schema.locationObservations.submissionId });
+  const participation = await purgeExpiredParticipation(app);
   await appendAudit(app.db, {
     verificationId: null,
     actorType: "system",
@@ -50,7 +52,12 @@ export async function purgeExpiredEvidence(
     beforeState: null,
     afterState: null,
     correlationId: `purge:${now.toISOString().slice(0, 10)}`,
-    metadata: { action: "purge_evidence", evidence: due.length, locations: locs.length },
+    metadata: {
+      action: "purge_evidence",
+      evidence: due.length,
+      locations: locs.length,
+      participation,
+    },
   });
-  return { evidence: due.length, locations: locs.length };
+  return { evidence: due.length, locations: locs.length, participation };
 }

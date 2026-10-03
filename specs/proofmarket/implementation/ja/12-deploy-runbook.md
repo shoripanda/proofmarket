@@ -105,6 +105,12 @@ $R issue-invite.ts --uses 1 --days 14   # worker ごとに1つ
 
 API キーと招待コードは表示されたときにしか見られない。
 
+サイトの `/join` から届いた申し込みは、次で読む（メールアドレスを復号して表示するので、出力をどこにも貼らない）。連絡したら `--mark <id> --as contacted` で印を付ける。申し込みは 90 日で自動的に消える。
+
+```bash
+LOCATION_ENC_KEY=... $R list-participation.ts
+```
+
 ## 7. 動作確認
 
 ```bash
