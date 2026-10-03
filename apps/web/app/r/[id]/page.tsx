@@ -1,6 +1,8 @@
 // Public result page — 02 §5, REQ-X-R-101. Answer, witnesses, checks, evidence root, explorer link, and a
 // disclosure that the verifier is a single platform key. Never photos, coordinates, question text or workers.
+import { OnchainCheck } from "@/components/onchain-check";
 import { appContext } from "@/lib/context";
+import { env, isDev } from "@/lib/env";
 import { publicResult } from "@/lib/services/public-service";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +31,8 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
   } catch {
     r = null;
   }
+  const e = env();
+  const programId = isDev(e) ? null : e.PROGRAM_ID;
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-white p-6">
       <p className="text-sm font-semibold tracking-wide text-teal-700">ProofMarket — Verification result</p>
@@ -81,6 +85,18 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
             ) : (
               <p className="text-slate-500">オンチェーンの確定を待っています。</p>
             )}
+            {r.attestation?.task_account && programId ? (
+              <div className="pt-2">
+                <OnchainCheck
+                  verificationId={id}
+                  status={r.status}
+                  evidenceRoot={r.evidence_root}
+                  resultHash={r.result_hash}
+                  taskAccount={r.attestation.task_account}
+                  programId={programId}
+                />
+              </div>
+            ) : null}
           </section>
           <p className="text-xs leading-relaxed text-slate-500">
             判定はプラットフォームが運用する単一の検証鍵で行っています（分散した検証ではありません）。写真・正確な位置・質問文・証言者の情報はこのページに含みません。
