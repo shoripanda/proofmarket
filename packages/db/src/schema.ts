@@ -18,6 +18,7 @@ import {
   SETTLEMENT_STATUSES,
   SUBMISSION_STATES,
   TASK_STATUSES,
+  TASK_TYPES,
   UPLOAD_STATES,
 } from "@proofmarket/core";
 import { sql } from "drizzle-orm";
@@ -202,7 +203,7 @@ export const verificationRequests = pgTable(
     updatedAt: tsz("updated_at").notNull().defaultNow(),
   },
   (t) => [
-    check("vr_type_chk", sql`type = 'PLACE_STATUS_VERIFICATION'`),
+    check("vr_type_chk", oneOf("type", TASK_TYPES)),
     check("vr_question_len_chk", sql`char_length(question) <= 280`),
     check("vr_radius_chk", sql`radius_m between 25 and 500`),
     check("vr_freshness_chk", sql`freshness_max_age_s between 60 and 900`),

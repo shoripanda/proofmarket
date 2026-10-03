@@ -8,6 +8,7 @@ import {
   consensusRatio,
   fromMicro,
   openSlots,
+  type TaskType,
   toMicro,
 } from "@proofmarket/core";
 import {
@@ -146,7 +147,7 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
 
   return {
     verification_id: task.id,
-    type: "PLACE_STATUS_VERIFICATION",
+    type: task.type as TaskType,
     status: task.status as GetVerificationResponse["status"],
     question: task.question,
     answer_schema: { type: "enum", values: task.answerValues as AnswerValue[] },

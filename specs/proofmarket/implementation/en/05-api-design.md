@@ -103,7 +103,7 @@ The request body is as in Section 1 of `api-contract.md`. The following checks a
 | 4 | JSON schema (types, required fields, no extra fields) | 400 `VALIDATION_FAILED` |
 | 5 | `type` is among the task types allowed for the API key | 400 `UNSUPPORTED_TASK_TYPE` |
 | 6 | `principal_ref` matches the API key's principal | 403 `PRINCIPAL_MISMATCH` |
-| 7 | `answer_schema.values` is a subset of `OPEN`, `CLOSED`, `UNCLEAR` and has 2 or more entries | 400 `VALIDATION_FAILED` |
+| 7 | `answer_schema.values` is a subset of the answers for `type` (01 §4.8) and has 2 or more entries | 400 `VALIDATION_FAILED` (with `details.allowed`) |
 | 8 | `deadline` is at least 10 minutes and at most 24 hours from now | 400 `DEADLINE_OUT_OF_RANGE` |
 | 9 | `radius_m` is 25 to 500 and `freshness.max_age_seconds` is 60 to 900 | 400 `VALIDATION_FAILED` |
 | 10 | Location is inside the target area (the API key's bounding box, or `PILOT_BBOX` if none) | 400 `LOCATION_OUT_OF_PILOT_AREA` |
@@ -356,7 +356,7 @@ The body does not include the whole result. The receiver fetches it again with G
 
 Description text of `request_reality_verification` (registered as is, in English):
 
-> Ask a real human witness to check a fact about a public physical place (for example, whether a shop is open right now). This is asynchronous: a person must travel to the location, so results typically take 10–60 minutes. This tool returns a verification_id immediately; call get_reality_verification to read the result. Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED.
+> Ask a real human witness to check a fact about a public physical place (for example, whether a shop is open right now). This is asynchronous: a person must travel to the location, so results typically take 10–60 minutes. This tool returns a verification_id immediately; call get_reality_verification to read the result. Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED. Types: PLACE_STATUS_VERIFICATION (answers OPEN / CLOSED / UNCLEAR), QUEUE_LENGTH (NO_QUEUE / SHORT_QUEUE = up to about 5 people / LONG_QUEUE = 6 or more / UNCLEAR, people queuing outside), NOTICE_POSTED (POSTED / NOT_POSTED / UNCLEAR, whether the notice named in the question is posted at the storefront). An API key may allow only some types.
 
 If the tool could not wait long enough, it also returns the current state as is and does not pretend the verification is complete (Section 10 of `api-contract.md`).
 

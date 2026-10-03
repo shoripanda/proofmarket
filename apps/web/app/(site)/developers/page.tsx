@@ -1,5 +1,5 @@
 // S-03 開発者向け — connect over MCP or REST, the request fields, and how to read the result.
-import { ANSWER_VALUES, LIMITS, WEBHOOK_EVENTS } from "@proofmarket/core";
+import { LIMITS, TASK_TYPE_ANSWERS, WEBHOOK_EVENTS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Code, PageHero, Section } from "@/components/site";
@@ -24,7 +24,16 @@ const FIELDS: [string, string][] = [
     "question",
     `確かめたいこと。${LIMITS.question.maxChars}字まで。人の尾行や私有地への立ち入りが要る質問は受け付けない`,
   ],
-  ["answer_schema.values", `答えの選択肢。${ANSWER_VALUES.join("・")} から2〜3個`],
+  [
+    "type",
+    "PLACE_STATUS_VERIFICATION（営業しているか）、QUEUE_LENGTH（店の外の行列）、NOTICE_POSTED（店頭の掲示）。後ろの2つは API キーごとに許可したときだけ使える",
+  ],
+  [
+    "answer_schema.values",
+    `答えの選択肢を2個以上。type ごとに ${Object.entries(TASK_TYPE_ANSWERS)
+      .map(([t, v]) => `${t}: ${v.join("・")}`)
+      .join("、")} から選ぶ`,
+  ],
   [
     "location",
     `緯度・経度と半径（${LIMITS.radiusM.min}〜${LIMITS.radiusM.max}m）。登録済みの店舗の${LIMITS.placeMatchRadiusM}m以内であること`,

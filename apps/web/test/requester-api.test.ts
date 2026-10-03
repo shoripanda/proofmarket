@@ -3,6 +3,7 @@ import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleCancel, handleCreate, handleGet } from "../lib/handlers/requester";
+import { setAllowedTaskTypes } from "../lib/services/admin-service";
 import { call, createBody, createTestApp, jsonReq, SHOP } from "./support/app";
 
 let t: Awaited<ReturnType<typeof createTestApp>>;
@@ -54,6 +55,24 @@ describe("POST /v1/verifications", () => {
     expect(ledger.map((l) => l.amount)).toEqual(["-1.000000"]);
     expect(await errCode(await create(createBody(t.principalId, { assurance: { level: "max" } })))).toBe(
       "VALIDATION_FAILED",
+    );
+  });
+
+  it("01 §4.8: new task types need the key's permission and answers that belong to the type", async () => {
+    const queue = (values: string[]) =>
+      createBody(t.principalId, { type: "QUEUE_LENGTH", answer_schema: { type: "enum", values } });
+    expect(await errCode(await create(queue(["NO_QUEUE", "SHORT_QUEUE", "LONG_QUEUE", "UNCLEAR"])))).toBe(
+      "UNSUPPORTED_TASK_TYPE",
+    );
+    await setAllowedTaskTypes(t.db, t.credentialId, ["PLACE_STATUS_VERIFICATION", "QUEUE_LENGTH"], "test");
+    expect((await create(queue(["NO_QUEUE", "SHORT_QUEUE", "LONG_QUEUE", "UNCLEAR"]))).status).toBe(201);
+    const wrong = await create(queue(["OPEN", "CLOSED"]));
+    expect(wrong.status).toBe(400);
+    expect(((await wrong.json()) as { error: { details: { reason: string } } }).error.details.reason).toBe(
+      "not_for_type",
+    );
+    expect(await errCode(await create(createBody(t.principalId, { type: "NOTICE_POSTED" })))).toBe(
+      "UNSUPPORTED_TASK_TYPE",
     );
   });
 

@@ -1,9 +1,11 @@
 "use client";
+import type { AnswerValue, TaskType } from "@proofmarket/core";
 // W-06 撮影と回答 — challenge -> live camera -> capture (canvas -> JPEG) -> high-accuracy location -> answer -> upload -> submit.
 // Photos come only from the in-app camera; there is no gallery picker (07 §2).
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Notice, remaining, Shell, useNow } from "@/components/ui";
+import { ANSWER_JA, TASK_TYPE_JA } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 import type { ClaimDetail } from "../../../lib-claim";
 
@@ -17,11 +19,6 @@ interface Fix {
   lng: number;
   accuracy: number;
 }
-const ANSWERS: { value: string; label: string; tone: string }[] = [
-  { value: "OPEN", label: "営業している", tone: "bg-emerald-600" },
-  { value: "CLOSED", label: "営業していない", tone: "bg-slate-700" },
-  { value: "UNCLEAR", label: "分からない", tone: "bg-amber-600" },
-];
 const MAX_EDGE = 1920;
 
 export default function CapturePage() {
@@ -37,6 +34,11 @@ export default function CapturePage() {
   const [answer, setAnswer] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const answers = (claim?.answer_values ?? []).map((v) => ({
+    value: v,
+    label: ANSWER_JA[v as AnswerValue]?.label ?? v,
+    tone: ANSWER_JA[v as AnswerValue]?.tone ?? "bg-slate-700",
+  }));
 
   const newChallenge = useCallback(async () => {
     setErr(null);
@@ -150,7 +152,8 @@ export default function CapturePage() {
         )}
       </div>
       <p className="text-xs text-slate-500">
-        店頭・看板・営業時間の掲示を写し、人の顔が大きく写らないようにしてください。
+        {TASK_TYPE_JA[claim?.type as TaskType]?.howTo ?? "店頭・看板・営業時間の掲示を写してください。"}
+        人の顔が大きく写らないようにしてください。
       </p>
 
       {photo ? (
@@ -172,7 +175,7 @@ export default function CapturePage() {
               : ""}
           </p>
           <div className="grid gap-3">
-            {ANSWERS.map((a) => (
+            {answers.map((a) => (
               <button
                 key={a.value}
                 type="button"

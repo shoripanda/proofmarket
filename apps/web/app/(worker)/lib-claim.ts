@@ -12,4 +12,6 @@ export interface ClaimDetail {
     reason_message_ja: string | null;
   }[];
   task_result: { status: string; answer: string | null } | null;
+  type: string;
+  answer_values: string[];
 }

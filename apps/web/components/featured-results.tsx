@@ -1,5 +1,6 @@
 // S-01 「最近の判定結果」 — results the operator featured (05 §4). Hidden when there are none or the DB is down.
 import Link from "next/link";
+import { answerJa } from "@/lib/answers";
 import { appContext } from "@/lib/context";
 import { featuredResults } from "@/lib/services/public-service";
 import { Section } from "./site";
@@ -38,7 +39,7 @@ export async function FeaturedResults() {
         {items.map((r) => (
           <li key={r.verification_id} className="rounded-2xl border border-slate-200 p-5">
             <p className="text-2xl font-bold">
-              {r.answer ?? r.status}
+              {answerJa(r.answer) ?? r.status}
               <span className="ml-2 text-sm font-medium text-slate-500">{r.status}</span>
             </p>
             <p className="mt-2 text-sm text-slate-600">

@@ -11,6 +11,7 @@ import {
   evidenceRoot,
   questionHash,
   resultHash,
+  type TaskType,
   toSha256Hex,
 } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
@@ -81,7 +82,7 @@ export async function saveResult(
     schema: EVIDENCE_BUNDLE_SCHEMA,
     verification_id: task.id,
     task_id_hash: toSha256Hex(task.taskIdHash),
-    type: "PLACE_STATUS_VERIFICATION",
+    type: task.type as TaskType,
     question_hash: questionHash(task.question),
     answer_values: task.answerValues as AnswerValue[],
     assurance: { required_witnesses: task.requiredWitnesses, quorum: task.quorum },

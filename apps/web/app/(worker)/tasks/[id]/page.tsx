@@ -1,12 +1,15 @@
 "use client";
+import type { TaskType } from "@proofmarket/core";
 // W-04 タスク詳細 — 質問、地図リンク、半径、報酬、締切、撮影の注意、「引き受ける」。
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button, Card, Notice, remaining, SAFETY_NOTES, Shell, useNow, yen } from "@/components/ui";
+import { answerJa, TASK_TYPE_JA } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 
 interface Task {
   verification_id: string;
+  type: string;
   question: string;
   answer_values: string[];
   location: { lat: number; lng: number; radius_m: number };
@@ -47,9 +50,16 @@ export default function TaskDetailPage() {
       {t ? (
         <>
           <Card>
-            <p className="text-sm text-slate-500">確かめること</p>
+            <p className="text-sm text-slate-500">
+              確かめること・{TASK_TYPE_JA[t.type as TaskType]?.name ?? t.type}
+            </p>
             <p className="mt-1 text-xl font-bold leading-snug">{t.question}</p>
-            <p className="mt-3 text-sm text-slate-600">回答の選択肢: {t.answer_values.join(" / ")}</p>
+            <p className="mt-3 text-sm text-slate-600">
+              回答の選択肢: {t.answer_values.map((v) => answerJa(v)).join(" / ")}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              {TASK_TYPE_JA[t.type as TaskType]?.howTo}
+            </p>
           </Card>
           <Card>
             <dl className="grid grid-cols-2 gap-y-3 text-sm">

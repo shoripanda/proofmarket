@@ -1,5 +1,7 @@
 // Issue a requester API key (04 §5). Prints the key ONCE; only SHA-256(secret) is stored.
-//   run issue-api-key.ts --principal "Acme Agents" --type organization --max-task 5 --daily 20 [--topup 10] --by <operator>
+//   run issue-api-key.ts --principal "Acme Agents" --type organization --max-task 5 --daily 20 [--topup 10] \
+//     [--task-types PLACE_STATUS_VERIFICATION,QUEUE_LENGTH,NOTICE_POSTED] --by <operator>
+import type { TaskType } from "@proofmarket/core";
 import { createPrincipal, issueApiKey, topUp } from "../apps/web/lib/services/admin-service.ts";
 import { args, db, need } from "./lib.ts";
 
@@ -16,6 +18,7 @@ const { credentialId, apiKey } = await issueApiKey(d, {
   requesterName: a.name ?? need(a, "principal"),
   maxTaskAmount: need(a, "max-task"),
   dailySpendLimit: need(a, "daily"),
+  ...(a["task-types"] ? { allowedTaskTypes: a["task-types"].split(",") as TaskType[] } : {}),
   operator: need(a, "by"),
 });
 if (a.topup) await topUp(d, credentialId, a.topup);
