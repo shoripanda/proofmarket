@@ -27,6 +27,7 @@ This chapter adds the details needed for implementation without changing the ext
 | POST | `/v1/worker/claims/{claim_id}/abandon` | worker | P0 | Added |
 | GET | `/v1/worker/claims/{claim_id}` | worker | P0 | Added. Decision result and reason |
 | GET | `/v1/worker/payouts` | worker | P1 | Added |
+| PUT | `/v1/worker/payout-preference` | worker | P2 | Added 2026-10-04. `{"yen_interest": true}` registers interest in yen payouts (01 §4.10). `/v1/worker/me` returns `yen_payout_interest` |
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | Added 2026-10-04. GET says whether push is available, PUT registers an endpoint and areas, DELETE removes it. Without VAPID keys GET returns `available: false` |
 | POST / GET | `/v1/schedules` | requester | P2 | Added 2026-10-04. Create and list recurring checks (04 §3.23) |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | Added. Stop a recurring check |

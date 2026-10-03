@@ -2641,13 +2641,17 @@
                       "additionalProperties": {
                         "type": "string"
                       }
+                    },
+                    "yen_payout_interest": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
                     "worker_id",
                     "onboarded",
                     "status",
-                    "consents"
+                    "consents",
+                    "yen_payout_interest"
                   ]
                 }
               }
@@ -2810,13 +2814,17 @@
                       "additionalProperties": {
                         "type": "string"
                       }
+                    },
+                    "yen_payout_interest": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
                     "worker_id",
                     "onboarded",
                     "status",
-                    "consents"
+                    "consents",
+                    "yen_payout_interest"
                   ]
                 }
               }

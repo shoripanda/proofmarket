@@ -24,6 +24,7 @@ import {
   issueChallenge,
   listTasks,
   onboard,
+  setYenPayoutInterest,
   taskDetail,
   workerMe,
 } from "../services/worker-service";
@@ -142,4 +143,9 @@ export async function handlePushSave(app: AppContext, req: Request) {
 export async function handlePushDelete(app: AppContext, req: Request) {
   const w = await requireWorker(app, req);
   return Response.json(await deletePushSubscription(app, w.workerId, await readJson(req)));
+}
+
+export async function handleYenInterest(app: AppContext, req: Request) {
+  const w = await requireWorker(app, req);
+  return Response.json(await setYenPayoutInterest(app, w.workerId, await readJson(req)));
 }

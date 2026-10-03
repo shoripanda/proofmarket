@@ -163,6 +163,7 @@ create table workers (
   invite_code_id     text not null,
   status             text not null default 'active' check (status in ('active','suspended')),
   coarse_area        text,                          -- about "Shibuya ward" level. No exact location is stored
+  yen_payout_interest_at timestamptz,               -- when the worker asked for yen payouts (01 §4.10); no bank data is kept
   stats              jsonb not null default '{}',   -- count aggregates only. Reputation score is P2
   created_at         timestamptz not null default now()
 );

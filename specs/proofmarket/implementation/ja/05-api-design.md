@@ -25,6 +25,7 @@
 | POST | `/v1/worker/claims/{claim_id}/abandon` | worker | P0 | 追加 |
 | GET | `/v1/worker/claims/{claim_id}` | worker | P0 | 追加。判定結果と理由 |
 | GET | `/v1/worker/payouts` | worker | P1 | 追加 |
+| PUT | `/v1/worker/payout-preference` | worker | P2 | 追加（2026-10-04）。`{"yen_interest": true}` で円での受け取りを希望（01 §4.10）。`/v1/worker/me` が `yen_payout_interest` を返す |
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | 追加（2026-10-04）。GET は通知が使えるか、PUT は宛先と地域の登録、DELETE は解除。VAPID の鍵が無い環境では GET が `available: false` を返す |
 | POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23） |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |

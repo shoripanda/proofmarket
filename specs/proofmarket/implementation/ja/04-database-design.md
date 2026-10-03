@@ -161,6 +161,7 @@ create table workers (
   invite_code_id     text not null,
   status             text not null default 'active' check (status in ('active','suspended')),
   coarse_area        text,                          -- 「渋谷区」程度。正確な位置は持たない
+  yen_payout_interest_at timestamptz,               -- 円での受け取りを希望した時刻（01 §4.10）。口座情報は持たない
   stats              jsonb not null default '{}',   -- 件数の集計だけ。評判スコアは P2
   created_at         timestamptz not null default now()
 );

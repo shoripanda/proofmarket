@@ -231,6 +231,8 @@ export const workers = pgTable(
     inviteCodeId: text("invite_code_id").notNull(),
     status: text("status").notNull().default("active"),
     coarseArea: text("coarse_area"),
+    /** When the worker asked for yen payouts (01 §4.10). No bank data is kept. */
+    yenPayoutInterestAt: tsz("yen_payout_interest_at"),
     stats: jsonb("stats").notNull().default({}),
     createdAt: tsz("created_at").notNull().defaultNow(),
   },

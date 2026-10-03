@@ -128,6 +128,15 @@ If a result for the same shop was finalized a moment ago, return it without send
 - If found, respond 200 with `reused: true`, the source `verification_id` and the public result (the same fields as 05 §4). No task is created and no balance moves (free during the pilot)
 - Otherwise a task is created as usual
 
+### 4.10 Receiving rewards in yen (2026-10-04, preparation only)
+
+To make it easier for workers without a wallet to join, we want a way to receive rewards in yen. Real-money payouts do not start until `legal-checklist.md` §3 (custody and money transfer) and §7 (withholding and invoices) are settled (README hard constraints). Only two things are built now:
+
+- Statement CSV: a worker can export their rewards per month: date (JST), task ID, amount, status, transaction URL. Useful later for tax review
+- Interest in yen: a worker can register "I want yen" (`workers.yen_payout_interest_at`). No bank details are collected. The operator sees how many want it and contacts them first when it is ready
+
+When yen payouts begin, the first choice is to have a licensed provider make the payments, avoiding a setup where the operator holds requesters' funds and pays them out.
+
 ## 5. Business flow
 
 ### 5.1 Normal case (1 witness)

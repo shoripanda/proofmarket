@@ -256,6 +256,8 @@ export const WorkerMeResponseSchema = z.object({
   onboarded: z.boolean(),
   status: z.enum(["active", "suspended"]),
   consents: z.record(z.string(), z.string()),
+  /** The worker asked to be paid in yen once that is available (01 §4.10). */
+  yen_payout_interest: z.boolean(),
 });
 
 /** Client must round lat/lng to 3 decimals before sending (05 §3.2). */
