@@ -17,6 +17,10 @@ const TOOLS = [
   ["request_reality_verification", "質問を出す。verification_id がすぐ返り、結果は後から読む"],
   ["get_reality_verification", "状態と結果を読む。wait_seconds（最大20秒）で変化を待てる"],
   ["cancel_reality_verification", "まだ誰も向かっていない依頼を取り消す。拘束した額は残高に戻る"],
+  [
+    "dispute_reality_verification",
+    "結果に異議を出す。確定から24時間以内に1回だけ。同じ場所・同じ質問の再確認（既定は2人一致）を新しく作る",
+  ],
 ];
 
 const FIELDS: [string, string][] = [
@@ -80,9 +84,8 @@ export default async function DevelopersPage() {
     <>
       <PageHero eyebrow="開発者向け" title="エージェントに、現地を確かめる手段を持たせる">
         <p>
-          MCP のツールを3つ足すか、REST API
-          を呼ぶだけで使えます。人を探す、連絡する、支払うといった手間はすべて ProofMarket
-          が引き受け、エージェントには判定済みの結果だけが返ります。
+          MCP のツールを足すか、REST API を呼ぶだけで使えます。人を探す、連絡する、支払うといった手間はすべて
+          ProofMarket が引き受け、エージェントには判定済みの結果だけが返ります。
         </p>
       </PageHero>
 
@@ -138,7 +141,7 @@ export default async function DevelopersPage() {
         </div>
       </Section>
 
-      <Section title="MCP のツール">
+      <Section title="MCP のツール（4つ）">
         <dl className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
           {TOOLS.map(([name, desc]) => (
             <div key={name} className="grid gap-1 p-4 sm:grid-cols-[18rem_1fr]">
@@ -202,6 +205,20 @@ export default async function DevelopersPage() {
             </li>
           ))}
         </ul>
+      </Section>
+
+      <Section
+        title="結果に納得できないとき"
+        lead="確定から24時間以内なら、1回だけ異議を出せます。同じ場所・同じ質問で、新しく再確認の依頼が作られます。費用はふつうの依頼と同じで、元の結果と支払いはそのまま残ります。"
+      >
+        <Code>{`curl -X POST ${base}/v1/verifications/ver_.../dispute \\
+  -H "Authorization: Bearer $PROOFMARKET_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "reason": "閉店の張り紙を見た", "assurance": { "level": "high" } }'`}</Code>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
+          返る recheck_verification_id をふつうの依頼と同じように読みます。元の依頼の GET には recheck
+          が付き、再確認の答えが元と同じだったか（matches_original）が分かります。違ったときは運営者が元の提出を見直します。
+        </p>
       </Section>
 
       <Section

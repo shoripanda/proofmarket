@@ -123,6 +123,28 @@ export async function buildResult(db: Db, task: TaskRow): Promise<VerificationRe
   };
 }
 
+/** 01 §4.12: the recheck created by a dispute of this task, if any. */
+async function recheckView(db: Db, task: TaskRow): Promise<GetVerificationResponse["recheck"]> {
+  const [child] = await db
+    .select()
+    .from(schema.verificationRequests)
+    .where(eq(schema.verificationRequests.recheckOf, task.id));
+  if (!child) return null;
+  const results = await db
+    .select()
+    .from(schema.verificationResults)
+    .where(inArray(schema.verificationResults.verificationId, [task.id, child.id]));
+  const mine = results.find((r) => r.verificationId === task.id);
+  const theirs = results.find((r) => r.verificationId === child.id);
+  return {
+    verification_id: child.id as GetVerificationResponse["verification_id"],
+    status: child.status as GetVerificationResponse["status"],
+    answer: (theirs?.finalAnswer as AnswerValue | null) ?? null,
+    matches_original:
+      theirs?.outcome === "VERIFIED" && mine?.finalAnswer ? theirs.finalAnswer === mine.finalAnswer : null,
+  };
+}
+
 export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetVerificationResponse> {
   const [valid] = await db
     .select({ n: count() })
@@ -153,6 +175,8 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
     answer_schema: { type: "enum", values: task.answerValues as AnswerValue[] },
     location: { lat: task.targetLat, lng: task.targetLng, radius_m: task.radiusM },
     deadline: task.deadline.toISOString(),
+    recheck_of: (task.recheckOf as GetVerificationResponse["recheck_of"]) ?? null,
+    recheck: await recheckView(db, task),
     worker_requirements: task.minWorkerTier
       ? { min_tier: task.minWorkerTier as "standard" | "trusted" }
       : null,

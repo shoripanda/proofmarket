@@ -18,6 +18,7 @@ import {
 import {
   type CreateVerificationRequest,
   CreateVerificationRequestSchema,
+  DisputeRequestSchema,
 } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
@@ -350,5 +351,69 @@ export async function cancelVerification(app: AppContext, auth: RequesterAuth, i
       "TASK_NOT_CANCELLABLE",
     );
     return buildVerificationView(tx, task);
+  });
+}
+
+/** 01 §4.12: dispute a finalized result once, within 24 h, by creating a recheck task the requester pays for. */
+export async function disputeVerification(app: AppContext, auth: RequesterAuth, id: string, raw: unknown) {
+  const r = DisputeRequestSchema.safeParse(raw ?? {});
+  if (!r.success) {
+    throw new ApiError("VALIDATION_FAILED", {
+      issues: r.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+    });
+  }
+  const orig = await loadOwned(app.db, auth, id);
+  const [res] = await app.db
+    .select()
+    .from(schema.verificationResults)
+    .where(eq(schema.verificationResults.verificationId, orig.id));
+  const now = app.now();
+  if (
+    !res ||
+    !["VERIFIED", "REJECTED"].includes(res.outcome) ||
+    now.getTime() - res.finalizedAt.getTime() > 24 * 3600_000 ||
+    orig.recheckOf
+  ) {
+    throw new ApiError("DISPUTE_NOT_ALLOWED");
+  }
+  const body = CreateVerificationRequestSchema.parse({
+    type: orig.type,
+    question: orig.question,
+    answer_schema: { type: "enum", values: orig.answerValues },
+    location: { lat: orig.targetLat, lng: orig.targetLng, radius_m: orig.radiusM },
+    deadline: new Date(now.getTime() + (r.data.deadline_minutes ?? 60) * 60_000).toISOString(),
+    freshness: { max_age_seconds: orig.freshnessMaxAgeS },
+    evidence_requirements: { photo: true, task_nonce: true },
+    assurance: r.data.assurance ?? { level: "standard" },
+    bounty: {
+      asset: orig.bountyAsset,
+      amount: fromMicro(toMicro(orig.bountyAmount)),
+      network: orig.bountyNetwork,
+    },
+    principal_ref: auth.principalId,
+  });
+  return app.db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ id: schema.verificationRequests.id })
+      .from(schema.verificationRequests)
+      .where(eq(schema.verificationRequests.recheckOf, orig.id));
+    if (existing) throw new ApiError("DISPUTE_NOT_ALLOWED", { recheck_verification_id: existing.id });
+    const created = await createVerification(app, tx, auth, body, `dispute:${orig.id}`);
+    const recheckId = created.body.verification_id;
+    await tx
+      .update(schema.verificationRequests)
+      .set({ recheckOf: orig.id })
+      .where(eq(schema.verificationRequests.id, recheckId));
+    await appendAudit(tx, {
+      verificationId: orig.id,
+      actorType: "requester",
+      actorRef: auth.keyPrefix,
+      eventType: "operator_action",
+      beforeState: null,
+      afterState: null,
+      correlationId: orig.id,
+      metadata: { action: "dispute_opened", recheck: recheckId, reason: r.data.reason ?? null },
+    });
+    return { verification_id: orig.id, recheck_verification_id: recheckId };
   });
 }

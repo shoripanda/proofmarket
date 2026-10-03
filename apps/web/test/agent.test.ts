@@ -65,11 +65,12 @@ describe("MCP tools", () => {
     return mcp;
   }
 
-  it("lists the three tools with the asynchronous warning in the description", async () => {
+  it("lists the four tools with the asynchronous warning in the description", async () => {
     const mcp = await connect();
     const { tools } = await mcp.listTools();
     expect(tools.map((x) => x.name).sort()).toEqual([
       "cancel_reality_verification",
+      "dispute_reality_verification",
       "get_reality_verification",
       "request_reality_verification",
     ]);
