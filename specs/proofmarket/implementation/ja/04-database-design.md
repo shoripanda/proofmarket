@@ -532,6 +532,32 @@ create table push_subscriptions (
 
 送信は `NOTIFY_WORKERS` ジョブで 1 回だけ行い、再試行しない（通知は届かなくても依頼一覧で見られる）。宛先が 404・410 を返したら行を消す。
 
+### 3.23 verification_schedules（定期確認、2026-10-04 追加）
+
+「平日の朝 9 時に、この店が開いているか」のように、同じ依頼を決まった時刻に繰り返し出す。毎分の tick が期限の来た予定を拾い、通常の作成（05 §2.1）をそのまま通すので、残高・上限・ポリシー検査・資金拘束はふつうの依頼と同じに働く。冪等キーは `schedule:<id>:<予定時刻>` で、tick が重なっても 1 回に 1 件しかできない。
+
+```sql
+create table verification_schedules (
+  id                   text primary key,          -- sch_<ULID>
+  credential_id        text not null references requester_credentials(id),
+  template             jsonb not null,            -- 05 §2.1 の本文から deadline を除いたもの（assurance は人数に直したもの）
+  deadline_minutes     int not null check (deadline_minutes between 10 and 1440),
+  times_jst            text[] not null,           -- "HH:MM"（日本時間）。1〜24 個
+  days_jst             smallint[] not null,       -- 0=日〜6=土。1〜7 個
+  ends_at              timestamptz,
+  active               boolean not null default true,
+  next_run_at          timestamptz not null,
+  last_run_at          timestamptz,
+  last_verification_id text,
+  last_error           text,                      -- 直近の失敗のエラーコード
+  consecutive_failures int not null default 0,    -- 3 回続けて失敗したら active=false
+  created_at           timestamptz not null default now()
+);
+create index on verification_schedules (active, next_run_at);
+```
+
+API キー 1 つあたり、動いている予定は 10 件まで。キーが止められたら予定も止める。
+
 ## 4. 保持期間と削除
 
 | 保持区分 | 対象 | 期間 | 削除のしかた |

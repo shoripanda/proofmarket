@@ -381,3 +381,30 @@ export const WebhookPayloadSchema = z.object({
   created_at: IsoDateTime,
   data: z.object({ verification_id: VerificationIdSchema, status: z.enum(TASK_STATUSES) }),
 });
+
+// ---------- recurring checks (04 §3.23) ----------
+const HhmmSchema = z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "HH:MM (Japan time)");
+export const CreateScheduleRequestSchema = z
+  .object({
+    request: CreateVerificationRequestSchema.omit({ deadline: true }),
+    deadline_minutes: z.number().int().min(10).max(1440),
+    times_jst: z.array(HhmmSchema).min(1).max(24),
+    days_jst: z.array(z.number().int().min(0).max(6)).min(1).max(7).describe("0 = Sunday ... 6 = Saturday"),
+    ends_at: IsoDateTime.optional(),
+  })
+  .strict();
+export type CreateScheduleRequest = z.infer<typeof CreateScheduleRequestSchema>;
+
+export const ScheduleSchema = z.object({
+  schedule_id: z.string(),
+  active: z.boolean(),
+  times_jst: z.array(z.string()),
+  days_jst: z.array(z.number().int()),
+  deadline_minutes: z.number().int(),
+  ends_at: IsoDateTime.nullable(),
+  next_run_at: IsoDateTime.nullable(),
+  last_run_at: IsoDateTime.nullable(),
+  last_verification_id: z.string().nullable(),
+  last_error: z.string().nullable(),
+});
+export const ScheduleListResponseSchema = z.object({ schedules: z.array(ScheduleSchema) });

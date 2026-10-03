@@ -534,6 +534,32 @@ create table push_subscriptions (
 
 Sending happens once in the `NOTIFY_WORKERS` job with no retries (a missed notification is still visible in the task list). An endpoint answering 404 or 410 is deleted.
 
+### 3.23 verification_schedules (recurring checks, added 2026-10-04)
+
+Creates the same request at fixed times, e.g. "is this shop open at 9:00 on weekdays". The per-minute tick picks up due schedules and runs the normal create path (05 §2.1), so balance, limits, policy checks and funding work exactly as for any request. The idempotency key is `schedule:<id>:<scheduled time>`, so overlapping ticks still make one task per run.
+
+```sql
+create table verification_schedules (
+  id                   text primary key,          -- sch_<ULID>
+  credential_id        text not null references requester_credentials(id),
+  template             jsonb not null,            -- 05 §2.1 body without deadline (assurance normalized to counts)
+  deadline_minutes     int not null check (deadline_minutes between 10 and 1440),
+  times_jst            text[] not null,           -- "HH:MM" Japan time, 1 to 24 entries
+  days_jst             smallint[] not null,       -- 0=Sun ... 6=Sat, 1 to 7 entries
+  ends_at              timestamptz,
+  active               boolean not null default true,
+  next_run_at          timestamptz not null,
+  last_run_at          timestamptz,
+  last_verification_id text,
+  last_error           text,                      -- error code of the latest failure
+  consecutive_failures int not null default 0,    -- 3 failures in a row set active=false
+  created_at           timestamptz not null default now()
+);
+create index on verification_schedules (active, next_run_at);
+```
+
+At most 10 active schedules per API key. Suspending the key stops its schedules.
+
 ## 4. Retention and Deletion
 
 | Retention class | Target | Period | How it is deleted |

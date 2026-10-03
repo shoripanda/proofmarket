@@ -1803,6 +1803,765 @@
         }
       }
     },
+    "/v1/schedules": {
+      "post": {
+        "summary": "Create a recurring check (a normal verification is created at each time, Japan time)",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "PLACE_STATUS_VERIFICATION",
+                          "QUEUE_LENGTH",
+                          "NOTICE_POSTED"
+                        ]
+                      },
+                      "question": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 280
+                      },
+                      "answer_schema": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "enum"
+                            ]
+                          },
+                          "values": {
+                            "minItems": 2,
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "OPEN",
+                                "CLOSED",
+                                "NO_QUEUE",
+                                "SHORT_QUEUE",
+                                "LONG_QUEUE",
+                                "POSTED",
+                                "NOT_POSTED",
+                                "UNCLEAR"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "values"
+                        ]
+                      },
+                      "location": {
+                        "type": "object",
+                        "properties": {
+                          "lat": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "lng": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          "radius_m": {
+                            "type": "integer",
+                            "minimum": 25,
+                            "maximum": 500
+                          }
+                        },
+                        "required": [
+                          "lat",
+                          "lng",
+                          "radius_m"
+                        ]
+                      },
+                      "freshness": {
+                        "default": {
+                          "max_age_seconds": 300
+                        },
+                        "type": "object",
+                        "properties": {
+                          "max_age_seconds": {
+                            "default": 300,
+                            "type": "integer",
+                            "minimum": 60,
+                            "maximum": 900
+                          }
+                        }
+                      },
+                      "evidence_requirements": {
+                        "type": "object",
+                        "properties": {
+                          "photo": {
+                            "type": "boolean",
+                            "enum": [
+                              true
+                            ]
+                          },
+                          "task_nonce": {
+                            "type": "boolean",
+                            "enum": [
+                              true
+                            ]
+                          }
+                        },
+                        "required": [
+                          "photo",
+                          "task_nonce"
+                        ]
+                      },
+                      "assurance": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "required_witnesses": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                              },
+                              "quorum": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                              }
+                            },
+                            "required": [
+                              "required_witnesses",
+                              "quorum"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "level": {
+                                "type": "string",
+                                "enum": [
+                                  "fast",
+                                  "standard",
+                                  "high"
+                                ],
+                                "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                              }
+                            },
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      "bounty": {
+                        "type": "object",
+                        "properties": {
+                          "asset": {
+                            "type": "string",
+                            "enum": [
+                              "USDC"
+                            ]
+                          },
+                          "amount": {
+                            "type": "string",
+                            "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                          },
+                          "network": {
+                            "type": "string",
+                            "enum": [
+                              "solana-devnet"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "asset",
+                          "amount",
+                          "network"
+                        ]
+                      },
+                      "principal_ref": {
+                        "type": "string",
+                        "pattern": "^prn_[0-9A-HJKMNP-TV-Z]{26}$"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "question",
+                      "answer_schema",
+                      "location",
+                      "evidence_requirements",
+                      "assurance",
+                      "bounty",
+                      "principal_ref"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "deadline_minutes": {
+                    "type": "integer",
+                    "minimum": 10,
+                    "maximum": 1440
+                  },
+                  "times_jst": {
+                    "minItems": 1,
+                    "maxItems": 24,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$"
+                    }
+                  },
+                  "days_jst": {
+                    "minItems": 1,
+                    "maxItems": 7,
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 6
+                    },
+                    "description": "0 = Sunday ... 6 = Saturday"
+                  },
+                  "ends_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "required": [
+                  "request",
+                  "deadline_minutes",
+                  "times_jst",
+                  "days_jst"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "schedule_id": {
+                      "type": "string"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "times_jst": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "days_jst": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "deadline_minutes": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "ends_at": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "next_run_at": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "last_run_at": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "last_verification_id": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "last_error": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "schedule_id",
+                    "active",
+                    "times_jst",
+                    "days_jst",
+                    "deadline_minutes",
+                    "ends_at",
+                    "next_run_at",
+                    "last_run_at",
+                    "last_verification_id",
+                    "last_error"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List recurring checks of this API key",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "schedules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "schedule_id": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "times_jst": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "days_jst": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "deadline_minutes": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "ends_at": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "next_run_at": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "last_run_at": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "last_verification_id": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "last_error": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "schedule_id",
+                          "active",
+                          "times_jst",
+                          "days_jst",
+                          "deadline_minutes",
+                          "ends_at",
+                          "next_run_at",
+                          "last_run_at",
+                          "last_verification_id",
+                          "last_error"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "schedules"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/schedules/{id}": {
+      "delete": {
+        "summary": "Stop a recurring check",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "schedule_id": {
+                      "type": "string"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "times_jst": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "days_jst": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "deadline_minutes": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "ends_at": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "next_run_at": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "last_run_at": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "last_verification_id": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "last_error": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "schedule_id",
+                    "active",
+                    "times_jst",
+                    "days_jst",
+                    "deadline_minutes",
+                    "ends_at",
+                    "next_run_at",
+                    "last_run_at",
+                    "last_verification_id",
+                    "last_error"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/worker/me": {
       "get": {
         "summary": "Current worker",

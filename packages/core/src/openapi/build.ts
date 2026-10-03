@@ -9,7 +9,7 @@ import * as S from "../schemas/api.ts";
 
 type Auth = "requester" | "worker" | "operator" | "none";
 interface Endpoint {
-  method: "get" | "post";
+  method: "get" | "post" | "delete";
   path: string;
   auth: Auth;
   priority: "P0" | "P1" | "Stretch";
@@ -54,6 +54,31 @@ const ENDPOINTS: Endpoint[] = [
     priority: "P1",
     summary: "Signed URLs of EXIF-stripped derived images",
     ok: { status: 200, schema: S.EvidenceUrlsResponseSchema },
+  },
+  {
+    method: "post",
+    path: "/v1/schedules",
+    auth: "requester",
+    priority: "Stretch",
+    summary: "Create a recurring check (a normal verification is created at each time, Japan time)",
+    body: S.CreateScheduleRequestSchema,
+    ok: { status: 201, schema: S.ScheduleSchema },
+  },
+  {
+    method: "get",
+    path: "/v1/schedules",
+    auth: "requester",
+    priority: "Stretch",
+    summary: "List recurring checks of this API key",
+    ok: { status: 200, schema: S.ScheduleListResponseSchema },
+  },
+  {
+    method: "delete",
+    path: "/v1/schedules/{id}",
+    auth: "requester",
+    priority: "Stretch",
+    summary: "Stop a recurring check",
+    ok: { status: 200, schema: S.ScheduleSchema },
   },
   {
     method: "get",

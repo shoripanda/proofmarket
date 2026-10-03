@@ -90,3 +90,10 @@ function toAuth(row: NonNullable<Awaited<ReturnType<typeof loadCredential>>>): R
     },
   };
 }
+
+/** Auth for work done on a key's behalf without a request (scheduled checks, 04 §3.23). Same status rules. */
+export async function credentialAuth(app: AppContext, credentialId: string): Promise<RequesterAuth> {
+  const row = await loadCredential(app, eq(schema.requesterCredentials.id, credentialId));
+  if (!row) throw new ApiError("UNAUTHENTICATED");
+  return toAuth(row);
+}

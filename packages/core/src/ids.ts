@@ -22,6 +22,7 @@ export const ID_PREFIXES = {
   participation: "par",
   removal: "rmv",
   pushSubscription: "psb",
+  schedule: "sch",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

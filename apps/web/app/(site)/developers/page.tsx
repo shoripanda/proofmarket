@@ -200,6 +200,27 @@ export default async function DevelopersPage() {
         </ul>
       </Section>
 
+      <Section
+        title="決まった時刻に繰り返し確かめる"
+        lead="「平日の朝 9 時に、この店が開いているか」のような確認は、予定として登録できます。時刻が来るたびに通常の依頼が1件作られるので、残高や上限、確認の手順はふつうの依頼と同じです。"
+      >
+        <Code>{`curl -X POST ${base}/v1/schedules \\
+  -H "Authorization: Bearer $PROOFMARKET_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "request": { ...request.json から deadline を除いたもの },
+    "deadline_minutes": 30,
+    "times_jst": ["09:00"],
+    "days_jst": [1, 2, 3, 4, 5]
+  }'`}</Code>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
+          時刻は日本時間、曜日は 0 が日曜です。できた依頼は Webhook か GET /v1/schedules の
+          last_verification_id で追えます。残高不足などで3回続けて作れなかった予定と、API
+          キーが止められた予定は自動で止まります。止めるときは DELETE /v1/schedules/{"{id}"}{" "}
+          を呼びます。1つのキーで動かせる予定は10件までです。
+        </p>
+      </Section>
+
       <Section title="上限と支払い">
         <p className="max-w-3xl text-sm leading-relaxed text-slate-600">
           API
