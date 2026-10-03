@@ -365,6 +365,26 @@ The stdio server only works on the machine that runs it. To let AI agents on oth
 - `get_reality_verification` may wait up to 20 s, so the function's max duration is 60 s
 - The Claude and ChatGPT phone apps have no field for an API key and connect with OAuth instead; that is added in 6.2
 
+### 6.2 OAuth for phone AI apps (added 2026-10-03)
+
+The Claude and ChatGPT apps connect through the MCP authorization spec (OAuth 2.1). ProofMarket also acts as the authorization server; the user enters their API key once when connecting.
+
+| Endpoint | Role |
+|---|---|
+| `GET /.well-known/oauth-protected-resource` | Returns `resource` (`<BASE>/mcp`) and the authorization server (`<BASE>`) (RFC 9728) |
+| `GET /.well-known/oauth-authorization-server` | Returns the endpoints, `code_challenge_methods_supported: ["S256"]` and `token_endpoint_auth_methods_supported: ["none"]` (RFC 8414) |
+| `POST /oauth/register` | Dynamic client registration (RFC 7591). Public clients only. `redirect_uris` must be https, or `http://localhost` / `http://127.0.0.1`; 1 to 5 of them. 10 per minute per IP |
+| `GET /oauth/authorize` | Consent page. Shows the client name and the redirect host and asks for the API key. An invalid `client_id` or `redirect_uri` is shown as an error on the page and never redirected |
+| `POST /oauth/authorize` | Checks the API key with the REST rules and redirects back with an authorization code (10 minutes, single use). `code_challenge` (S256) is required |
+| `POST /oauth/token` | Handles `authorization_code` (PKCE verified) and `refresh_token` |
+
+- Access tokens (`pm_oat_…`) last 1 hour, refresh tokens (`pm_ort_…`) 30 days. Only hashes are stored. Refresh tokens rotate on every use; if a used one comes back, every token of that grant is revoked
+- Tokens are bound to the issuing API key. Suspending or revoking the key stops them immediately. Rate limits, daily limits and policy are shared with the key
+- `/mcp` accepts either the API key or an access token. A 401 carries `WWW-Authenticate: Bearer resource_metadata="<BASE>/.well-known/oauth-protected-resource"`
+- When the `resource` parameter (RFC 8707) is present it must equal `<BASE>/mcp`
+- The consent page sends `frame-ancestors 'none'`. Each grant is audited as `oauth_granted` (key prefix and client name)
+- Tables: `oauth_clients` (registered clients), `oauth_codes` (authorization code hashes), `oauth_tokens` (token hashes, expiry, revocation, and `grant_id` grouping one connection)
+
 ## 7. x402 V2 (Stretch)
 
 x402 is used only for deposits into the balance and is kept separate from the per-task escrow (Section 6 of `architecture.md`).

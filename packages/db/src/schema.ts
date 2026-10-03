@@ -583,3 +583,48 @@ export const rateLimitCounters = pgTable(
   },
   (t) => [primaryKey({ columns: [t.scope, t.windowStart] })],
 );
+
+// ---------- OAuth for MCP clients (05 §6.2) ----------
+export const oauthClients = pgTable("oauth_clients", {
+  id: text("id").primaryKey(),
+  clientName: text("client_name").notNull(),
+  redirectUris: text("redirect_uris").array().notNull(),
+  createdAt: tsz("created_at").notNull().defaultNow(),
+});
+
+export const oauthCodes = pgTable("oauth_codes", {
+  codeHash: bytea("code_hash").primaryKey(),
+  clientId: text("client_id")
+    .notNull()
+    .references(() => oauthClients.id),
+  credentialId: text("credential_id")
+    .notNull()
+    .references(() => requesterCredentials.id),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  expiresAt: tsz("expires_at").notNull(),
+  usedAt: tsz("used_at"),
+});
+
+export const oauthTokens = pgTable(
+  "oauth_tokens",
+  {
+    tokenHash: bytea("token_hash").primaryKey(),
+    kind: text("kind").notNull(),
+    grantId: text("grant_id").notNull(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => oauthClients.id),
+    credentialId: text("credential_id")
+      .notNull()
+      .references(() => requesterCredentials.id),
+    expiresAt: tsz("expires_at").notNull(),
+    usedAt: tsz("used_at"),
+    revokedAt: tsz("revoked_at"),
+    createdAt: tsz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("oauth_tokens_kind_chk", oneOf("kind", ["access", "refresh"])),
+    index("oauth_tokens_grant_idx").on(t.grantId),
+  ],
+);

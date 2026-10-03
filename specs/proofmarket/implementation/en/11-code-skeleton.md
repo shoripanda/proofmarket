@@ -40,7 +40,7 @@ The design in Chapters 00–10 is now code that implementation can build on. Typ
 | `cargo test -p proofmarket` | All 15 P-layer tests are `ignore`d (bodies in PR-09) |
 | Transition-table shape test | T01–T18 present; no unknown status, event or guard; no transition leaves SETTLED or REFUNDED |
 | Error format (U-ERR-01) | Every code has `code`, `message`, `retryable`, `details` |
-| Migration SQL applied to PGlite | 24 tables. Settle XOR refund (DB half of I-SET-03/04), RELEASE XOR REFUND, quorum range, status names and append-only audit log all hold |
+| Migration SQL applied to PGlite | 27 tables (including the 3 OAuth ones). Settle XOR refund (DB half of I-SET-03/04), RELEASE XOR REFUND, quorum range, status names and append-only audit log all hold |
 
 Test stubs use the Chapter 09 IDs as names (`it.todo` and Rust `#[ignore]`). Filling in tests under those names keeps the mapping to acceptance criteria intact.
 

@@ -7,6 +7,7 @@ import { authenticateRequester } from "./auth/requester";
 import type { AppContext } from "./context";
 import { handleCancel, handleCreate, handleGet, handlePublicResult } from "./handlers/requester";
 import { route } from "./http";
+import { publicBase, resourceMetadataUrl } from "./services/oauth-service";
 
 type Kick = (dedupeKeys: string[]) => void;
 type H = (app: AppContext, req: Request, id: string) => Promise<Response>;
@@ -43,7 +44,7 @@ export function inProcessFetch(app: AppContext, kick: Kick = () => {}): typeof f
   }) as typeof fetch;
 }
 
-/** POST /mcp — MCP over Streamable HTTP, stateless, authenticated by the requester API key (05 §6.1). */
+/** POST /mcp — MCP over Streamable HTTP, stateless, authenticated by an API key or OAuth access token (05 §6.1-6.2). */
 export async function handleMcp(app: AppContext, req: Request, kick: Kick): Promise<Response> {
   let principalId: string;
   try {
@@ -52,11 +53,13 @@ export async function handleMcp(app: AppContext, req: Request, kick: Kick): Prom
     if (e instanceof ApiError && e.code === "UNAUTHENTICATED") {
       return Response.json(e.toBody(), {
         status: e.http,
-        headers: { "WWW-Authenticate": 'Bearer realm="proofmarket"' },
+        // Points OAuth clients (phone apps) at the metadata (05 §6.2).
+        headers: { "WWW-Authenticate": `Bearer resource_metadata="${resourceMetadataUrl(publicBase(req))}"` },
       });
     }
     throw e;
   }
+  // The SDK forwards this bearer to the REST handlers, which accept both forms.
   const apiKey = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   const client = new ProofMarketClient({
     baseUrl: new URL(req.url).origin,
