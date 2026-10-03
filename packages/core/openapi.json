@@ -162,22 +162,45 @@
                     ]
                   },
                   "assurance": {
-                    "type": "object",
-                    "properties": {
-                      "required_witnesses": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "required_witnesses": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "quorum": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          }
+                        },
+                        "required": [
+                          "required_witnesses",
+                          "quorum"
+                        ],
+                        "additionalProperties": false
                       },
-                      "quorum": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
+                      {
+                        "type": "object",
+                        "properties": {
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "fast",
+                              "standard",
+                              "high"
+                            ],
+                            "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                          }
+                        },
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false
                       }
-                    },
-                    "required": [
-                      "required_witnesses",
-                      "quorum"
                     ]
                   },
                   "bounty": {
@@ -482,11 +505,21 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "level": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "fast",
+                            "standard",
+                            "high"
+                          ]
                         }
                       },
                       "required": [
                         "required_witnesses",
-                        "quorum"
+                        "quorum",
+                        "level"
                       ]
                     },
                     "bounty": {
@@ -1094,11 +1127,21 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "level": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "fast",
+                            "standard",
+                            "high"
+                          ]
                         }
                       },
                       "required": [
                         "required_witnesses",
-                        "quorum"
+                        "quorum",
+                        "level"
                       ]
                     },
                     "bounty": {

@@ -58,6 +58,46 @@ export const ErrorBodySchema = z.object({
 
 // ---------- requester: create ----------
 
+/** Named presets for `assurance` (05 §2.1 row 12). Agents may pick a level instead of counts. */
+export const ASSURANCE_LEVELS = {
+  fast: { required_witnesses: 1, quorum: 1 },
+  standard: { required_witnesses: 2, quorum: 2 },
+  high: { required_witnesses: 3, quorum: 2 },
+} as const;
+export type AssuranceLevel = keyof typeof ASSURANCE_LEVELS;
+const LEVEL_NAMES = Object.keys(ASSURANCE_LEVELS) as [AssuranceLevel, ...AssuranceLevel[]];
+
+/** The level whose counts equal these, or null. */
+export function levelOf(a: { required_witnesses: number; quorum: number }): AssuranceLevel | null {
+  return (
+    LEVEL_NAMES.find(
+      (l) =>
+        ASSURANCE_LEVELS[l].required_witnesses === a.required_witnesses &&
+        ASSURANCE_LEVELS[l].quorum === a.quorum,
+    ) ?? null
+  );
+}
+
+const AssuranceCountsSchema = z
+  .object({
+    required_witnesses: z.number().int().min(1).max(LIMITS.witnesses.max),
+    quorum: z.number().int().min(1).max(LIMITS.witnesses.max),
+  })
+  .strict()
+  .refine((a) => a.quorum <= a.required_witnesses, "quorum must be <= required_witnesses");
+
+/** Either explicit counts or `{ level }`; always normalized to counts. */
+export const AssuranceInputSchema = z
+  .union([
+    AssuranceCountsSchema,
+    z
+      .object({
+        level: z.enum(LEVEL_NAMES).describe("fast = 1 witness, standard = 2 agreeing, high = 2 of 3"),
+      })
+      .strict(),
+  ])
+  .transform((a) => ("level" in a ? { ...ASSURANCE_LEVELS[a.level] } : a));
+
 export const CreateVerificationRequestSchema = z
   .object({
     type: z.literal("PLACE_STATUS_VERIFICATION"),
@@ -86,12 +126,7 @@ export const CreateVerificationRequestSchema = z
       photo: z.literal(true),
       task_nonce: z.literal(true),
     }),
-    assurance: z
-      .object({
-        required_witnesses: z.number().int().min(1).max(LIMITS.witnesses.max),
-        quorum: z.number().int().min(1).max(LIMITS.witnesses.max),
-      })
-      .refine((a) => a.quorum <= a.required_witnesses, "quorum must be <= required_witnesses"),
+    assurance: AssuranceInputSchema,
     bounty: z.object({
       asset: z.literal("USDC"),
       amount: Amount, // per witness (D-07)
@@ -159,7 +194,11 @@ export const GetVerificationResponseSchema = z.object({
   answer_schema: CreateVerificationRequestSchema.shape.answer_schema,
   location: CreateVerificationRequestSchema.shape.location,
   deadline: IsoDateTime,
-  assurance: z.object({ required_witnesses: z.number().int(), quorum: z.number().int() }),
+  assurance: z.object({
+    required_witnesses: z.number().int(),
+    quorum: z.number().int(),
+    level: z.enum(LEVEL_NAMES).nullable(),
+  }),
   bounty: CreateVerificationRequestSchema.shape.bounty,
   witness_progress: z.object({
     valid: z.number().int(),

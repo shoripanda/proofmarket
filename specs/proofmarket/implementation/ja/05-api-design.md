@@ -106,7 +106,7 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 | 10 | 位置が対象地域（API キーの矩形、なければ `PILOT_BBOX`）の中 | 400 `LOCATION_OUT_OF_PILOT_AREA` |
 | 10a | 位置が `places` の active な地点から 30 m 以内 | 400 `LOCATION_NOT_ALLOWLISTED` |
 | 11 | `evidence_requirements.photo` と `task_nonce` が true（MVP では外せない） | 400 `VALIDATION_FAILED` |
-| 12 | `1 ≤ quorum ≤ required_witnesses ≤ MAX_WITNESSES`（PR-14 までは 1、以降は 5） | 400 `VALIDATION_FAILED` |
+| 12 | `1 ≤ quorum ≤ required_witnesses ≤ MAX_WITNESSES`（PR-14 までは 1、以降は 5）。`assurance` は人数を直接書くか、`{ "level": "fast" | "standard" | "high" }` で選ぶ（2026-10-04 追加）。fast = 1 人、standard = 2 人一致、high = 3 人中 2 人。level は保存前に人数へ置き換え、GET では人数と一致する level を返す | 400 `VALIDATION_FAILED` |
 | 13 | `bounty.asset = "USDC"`、`network = "solana-devnet"`、`amount > 0`、小数 6 桁以内 | 400 `VALIDATION_FAILED` |
 | 14 | 質問文のポリシー検査（08 章 3 節） | 422 `TASK_POLICY_VIOLATION`（`details.rule_id` 付き） |
 | — | ここで `requester_credentials` の行を `FOR UPDATE` でロックする（15〜17 を並行実行から守る） | — |

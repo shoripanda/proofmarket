@@ -108,7 +108,7 @@ The request body is as in Section 1 of `api-contract.md`. The following checks a
 | 10 | Location is inside the target area (the API key's bounding box, or `PILOT_BBOX` if none) | 400 `LOCATION_OUT_OF_PILOT_AREA` |
 | 10a | Location is within 30 m of an active point in `places` | 400 `LOCATION_NOT_ALLOWLISTED` |
 | 11 | `evidence_requirements.photo` and `task_nonce` are true (cannot be turned off in the MVP) | 400 `VALIDATION_FAILED` |
-| 12 | `1 ≤ quorum ≤ required_witnesses ≤ MAX_WITNESSES` (1 until PR-14, 5 afterward) | 400 `VALIDATION_FAILED` |
+| 12 | `1 ≤ quorum ≤ required_witnesses ≤ MAX_WITNESSES` (1 until PR-14, 5 afterward). `assurance` either gives the counts directly or picks `{ "level": "fast" | "standard" | "high" }` (added 2026-10-04): fast = 1 witness, standard = 2 agreeing, high = 2 of 3. The level is replaced by counts before storage; GET returns the level matching the counts | 400 `VALIDATION_FAILED` |
 | 13 | `bounty.asset = "USDC"`, `network = "solana-devnet"`, `amount > 0`, at most 6 decimal places | 400 `VALIDATION_FAILED` |
 | 14 | Policy check of the question text (Chapter 08, Section 3) | 422 `TASK_POLICY_VIOLATION` (with `details.rule_id`) |
 | — | Here, lock the `requester_credentials` row with `FOR UPDATE` (protects 15 to 17 from concurrent execution) | — |

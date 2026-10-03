@@ -76,6 +76,27 @@ describe("MCP tools", () => {
     expect(tools.find((x) => x.name === "request_reality_verification")?.description).toMatch(
       /Never assume or invent the outcome/,
     );
+    // Assurance presets are visible to the agent in the input schema.
+    const schemaText = JSON.stringify(
+      tools.find((x) => x.name === "request_reality_verification")?.inputSchema,
+    );
+    expect(schemaText).toContain('"standard"');
+    expect(schemaText).toContain("required_witnesses");
+  });
+
+  it("accepts an assurance level through MCP", async () => {
+    const mcp = await connect();
+    const { principal_ref: _p, ...args } = createBody(t.principalId, { assurance: { level: "high" } });
+    const r = (await mcp.callTool({ name: "request_reality_verification", arguments: args })) as unknown as {
+      isError?: boolean;
+      structuredContent: { verification_id: string };
+    };
+    expect(r.isError).toBeFalsy();
+    const g = (await mcp.callTool({
+      name: "get_reality_verification",
+      arguments: { verification_id: r.structuredContent.verification_id },
+    })) as unknown as { structuredContent: { assurance: unknown } };
+    expect(g.structuredContent.assurance).toEqual({ required_witnesses: 3, quorum: 2, level: "high" });
   });
 
   it("request -> identical retry creates no second task -> get -> cancel", async () => {
