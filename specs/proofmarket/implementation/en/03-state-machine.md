@@ -55,7 +55,7 @@ Any combination of (state, event) not in the table is rejected (REQ-S-001).
 | # | From | Event | Condition | To | Side effects |
 |---|---|---|---|---|---|
 | T01 | CREATED | `FUNDING_CONFIRMED` | initialize_task is finalized | FUNDED | funding_status = CONFIRMED |
-| T02 | FUNDED | `OPEN` | deadline > now | OPEN | Webhook `verification.open` |
+| T02 | FUNDED | `OPEN` | deadline > now | OPEN | Webhook `verification.open`, `NOTIFY_WORKERS` job (added 2026-10-04; push to workers who chose that area) |
 | T03 | OPEN | `CLAIM_CREATED` | open_slots > 0, claims_enabled flag is true | CLAIMED | Create claim, Webhook `verification.claimed` |
 | T04 | CLAIMED / SUBMITTED | `CLAIM_CREATED` | Same as above | (unchanged) | Create claim |
 | T05 | CLAIMED | `SUBMISSION_RECEIVED` | Claim is ACTIVE, before deadline | SUBMITTED | Webhook `verification.submitted` |

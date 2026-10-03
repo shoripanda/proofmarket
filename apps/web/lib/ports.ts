@@ -17,3 +17,11 @@ export interface EvidenceStorage {
   createSignedDownloadUrl(bucket: "evidence-derived", key: string, ttlS: number): Promise<string>;
   remove(bucket: "evidence-raw" | "evidence-derived", keys: string[]): Promise<void>;
 }
+
+/** Web Push (04 §3.22). `gone` = the endpoint no longer exists (404/410) and should be deleted. */
+export interface PushSender {
+  send(
+    sub: { endpoint: string; keys: { p256dh: string; auth: string } },
+    payload: string,
+  ): Promise<{ ok: true } | { ok: false; gone: boolean }>;
+}

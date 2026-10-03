@@ -515,6 +515,25 @@ create table removal_requests (
 );
 ```
 
+### 3.22 push_subscriptions (push notification endpoints, added 2026-10-04)
+
+When a new task opens in an area a worker chose, notify them with Web Push. No location is used; the area is derived from the task's location with `PILOT_AREAS` (within 2 km of the Shibuya or Shinjuku centre, otherwise other).
+
+```sql
+create table push_subscriptions (
+  id            text primary key,                -- psb_<ULID>
+  worker_id     text not null references workers(id),
+  endpoint_hash bytea not null unique,           -- SHA-256(endpoint); re-registering a device overwrites
+  endpoint_enc  bytea not null,                  -- AES-256-GCM({endpoint, keys}), key LOCATION_ENC_KEY
+  areas         text[] not null,                 -- subset of shibuya / shinjuku / other
+  failures      int not null default 0,
+  created_at    timestamptz not null default now(),
+  last_sent_at  timestamptz
+);
+```
+
+Sending happens once in the `NOTIFY_WORKERS` job with no retries (a missed notification is still visible in the task list). An endpoint answering 404 or 410 is deleted.
+
 ## 4. Retention and Deletion
 
 | Retention class | Target | Period | How it is deleted |

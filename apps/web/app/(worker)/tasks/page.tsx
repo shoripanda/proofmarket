@@ -2,6 +2,7 @@
 // W-03 タスク一覧 — 現在地（小数3桁に丸める）から近い順。開いている間は30秒ごとに取り直し、新着に印を付ける。
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PushOptIn } from "@/components/push-opt-in";
 import { Button, Card, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
 
@@ -82,6 +83,7 @@ export default function TasksPage() {
     <Shell title="近くのタスク">
       {err ? <Notice tone="error">{err}</Notice> : null}
       {freshCount > 0 ? <Notice tone="ok">新しいタスクが {freshCount} 件届きました。</Notice> : null}
+      <PushOptIn />
       {tasks === null && !err ? <p className="text-center text-slate-400">探しています…</p> : null}
       {tasks?.length === 0 ? (
         <Notice>いまは近くにタスクがありません。少し時間をおいて更新してください。</Notice>

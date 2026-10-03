@@ -1,3 +1,4 @@
+export * from "./domain/areas.ts";
 export * from "./domain/enums.ts";
 export * from "./domain/limits.ts";
 export * from "./domain/money.ts";

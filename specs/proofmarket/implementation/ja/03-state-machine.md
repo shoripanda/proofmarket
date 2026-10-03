@@ -53,7 +53,7 @@ open_slots = required_witnesses − (valid な提出数) − (ACTIVE なクレ�
 | # | 遷移元 | イベント | 条件 | 遷移先 | 副作用 |
 |---|---|---|---|---|---|
 | T01 | CREATED | `FUNDING_CONFIRMED` | initialize_task が finalized | FUNDED | funding_status = CONFIRMED |
-| T02 | FUNDED | `OPEN` | deadline > now | OPEN | Webhook `verification.open` |
+| T02 | FUNDED | `OPEN` | deadline > now | OPEN | Webhook `verification.open`、`NOTIFY_WORKERS` ジョブ（2026-10-04 追加。その地域を選んだ worker にプッシュ通知） |
 | T03 | OPEN | `CLAIM_CREATED` | open_slots > 0、claims_enabled フラグが真 | CLAIMED | クレーム作成、Webhook `verification.claimed` |
 | T04 | CLAIMED / SUBMITTED | `CLAIM_CREATED` | 同上 | （変わらない） | クレーム作成 |
 | T05 | CLAIMED | `SUBMISSION_RECEIVED` | クレームが ACTIVE、deadline 前 | SUBMITTED | Webhook `verification.submitted` |

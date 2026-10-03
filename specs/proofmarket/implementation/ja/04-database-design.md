@@ -513,6 +513,25 @@ create table removal_requests (
 );
 ```
 
+### 3.22 push_subscriptions（プッシュ通知の宛先、2026-10-04 追加）
+
+worker が選んだ地域で新しい依頼が OPEN になったら、Web Push で知らせる。位置は使わず、地域は `PILOT_AREAS`（渋谷・新宿の中心から 2 km、それ以外は other）で依頼の場所から決める。
+
+```sql
+create table push_subscriptions (
+  id            text primary key,                -- psb_<ULID>
+  worker_id     text not null references workers(id),
+  endpoint_hash bytea not null unique,           -- SHA-256(endpoint)。同じ端末の登録し直しを上書きする
+  endpoint_enc  bytea not null,                  -- AES-256-GCM({endpoint, keys})。鍵は LOCATION_ENC_KEY
+  areas         text[] not null,                 -- shibuya / shinjuku / other の部分集合
+  failures      int not null default 0,
+  created_at    timestamptz not null default now(),
+  last_sent_at  timestamptz
+);
+```
+
+送信は `NOTIFY_WORKERS` ジョブで 1 回だけ行い、再試行しない（通知は届かなくても依頼一覧で見られる）。宛先が 404・410 を返したら行を消す。
+
 ## 4. 保持期間と削除
 
 | 保持区分 | 対象 | 期間 | 削除のしかた |

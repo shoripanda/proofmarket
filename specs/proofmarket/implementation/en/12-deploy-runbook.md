@@ -51,6 +51,12 @@ pnpm --filter @proofmarket/scripts run run gen-secrets.ts
 
 Creates `LOCATION_ENC_KEY`, `WORKER_REF_SALT`, `WEBHOOK_SIGNING_SECRET_PEPPER`, `INTERNAL_CRON_SECRET` and `ADMIN_TOKEN` in `~/.config/proofmarket/env.secrets`. Generate once and never regenerate (a new location key cannot decrypt existing ciphertext).
 
+If you use push notifications, also create the VAPID keys once (new keys invalidate every worker's subscription). `--subject` is a contact URL or mailto and is sent to the browsers' push services with every notification.
+
+```bash
+pnpm --filter @proofmarket/scripts run run gen-vapid.ts --subject https://<contact page>
+```
+
 ## 3. Supabase
 
 1. (owner) Create a project in the Tokyo region
@@ -90,6 +96,7 @@ Creates `LOCATION_ENC_KEY`, `WORKER_REF_SALT`, `WEBHOOK_SIGNING_SECRET_PEPPER`, 
 | `LOCATION_ENC_KEY`, `WORKER_REF_SALT`, `WEBHOOK_SIGNING_SECRET_PEPPER`, `INTERNAL_CRON_SECRET`, `ADMIN_TOKEN` | `~/.config/proofmarket/env.secrets` |
 | `PILOT_BBOX` | `35.60,139.65,35.72,139.78` (central Tokyo incl. Shibuya and Shinjuku) |
 | `MAX_WITNESSES` | `5` |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `~/.config/proofmarket/env.vapid`. Without all three, push notifications are off (everything else works) |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT_EMAIL` | Operator name and contact shown on `/legal/operator`. If unset, the page says they will be added before launch |
 
 Do not set `DEV_MODE` or `NEXT_PUBLIC_DEV_MODE`; the app refuses to start with them.

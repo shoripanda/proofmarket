@@ -27,6 +27,7 @@ This chapter adds the details needed for implementation without changing the ext
 | POST | `/v1/worker/claims/{claim_id}/abandon` | worker | P0 | Added |
 | GET | `/v1/worker/claims/{claim_id}` | worker | P0 | Added. Decision result and reason |
 | GET | `/v1/worker/payouts` | worker | P1 | Added |
+| GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | Added 2026-10-04. GET says whether push is available, PUT registers an endpoint and areas, DELETE removes it. Without VAPID keys GET returns `available: false` |
 | GET | `/v1/public/verifications/{id}` | Anyone | P1 | Added. Only fields that may be made public |
 | POST | `/v1/public/removal-requests` | Anyone | P2 | Added. Requests to remove or stop showing a photo (04 §3.21). 5 per minute per IP |
 | POST | `/v1/public/participation-requests` | Anyone | P2 | Added. Sign-up for workers and API keys (04 §3.20). 5 per minute per IP |
