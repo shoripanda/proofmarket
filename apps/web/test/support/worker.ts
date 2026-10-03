@@ -9,6 +9,7 @@ import {
   handleOnboarding,
   handleUpload,
 } from "../../lib/handlers/worker";
+import { LEGAL_VERSIONS } from "../../lib/legal";
 import { applyTaskEvent, lockTask } from "../../lib/services/task-engine";
 import { issueInvite } from "../../lib/services/worker-service";
 import { call, createBody, type createTestApp, jsonReq, SHOP } from "./app";
@@ -31,7 +32,11 @@ export async function onboardWorker(t: T, userId: string) {
       key: `tok:${userId}`,
       body: {
         invite_code: code,
-        consents: { worker_terms: "2026-10-03", safety_rules: "2026-10-03", privacy_notice: "2026-10-03" },
+        consents: {
+          worker_terms: LEGAL_VERSIONS.worker_terms,
+          safety_rules: LEGAL_VERSIONS.safety_rules,
+          privacy_notice: LEGAL_VERSIONS.privacy_notice,
+        },
       },
     }),
   );

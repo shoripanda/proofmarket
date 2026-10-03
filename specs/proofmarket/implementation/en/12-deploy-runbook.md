@@ -90,6 +90,7 @@ Creates `LOCATION_ENC_KEY`, `WORKER_REF_SALT`, `WEBHOOK_SIGNING_SECRET_PEPPER`, 
 | `LOCATION_ENC_KEY`, `WORKER_REF_SALT`, `WEBHOOK_SIGNING_SECRET_PEPPER`, `INTERNAL_CRON_SECRET`, `ADMIN_TOKEN` | `~/.config/proofmarket/env.secrets` |
 | `PILOT_BBOX` | `35.60,139.65,35.72,139.78` (central Tokyo incl. Shibuya and Shinjuku) |
 | `MAX_WITNESSES` | `5` |
+| `OPERATOR_NAME`, `OPERATOR_CONTACT_EMAIL` | Operator name and contact shown on `/legal/operator`. If unset, the page says they will be added before launch |
 
 Do not set `DEV_MODE` or `NEXT_PUBLIC_DEV_MODE`; the app refuses to start with them.
 

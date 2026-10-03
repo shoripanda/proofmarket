@@ -1,11 +1,10 @@
 "use client";
 // W-02 初回登録 — 招待コード、利用規約・安全ルール・プライバシーへの同意、位置とカメラの説明。
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Button, Card, Notice, SAFETY_NOTES, Shell } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
-
-const VERSION = "2026-10-03";
+import { LEGAL_VERSIONS } from "@/lib/legal";
 
 export default function OnboardingPage() {
   const api = useApi();
@@ -24,7 +23,11 @@ export default function OnboardingPage() {
         method: "POST",
         body: {
           invite_code: code.trim(),
-          consents: { worker_terms: VERSION, safety_rules: VERSION, privacy_notice: VERSION },
+          consents: {
+            worker_terms: LEGAL_VERSIONS.worker_terms,
+            safety_rules: LEGAL_VERSIONS.safety_rules,
+            privacy_notice: LEGAL_VERSIONS.privacy_notice,
+          },
         },
       });
       router.replace("/tasks");
@@ -35,7 +38,7 @@ export default function OnboardingPage() {
     }
   }
 
-  const box = (key: keyof typeof agree, label: string) => (
+  const box = (key: keyof typeof agree, label: ReactNode) => (
     <label className="flex items-start gap-3 py-2">
       <input
         type="checkbox"
@@ -78,9 +81,36 @@ export default function OnboardingPage() {
         </p>
       </Card>
       <Card>
-        {box("terms", "参加規約に同意します（引き受けも辞退も自由で、断っても不利益はありません）")}
+        {box(
+          "terms",
+          <>
+            <a
+              href="/legal/worker-terms"
+              target="_blank"
+              className="font-semibold text-teal-700 underline"
+              rel="noopener"
+            >
+              参加規約
+            </a>
+            に同意します（引き受けも辞退も自由で、断っても不利益はありません）
+          </>,
+        )}
         {box("safety", "上の安全ルールを守ります")}
-        {box("privacy", "写真・位置・受取アドレスの扱いについて理解しました")}
+        {box(
+          "privacy",
+          <>
+            写真・位置・受取アドレスの扱い（
+            <a
+              href="/legal/privacy"
+              target="_blank"
+              className="font-semibold text-teal-700 underline"
+              rel="noopener"
+            >
+              プライバシーポリシー
+            </a>
+            ）を理解しました
+          </>,
+        )}
       </Card>
       {err ? <Notice tone="error">{err}</Notice> : null}
       <Button onClick={submit} disabled={!all || busy}>

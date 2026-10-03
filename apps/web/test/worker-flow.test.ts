@@ -3,7 +3,8 @@ import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleGet } from "../lib/handlers/requester";
-import { handleClaimDetail } from "../lib/handlers/worker";
+import { handleClaimDetail, handleOnboarding } from "../lib/handlers/worker";
+import { issueInvite } from "../lib/services/worker-service";
 import { call, createTestApp, jsonReq, SHOP } from "./support/app";
 import { onboardWorker, openTask, photo, W, witness } from "./support/worker";
 
@@ -33,6 +34,24 @@ describe("worker flow", () => {
     const unknown = await W(t, "tok:carol").list();
     expect(await code(unknown)).toBe("WORKER_NOT_ONBOARDED");
     expect(await code(await W(t, "bad-token").list())).toBe("UNAUTHENTICATED");
+  });
+
+  it("S-10: onboarding refuses consent versions other than the documents currently shown", async () => {
+    t.identity.addresses.set("dave", "Walletdave1111111111111111111111111111111111".slice(0, 44));
+    const code = await issueInvite(t.db, { uses: 1, expiresAt: new Date(t.app.now().getTime() + 86_400_000) });
+    const res = await call(
+      (r) => handleOnboarding(t.app, r),
+      jsonReq("POST", "/v1/worker/onboarding", {
+        key: "tok:dave",
+        body: {
+          invite_code: code,
+          consents: { worker_terms: "2026-10-03", safety_rules: "2026-10-03", privacy_notice: "2026-10-03" },
+        },
+      }),
+    );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { details?: { documents?: string[] } } };
+    expect(body.error.details?.documents).toEqual(["worker_terms", "privacy_notice"]);
   });
 
   it("I-FLOW-01 (without chain): claim -> challenge -> upload -> submit -> VERIFIED with result + evidence root", async () => {
