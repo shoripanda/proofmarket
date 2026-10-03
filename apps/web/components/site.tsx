@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 /** Pages listed in the header. Add a page here when it exists, never before. */
 export const SITE_NAV: { href: string; label: string }[] = [
   { href: "/", label: "トップ" },
+  { href: "/how-it-works", label: "仕組み" },
   { href: "/developers", label: "開発者向け" },
   { href: "/workers", label: "worker 向け" },
   { href: "/join", label: "申し込み" },
