@@ -49,3 +49,4 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-03 [手元 / 空き容量] dev サーバーと pnpm install と next build を続けて回したら空きが 369MB まで減った → `npm cache clean --force` で `~/.npm/_cacache`（約4GB）を空ける。作り直せるキャッシュなので消してよい
 - 2026-10-03 [Next.js 16 dev / トンネル] cloudflared のクイックトンネル越しに `next dev` の画面を開く → HMR の WebSocket が 403 で拒まれ、Turbopack の画面が「読み込み中…」のまま動かない → next.config の `allowedDevOrigins: ["*.trycloudflare.com"]` で許可する（開発サーバーにだけ効く）
 - 2026-10-03 [e2e / トンネル] `NEXT_PUBLIC_BASE_URL` をトンネルの URL にして起動したサーバーに、localhost から worker.spec を流す → 開発用ストレージのアップロード先がトンネル側になり、別オリジン扱いで「通信に失敗しました」 → `E2E_BASE_URL` をサーバーの `NEXT_PUBLIC_BASE_URL` と同じにして流す
+- 2026-10-04 [DB 移行 / Supabase] OAuth の表を手書きの移行（0003）で足したとき、0001 にある「全表で RLS を有効にする」を付け忘れ、PostgREST からトークンのハッシュが読める状態になっていた → 0004 で有効にし、public の全表で RLS が有効かを確かめるテストを migrations.test.ts に置いた。表を足すときはこのテストが落ちることで気づける
