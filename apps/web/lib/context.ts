@@ -28,6 +28,8 @@ export interface AppConfig {
   maxWitnesses: number;
   locationEncKey: Buffer; // 32 bytes
   workerRefSalt: string;
+  /** Derives the key that encrypts per-endpoint webhook secrets (05 §5). */
+  webhookPepper: string;
 }
 
 export const DEV_DATA_DIR = join(process.cwd(), ".data");
@@ -51,6 +53,7 @@ function buildContext(): AppContext {
     maxWitnesses: e.MAX_WITNESSES,
     locationEncKey: Buffer.from(e.LOCATION_ENC_KEY, "base64"),
     workerRefSalt: e.WORKER_REF_SALT,
+    webhookPepper: e.WEBHOOK_SIGNING_SECRET_PEPPER,
   };
   if (isDev(e)) {
     assertDevAllowed(e.APP_ENV);

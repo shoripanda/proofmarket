@@ -41,6 +41,7 @@ const DevSchema = z.object({
   DEV_MODE: z.literal("1"),
   LOCATION_ENC_KEY: z.string().default(Buffer.alloc(32, 7).toString("base64")),
   WORKER_REF_SALT: z.string().default(DEV_SECRET),
+  WEBHOOK_SIGNING_SECRET_PEPPER: z.string().default(DEV_SECRET),
   INTERNAL_CRON_SECRET: z.string().default(DEV_SECRET),
   ADMIN_TOKEN: z.string().default(DEV_SECRET),
 });

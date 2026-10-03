@@ -33,6 +33,7 @@
 | 9 | [09-test-plan.md](09-test-plan.md) | テスト計画と受け入れ基準の対応表 |
 | 10 | [10-implementation-plan.md](10-implementation-plan.md) | 10/2〜10/12 の日程、作業分割、人間の担当 |
 | 11 | [11-code-skeleton.md](11-code-skeleton.md) | 設計とコードの対応表、骨組みの検証結果、開発環境の準備 |
+| 12 | [12-deploy-runbook.md](12-deploy-runbook.md) | Devnet・Supabase・Privy・Vercel への初回デプロイ手順 |
 
 ## 決定事項一覧
 
