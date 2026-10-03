@@ -25,6 +25,7 @@ export const ID_PREFIXES = {
   schedule: "sch",
   placeOwnerToken: "pot",
   placeStatusReport: "psr",
+  consoleSession: "cse",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

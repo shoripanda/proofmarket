@@ -98,6 +98,9 @@ export default async function DevelopersPage() {
             <a href="/join?role=requester" className="ml-1 font-semibold text-teal-700 underline">
               API キーを申し込む
             </a>
+            <a href="/console" className="ml-3 font-semibold text-teal-700 underline">
+              依頼者の画面（履歴・残高）
+            </a>
           </>
         }
       >

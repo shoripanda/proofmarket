@@ -585,6 +585,18 @@ create table place_status_reports (
 create index on place_status_reports (place_id, created_at);
 ```
 
+### 3.25 console_sessions（requester 用画面のセッション、2026-10-04 追加）
+
+```sql
+create table console_sessions (
+  id            text primary key,                -- cse_<ULID>
+  credential_id text not null references requester_credentials(id),
+  token_hash    bytea not null unique,           -- SHA-256(Cookie の値)
+  created_at    timestamptz not null default now(),
+  expires_at    timestamptz not null             -- created_at + 12 時間
+);
+```
+
 ## 4. 保持期間と削除
 
 | 保持区分 | 対象 | 期間 | 削除のしかた |
