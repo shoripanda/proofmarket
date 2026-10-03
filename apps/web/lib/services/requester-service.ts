@@ -20,7 +20,7 @@ import {
   CreateVerificationRequestSchema,
 } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
@@ -34,7 +34,7 @@ import {
   microToDecimal,
   type TaskRow,
 } from "./task-engine";
-import { buildVerificationView } from "./views";
+import { buildResult, buildVerificationView } from "./views";
 import { activeEndpoint } from "./webhook-service";
 
 export function parseCreateBody(raw: unknown): CreateVerificationRequest {
@@ -71,7 +71,63 @@ async function matchPlace(db: Db, lat: number, lng: number): Promise<string | nu
 
 export interface CreateResult {
   status: 200 | 201;
-  body: { verification_id: string; status: string; created_at: string; funding: { status: string } };
+  body: {
+    verification_id: string;
+    status: string;
+    created_at: string;
+    funding: { status: string };
+    reused?: true;
+    result?: Record<string, unknown>;
+  };
+}
+
+/** Types whose answer does not depend on the question wording, so a result can serve another request. */
+const REUSABLE_TYPES: readonly string[] = ["PLACE_STATUS_VERIFICATION", "QUEUE_LENGTH"];
+
+/** 01 §4.9: newest shared VERIFIED result for the same place, type and answer set, within max age. */
+async function findReusable(
+  tx: Db,
+  placeId: string,
+  body: CreateVerificationRequest,
+  now: Date,
+): Promise<CreateResult | null> {
+  if (!body.reuse || !REUSABLE_TYPES.includes(body.type)) return null;
+  const since = new Date(now.getTime() - body.reuse.max_age_seconds * 1000);
+  const rows = await tx
+    .select({ task: schema.verificationRequests })
+    .from(schema.verificationRequests)
+    .innerJoin(
+      schema.verificationResults,
+      eq(schema.verificationResults.verificationId, schema.verificationRequests.id),
+    )
+    .where(
+      and(
+        eq(schema.verificationRequests.placeId, placeId),
+        eq(schema.verificationRequests.type, body.type),
+        eq(schema.verificationRequests.allowReuse, true),
+        eq(schema.verificationResults.outcome, "VERIFIED"),
+        gte(schema.verificationResults.finalizedAt, since),
+      ),
+    )
+    .orderBy(desc(schema.verificationResults.finalizedAt))
+    .limit(5);
+  const want = [...body.answer_schema.values].sort().join(",");
+  const hit = rows.find((r) => [...r.task.answerValues].sort().join(",") === want);
+  if (!hit) return null;
+  const full = await buildResult(tx, hit.task);
+  if (!full) return null;
+  const { rejected_submissions: _omit, ...result } = full;
+  return {
+    status: 200,
+    body: {
+      verification_id: hit.task.id,
+      status: "VERIFIED",
+      created_at: hit.task.createdAt.toISOString(),
+      funding: { status: "NONE" },
+      reused: true,
+      result,
+    },
+  };
 }
 
 /**
@@ -142,6 +198,9 @@ export async function createVerification(
   const policy = evaluateQuestion(body.question);
   if (!policy.ok) throw new ApiError("TASK_POLICY_VIOLATION", { rule_id: policy.ruleId });
 
+  const reused = await findReusable(tx, placeId, body, now);
+  if (reused) return reused;
+
   // 15-17 under a credential row lock so parallel creates cannot overdraw (02 §4.2, I-RACE-03).
   await lockCredential(tx, auth.credentialId);
   const total = toMicro(body.bounty.amount) * BigInt(n);
@@ -193,6 +252,7 @@ export async function createVerification(
       requestHash: reqHash,
       policyRuleVersion: POLICY_RULE_VERSION,
       callbackEndpointId: await activeEndpoint(tx, auth.credentialId),
+      allowReuse: body.allow_reuse ?? false,
       createdAt: now,
       updatedAt: now,
     })

@@ -78,6 +78,13 @@
       "when": 1791050150028,
       "tag": "0010_verification_schedules",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791050414805,
+      "tag": "0011_allow_reuse",
+      "breakpoints": true
     }
   ]
 }

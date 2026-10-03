@@ -112,6 +112,7 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 | 12 | `1 ≤ quorum ≤ required_witnesses ≤ MAX_WITNESSES`（PR-14 までは 1、以降は 5）。`assurance` は人数を直接書くか、`{ "level": "fast" | "standard" | "high" }` で選ぶ（2026-10-04 追加）。fast = 1 人、standard = 2 人一致、high = 3 人中 2 人。level は保存前に人数へ置き換え、GET では人数と一致する level を返す | 400 `VALIDATION_FAILED` |
 | 13 | `bounty.asset = "USDC"`、`network = "solana-devnet"`、`amount > 0`、小数 6 桁以内 | 400 `VALIDATION_FAILED` |
 | 14 | 質問文のポリシー検査（08 章 3 節） | 422 `TASK_POLICY_VIOLATION`（`details.rule_id` 付き） |
+| 14a | `reuse` があれば再利用できる結果を探す（01 §4.9）。見つかればここで 200 を返し、15 以降は行わない | 200 `reused: true` |
 | — | ここで `requester_credentials` の行を `FOR UPDATE` でロックする（15〜17 を並行実行から守る） | — |
 | 15 | 総額 ≤ `max_task_amount` | 403 `TASK_AMOUNT_LIMIT_EXCEEDED` |
 | 16 | 今日（日本時間の暦日）の引き当て合計 + 総額 ≤ `daily_spend_limit` | 403 `DAILY_SPEND_LIMIT_EXCEEDED` |

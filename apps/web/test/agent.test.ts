@@ -84,6 +84,26 @@ describe("MCP tools", () => {
     expect(schemaText).toContain("required_witnesses");
   });
 
+  it("a reused result comes back final with a note not to poll", async () => {
+    const mcp = await connect();
+    const alice = (await onboardWorker(t, "alice")).token;
+    const { principal_ref: _p, ...src } = createBody(t.principalId, { allow_reuse: true });
+    const first = (await mcp.callTool({
+      name: "request_reality_verification",
+      arguments: src,
+    })) as unknown as {
+      structuredContent: { verification_id: string };
+    };
+    await tick(t.app);
+    await witness(t, alice, first.structuredContent.verification_id, { answer: "OPEN" });
+    const { principal_ref: _q, ...again } = createBody(t.principalId, { reuse: { max_age_seconds: 600 } });
+    const r = (await mcp.callTool({ name: "request_reality_verification", arguments: again })) as unknown as {
+      structuredContent: { reused: boolean; note: string; result: { answer: string } };
+    };
+    expect(r.structuredContent).toMatchObject({ reused: true, result: { answer: "OPEN" } });
+    expect(r.structuredContent.note).toMatch(/nobody was sent/);
+  });
+
   it("accepts an assurance level through MCP", async () => {
     const mcp = await connect();
     const { principal_ref: _p, ...args } = createBody(t.principalId, { assurance: { level: "high" } });
