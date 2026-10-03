@@ -48,6 +48,20 @@ export function SiteShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
+          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            <Link href="/legal/worker-terms" className="hover:text-teal-700">
+              worker 参加規約
+            </Link>
+            <Link href="/legal/requester-terms" className="hover:text-teal-700">
+              依頼者規約
+            </Link>
+            <Link href="/legal/privacy" className="hover:text-teal-700">
+              プライバシーポリシー
+            </Link>
+            <Link href="/legal/operator" className="hover:text-teal-700">
+              運営者情報
+            </Link>
+          </nav>
           <p>東京で試験運用中です。決済は Solana Devnet のテスト資産で行い、実際のお金は動きません。</p>
         </div>
       </footer>

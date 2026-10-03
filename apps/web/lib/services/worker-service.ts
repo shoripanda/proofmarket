@@ -14,13 +14,21 @@ import {
 import { type Db, schema } from "@proofmarket/db";
 import { and, eq, gt, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
+import { LEGAL_VERSIONS } from "../legal";
 import { appendAudit } from "./audit";
 import { randomToken, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
 import { applyTaskEvent, lockTask, type TaskRow, taskCounts } from "./task-engine";
 
-export const SAFETY_NOTES_VERSION = "2026-10-03";
+export const SAFETY_NOTES_VERSION = LEGAL_VERSIONS.safety_rules;
 export const CONSENT_DOCS = ["worker_terms", "safety_rules", "privacy_notice"] as const;
+
+/** The client must send the versions it showed; anything else (outdated or made up) is refused (S-10). */
+function assertCurrentConsents(consents: Record<(typeof CONSENT_DOCS)[number], string>) {
+  const stale = CONSENT_DOCS.filter((d) => consents?.[d] !== LEGAL_VERSIONS[d]);
+  if (stale.length)
+    throw new ApiError("VALIDATION_FAILED", { reason: "consent_version_outdated", documents: stale });
+}
 
 // ---------- onboarding ----------
 
@@ -29,6 +37,7 @@ export async function onboard(
   privyUserId: string,
   body: { invite_code: string; consents: Record<(typeof CONSENT_DOCS)[number], string> },
 ): Promise<string> {
+  assertCurrentConsents(body.consents);
   const now = app.now();
   const payout = await app.identity.payoutAddress(privyUserId);
   if (!payout) throw new ApiError("VALIDATION_FAILED", { reason: "no_embedded_solana_wallet" });
