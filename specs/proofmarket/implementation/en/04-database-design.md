@@ -140,6 +140,8 @@ create table verification_requests (
   request_hash            bytea not null,             -- SHA-256 of the normalized request body
   policy_rule_version     text not null,
   callback_endpoint_id    text references webhook_endpoints(id),
+  evidence_access_revoked boolean not null default false, -- operator stopped evidence access (08 §6)
+  featured_at             timestamptz,                -- when the operator featured it on the top page (05 §4); null = not listed
   created_at              timestamptz not null default now(),
   updated_at              timestamptz not null default now(),
   check (quorum between 1 and required_witnesses),

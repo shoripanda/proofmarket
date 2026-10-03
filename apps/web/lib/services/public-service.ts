@@ -3,7 +3,7 @@ import "server-only";
 
 import { ApiError, LIMITS, parseId } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
 import { witnessRef } from "./crypto";
@@ -22,6 +22,35 @@ export async function publicResult(app: AppContext, rawId: string) {
   if (!result) throw new ApiError("VERIFICATION_NOT_FOUND", { reason: "no_result_yet" });
   const { rejected_submissions: _omit, ...pub } = result;
   return pub;
+}
+
+/**
+ * Results the operator featured on the top page (05 §4), newest first. Same public-safe fields as above,
+ * narrowed further. Read by the page on the server; there is no listing endpoint.
+ */
+export async function featuredResults(app: AppContext, limit = 6) {
+  const tasks = await app.db
+    .select()
+    .from(schema.verificationRequests)
+    .where(isNotNull(schema.verificationRequests.featuredAt))
+    .orderBy(desc(schema.verificationRequests.featuredAt))
+    .limit(limit);
+  const out = [];
+  for (const task of tasks) {
+    const r = await buildResult(app.db, task);
+    if (!r) continue;
+    out.push({
+      verification_id: r.verification_id,
+      status: r.status,
+      answer: r.answer,
+      witnesses: r.witnesses,
+      consensus_ratio: r.consensus_ratio,
+      verified_at: r.verified_at,
+      settlement_status: r.settlement.status,
+      explorer_url: r.attestation?.explorer_url ?? null,
+    });
+  }
+  return out;
 }
 
 export async function workerPayouts(app: AppContext, workerId: string) {

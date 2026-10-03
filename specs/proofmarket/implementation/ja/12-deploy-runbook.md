@@ -114,6 +114,13 @@ PROOFMARKET_API_KEY=<API キー> pnpm --filter @proofmarket/scripts run run demo
 
 worker のスマートフォンで `https://<app>` を開き、登録・引受・撮影まで通す。デモ用エージェントが結果と Explorer のリンクを表示し、公開結果ページ `https://<app>/r/<verification_id>` にも同じ結果が出れば完了。
 
+うまくいった結果をトップページの「最近の判定結果」に載せるときは、次を実行する。外すときは `false` にする。
+
+```bash
+curl -X POST https://<app>/v1/admin/verifications/<verification_id>/feature -H "authorization: Bearer $ADMIN_TOKEN" \
+  -H "content-type: application/json" -d '{"featured":true}'
+```
+
 ## 8. 止め方
 
 障害時の手順は 08 章 6 節。すぐ止めたいときは次の2つ。

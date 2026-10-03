@@ -8,6 +8,7 @@ import {
   requeueJob,
   revokeCredential,
   revokeEvidenceAccess,
+  setFeatured,
   setFlag,
   suspendCredential,
   suspendWorker,
@@ -41,6 +42,13 @@ export async function handleSuspendWorker(app: AppContext, s: OperatorSecrets, r
 }
 export async function handleRevokeEvidence(app: AppContext, s: OperatorSecrets, req: Request, id: string) {
   await revokeEvidenceAccess(app.db, id, authenticateOperator(req, s.adminToken));
+  return ok();
+}
+export async function handleFeature(app: AppContext, s: OperatorSecrets, req: Request, id: string) {
+  const by = authenticateOperator(req, s.adminToken);
+  const body = (await readJson(req)) as { featured?: unknown } | null;
+  if (typeof body?.featured !== "boolean") throw new ApiError("VALIDATION_FAILED", { field: "featured" });
+  await setFeatured(app.db, id, body.featured, by, app.now());
   return ok();
 }
 export async function handleRequeue(app: AppContext, s: OperatorSecrets, req: Request, id: string) {

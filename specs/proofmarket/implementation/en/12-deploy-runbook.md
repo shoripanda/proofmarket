@@ -116,6 +116,13 @@ PROOFMARKET_API_KEY=<API key> pnpm --filter @proofmarket/scripts run run demo-ag
 
 Open `https://<app>` on a worker's phone and go through onboarding, claim and capture. Done when the demo agent prints the result and an Explorer link and the public result page `https://<app>/r/<verification_id>` shows the same result.
 
+To list a good result under "最近の判定結果" (recent results) on the top page, run the following. Send `false` to remove it.
+
+```bash
+curl -X POST https://<app>/v1/admin/verifications/<verification_id>/feature -H "authorization: Bearer $ADMIN_TOKEN" \
+  -H "content-type: application/json" -d '{"featured":true}'
+```
+
 ## 8. How to stop
 
 Incident procedures are in Chapter 08, Section 6. To stop immediately:
