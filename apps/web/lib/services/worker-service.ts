@@ -99,7 +99,14 @@ export async function issueInvite(db: Db, o: { uses: number; expiresAt: Date }):
 
 export async function workerMe(app: AppContext, privyUserId: string) {
   const [w] = await app.db.select().from(schema.workers).where(eq(schema.workers.privyUserId, privyUserId));
-  if (!w) return { worker_id: "", onboarded: false, status: "active" as const, consents: {} };
+  if (!w)
+    return {
+      worker_id: "",
+      onboarded: false,
+      status: "active" as const,
+      consents: {},
+      yen_payout_interest: false,
+    };
   const consents = await app.db
     .select()
     .from(schema.workerConsents)
@@ -109,7 +116,19 @@ export async function workerMe(app: AppContext, privyUserId: string) {
     onboarded: true,
     status: w.status as "active" | "suspended",
     consents: Object.fromEntries(consents.map((c) => [c.document, c.version])),
+    yen_payout_interest: w.yenPayoutInterestAt !== null,
   };
+}
+
+/** 01 §4.10: record (or withdraw) interest in yen payouts. Nothing else about payment is collected. */
+export async function setYenPayoutInterest(app: AppContext, workerId: string, raw: unknown) {
+  const v = (raw as { yen_interest?: unknown } | null)?.yen_interest;
+  if (typeof v !== "boolean") throw new ApiError("VALIDATION_FAILED", { field: "yen_interest" });
+  await app.db
+    .update(schema.workers)
+    .set({ yenPayoutInterestAt: v ? app.now() : null })
+    .where(eq(schema.workers.id, workerId));
+  return { yen_payout_interest: v };
 }
 
 // ---------- tasks ----------

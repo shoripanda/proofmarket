@@ -3,7 +3,7 @@ import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleGet } from "../lib/handlers/requester";
-import { handleClaimDetail, handleOnboarding } from "../lib/handlers/worker";
+import { handleClaimDetail, handleMe, handleOnboarding, handleYenInterest } from "../lib/handlers/worker";
 import { setAllowedTaskTypes } from "../lib/services/admin-service";
 import { issueInvite } from "../lib/services/worker-service";
 import { call, createTestApp, jsonReq, SHOP } from "./support/app";
@@ -102,6 +102,24 @@ describe("worker flow", () => {
     expect(body).toMatchObject({ state: "VALID" });
     const v = await getView(id);
     expect(v).toMatchObject({ type: "QUEUE_LENGTH", status: "VERIFIED", result: { answer: "LONG_QUEUE" } });
+  });
+
+  it("01 §4.10: a worker can register and withdraw interest in yen payouts; /me reports it", async () => {
+    const me = async () =>
+      (await (
+        await call((r) => handleMe(t.app, r), jsonReq("GET", "/v1/worker/me", { key: alice }))
+      ).json()) as { yen_payout_interest: boolean };
+    expect((await me()).yen_payout_interest).toBe(false);
+    const put = (v: unknown) =>
+      call(
+        (r) => handleYenInterest(t.app, r),
+        jsonReq("PUT", "/v1/worker/payout-preference", { key: alice, body: { yen_interest: v } }),
+      );
+    expect((await put(true)).status).toBe(200);
+    expect((await me()).yen_payout_interest).toBe(true);
+    expect((await put("yes")).status).toBe(400);
+    await put(false);
+    expect((await me()).yen_payout_interest).toBe(false);
   });
 
   it("I-PRIV-01: requester view has no worker coordinates, worker IDs, pubkeys or photo URLs", async () => {
