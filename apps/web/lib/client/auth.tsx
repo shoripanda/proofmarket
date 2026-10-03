@@ -85,6 +85,13 @@ function PrivyBridge({ children }: { children: ReactNode }) {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   if (DEV) return <DevBridge>{children}</DevBridge>;
+  if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
+    return (
+      <div className="mx-auto max-w-md p-6 text-sm text-rose-800">
+        ログインの設定（NEXT_PUBLIC_PRIVY_APP_ID）がありません。運営者に連絡してください。
+      </div>
+    );
+  }
   return (
     <PrivyProvider
       appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? ""}

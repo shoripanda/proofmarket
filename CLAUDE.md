@@ -43,3 +43,4 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-03 [Next.js / @anchor-lang/core 1.2] `import { Wallet } from "@anchor-lang/core"` は Node（CJS）では動くが、Next.js が選ぶ ESM ビルドには `Wallet` が無く、ルートが 500 になる → 自前の最小ウォレット（publicKey と sign 関数）を渡す。テストが Node だけだと見逃すので、next dev / next build で実際に読み込んで確かめる
 - 2026-10-03 [Next.js / シングルトン] lib/context.ts のモジュール変数で AppContext を1つにしたつもりが、API ルートとページ（RSC）が別バンドルのため2つでき、DEV_MODE では同じ PGlite ディレクトリを2インスタンスが開いて公開結果ページが空になった → globalThis に置いてプロセスで1つにする
 - 2026-10-03 [Playwright / 偽カメラ] Chromium 組み込みの偽カメラ映像で e2e を繰り返す → 毎回ほぼ同じ絵のため、2回目以降はサーバーが正しく EVIDENCE_REPLAYED / EVIDENCE_NEAR_DUPLICATE で弾く → globalSetup で乱数の MJPEG を作り `--use-file-for-fake-video-capture` で流す
+- 2026-10-03 [Next.js build / 確認不足] `next build 2>&1 | grep ... | head -5` で "Compiled successfully" だけを見て成功と判断した → その後の静的事前描画で /login が Privy の App ID 不足により失敗していた（CI で発覚）→ ビルドは終了コードで判定する。worker 画面は force-dynamic にし、App ID が無いときは Privy を初期化しない
