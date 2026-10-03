@@ -39,7 +39,7 @@ const FIELDS: [string, string][] = [
   ],
   [
     "assurance",
-    `何人に確かめてもらうか（required_witnesses、最大${LIMITS.witnesses.max}人）と、何人の答えがそろえば確定か（quorum）`,
+    `何人に確かめてもらうか（required_witnesses、最大${LIMITS.witnesses.max}人）と、何人の答えがそろえば確定か（quorum）。{ "level": "fast" | "standard" | "high" } と書けば、それぞれ1人・2人一致・3人中2人になる`,
   ],
   ["bounty", "1人あたりの報酬。試験運用中は Solana Devnet のテスト用 USDC"],
 ];
@@ -59,7 +59,7 @@ export default async function DevelopersPage() {
   "location": { "lat": 35.6595, "lng": 139.7005, "radius_m": 80 },
   "deadline": "2026-10-12T12:00:00+09:00",
   "evidence_requirements": { "photo": true, "task_nonce": true },
-  "assurance": { "required_witnesses": 2, "quorum": 2 },
+  "assurance": { "level": "standard" },
   "bounty": { "asset": "USDC", "amount": "0.5", "network": "solana-devnet" },
   "principal_ref": "prn_..."
 }`;

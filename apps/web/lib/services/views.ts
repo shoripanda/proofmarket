@@ -10,7 +10,11 @@ import {
   openSlots,
   toMicro,
 } from "@proofmarket/core";
-import type { GetVerificationResponse, VerificationResult } from "@proofmarket/core/schemas/api";
+import {
+  type GetVerificationResponse,
+  levelOf,
+  type VerificationResult,
+} from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
 import { and, count, eq, inArray } from "drizzle-orm";
 import type { TaskRow } from "./task-engine";
@@ -148,7 +152,11 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
     answer_schema: { type: "enum", values: task.answerValues as AnswerValue[] },
     location: { lat: task.targetLat, lng: task.targetLng, radius_m: task.radiusM },
     deadline: task.deadline.toISOString(),
-    assurance: { required_witnesses: task.requiredWitnesses, quorum: task.quorum },
+    assurance: {
+      required_witnesses: task.requiredWitnesses,
+      quorum: task.quorum,
+      level: levelOf({ required_witnesses: task.requiredWitnesses, quorum: task.quorum }),
+    },
     bounty: { asset: "USDC", amount: fromMicro(toMicro(task.bountyAmount)), network: "solana-devnet" },
     witness_progress: {
       valid: validCount,

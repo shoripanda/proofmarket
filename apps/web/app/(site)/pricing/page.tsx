@@ -8,10 +8,22 @@ export const metadata: Metadata = { title: "料金 | ProofMarket" };
 
 const EXAMPLE_BOUNTY = 0.5;
 
-const LEVELS: { name: string; n: number; q: number; when: string }[] = [
-  { name: "1人で確かめる", n: 1, q: 1, when: "早く、安く知りたいとき。答えを1人の目に頼る" },
-  { name: "2人の答えが一致", n: 2, q: 2, when: "2人が同じ答えのときだけ確定。答えが割れたら REJECTED" },
-  { name: "3人中2人の多数決", n: 3, q: 2, when: "1人が違う答えでも確定できる。迷いやすい場所に向く" },
+const LEVELS: { name: string; level: string; n: number; q: number; when: string }[] = [
+  { name: "1人で確かめる", level: "fast", n: 1, q: 1, when: "早く、安く知りたいとき。答えを1人の目に頼る" },
+  {
+    name: "2人の答えが一致",
+    level: "standard",
+    n: 2,
+    q: 2,
+    when: "2人が同じ答えのときだけ確定。答えが割れたら REJECTED",
+  },
+  {
+    name: "3人中2人の多数決",
+    level: "high",
+    n: 3,
+    q: 2,
+    when: "1人が違う答えでも確定できる。迷いやすい場所に向く",
+  },
 ];
 
 const CASES: [string, string][] = [
@@ -39,7 +51,7 @@ export default function PricingPage() {
 
       <Section
         title="確かめてもらう人数を選べます"
-        lead={`人数を増やすほど答えは確かになり、費用と待ち時間が増えます。最大 ${LIMITS.witnesses.max} 人まで頼めます。下の金額は、1人あたり ${EXAMPLE_BOUNTY} USDC にした場合の例です。`}
+        lead={`人数を増やすほど答えは確かになり、費用と待ち時間が増えます。API では assurance に level を書くだけで選べ、人数を直接書くこともできます。最大 ${LIMITS.witnesses.max} 人まで頼めます。下の金額は、1人あたり ${EXAMPLE_BOUNTY} USDC にした場合の例です。`}
       >
         <div className="grid gap-4 sm:grid-cols-3">
           {LEVELS.map((l) => (
@@ -50,7 +62,7 @@ export default function PricingPage() {
                 <span className="ml-1 text-sm font-medium text-slate-500">USDC</span>
               </p>
               <p className="mt-1 font-mono text-xs text-slate-500">
-                required_witnesses: {l.n} / quorum: {l.q}
+                assurance: {"{"} "level": "{l.level}" {"}"}
               </p>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">{l.when}</p>
             </div>

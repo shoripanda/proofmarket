@@ -39,6 +39,24 @@ describe("POST /v1/verifications", () => {
     expect(audit.map((a) => a.eventType)).toEqual(["request_created"]);
   });
 
+  it("assurance level: standard becomes 2 of 2, is charged for 2, and reads back with its level", async () => {
+    const res = await create(createBody(t.principalId, { assurance: { level: "standard" } }));
+    expect(res.status).toBe(201);
+    const { verification_id: id } = (await res.json()) as { verification_id: string };
+    const view = (await (
+      await call((r) => handleGet(t.app, r, id), jsonReq("GET", `/v1/verifications/${id}`, { key: t.apiKey }))
+    ).json()) as { assurance: unknown };
+    expect(view.assurance).toEqual({ required_witnesses: 2, quorum: 2, level: "standard" });
+    const ledger = await t.db
+      .select()
+      .from(schema.requesterLedger)
+      .where(eq(schema.requesterLedger.verificationId, id));
+    expect(ledger.map((l) => l.amount)).toEqual(["-1.000000"]);
+    expect(await errCode(await create(createBody(t.principalId, { assurance: { level: "max" } })))).toBe(
+      "VALIDATION_FAILED",
+    );
+  });
+
   it("I-IDEM-01: same Idempotency-Key twice -> same response, one task, one reservation", async () => {
     const a = await create(createBody(t.principalId), "idem-1");
     const b = await create(createBody(t.principalId), "idem-1");

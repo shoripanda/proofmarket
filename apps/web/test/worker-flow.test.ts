@@ -38,7 +38,10 @@ describe("worker flow", () => {
 
   it("S-10: onboarding refuses consent versions other than the documents currently shown", async () => {
     t.identity.addresses.set("dave", "Walletdave1111111111111111111111111111111111".slice(0, 44));
-    const code = await issueInvite(t.db, { uses: 1, expiresAt: new Date(t.app.now().getTime() + 86_400_000) });
+    const code = await issueInvite(t.db, {
+      uses: 1,
+      expiresAt: new Date(t.app.now().getTime() + 86_400_000),
+    });
     const res = await call(
       (r) => handleOnboarding(t.app, r),
       jsonReq("POST", "/v1/worker/onboarding", {
