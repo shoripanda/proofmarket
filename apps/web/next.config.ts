@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     "@proofmarket/sdk",
   ],
   serverExternalPackages: ["sharp"],
+  // Dev server only: lets a Cloudflare quick tunnel load dev assets and HMR (phone / claude.ai testing).
+  allowedDevOrigins: ["*.trycloudflare.com"],
   poweredByHeader: false,
   async headers() {
     return [

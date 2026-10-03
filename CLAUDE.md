@@ -47,3 +47,5 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-03 [CI / 鍵らしき文字列の検査] base58 の 87〜88 字をそのまま grep した → Privy の依存（@base-org/account）が埋め込む base64 フォントの一部と、暗号ライブラリの16進定数（16進の字は base58 にも含まれる）に当たって CI が落ちた → 前後に base64 の字が無い単独の並びだけを拾い、16進だけの並びは除く。直したら偽の鍵を置いて、まだ捕まることを確かめる
 - 2026-10-03 [手元 / vitest] 負荷平均が40を超えている（Adobe の常駐が CPU を使い切る）ときに `pnpm test` を並列で回す → 各ファイル最初の beforeEach（PGlite の起動）が10秒で切れ、変更と無関係なテストまで落ちる → `pnpm --filter @proofmarket/web exec vitest run --no-file-parallelism` で直列に回す。CI では起きない
 - 2026-10-03 [手元 / 空き容量] dev サーバーと pnpm install と next build を続けて回したら空きが 369MB まで減った → `npm cache clean --force` で `~/.npm/_cacache`（約4GB）を空ける。作り直せるキャッシュなので消してよい
+- 2026-10-03 [Next.js 16 dev / トンネル] cloudflared のクイックトンネル越しに `next dev` の画面を開く → HMR の WebSocket が 403 で拒まれ、Turbopack の画面が「読み込み中…」のまま動かない → next.config の `allowedDevOrigins: ["*.trycloudflare.com"]` で許可する（開発サーバーにだけ効く）
+- 2026-10-03 [e2e / トンネル] `NEXT_PUBLIC_BASE_URL` をトンネルの URL にして起動したサーバーに、localhost から worker.spec を流す → 開発用ストレージのアップロード先がトンネル側になり、別オリジン扱いで「通信に失敗しました」 → `E2E_BASE_URL` をサーバーの `NEXT_PUBLIC_BASE_URL` と同じにして流す
