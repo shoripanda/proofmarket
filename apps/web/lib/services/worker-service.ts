@@ -4,15 +4,20 @@ import "server-only";
 import {
   ApiError,
   CLAIMABLE_STATUSES,
+  eligible,
   fromMicro,
   haversineM,
   LIMITS,
   newId,
   openSlots,
+  type RequirableTier,
+  TRUST_WINDOW_DAYS,
+  tierOf,
   toMicro,
+  type WorkerRecord,
 } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, eq, gt, inArray } from "drizzle-orm";
+import { and, eq, gt, gte, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { LEGAL_VERSIONS } from "../legal";
 import { appendAudit } from "./audit";
@@ -117,6 +122,7 @@ export async function workerMe(app: AppContext, privyUserId: string) {
     status: w.status as "active" | "suspended",
     consents: Object.fromEntries(consents.map((c) => [c.document, c.version])),
     yen_payout_interest: w.yenPayoutInterestAt !== null,
+    trust: await workerTier(app.db, w.id, app.now()),
   };
 }
 
@@ -130,6 +136,62 @@ export async function setYenPayoutInterest(app: AppContext, workerId: string, ra
     .where(eq(schema.workers.id, workerId));
   return { yen_payout_interest: v };
 }
+
+// ---------- trust (01 §4.11) ----------
+
+const VIOLATION_CODES = ["EVIDENCE_REPLAYED", "EVIDENCE_NEAR_DUPLICATE"];
+
+/** Last-90-day record a worker's tier is computed from. */
+export async function workerRecord(db: Db, workerId: string, now: Date): Promise<WorkerRecord> {
+  const since = new Date(now.getTime() - TRUST_WINDOW_DAYS * 86_400_000);
+  const subs = await db
+    .select({
+      state: schema.witnessSubmissions.state,
+      reason: schema.witnessSubmissions.reasonCode,
+      answer: schema.witnessSubmissions.answer,
+      verificationId: schema.witnessSubmissions.verificationId,
+    })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.workerId, workerId),
+        gte(schema.witnessSubmissions.serverReceivedAt, since),
+      ),
+    );
+  const valid = subs.filter((s) => s.state === "VALID");
+  const violations = subs.filter((s) => s.reason && VIOLATION_CODES.includes(s.reason)).length;
+  const ids = valid.map((s) => s.verificationId);
+  const results = ids.length
+    ? await db
+        .select()
+        .from(schema.verificationResults)
+        .where(
+          and(
+            inArray(schema.verificationResults.verificationId, ids),
+            eq(schema.verificationResults.outcome, "VERIFIED"),
+            gt(schema.verificationResults.validWitnessCount, 1),
+          ),
+        )
+    : [];
+  const finals = new Map(results.map((r) => [r.verificationId, r.finalAnswer]));
+  const compared = valid.filter((s) => finals.has(s.verificationId));
+  return {
+    valid: valid.length,
+    violations,
+    compared: compared.length,
+    agreed: compared.filter((s) => finals.get(s.verificationId) === s.answer).length,
+  };
+}
+
+export async function workerTier(db: Db, workerId: string, now: Date) {
+  const record = await workerRecord(db, workerId, now);
+  return { ...tierOf(record), record };
+}
+
+const taskGate = (t: TaskRow) => ({
+  minTier: (t.minWorkerTier as RequirableTier | null) ?? null,
+  requiredWitnesses: t.requiredWitnesses,
+});
 
 // ---------- tasks ----------
 
@@ -171,9 +233,11 @@ export async function listTasks(
     .from(schema.claims)
     .where(eq(schema.claims.workerId, workerId));
   const claimed = new Set(mine.map((m) => m.v));
+  const { tier } = await workerTier(app.db, workerId, now);
   const out = [];
   for (const t of rows) {
     if (claimed.has(t.id)) continue;
+    if (!eligible(tier, taskGate(t))) continue;
     const d = haversineM(q, { lat: t.targetLat, lng: t.targetLng });
     if (d > q.radius_km * 1000) continue;
     const c = await taskCounts(app.db, t.id);
@@ -224,6 +288,8 @@ export async function claimTask(app: AppContext, workerId: string, verificationI
     if (existing) throw new ApiError("ALREADY_CLAIMED");
     if (!(CLAIMABLE_STATUSES as readonly string[]).includes(task.status))
       throw new ApiError("TASK_NOT_CLAIMABLE");
+    const { tier } = await workerTier(tx, workerId, now);
+    if (!eligible(tier, taskGate(task))) throw new ApiError("WORKER_NOT_ELIGIBLE", { tier });
     const c = await taskCounts(tx, task.id);
     if (openSlots({ requiredWitnesses: task.requiredWitnesses, ...c }) <= 0)
       throw new ApiError("NO_OPEN_SLOT");

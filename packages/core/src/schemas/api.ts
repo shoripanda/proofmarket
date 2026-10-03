@@ -18,6 +18,7 @@ import {
   WEBHOOK_EVENTS,
 } from "../domain/enums.ts";
 import { LIMITS } from "../domain/limits.ts";
+import { REQUIRABLE_TIERS, WORKER_TIERS } from "../domain/trust.ts";
 import { ERROR_CATALOG, type ErrorCode } from "../errors.ts";
 
 // ---------- primitives ----------
@@ -135,6 +136,11 @@ export const CreateVerificationRequestSchema = z
       network: z.literal("solana-devnet"),
     }),
     principal_ref: PrincipalRefSchema,
+    /** Only workers at or above this tier may take the task (01 §4.11). */
+    worker_requirements: z
+      .object({ min_tier: z.enum(REQUIRABLE_TIERS) })
+      .strict()
+      .optional(),
     /** Let other requesters receive this result through `reuse` (01 §4.9). */
     allow_reuse: z.boolean().optional(),
     /** Return a recent shared VERIFIED result for the same place instead of sending someone (01 §4.9). */
@@ -206,6 +212,7 @@ export const GetVerificationResponseSchema = z.object({
   answer_schema: CreateVerificationRequestSchema.shape.answer_schema,
   location: CreateVerificationRequestSchema.shape.location,
   deadline: IsoDateTime,
+  worker_requirements: z.object({ min_tier: z.enum(REQUIRABLE_TIERS) }).nullable(),
   assurance: z.object({
     required_witnesses: z.number().int(),
     quorum: z.number().int(),
@@ -258,6 +265,19 @@ export const WorkerMeResponseSchema = z.object({
   consents: z.record(z.string(), z.string()),
   /** The worker asked to be paid in yen once that is available (01 §4.10). */
   yen_payout_interest: z.boolean(),
+  /** Trust tier and the record it comes from (01 §4.11). Absent before onboarding. */
+  trust: z
+    .object({
+      tier: z.enum(WORKER_TIERS),
+      reasons: z.array(z.string()),
+      record: z.object({
+        valid: z.number().int(),
+        violations: z.number().int(),
+        compared: z.number().int(),
+        agreed: z.number().int(),
+      }),
+    })
+    .optional(),
 });
 
 /** Client must round lat/lng to 3 decimals before sending (05 §3.2). */

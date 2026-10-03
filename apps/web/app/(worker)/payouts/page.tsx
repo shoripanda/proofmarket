@@ -19,6 +19,23 @@ const STATUS_JA: Record<Payout["status"], string> = {
   FAILED_RETRYING: "再試行中",
 };
 
+interface Trust {
+  tier: "restricted" | "new" | "standard" | "trusted";
+  record: { valid: number; violations: number; compared: number; agreed: number };
+}
+const TIER_JA: Record<Trust["tier"], { name: string; note: string }> = {
+  new: { name: "はじめたばかり", note: "有効な提出が3件になると「標準」になります。" },
+  standard: {
+    name: "標準",
+    note: "有効な提出が10件以上で、複数人の依頼で確定した答えと90%以上同じなら「信頼」になります。",
+  },
+  trusted: { name: "信頼", note: "「信頼」の人だけに出る依頼も受けられます。" },
+  restricted: {
+    name: "制限中",
+    note: "直近90日に、写真の使い回しかほぼ同じ写真で落ちた提出があります。1人だけで確定する依頼は受けられません。間違いだと思うときは運営者に知らせてください。",
+  },
+};
+
 const jstMonth = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 7); // YYYY-MM in JST
 const jstDate = (iso: string) => new Date(iso).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
 
@@ -53,14 +70,18 @@ export default function PayoutsPage() {
   const [list, setList] = useState<Payout[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [yenInterest, setYenInterest] = useState<boolean | null>(null);
+  const [trust, setTrust] = useState<Trust | null>(null);
   const [month, setMonth] = useState("");
   useEffect(() => {
     api<{ payouts: Payout[] }>("/v1/worker/payouts").then(
       (r) => setList(r.payouts),
       (e) => setErr(errorText(e)),
     );
-    api<{ yen_payout_interest: boolean }>("/v1/worker/me").then(
-      (r) => setYenInterest(r.yen_payout_interest),
+    api<{ yen_payout_interest: boolean; trust?: Trust }>("/v1/worker/me").then(
+      (r) => {
+        setYenInterest(r.yen_payout_interest);
+        setTrust(r.trust ?? null);
+      },
       () => setYenInterest(null),
     );
   }, [api]);
@@ -87,6 +108,17 @@ export default function PayoutsPage() {
         <p className="text-sm text-slate-500">受け取り済みの合計</p>
         <p className="mt-1 text-3xl font-bold text-teal-700">{yen(String(Math.round(total * 1e6) / 1e6))}</p>
       </Card>
+      {trust ? (
+        <Card>
+          <p className="text-sm text-slate-500">あなたの記録（直近90日）</p>
+          <p className="mt-1 text-xl font-bold">{TIER_JA[trust.tier].name}</p>
+          <p className="mt-1 text-sm leading-relaxed text-slate-600">{TIER_JA[trust.tier].note}</p>
+          <p className="mt-2 text-xs text-slate-500">
+            有効な提出 {trust.record.valid}件・複数人の依頼で確定した答えと同じ {trust.record.agreed}/
+            {trust.record.compared}件
+          </p>
+        </Card>
+      ) : null}
       {months.length ? (
         <Card>
           <p className="text-sm font-semibold">明細を書き出す</p>
