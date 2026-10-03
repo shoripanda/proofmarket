@@ -48,6 +48,14 @@ describe("migrations", () => {
     expect(f.rows[0]?.n).toBe(4);
   });
 
+  it("every public table has RLS on, so Supabase's PostgREST exposes nothing (04 §1)", async () => {
+    const r = await db.query<{ relname: string }>(
+      `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity order by 1`,
+    );
+    expect(r.rows.map((x) => x.relname)).toEqual([]);
+  });
+
   it("I-SET-03/04 (DB half): settle and refund cannot both be recorded for one task", async () => {
     const ins = (id: string, kind: string) =>
       `insert into payment_records(id,verification_id,kind,asset,amount,network,status)
