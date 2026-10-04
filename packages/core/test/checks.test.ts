@@ -6,6 +6,7 @@ import {
   checkGeofence,
   checkMediaSchema,
   checkReplay,
+  combinePhotoOutcomes,
   hamming64,
   haversineM,
   runChecks,
@@ -127,5 +128,21 @@ describe("evidence checks", () => {
 
   it("haversine: 0.001 deg latitude ≈ 111 m", () => {
     expect(haversineM({ lat: 35, lng: 139 }, { lat: 35.001, lng: 139 })).toBeCloseTo(111.2, 0);
+  });
+
+  it("01 §4.18: several photos — the first failing photo fails the check; warnings and flags carry over", () => {
+    const one = checkReplay(false);
+    expect(combinePhotoOutcomes([one])).toBe(one);
+    const failed = combinePhotoOutcomes([checkReplay(false), checkReplay(true), checkReplay(true)]);
+    expect(failed).toMatchObject({ status: "fail", reasonCode: "EVIDENCE_REPLAYED", details: { photo: 2 } });
+    const warned = combinePhotoOutcomes([
+      { type: "freshness", status: "pass", details: { age_s: 10 } },
+      { type: "freshness", status: "warning", riskFlags: ["clock_skew"] },
+    ]);
+    expect(warned).toMatchObject({
+      status: "warning",
+      riskFlags: ["clock_skew"],
+      details: { photos: [{ age_s: 10 }, {}] },
+    });
   });
 });

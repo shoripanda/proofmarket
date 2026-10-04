@@ -23,6 +23,8 @@ export const LIMITS = {
     minShortEdgePx: 480,
     maxInputPixels: 40_000_000,
     derivedLongEdgePx: 1280,
+    /** Photos per submission, each its own upload under the same challenge (01 §4.18). */
+    maxPhotos: 4,
   },
   duplicate: { maxHammingForMatch: 6, lookbackDays: 90 },
   uploadUrlTtlS: 120,

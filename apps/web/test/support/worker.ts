@@ -92,7 +92,10 @@ export const W = (t: T, token: string) => ({
     ),
 });
 
-/** Full happy path for one witness: claim -> challenge -> upload bytes -> submit. Returns the submit response JSON. */
+/**
+ * Full happy path for one witness: claim -> challenge -> upload bytes -> submit. Returns the submit response JSON.
+ * `photos` sends several photos, each its own upload under the same challenge (01 §4.18).
+ */
 export async function witness(
   t: T,
   token: string,
@@ -100,6 +103,7 @@ export async function witness(
   o: {
     answer?: string;
     bytes?: Buffer;
+    photos?: Buffer[];
     at?: { lat: number; lng: number };
     accuracy?: number;
     claimId?: string;
@@ -112,12 +116,15 @@ export async function witness(
     claimId = c.claim_id;
   }
   const ch = (await (await w.challenge(claimId)).json()) as { challenge_id: string; nonce: string };
-  const up = (await (await w.upload(claimId, ch.challenge_id)).json()) as {
-    upload_id: string;
-    upload_url: string;
-  };
-  const key = up.upload_url.replace("https://storage.test/upload/", "");
-  t.storage.upload(key, o.bytes ?? (await photo()));
+  const refs: string[] = [];
+  for (const bytes of o.photos ?? [o.bytes ?? (await photo())]) {
+    const up = (await (await w.upload(claimId, ch.challenge_id)).json()) as {
+      upload_id: string;
+      upload_url: string;
+    };
+    t.storage.upload(up.upload_url.replace("https://storage.test/upload/", ""), bytes);
+    refs.push(up.upload_id);
+  }
   const at = o.at ?? SHOP;
   const res = await w.evidence(id, {
     claim_id: claimId,
@@ -129,7 +136,7 @@ export async function witness(
       accuracy_m: o.accuracy ?? 12,
     },
     challenge: { nonce: ch.nonce },
-    evidence: [{ type: "photo", object_ref: up.upload_id }],
+    evidence: refs.map((object_ref) => ({ type: "photo", object_ref })),
   });
   return { res, claimId, body: (await res.clone().json()) as Record<string, unknown> };
 }

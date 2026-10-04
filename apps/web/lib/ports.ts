@@ -34,8 +34,8 @@ export interface ReviewInput {
   answerFormat: string;
   /** The worker's answer, verbatim. Untrusted. */
   answer: string;
-  /** The EXIF-free derived JPEG (long edge <= 1280 px). */
-  image: Buffer;
+  /** The EXIF-free derived JPEGs (long edge <= 1280 px), 1–4 in the order the worker sent them (01 §4.18). */
+  images: Buffer[];
 }
 
 export interface ReviewOutput {

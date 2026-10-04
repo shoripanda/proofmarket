@@ -163,7 +163,8 @@ describe("worker flow", () => {
       answer: "会社の作り方について書かれている。",
     });
     expect(t.reviewer.seen[0]?.question).toContain("書名");
-    expect(t.reviewer.seen[0]?.image.length).toBeGreaterThan(0);
+    expect(t.reviewer.seen[0]?.images).toHaveLength(1);
+    expect(t.reviewer.seen[0]?.images[0]?.length).toBeGreaterThan(0);
     // the worker's claim detail shows the reason too
     const detail = (await (
       await call(

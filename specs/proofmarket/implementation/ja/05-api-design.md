@@ -285,7 +285,7 @@ requester の名前・principal・API キーは返さない（`api-contract.md` 
 { "upload_id": "upl_01J9Z6...", "upload_url": "https://<project>.supabase.co/storage/v1/object/upload/sign/evidence-raw/...", "expires_in_seconds": 120, "max_bytes": 8388608 }
 ```
 
-`content_type` は `image/jpeg` だけ（クライアントで JPEG にしてから送る。07 章）。ほかの値は 415 `MEDIA_TYPE_UNSUPPORTED`。`byte_size` が 8 MiB を超えると 413 `MEDIA_TOO_LARGE`。チャレンジが ISSUED でないと 409 `NONCE_INVALID`、期限切れなら 410 `NONCE_EXPIRED`（新しい nonce を取り直す）。
+`content_type` は `image/jpeg` だけ（クライアントで JPEG にしてから送る。07 章）。ほかの値は 415 `MEDIA_TYPE_UNSUPPORTED`。`byte_size` が 8 MiB を超えると 413 `MEDIA_TOO_LARGE`。チャレンジが ISSUED でないと 409 `NONCE_INVALID`、期限切れなら 410 `NONCE_EXPIRED`（新しい nonce を取り直す）。写真ごとに1つ作り、1つのチャレンジで4つまで。5つ目は 400 `VALIDATION_FAILED`（01 章 4.18 節）。
 
 ### 3.6 POST /v1/worker/tasks/{id}/evidence
 
@@ -298,7 +298,7 @@ requester の名前・principal・API キーは返さない（`api-contract.md` 
 | 認証・クレームの持ち主・クレームが ACTIVE | 403 `FORBIDDEN` / 409 `CLAIM_NOT_ACTIVE` |
 | タスクが受付中で deadline 前 | 410 `TASK_EXPIRED` |
 | nonce がこのクレームの ISSUED と一致 | 400 `NONCE_INVALID` / 409 `NONCE_USED` |
-| upload がこのクレームの PENDING で、`upload.challenge_id` が使う nonce のチャレンジと一致 | 404 `UPLOAD_NOT_FOUND` / 400 `NONCE_INVALID` |
+| `evidence` の1〜4件の upload がどれもこのクレームの PENDING で、`upload.challenge_id` が使う nonce のチャレンジと一致（01 章 4.18 節） | 404 `UPLOAD_NOT_FOUND` / 400 `NONCE_INVALID` |
 | `answer` が選択肢に含まれる | 400 `ANSWER_INVALID` |
 
 nonce の有効期間はここでは見ない。時間切れは次の判定 `freshness` で `EVIDENCE_STALE` として記録し、試行 1 回に数える（アップロード URL を取った時点では有効だったため）。

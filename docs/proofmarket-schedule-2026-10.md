@@ -22,7 +22,7 @@
 |---|---|---|---|
 | — | この予定表と指示書をリポジトリに置く | — | 完了 |
 | A | x402 で、API キーなしに USDC を払って依頼できる窓口と、払って依頼する見本のエージェント | `docs/agents/A-x402.md` | 未着手 |
-| B | 証拠の写真を最大4枚にする | `docs/agents/B-multi-photo.md` | 未着手 |
+| B | 証拠の写真を最大4枚にする | `docs/agents/B-multi-photo.md` | 完了（DB の移行なし） |
 | C | 公開の実績ページ `/stats` と、サイトの看板の言い換え | `docs/agents/C-stats-and-copy.md` | 未着手 |
 | D | ピッチ資料・動画3本の台本・X の投稿文・worker 募集文（文書だけ） | `docs/agents/D-pitch-materials.md` | 未着手 |
 | E | Claude・ChatGPT から本番の MCP / API につなぐ確認と、接続手順のページ | `docs/agents/E-agent-clients.md` | 未着手 |
@@ -56,4 +56,4 @@
 
 ## 本番で必要な手順（各担当が書き足す）
 
-- （まだ無い）
+- B（写真4枚）: DB の移行は無い。取り込み後に `git -C ~/Solana-idea pull` で main を最新にする。launchd は `~/Solana-idea` の `scripts/review-runner.ts` をそのまま動かすので、入れ直しは要らない。pull するまでは古い runner が1枚目（`image_url`）だけで判定する
