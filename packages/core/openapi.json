@@ -434,6 +434,483 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/x402/verifications": {
+      "post": {
+        "summary": "Create a verification paid with x402 v2 (exact, Solana): 402 + PAYMENT-REQUIRED without PAYMENT-SIGNATURE",
+        "x-priority": "Stretch",
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PLACE_STATUS_VERIFICATION",
+                      "QUEUE_LENGTH",
+                      "NOTICE_POSTED",
+                      "CROWD_LEVEL",
+                      "SEAT_AVAILABILITY",
+                      "PARKING_AVAILABILITY",
+                      "STOCK_CHECK",
+                      "PRICE_CHECK",
+                      "SIGN_TRANSCRIPTION",
+                      "SITE_REPORT",
+                      "DOCUMENT_TRANSCRIPTION",
+                      "DOCUMENT_QA",
+                      "PRODUCT_INSPECTION",
+                      "PHONE_INQUIRY",
+                      "MEASUREMENT",
+                      "CUSTOM_CHOICE",
+                      "CUSTOM_TASK"
+                    ]
+                  },
+                  "question": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "answer_schema": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "enum"
+                            ]
+                          },
+                          "values": {
+                            "minItems": 2,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 40
+                            }
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "values"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "number"
+                            ]
+                          },
+                          "unit": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 16
+                          },
+                          "min": {
+                            "type": "number"
+                          },
+                          "max": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "text"
+                            ]
+                          },
+                          "max_chars": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4000
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lng": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "radius_m": {
+                        "type": "integer",
+                        "minimum": 25,
+                        "maximum": 500
+                      }
+                    },
+                    "required": [
+                      "lat",
+                      "lng",
+                      "radius_m"
+                    ]
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "freshness": {
+                    "default": {
+                      "max_age_seconds": 300
+                    },
+                    "type": "object",
+                    "properties": {
+                      "max_age_seconds": {
+                        "default": 300,
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 3600
+                      }
+                    }
+                  },
+                  "evidence_requirements": {
+                    "type": "object",
+                    "properties": {
+                      "photo": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "task_nonce": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      }
+                    },
+                    "required": [
+                      "photo",
+                      "task_nonce"
+                    ]
+                  },
+                  "assurance": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "required_witnesses": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "quorum": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          }
+                        },
+                        "required": [
+                          "required_witnesses",
+                          "quorum"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "fast",
+                              "standard",
+                              "high"
+                            ],
+                            "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                          }
+                        },
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "bounty": {
+                    "type": "object",
+                    "properties": {
+                      "asset": {
+                        "type": "string",
+                        "enum": [
+                          "USDC"
+                        ]
+                      },
+                      "amount": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                      },
+                      "network": {
+                        "type": "string",
+                        "enum": [
+                          "solana-devnet"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "asset",
+                      "amount",
+                      "network"
+                    ]
+                  },
+                  "worker_requirements": {
+                    "type": "object",
+                    "properties": {
+                      "min_tier": {
+                        "type": "string",
+                        "enum": [
+                          "standard",
+                          "trusted"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "min_tier"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "allow_reuse": {
+                    "type": "boolean"
+                  },
+                  "reuse": {
+                    "type": "object",
+                    "properties": {
+                      "max_age_seconds": {
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 3600
+                      }
+                    },
+                    "required": [
+                      "max_age_seconds"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "question",
+                  "answer_schema",
+                  "deadline",
+                  "evidence_requirements",
+                  "assurance",
+                  "bounty"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verification_id": {
+                      "type": "string",
+                      "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "CREATED",
+                        "VERIFIED"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "funding": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "PENDING",
+                            "NONE"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ]
+                    },
+                    "reused": {
+                      "type": "boolean"
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "api_key": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "payment": {
+                      "type": "object",
+                      "properties": {
+                        "signature": {
+                          "type": "string"
+                        },
+                        "explorer_url": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "network": {
+                          "type": "string"
+                        },
+                        "payer": {
+                          "type": "string"
+                        },
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        }
+                      },
+                      "required": [
+                        "signature",
+                        "explorer_url",
+                        "network",
+                        "payer",
+                        "amount"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "verification_id",
+                    "status",
+                    "created_at",
+                    "funding",
+                    "api_key",
+                    "payment"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -1254,6 +1731,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -2074,6 +2553,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -2218,6 +2699,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -2410,6 +2893,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -2912,6 +3397,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -3091,6 +3578,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -3270,6 +3759,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -3462,6 +3953,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -3695,6 +4188,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -4049,6 +4544,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -4373,6 +4870,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -4533,6 +5032,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -4667,6 +5168,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -4840,6 +5343,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -5131,6 +5636,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -5487,6 +5994,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -5843,6 +6352,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -6004,6 +6515,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -6402,6 +6915,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -6730,6 +7245,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -6858,6 +7375,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -6965,6 +7484,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -7072,6 +7593,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -7179,6 +7702,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -7286,6 +7811,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",
@@ -7393,6 +7920,8 @@
                             "RATE_LIMITED",
                             "IDEMPOTENCY_KEY_CONFLICT",
                             "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
                             "VERIFICATION_NOT_FOUND",
                             "TASK_NOT_CANCELLABLE",
                             "EVIDENCE_ACCESS_REVOKED",

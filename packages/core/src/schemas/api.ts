@@ -178,6 +178,11 @@ export const CreateVerificationRequestSchema = z
   .strict();
 export type CreateVerificationRequest = z.infer<typeof CreateVerificationRequestSchema>;
 
+/** POST /v1/x402/verifications (01 §4.19): the payer's wallet stands in for the principal. */
+export const X402CreateVerificationRequestSchema = CreateVerificationRequestSchema.omit({
+  principal_ref: true,
+});
+
 export const CreateVerificationResponseSchema = z.object({
   verification_id: VerificationIdSchema,
   status: z.enum(["CREATED", "VERIFIED"]),
@@ -186,6 +191,18 @@ export const CreateVerificationResponseSchema = z.object({
   /** true: an existing shared result was returned (01 §4.9); `verification_id` is that task and `result` is final. */
   reused: z.boolean().optional(),
   result: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const X402CreateVerificationResponseSchema = CreateVerificationResponseSchema.extend({
+  /** Reads this verification via GET /v1/verifications/{id}. Shown once; null when the same payment is replayed. */
+  api_key: z.string().nullable(),
+  payment: z.object({
+    signature: z.string(),
+    explorer_url: z.url(),
+    network: z.string(),
+    payer: z.string(),
+    amount: Amount,
+  }),
 });
 
 // ---------- requester: result ----------

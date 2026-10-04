@@ -156,6 +156,50 @@ export default async function DevelopersPage() {
         </div>
       </Section>
 
+      <Section
+        title="登録なしで使う（x402）"
+        lead="API キーがなくても、Solana のウォレットを持つエージェントなら依頼を出せます。依頼ごとに USDC を払う方式で、申し込みも契約も要りません。支払いの形式は x402（v2）の exact 方式に従っています。"
+      >
+        <ol className="max-w-3xl list-decimal space-y-2 pl-5 text-sm leading-relaxed text-slate-600">
+          <li>
+            依頼を
+            <code className="mx-1 font-mono">POST /v1/x402/verifications</code>
+            に送ります。中身は request.json と同じで、principal_ref は要りません。
+          </li>
+          <li>
+            402 が返ります。PAYMENT-REQUIRED ヘッダーに、払う額（報酬×人数）、宛先、通貨（Devnet の
+            USDC）、手数料を持つ側の公開鍵が入っています。中身に問題がある依頼は、払う前に 400
+            などで断ります。
+          </li>
+          <li>
+            指定どおりの USDC の送金取引を作り、自分の鍵で署名します。手数料は ProofMarket
+            が持つので、ウォレットに SOL は要りません。
+          </li>
+          <li>
+            同じ依頼を PAYMENT-SIGNATURE ヘッダー付きで送り直します。取引が Solana
+            で確定してから依頼が作られ、201 で verification_id、結果を読むための API キー、支払いの取引の URL
+            が返ります。
+          </li>
+        </ol>
+        <div className="mt-4 space-y-3">
+          <Code>{`# 1回目: 402 と支払い条件
+curl -i -X POST ${base}/v1/x402/verifications \\
+  -H "Content-Type: application/json" -d @request.json
+
+# 2回目: 署名した取引を付けて送り直す
+curl -X POST ${base}/v1/x402/verifications \\
+  -H "Content-Type: application/json" -d @request.json \\
+  -H "PAYMENT-SIGNATURE: <base64 の PaymentPayload>"`}</Code>
+          <Code>{`# 見本のエージェント（リポジトリの scripts/）。402 の受け取りから結果待ちまで通しで動く
+pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url ${base}`}</Code>
+        </div>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
+          同じ取引を2回送っても、依頼は1件しかできません。2回目は同じ verification_id を返し、API
+          キーは付けません。1件の上限は 5 USDC です。テスト用の USDC は Circle の faucet（Solana
+          Devnet）で受け取れます。
+        </p>
+      </Section>
+
       <Section title="MCP のツール（4つ）">
         <dl className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
           {TOOLS.map(([name, desc]) => (

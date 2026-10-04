@@ -32,6 +32,16 @@ const ENDPOINTS: Endpoint[] = [
     ok: { status: 201, schema: S.CreateVerificationResponseSchema },
   },
   {
+    method: "post",
+    path: "/v1/x402/verifications",
+    auth: "none",
+    priority: "Stretch",
+    summary:
+      "Create a verification paid with x402 v2 (exact, Solana): 402 + PAYMENT-REQUIRED without PAYMENT-SIGNATURE",
+    body: S.X402CreateVerificationRequestSchema,
+    ok: { status: 201, schema: S.X402CreateVerificationResponseSchema },
+  },
+  {
     method: "get",
     path: "/v1/verifications/{id}",
     auth: "requester",

@@ -31,6 +31,12 @@ export function assertDevAllowed(appEnv: string) {
   if (appEnv !== "local") throw new Error("DEV_MODE is only allowed with APP_ENV=local");
 }
 
+// x402 in DEV_MODE (01 §4.19): requirements name Devnet USDC, but the offline facilitator never sends anything.
+export const DEVNET_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+export const DEVNET_GENESIS = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
+/** Public on purpose: it only co-signs payments that are never sent. */
+export const devX402Seed = () => createHash("sha256").update("proofmarket-dev-x402-fee-payer").digest();
+
 /** Token format: `dev:<name>`. Payout address is a deterministic fake base58 key. */
 export const devIdentity: IdentityProvider = {
   async verifyAccessToken(token) {

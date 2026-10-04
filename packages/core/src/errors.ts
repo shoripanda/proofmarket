@@ -62,6 +62,16 @@ export const ERROR_CATALOG = {
     retryable: true,
     message: "A request with this Idempotency-Key is in progress.",
   },
+  PAYMENT_IN_PROGRESS: {
+    http: 409,
+    retryable: true,
+    message: "This x402 payment is being settled. Retry the same request shortly.",
+  },
+  PAYMENT_ALREADY_USED: {
+    http: 409,
+    retryable: false,
+    message: "This x402 payment was already used for a different request.",
+  },
   VERIFICATION_NOT_FOUND: { http: 404, retryable: false, message: "Verification not found." },
   TASK_NOT_CANCELLABLE: {
     http: 409,

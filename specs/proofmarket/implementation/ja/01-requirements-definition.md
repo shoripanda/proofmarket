@@ -252,6 +252,22 @@ API だけでは状況をつかみにくいので、requester が自分の API �
 - AI による確認には全部の写真を渡す。外部の確認（4.17 節）の一覧は `image_urls` に全部の URL を返す。2 分ごとに動いている古い review-runner が止まらないよう、当面は1枚目の URL を `image_url` にも入れる
 - 送られた順は、ID を同じプロセス内で単調に増える ULID にして保つ（DB の移行は要らない）
 
+### 4.19 x402 での依頼（2026-10-04）
+
+これまでは、運営者が API キーを手で発行しないと依頼を出せなかった。x402 を入れて、Solana のウォレットを持つエージェントなら、申し込みも契約もなしに USDC を払って依頼を出せるようにする。審査で問われる「ほかの AI にも組み込めるか」への答えになり、Solana を使う理由（エージェントが自分の鍵で少額を即時に払える）もはっきりする。
+
+- 窓口は `POST /v1/x402/verifications`。本文は `POST /v1/verifications` と同じで、`principal_ref` だけ要らない（送られても無視する）。API キーと Idempotency-Key も要らない
+- 支払いが付いていなければ、HTTP 402 と x402 v2 の `PAYMENT-REQUIRED` ヘッダーを返す。方式は `exact`、ネットワークは `solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1`（Devnet）、通貨は `BOUNTY_MINT`、額は `bounty.amount × required_witnesses`（最小単位）。宛先 `payTo` と手数料の支払者 `extra.feePayer` は、どちらも運営者の鍵（treasury の持ち主）
+- 402 を返す前に、依頼の作成を一度試して取り消す（下見）。方針違反・締め切り・上限などで断られる依頼は、払う前に 400 などで断る。共有された結果を `reuse` で受け取れる場合は、支払いなしでその結果を返す
+- `PAYMENT-SIGNATURE` が付いていれば、運営者自身が facilitator として検証する。検証は coinbase/x402 の `scheme_exact_svm.md` の MUST をすべて満たす。命令の並び（Compute Budget 2 つ、TransferChecked、任意で Memo か Lighthouse を 3 つまで）、手数料の支払者がどの命令の口座にも出てこないこと、Compute Unit の単価が 5 lamports 以下、送金先が `payTo` の ATA、mint と桁数、額が完全に一致すること。さらに、アドレス参照表・Token-2022・マルチシグ・ATA の作成は受け付けない（仕様より厳しくする分には許されている）
+- 通ったら運営者の鍵で手数料の支払者として署名し、送って `confirmed` まで待つ。そのあとで依頼を作る。受け取った額は台帳に TOPUP として入れ、通常の作成（`createVerification`）がそこから RESERVE する。エスクローへの入金（FUND_TASK）はこれまでどおり別の取引で行う（`architecture.md` 6 節の「支払い」と「報酬のエスクロー」を分ける決まりに従う）
+- 支払い元のウォレットごとに principal を 1 つ作る（表示名 `x402:<公開鍵の先頭 8 字>`）。API キーは支払いのたびに新しく発行し、レスポンスで一度だけ返す。そのキーで `GET /v1/verifications/{id}` を読む。キーの上限は 1 件 5 USDC・1 日 20 USDC・1 分 30 回
+- 同じ支払い（手数料の支払者の署名＝取引 ID）で依頼が 2 件できないようにする。支払いは `x402_payments` に記録し、主キーを取引 ID にする。確定済みの支払いがもう一度届いたら、同じ verification_id を返す（API キーは返さない）。本文が違えば 409 `PAYMENT_ALREADY_USED`。送信中なら 409 `PAYMENT_IN_PROGRESS`。120 秒たっても送信中のままなら、止まったものとみなして送り直せる。送り直す前にチェーン上で取引の有無を確かめるので、二重に払わせることはない
+- 送信に失敗したら依頼は作らず、402 と `PAYMENT-RESPONSE`（`success: false`）を返す。支払い後に依頼の作成が断られた場合（下見のあとでフラグが変わったなど）は、受け取った額を新しいキーの残高に残し、そのキーをエラーの details に入れて返す
+- ウォレットは SOL を持たなくてよい。手数料は運営者が持つ。窓口は IP ごとに 1 分 30 回まで
+- MCP の道具の説明に、この窓口を案内する一文を入れる。MCP 自体の支払い対応はしない
+- 見本のエージェントは `scripts/x402-agent.ts`。402 を受け取り、取引を組んで署名し、送り直して結果を待つ。試験用の USDC は Circle の faucet か、運営者が `scripts/x402-fund-agent.ts` で treasury から送る
+
 ## 5. 業務フロー
 
 ### 5.1 正常系（1 witness）
