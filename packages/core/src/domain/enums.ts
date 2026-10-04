@@ -247,6 +247,8 @@ export const PLATFORM_FLAGS = [
   "claims_enabled",
   "settlement_enabled",
   "public_evidence_enabled",
+  /** Hold submissions for an outside reviewer (Claude Code on the operator's machine, 01 §4.17). Default off. */
+  "external_review_enabled",
 ] as const;
 export type PlatformFlag = (typeof PLATFORM_FLAGS)[number];
 

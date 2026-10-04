@@ -24,14 +24,14 @@ import {
 } from "@proofmarket/core";
 import type { SubmitEvidenceRequest } from "@proofmarket/core/schemas/api";
 import { constraintName, type Db, pgErrorCode, schema } from "@proofmarket/db";
-import { and, eq, gte, isNotNull, ne } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, ne } from "drizzle-orm";
 import sharp from "sharp";
 import type { AppContext } from "../context";
 import type { SubmissionReviewer } from "../ports";
 import { appendAudit } from "./audit";
 import { encryptBytes, encryptLocation, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
-import { applyTaskEvent, type TaskRow, taskCounts } from "./task-engine";
+import { applyTaskEvent, lockTask, type TaskRow, taskCounts } from "./task-engine";
 import { taskLocation } from "./task-location";
 import { evaluateConsensus } from "./verification-service";
 import { lockOwnClaim } from "./worker-service";
@@ -117,7 +117,8 @@ export async function processImage(bytes: Buffer): Promise<ProcessedImage> {
 
 export interface SubmitResponse {
   submission_id: string;
-  state: "VALID" | "INVALID";
+  /** CHECKING: waiting for the outside AI review (01 §4.17). */
+  state: "VALID" | "INVALID" | "CHECKING";
   reason_code: CheckReasonCode | null;
   reason_message_ja: string | null;
   retryable: boolean;
@@ -140,6 +141,13 @@ export async function submitEvidence(
   // ---- pre-checks (05 §3.6): HTTP errors, nothing recorded ----
   if (claim.verificationId !== verificationId) throw new ApiError("FORBIDDEN");
   if (claim.state !== "ACTIVE" || claim.expiresAt <= now) throw new ApiError("CLAIM_NOT_ACTIVE");
+  const [pending] = await tx
+    .select({ id: schema.witnessSubmissions.id })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(eq(schema.witnessSubmissions.claimId, claim.id), eq(schema.witnessSubmissions.state, "CHECKING")),
+    );
+  if (pending) throw new ApiError("REVIEW_PENDING");
   if (now >= task.deadline || !["CLAIMED", "SUBMITTED"].includes(task.status))
     throw new ApiError("TASK_EXPIRED");
   const [ch] = await tx
@@ -332,6 +340,63 @@ export async function submitEvidence(
   }
 
   // ---- outcome ----
+  // 01 §4.17: with external review on (and no inline reviewer), a submission that passed every mechanical check
+  // waits as CHECKING until the operator's reviewer (Claude Code) posts a verdict through applyReview.
+  if (!firstFailure(results) && !app.reviewer && img?.derived && (await externalReviewEnabled(tx))) {
+    await appendAudit(tx, {
+      verificationId,
+      actorType: "system",
+      actorRef: null,
+      eventType: "evidence_check_completed",
+      beforeState: "CHECKING",
+      afterState: "CHECKING",
+      correlationId: verificationId,
+      metadata: { submission_id: submissionId, awaiting: "review" },
+    });
+    return {
+      submission_id: submissionId,
+      state: "CHECKING",
+      reason_code: null,
+      reason_message_ja: "AI が内容を確認しています。数分お待ちください。",
+      retryable: false,
+      attempts_remaining: LIMITS.attemptsPerClaim - attempts,
+      claim_state: "ACTIVE",
+      checks: checksMap(results),
+    };
+  }
+  return finishSubmission(tx, app, { task, claimId: claim.id, submissionId, results, attempts, now });
+}
+
+const checksMap = (results: readonly CheckOutcome[]) =>
+  Object.fromEntries([
+    ...PRE_CHECKS.filter((t) => t === "task_nonce").map((t) => [t, "pass"]),
+    ...results.map((r) => [r.type, r.status]),
+  ]);
+
+async function externalReviewEnabled(tx: Db): Promise<boolean> {
+  const [row] = await tx
+    .select()
+    .from(schema.platformFlags)
+    .where(eq(schema.platformFlags.key, "external_review_enabled"));
+  return row?.value ?? false;
+}
+
+/** Decide the submission from its check results: VALID / INVALID, close or keep the claim, run consensus. */
+async function finishSubmission(
+  tx: Db,
+  app: AppContext,
+  o: {
+    task: TaskRow;
+    claimId: string;
+    submissionId: string;
+    results: CheckOutcome[];
+    attempts: number;
+    now: Date;
+  },
+): Promise<SubmitResponse> {
+  const { task, submissionId, results, attempts, now } = o;
+  const verificationId = task.id;
+  const claim = { id: o.claimId };
   const failed = firstFailure(results);
   const valid = !failed;
   await tx
@@ -388,10 +453,7 @@ export async function submitEvidence(
     }
   }
 
-  const checks = Object.fromEntries([
-    ...PRE_CHECKS.filter((t) => t === "task_nonce").map((t) => [t, "pass"]),
-    ...results.map((r) => [r.type, r.status]),
-  ]);
+  const checks = checksMap(results);
   const d = failed?.details as
     | { distance_m?: number; radius_m?: number; accuracy_m?: number; max_age_s?: number }
     | undefined;
@@ -413,4 +475,101 @@ export async function submitEvidence(
     claim_state: claimState,
     checks,
   };
+}
+
+// ---------- outside AI review (01 §4.17) ----------
+
+export interface ReviewVerdict {
+  verdict: "pass" | "fail" | "uncertain";
+  reason: string;
+  observed: string;
+  model: string;
+}
+
+/** Submissions held as CHECKING, oldest first, with a short-lived URL to the EXIF-free photo. */
+export async function listPendingReviews(app: AppContext, limit = 20) {
+  const rows = await app.db
+    .select({ sub: schema.witnessSubmissions, task: schema.verificationRequests, ev: schema.evidenceObjects })
+    .from(schema.witnessSubmissions)
+    .innerJoin(
+      schema.verificationRequests,
+      eq(schema.verificationRequests.id, schema.witnessSubmissions.verificationId),
+    )
+    .innerJoin(schema.evidenceObjects, eq(schema.evidenceObjects.submissionId, schema.witnessSubmissions.id))
+    .where(eq(schema.witnessSubmissions.state, "CHECKING"))
+    .orderBy(asc(schema.witnessSubmissions.serverReceivedAt))
+    .limit(limit);
+  const out = [];
+  for (const { sub, task, ev } of rows) {
+    if (!ev.derivedObjectKey) continue;
+    out.push({
+      submission_id: sub.id,
+      verification_id: task.id,
+      type: task.type,
+      question: task.question,
+      answer_schema: answerSchemaOf(
+        task.answerKind,
+        task.answerValues,
+        task.answerSpec as Record<string, unknown> | null,
+      ),
+      answer: sub.answer,
+      received_at: sub.serverReceivedAt.toISOString(),
+      image_url: await app.storage.createSignedDownloadUrl("evidence-derived", ev.derivedObjectKey, 600),
+    });
+  }
+  return { reviews: out };
+}
+
+/** Apply the outside reviewer's verdict to a CHECKING submission, then decide it like an inline review. */
+export async function applyReview(app: AppContext, submissionId: string, v: ReviewVerdict) {
+  return app.db.transaction(async (tx) => {
+    const [sub] = await tx
+      .select()
+      .from(schema.witnessSubmissions)
+      .where(eq(schema.witnessSubmissions.id, submissionId));
+    if (sub?.state !== "CHECKING") throw new ApiError("SUBMISSION_NOT_PENDING");
+    const task = await lockTask(tx, sub.verificationId);
+    const [claim] = await tx.select().from(schema.claims).where(eq(schema.claims.id, sub.claimId));
+    if (!claim) throw new ApiError("SUBMISSION_NOT_PENDING");
+    const details = { verdict: v.verdict, reason: v.reason, observed: v.observed, model: v.model };
+    const review: CheckOutcome =
+      v.verdict === "fail"
+        ? { type: "vision_consistency", status: "fail", reasonCode: "EVIDENCE_MISMATCH", details }
+        : { type: "vision_consistency", status: v.verdict === "pass" ? "pass" : "warning", details };
+    await tx
+      .update(schema.evidenceChecks)
+      .set({ status: review.status, reasonCode: review.reasonCode ?? null, machineDetails: details })
+      .where(
+        and(
+          eq(schema.evidenceChecks.submissionId, sub.id),
+          eq(schema.evidenceChecks.checkType, "vision_consistency"),
+        ),
+      );
+    const stored = await tx
+      .select()
+      .from(schema.evidenceChecks)
+      .where(eq(schema.evidenceChecks.submissionId, sub.id));
+    const results: CheckOutcome[] = CHECK_ORDER.map((t) => {
+      if (t === "vision_consistency") return review;
+      const r = stored.find((c) => c.checkType === t);
+      return { type: t, status: (r?.status ?? "not_run") as CheckOutcome["status"] };
+    });
+    // The task may have closed while the review was pending (deadline grace passed): record, do not count.
+    if (!["CLAIMED", "SUBMITTED"].includes(task.status)) {
+      await tx
+        .update(schema.witnessSubmissions)
+        .set({ state: "INVALID", firstFailedCheck: "task_window" })
+        .where(eq(schema.witnessSubmissions.id, sub.id));
+      return { submission_id: sub.id, state: "INVALID" as const, applied: false };
+    }
+    const r = await finishSubmission(tx, app, {
+      task,
+      claimId: claim.id,
+      submissionId: sub.id,
+      results,
+      attempts: claim.attempts,
+      now: app.now(),
+    });
+    return { submission_id: sub.id, state: r.state, applied: true };
+  });
 }

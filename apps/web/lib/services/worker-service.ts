@@ -450,7 +450,7 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
     attempts_remaining: Math.max(0, LIMITS.attemptsPerClaim - claim.attempts),
     submissions: subs.map((s) => ({
       submission_id: s.id,
-      state: s.state as "VALID" | "INVALID",
+      state: s.state as "VALID" | "INVALID" | "CHECKING",
       reason_code: s.reasonCode,
       reason_message_ja: s.reasonCode
         ? reasonMessage(s.reasonCode, {

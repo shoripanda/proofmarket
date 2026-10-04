@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Outside AI review (01 §4.17). Installed by install.sh, which fills in __HOME__ and __REPO__. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.proofmarket.review-runner</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/pnpm</string>
+    <string>--silent</string>
+    <string>--filter</string>
+    <string>@proofmarket/scripts</string>
+    <string>run</string>
+    <string>run</string>
+    <string>review-runner.ts</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>__HOME__/.local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>__HOME__</string>
+  </dict>
+  <key>StartInterval</key>
+  <integer>120</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/proofmarket-review-runner.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/proofmarket-review-runner.log</string>
+</dict>
+</plist>

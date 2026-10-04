@@ -1,6 +1,6 @@
 import "server-only";
 import { ApiError } from "@proofmarket/core";
-import { AdminFlagRequestSchema } from "@proofmarket/core/schemas/api";
+import { AdminFlagRequestSchema, AdminReviewRequestSchema } from "@proofmarket/core/schemas/api";
 import { authenticateCron, authenticateOperator } from "../auth/operator";
 import type { AppContext } from "../context";
 import { readJson } from "../http";
@@ -13,6 +13,7 @@ import {
   suspendCredential,
   suspendWorker,
 } from "../services/admin-service";
+import { applyReview, listPendingReviews } from "../services/evidence-service";
 import { tick } from "../services/jobs";
 
 export interface OperatorSecrets {
@@ -60,4 +61,18 @@ export async function handleRequeue(app: AppContext, s: OperatorSecrets, req: Re
 export async function handleTick(app: AppContext, s: OperatorSecrets, req: Request) {
   authenticateCron(req, s.cronSecret);
   return Response.json(await tick(app));
+}
+
+/** GET /v1/admin/reviews — submissions waiting for the outside AI review (01 §4.17). */
+export async function handleListReviews(app: AppContext, s: OperatorSecrets, req: Request) {
+  authenticateOperator(req, s.adminToken);
+  return Response.json(await listPendingReviews(app));
+}
+
+/** POST /v1/admin/reviews/{submission_id} — the reviewer's verdict. */
+export async function handleApplyReview(app: AppContext, s: OperatorSecrets, req: Request, id: string) {
+  authenticateOperator(req, s.adminToken);
+  const r = AdminReviewRequestSchema.safeParse(await readJson(req));
+  if (!r.success) throw new ApiError("VALIDATION_FAILED");
+  return Response.json(await applyReview(app, id, r.data));
 }

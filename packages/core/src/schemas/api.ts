@@ -12,6 +12,7 @@ import {
   FUNDING_STATUSES,
   OUTCOME_REASONS,
   OUTCOMES,
+  PLATFORM_FLAGS,
   STORE_REPORT_STATUSES,
   SUBMISSION_STATES,
   TASK_STATUSES,
@@ -424,7 +425,8 @@ const ChecksMapSchema = z.record(z.string(), CheckStatusSchema);
 
 export const SubmitEvidenceResponseSchema = z.object({
   submission_id: SubmissionIdSchema,
-  state: z.enum(SUBMISSION_STATES).exclude(["CHECKING"]),
+  /** CHECKING: every mechanical check passed and the submission waits for the AI review (01 §4.17). */
+  state: z.enum(SUBMISSION_STATES),
   reason_code: z.enum(CHECK_REASON_CODES).nullable(),
   reason_message_ja: z.string().nullable(),
   retryable: z.boolean(),
@@ -465,8 +467,18 @@ export const PayoutsResponseSchema = z.object({
 
 export const AdminFlagRequestSchema = z
   .object({
-    key: z.enum(["tasks_create_enabled", "claims_enabled", "settlement_enabled", "public_evidence_enabled"]),
+    key: z.enum(PLATFORM_FLAGS),
     value: z.boolean(),
+  })
+  .strict();
+
+/** The outside reviewer's verdict on one held submission (01 §4.17). */
+export const AdminReviewRequestSchema = z
+  .object({
+    verdict: z.enum(["pass", "fail", "uncertain"]),
+    reason: z.string().min(1).max(300),
+    observed: z.string().max(200),
+    model: z.string().min(1).max(100),
   })
   .strict();
 
