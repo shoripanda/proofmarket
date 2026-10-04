@@ -32,6 +32,7 @@
 | POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23） |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
+| GET | `/v1/public/stats` | 誰でも | P1 | 追加（2026-10-04）。公開の実績（集計だけ）。4.1 節。約 60 秒キャッシュ |
 | GET / POST | `/v1/store/{token}` | 店舗のリンク | P2 | 追加（2026-10-04）。GET は店舗名と今の申告、POST は申告（01 §4.13）。token ごとに 1 分 10 件まで |
 | POST | `/v1/public/removal-requests` | 誰でも | P2 | 追加。写真の削除・公開停止の依頼（04 §3.21）。IP ごとに 1 分 5 件まで |
 | POST | `/v1/public/participation-requests` | 誰でも | P2 | 追加。参加・API キーの申し込み（04 §3.20）。IP ごとに 1 分 5 件まで |
@@ -329,6 +330,14 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 `GET /v1/public/verifications/{id}` は 2.4 の VerificationResult から次を除いて返す: `checks` の内訳以外の提出ごとの情報、質問文、位置、証拠の URL。ID を知っている人だけが見られる前提で、一覧の API は作らない。
 
 例外として、サイトのトップ（S-01）には運営者が「掲載」にした結果だけを並べる（2026-10-04 追加）。掲載は `POST /v1/admin/verifications/{id}/feature` で運営者が1件ずつ決め、requester の依頼が本人の知らないうちに並ぶことはない。並べる項目は上の公開結果と同じ範囲から、答え・状態・証言の数・一致率・確定時刻・決済の状態・Explorer の URL に絞る。一覧の API は作らず、ページのサーバー側で読む。
+
+### 4.1 公開の実績（2026-10-04 追加）
+
+審査員や worker の候補に、実際に何件が人の手で完了し、いくら支払われたかを見せるため、サイトの `/stats`（S-11）と `GET /v1/public/stats` で同じ集計を出す。認証はなく、サーバーとレスポンスの両方で約 60 秒キャッシュする。
+
+- 出すもの: 依頼の総数と完了数（状態が VERIFIED か SETTLED）、有効な提出をした worker の数、依頼した principal の数、確定した支払いで worker に払った USDC の合計、依頼から結果確定までの時間の中央値（VERIFIED のもの）、`vision_consistency` の内訳（pass・fail・warning。not_run は数えない）、依頼の種類ごとの受付数と完了数、日本時間で直近 14 日の日ごとの完了数、支払いが確定した直近 10 件
+- 直近 10 件に出すのは、種類・確定時刻・有効な証言の数・支払いの Explorer の URL だけ。依頼の ID は出さず、結果ページ `/r/{id}` へのリンクは運営者が掲載にしたもの（上の例外）にだけ付ける。ID を知っている人だけが結果を見られる前提を崩さないため
+- 出さないもの: 質問文、答え、位置、写真、worker の ID、受取アドレス、依頼者の名前、AI の判定理由
 
 運営者 API は 08 章 6 節の障害対応で使う。すべて audit_events に `actor_type = operator` で残す。
 

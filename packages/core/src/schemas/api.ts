@@ -300,6 +300,39 @@ export type GetVerificationResponse = z.infer<typeof GetVerificationResponseSche
 /** Public result (05 §4): no question, location, evidence URLs or per-submission data. */
 export const PublicVerificationResultSchema = VerificationResultSchema.omit({ rejected_submissions: true });
 
+/**
+ * Public track record (05 §4.1): aggregates only. No question, answer, location, worker or payout address.
+ * Recent results link to /r/<id> only when the operator featured them; otherwise just the Explorer transaction.
+ */
+export const PublicStatsSchema = z.object({
+  generated_at: IsoDateTime,
+  verifications: z.object({ total: z.number().int(), completed: z.number().int() }),
+  workers_with_valid_submission: z.number().int(),
+  requesters: z.number().int(),
+  paid_to_workers: z.object({
+    asset: z.literal("USDC"),
+    amount: z.string().regex(/^\d+(\.\d{1,6})?$/),
+    network: z.literal("solana-devnet"),
+  }),
+  median_seconds_to_result: z.number().int().nullable(),
+  ai_review: z.object({ pass: z.number().int(), fail: z.number().int(), uncertain: z.number().int() }),
+  by_type: z.array(
+    z.object({ type: z.enum(TASK_TYPES), total: z.number().int(), completed: z.number().int() }),
+  ),
+  /** Last 14 days in JST, oldest first, days without results included as 0. */
+  daily_completed: z.array(z.object({ date: z.iso.date(), count: z.number().int() })),
+  recent_results: z.array(
+    z.object({
+      type: z.enum(TASK_TYPES),
+      finalized_at: IsoDateTime,
+      witnesses: z.number().int(),
+      explorer_url: z.url(),
+      result_url: z.string().nullable(),
+    }),
+  ),
+});
+export type PublicStats = z.infer<typeof PublicStatsSchema>;
+
 export const EvidenceUrlsResponseSchema = z.object({
   evidence: z.array(
     z.object({ witness_ref: z.string(), url: z.url(), expires_in_seconds: z.number().int() }),
