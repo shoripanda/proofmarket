@@ -18,7 +18,7 @@ import {
   type WorkerRecord,
 } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, eq, gt, gte, inArray } from "drizzle-orm";
+import { and, count, eq, gt, gte, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { LEGAL_VERSIONS } from "../legal";
 import { appendAudit } from "./audit";
@@ -391,6 +391,13 @@ export async function createUpload(
     const [ch] = await tx.select().from(schema.challenges).where(eq(schema.challenges.id, body.challenge_id));
     if (!ch || ch.claimId !== claimId || ch.state !== "ISSUED") throw new ApiError("NONCE_INVALID");
     if (ch.expiresAt <= now) throw new ApiError("NONCE_EXPIRED");
+    // 01 §4.18: one upload per photo, at most maxPhotos under one challenge.
+    const [{ n } = { n: 0 }] = await tx
+      .select({ n: count() })
+      .from(schema.uploads)
+      .where(eq(schema.uploads.challengeId, ch.id));
+    if (n >= LIMITS.media.maxPhotos)
+      throw new ApiError("VALIDATION_FAILED", { field: "challenge_id", reason: "upload_limit" });
     const uploadId = newId("upload");
     const key = `${task.id}/${claimId}/${uploadId}.jpg`;
     await tx

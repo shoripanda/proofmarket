@@ -416,7 +416,8 @@ export const SubmitEvidenceRequestSchema = z
     evidence: z
       .array(z.object({ type: z.literal("photo"), object_ref: UploadIdSchema }))
       .min(1)
-      .max(1), // MVP: exactly one photo
+      .max(LIMITS.media.maxPhotos) // 01 §4.18: up to 4 photos, all under the same challenge
+      .refine((e) => new Set(e.map((x) => x.object_ref)).size === e.length, "each photo once"),
   })
   .strict();
 export type SubmitEvidenceRequest = z.infer<typeof SubmitEvidenceRequestSchema>;

@@ -3,7 +3,7 @@ import "server-only";
 
 import { ApiError, LIMITS, parseId } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
 import { witnessRef } from "./crypto";
@@ -132,7 +132,8 @@ export async function evidenceUrls(app: AppContext, auth: RequesterAuth, rawId: 
     )
     .where(
       and(eq(schema.witnessSubmissions.verificationId, id), eq(schema.witnessSubmissions.state, "VALID")),
-    );
+    )
+    .orderBy(asc(schema.evidenceObjects.submissionId), asc(schema.evidenceObjects.id)); // a witness's photos together, in order
   const evidence = [];
   for (const r of rows) {
     if (!r.e.derivedObjectKey) continue; // purged after retention

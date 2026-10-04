@@ -69,7 +69,11 @@ export async function saveResult(
     );
   const ids = valid.map((v) => v.id);
   const evidence = ids.length
-    ? await tx.select().from(schema.evidenceObjects).where(inArray(schema.evidenceObjects.submissionId, ids))
+    ? await tx
+        .select()
+        .from(schema.evidenceObjects)
+        .where(inArray(schema.evidenceObjects.submissionId, ids))
+        .orderBy(asc(schema.evidenceObjects.id)) // photos in the order sent (01 §4.18)
     : [];
   const checks = ids.length
     ? await tx.select().from(schema.evidenceChecks).where(inArray(schema.evidenceChecks.submissionId, ids))

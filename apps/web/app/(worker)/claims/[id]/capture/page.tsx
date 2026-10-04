@@ -1,7 +1,8 @@
 "use client";
 import type { AnswerValue, TaskType } from "@proofmarket/core";
-// W-06 撮影と回答 — challenge -> live camera -> capture (canvas -> JPEG) -> high-accuracy location -> answer -> upload -> submit.
-// Photos come only from the in-app camera; there is no gallery picker (07 §2).
+import { LIMITS } from "@proofmarket/core/domain/limits";
+// W-06 撮影と回答 — challenge -> live camera -> capture 1–4 photos (canvas -> JPEG) -> high-accuracy location -> answer
+// -> upload each photo -> submit (01 §4.18). Photos come only from the in-app camera; there is no gallery picker (07 §2).
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Notice, remaining, Shell, useNow } from "@/components/ui";
@@ -19,7 +20,13 @@ interface Fix {
   lng: number;
   accuracy: number;
 }
+interface Photo {
+  blob: Blob;
+  url: string;
+  takenAt: string;
+}
 const MAX_EDGE = 1920;
+const MAX_PHOTOS = LIMITS.media.maxPhotos;
 
 export default function CapturePage() {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +36,7 @@ export default function CapturePage() {
   const video = useRef<HTMLVideoElement>(null);
   const [claim, setClaim] = useState<ClaimDetail | null>(null);
   const [ch, setCh] = useState<Challenge | null>(null);
-  const [photo, setPhoto] = useState<{ blob: Blob; url: string; takenAt: string } | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [fix, setFix] = useState<Fix | null>(null);
   const [answer, setAnswer] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -96,7 +103,8 @@ export default function CapturePage() {
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
-        setPhoto({ blob, url: URL.createObjectURL(blob), takenAt: new Date().toISOString() });
+        const shot = { blob, url: URL.createObjectURL(blob), takenAt: new Date().toISOString() };
+        setPhotos((ps) => (ps.length < MAX_PHOTOS ? [...ps, shot] : ps));
         locate();
       },
       "image/jpeg",
@@ -104,33 +112,47 @@ export default function CapturePage() {
     );
   }
 
+  function removePhoto(i: number) {
+    setPhotos((ps) => {
+      const gone = ps[i];
+      if (gone) URL.revokeObjectURL(gone.url);
+      return ps.filter((_, j) => j !== i);
+    });
+  }
+
   async function submit() {
-    if (!ch || !photo || (needsLocation && !fix) || !answer.trim() || !claim) return;
+    const [first] = photos;
+    if (!ch || !first || (needsLocation && !fix) || !answer.trim() || !claim) return;
     setBusy(true);
     setErr(null);
     try {
-      const up = await api<{ upload_id: string; upload_url: string }>(`/v1/worker/claims/${id}/uploads`, {
-        method: "POST",
-        body: { challenge_id: ch.challenge_id, content_type: "image/jpeg", byte_size: photo.blob.size },
-      });
-      const put = await fetch(up.upload_url, {
-        method: "PUT",
-        body: photo.blob,
-        headers: { "content-type": "image/jpeg" },
-      });
-      if (!put.ok) throw new Error(`upload ${put.status}`);
+      // Every photo is uploaded first; the submission names them all in the order they were taken.
+      const refs: string[] = [];
+      for (const p of photos) {
+        const up = await api<{ upload_id: string; upload_url: string }>(`/v1/worker/claims/${id}/uploads`, {
+          method: "POST",
+          body: { challenge_id: ch.challenge_id, content_type: "image/jpeg", byte_size: p.blob.size },
+        });
+        const put = await fetch(up.upload_url, {
+          method: "PUT",
+          body: p.blob,
+          headers: { "content-type": "image/jpeg" },
+        });
+        if (!put.ok) throw new Error(`upload ${put.status}`);
+        refs.push(up.upload_id);
+      }
       await api(`/v1/worker/tasks/${claim.verification_id}/evidence`, {
         method: "POST",
-        idem: `ev-${up.upload_id}`,
+        idem: `ev-${refs[0]}`,
         body: {
           claim_id: id,
           answer,
           capture: {
-            client_timestamp: photo.takenAt,
+            client_timestamp: first.takenAt,
             ...(fix ? { lat: fix.lat, lng: fix.lng, accuracy_m: fix.accuracy } : {}),
           },
           challenge: { nonce: ch.nonce },
-          evidence: [{ type: "photo", object_ref: up.upload_id }],
+          evidence: refs.map((object_ref) => ({ type: "photo", object_ref })),
         },
       });
       router.replace(`/claims/${id}/result`);
@@ -141,6 +163,7 @@ export default function CapturePage() {
   }
 
   const expired = ch ? new Date(ch.expires_at).getTime() <= now : false;
+  const full = photos.length >= MAX_PHOTOS;
   return (
     <Shell title="撮影と回答" back={`/claims/${id}`}>
       {claim ? (
@@ -154,30 +177,54 @@ export default function CapturePage() {
       ) : null}
       {err ? <Notice tone="error">{err}</Notice> : null}
 
-      <div className="overflow-hidden rounded-2xl bg-black">
-        {photo ? (
-          // biome-ignore lint/performance/noImgElement: local object URL preview
-          <img src={photo.url} alt="撮影した写真" className="aspect-[3/4] w-full object-cover" />
-        ) : (
-          <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full object-cover" />
-        )}
+      {/* Stays mounted so the camera keeps running; hidden once the photo limit is reached. */}
+      <div className={`overflow-hidden rounded-2xl bg-black ${full ? "hidden" : ""}`}>
+        <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full object-cover" />
       </div>
       <p className="text-xs text-slate-500">
         {TASK_TYPE_JA[claim?.type as TaskType]?.howTo ?? "確かめた物が分かる写真を撮ってください。"}
-        人の顔が大きく写らないようにしてください。
+        人の顔が大きく写らないようにしてください。写真は{MAX_PHOTOS}枚まで送れます。
       </p>
 
-      {photo ? (
-        <Button variant="secondary" onClick={() => setPhoto(null)}>
-          撮り直す
-        </Button>
+      {photos.length ? (
+        <ul className="grid grid-cols-4 gap-2">
+          {photos.map((p, i) => (
+            <li key={p.url} className="relative">
+              {/* biome-ignore lint/performance/noImgElement: local object URL preview */}
+              <img
+                src={p.url}
+                alt={`撮影した写真 ${i + 1}枚目`}
+                className="aspect-[3/4] w-full rounded-xl object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => removePhoto(i)}
+                disabled={busy}
+                className="absolute top-1 right-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-bold text-white"
+                aria-label={`${i + 1}枚目を消す`}
+              >
+                消す
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {full ? (
+        <p className="text-sm text-slate-600">
+          {MAX_PHOTOS}枚撮りました。撮り直すときは「消す」を押してください。
+        </p>
       ) : (
-        <Button onClick={shoot} disabled={!ch || expired}>
-          撮影する
+        <Button
+          variant={photos.length ? "secondary" : undefined}
+          onClick={shoot}
+          disabled={!ch || expired || busy}
+        >
+          {photos.length ? `もう1枚撮る（${photos.length}/${MAX_PHOTOS}枚）` : "撮影する"}
         </Button>
       )}
 
-      {photo ? (
+      {photos.length ? (
         <>
           {needsLocation ? (
             <p className="text-sm text-slate-600">

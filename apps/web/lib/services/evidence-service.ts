@@ -13,6 +13,7 @@ import {
   checkGeofence,
   checkMediaSchema,
   checkReplay,
+  combinePhotoOutcomes,
   firstFailure,
   LIMITS,
   NON_RETRYABLE_REASONS,
@@ -24,7 +25,7 @@ import {
 } from "@proofmarket/core";
 import type { SubmitEvidenceRequest } from "@proofmarket/core/schemas/api";
 import { constraintName, type Db, pgErrorCode, schema } from "@proofmarket/db";
-import { and, asc, eq, gte, isNotNull, ne } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, ne } from "drizzle-orm";
 import sharp from "sharp";
 import type { AppContext } from "../context";
 import type { SubmissionReviewer } from "../ports";
@@ -40,7 +41,7 @@ async function reviewSubmission(
   reviewer: SubmissionReviewer,
   task: TaskRow,
   answer: string,
-  image: Buffer,
+  images: Buffer[],
 ): Promise<CheckOutcome> {
   const spec = answerSchemaOf(
     task.answerKind,
@@ -53,7 +54,7 @@ async function reviewSubmission(
       question: task.question,
       answerFormat: JSON.stringify(spec),
       answer,
-      image,
+      images,
     });
     const details = { verdict: r.verdict, reason: r.reason, observed: r.observed, model: r.model };
     if (r.verdict === "fail")
@@ -162,13 +163,16 @@ export async function submitEvidence(
   if (!ch) throw new ApiError("NONCE_INVALID");
   if (ch.state === "USED") throw new ApiError("NONCE_USED");
   if (ch.state === "SUPERSEDED") throw new ApiError("NONCE_INVALID");
-  const uploadId = body.evidence[0]?.object_ref;
-  const [upload] = uploadId
-    ? await tx.select().from(schema.uploads).where(eq(schema.uploads.id, uploadId))
-    : [];
-  if (!upload || upload.claimId !== claim.id || upload.state !== "PENDING")
-    throw new ApiError("UPLOAD_NOT_FOUND");
-  if (upload.challengeId !== ch.id) throw new ApiError("NONCE_INVALID");
+  // 01 §4.18: 1–4 photos, each its own upload, all under this claim and this challenge, in the order sent.
+  const uploadIds = body.evidence.map((e) => e.object_ref);
+  const found = await tx.select().from(schema.uploads).where(inArray(schema.uploads.id, uploadIds));
+  const uploads = uploadIds.map((uid) => found.find((u) => u.id === uid));
+  for (const upload of uploads) {
+    if (!upload || upload.claimId !== claim.id || upload.state !== "PENDING")
+      throw new ApiError("UPLOAD_NOT_FOUND");
+    if (upload.challengeId !== ch.id) throw new ApiError("NONCE_INVALID");
+  }
+  const photos = uploads.filter((u) => u !== undefined);
   const answer = normalizeAnswer(
     answerSchemaOf(task.answerKind, task.answerValues, task.answerSpec as Record<string, unknown> | null),
     body.answer,
@@ -190,7 +194,7 @@ export async function submitEvidence(
     .update(schema.challenges)
     .set({ state: "USED", usedAt: now })
     .where(eq(schema.challenges.id, ch.id));
-  await tx.update(schema.uploads).set({ state: "FINALIZED" }).where(eq(schema.uploads.id, upload.id));
+  await tx.update(schema.uploads).set({ state: "FINALIZED" }).where(inArray(schema.uploads.id, uploadIds));
   const attempts = claim.attempts + 1;
   await tx.update(schema.claims).set({ attempts }).where(eq(schema.claims.id, claim.id));
   await tx.insert(schema.witnessSubmissions).values({
@@ -214,12 +218,17 @@ export async function submitEvidence(
     "TASK_EXPIRED",
   );
 
-  // ---- read + hash + derive (07 §3.1) ----
-  const obj = await app.storage.read(upload.objectKey);
-  const img = obj ? await processImage(obj.bytes) : null;
+  // ---- read + hash + derive (07 §3.1), per photo ----
   const deleteAfter = new Date(now.getTime() + RETENTION_DAYS.raw_evidence * 86_400_000);
-  let replayConflict = false;
-  if (img) {
+  const read = await Promise.all(
+    photos.map(async (upload) => {
+      const obj = await app.storage.read(upload.objectKey);
+      return { upload, obj, img: obj ? await processImage(obj.bytes) : null, replayConflict: false };
+    }),
+  );
+  for (const p of read) {
+    const { upload, obj, img } = p;
+    if (!img) continue;
     try {
       await tx.transaction(async (sp) => {
         await sp.insert(schema.evidenceObjects).values({
@@ -242,47 +251,51 @@ export async function submitEvidence(
         });
       });
     } catch (e) {
-      if (pgErrorCode(e) === "23505" && constraintName(e)?.includes("evidence_sha256")) replayConflict = true;
+      // Also hit when the same file is sent twice in one submission.
+      if (pgErrorCode(e) === "23505" && constraintName(e)?.includes("evidence_sha256"))
+        p.replayConflict = true;
       else throw e;
     }
   }
 
   // ---- duplicate candidates (P1): other claims' photos in the last 90 days ----
-  const candidates =
-    img?.dhash != null
-      ? await tx
-          .select({ submissionId: schema.evidenceObjects.submissionId, dhash: schema.evidenceObjects.dhash })
-          .from(schema.evidenceObjects)
-          .innerJoin(
-            schema.witnessSubmissions,
-            eq(schema.witnessSubmissions.id, schema.evidenceObjects.submissionId),
-          )
-          .where(
-            and(
-              ne(schema.witnessSubmissions.claimId, claim.id),
-              isNotNull(schema.evidenceObjects.dhash),
-              gte(
-                schema.evidenceObjects.serverReceivedAt,
-                new Date(now.getTime() - LIMITS.duplicate.lookbackDays * 86_400_000),
-              ),
+  const candidates = read.some((p) => p.img?.dhash != null)
+    ? await tx
+        .select({ submissionId: schema.evidenceObjects.submissionId, dhash: schema.evidenceObjects.dhash })
+        .from(schema.evidenceObjects)
+        .innerJoin(
+          schema.witnessSubmissions,
+          eq(schema.witnessSubmissions.id, schema.evidenceObjects.submissionId),
+        )
+        .where(
+          and(
+            ne(schema.witnessSubmissions.claimId, claim.id),
+            isNotNull(schema.evidenceObjects.dhash),
+            gte(
+              schema.evidenceObjects.serverReceivedAt,
+              new Date(now.getTime() - LIMITS.duplicate.lookbackDays * 86_400_000),
             ),
-          )
-      : [];
+          ),
+        )
+    : [];
 
+  // Each photo-level check runs on every photo; the first photo that fails fails the submission (01 §4.18).
+  const perPhoto = (f: (p: (typeof read)[number]) => CheckOutcome) => () => combinePhotoOutcomes(read.map(f));
   const geo: CheckOutcome =
     target && observed
       ? checkGeofence({ target: { lat: target.lat, lng: target.lng, radiusM: target.radius_m }, observed })
       : { type: "geofence", status: "not_run" };
   const results: CheckOutcome[] = runChecks(CHECK_ORDER, [
-    () =>
+    perPhoto(({ obj, img }) =>
       checkMediaSchema({
         declaredContentType: "image/jpeg",
         byteSize: obj?.bytes.length ?? 0,
         magicBytes: img?.magic ?? new Uint8Array(),
         decoded: img?.decoded ?? null,
       }),
-    () => checkReplay(replayConflict),
-    () =>
+    ),
+    perPhoto((p) => checkReplay(p.replayConflict)),
+    perPhoto(({ obj }) =>
       checkFreshness({
         now,
         challengeIssuedAt: ch.issuedAt,
@@ -290,27 +303,34 @@ export async function submitEvidence(
         clientTimestamp: new Date(body.capture.client_timestamp),
         freshnessMaxAgeS: task.freshnessMaxAgeS,
       }),
+    ),
     () => geo,
-    () =>
+    perPhoto(({ img }) =>
       img?.dhash != null
         ? checkDuplicate({
             dhash: img.dhash,
             candidates: candidates.map((c) => ({ submissionId: c.submissionId, dhash: c.dhash ?? 0n })),
           })
         : { type: "duplicate", status: "not_run" },
+    ),
     () => ({ type: "vision_consistency", status: "not_run" }),
   ]);
-  // AI review (01 §4.16): once every mechanical check has passed, Claude judges whether the photo and the answer
+  // AI review (01 §4.16): once every mechanical check has passed, Claude judges whether the photos and the answer
   // actually do what was asked. A clear miss fails the attempt (retryable); "uncertain" is recorded as a warning.
+  const derived = read.flatMap((p) => (p.img?.derived ? [p.img.derived] : []));
+  const allDerived = derived.length === read.length;
   const reviewAt = results.findIndex((r) => r.type === "vision_consistency");
-  if (app.reviewer && img?.derived && !firstFailure(results) && reviewAt >= 0) {
-    results[reviewAt] = await reviewSubmission(app.reviewer, task, answer, img.derived);
+  if (app.reviewer && allDerived && !firstFailure(results) && reviewAt >= 0) {
+    results[reviewAt] = await reviewSubmission(app.reviewer, task, answer, derived);
   }
 
   // A replayed file has no evidence row (unique sha256), so nothing would ever purge it: delete it now.
-  if (replayConflict) await app.storage.remove("evidence-raw", [upload.objectKey]);
+  const replayed = read.filter((p) => p.replayConflict).map((p) => p.upload.objectKey);
+  if (replayed.length) await app.storage.remove("evidence-raw", replayed);
   // Derived image only for decodable, non-replayed photos.
-  if (img?.derived && !replayConflict) await app.storage.putDerived(upload.objectKey, img.derived);
+  for (const p of read) {
+    if (p.img?.derived && !p.replayConflict) await app.storage.putDerived(p.upload.objectKey, p.img.derived);
+  }
 
   // ---- persist checks + location ----
   for (const t of PRE_CHECKS)
@@ -342,7 +362,7 @@ export async function submitEvidence(
   // ---- outcome ----
   // 01 §4.17: with external review on (and no inline reviewer), a submission that passed every mechanical check
   // waits as CHECKING until the operator's reviewer (Claude Code) posts a verdict through applyReview.
-  if (!firstFailure(results) && !app.reviewer && img?.derived && (await externalReviewEnabled(tx))) {
+  if (!firstFailure(results) && !app.reviewer && allDerived && (await externalReviewEnabled(tx))) {
     await appendAudit(tx, {
       verificationId,
       actorType: "system",
@@ -486,22 +506,40 @@ export interface ReviewVerdict {
   model: string;
 }
 
-/** Submissions held as CHECKING, oldest first, with a short-lived URL to the EXIF-free photo. */
+/** Submissions held as CHECKING, oldest first, with short-lived URLs to the EXIF-free photos. */
 export async function listPendingReviews(app: AppContext, limit = 20) {
   const rows = await app.db
-    .select({ sub: schema.witnessSubmissions, task: schema.verificationRequests, ev: schema.evidenceObjects })
+    .select({ sub: schema.witnessSubmissions, task: schema.verificationRequests })
     .from(schema.witnessSubmissions)
     .innerJoin(
       schema.verificationRequests,
       eq(schema.verificationRequests.id, schema.witnessSubmissions.verificationId),
     )
-    .innerJoin(schema.evidenceObjects, eq(schema.evidenceObjects.submissionId, schema.witnessSubmissions.id))
     .where(eq(schema.witnessSubmissions.state, "CHECKING"))
     .orderBy(asc(schema.witnessSubmissions.serverReceivedAt))
     .limit(limit);
+  const evidence = rows.length
+    ? await app.db
+        .select({
+          submissionId: schema.evidenceObjects.submissionId,
+          key: schema.evidenceObjects.derivedObjectKey,
+        })
+        .from(schema.evidenceObjects)
+        .where(
+          inArray(
+            schema.evidenceObjects.submissionId,
+            rows.map((r) => r.sub.id),
+          ),
+        )
+        .orderBy(asc(schema.evidenceObjects.id)) // the order the worker sent them (monotonic IDs)
+    : [];
   const out = [];
-  for (const { sub, task, ev } of rows) {
-    if (!ev.derivedObjectKey) continue;
+  for (const { sub, task } of rows) {
+    const keys = evidence.filter((e) => e.submissionId === sub.id).map((e) => e.key);
+    if (!keys.length || keys.some((k) => !k)) continue;
+    const image_urls: string[] = [];
+    for (const k of keys)
+      image_urls.push(await app.storage.createSignedDownloadUrl("evidence-derived", k as string, 600));
     out.push({
       submission_id: sub.id,
       verification_id: task.id,
@@ -514,7 +552,9 @@ export async function listPendingReviews(app: AppContext, limit = 20) {
       ),
       answer: sub.answer,
       received_at: sub.serverReceivedAt.toISOString(),
-      image_url: await app.storage.createSignedDownloadUrl("evidence-derived", ev.derivedObjectKey, 600),
+      image_urls,
+      /** First photo only. Kept while review-runners that read only this field are still running (01 §4.18). */
+      image_url: image_urls[0],
     });
   }
   return { reviews: out };

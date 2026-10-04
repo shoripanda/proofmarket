@@ -1,6 +1,10 @@
 // Prefixed, non-guessable, time-ordered IDs (04 §1): `<prefix>_<ULID>`.
 
-import { ulid } from "ulid";
+import { monotonicFactory } from "ulid";
+
+// Monotonic within a process, so IDs made in one go sort in the order they were made (the photos of one
+// submission, 01 §4.18).
+const ulid = monotonicFactory();
 
 export const ID_PREFIXES = {
   principal: "prn",

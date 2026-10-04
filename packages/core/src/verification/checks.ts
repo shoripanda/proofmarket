@@ -175,6 +175,31 @@ export function runChecks(
   return out;
 }
 
+/**
+ * One check over several photos of a submission (01 §4.18): the first photo that fails fails the check
+ * (details.photo is its 1-based position), otherwise a warning on any photo makes it a warning.
+ * A single photo is returned unchanged.
+ */
+export function combinePhotoOutcomes(outcomes: readonly CheckOutcome[]): CheckOutcome {
+  const [only] = outcomes;
+  if (!only) throw new Error("combinePhotoOutcomes needs at least one outcome");
+  if (outcomes.length === 1) return only;
+  const flags = [...new Set(outcomes.flatMap((o) => o.riskFlags ?? []))];
+  const withFlags = (o: CheckOutcome): CheckOutcome => ({
+    ...o,
+    ...(flags.length ? { riskFlags: flags } : {}),
+  });
+  const i = outcomes.findIndex((o) => o.status === "fail");
+  const failed = outcomes[i];
+  if (failed) return withFlags({ ...failed, details: { ...(failed.details ?? {}), photo: i + 1 } });
+  const status = outcomes.some((o) => o.status === "warning")
+    ? "warning"
+    : outcomes.every((o) => o.status === "not_run")
+      ? "not_run"
+      : "pass";
+  return withFlags({ type: only.type, status, details: { photos: outcomes.map((o) => o.details ?? {}) } });
+}
+
 /** First failing check, if any. */
 export function firstFailure(results: readonly CheckOutcome[]): CheckOutcome | undefined {
   return results.find((r) => r.status === "fail");
