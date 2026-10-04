@@ -87,7 +87,7 @@ create unique index one_credit_back_per_task
   on requester_ledger (verification_id) where entry_type in ('RELEASE','REFUND');
 ```
 
-TOPUP は運営者が `scripts/` から入れる（Stretch で x402 V2 による入金に置き換える）。
+TOPUP は運営者が `scripts/` から入れる。x402 で払われた依頼では、支払いの確定後にサーバーが入れる（01 §4.19）。
 
 ### 3.3a places（依頼できる公開店舗の許可リスト）
 
@@ -596,6 +596,32 @@ create table console_sessions (
   expires_at    timestamptz not null             -- created_at + 12 時間
 );
 ```
+
+### 3.26 x402_wallets と x402_payments（x402 の支払い、2026-10-04 追加）
+
+01 §4.19。移行は 0019。どちらも RLS を有効にする。
+
+`x402_wallets`: 支払い元のウォレットと principal の対応。
+
+| 列 | 型 | 説明 |
+|---|---|---|
+| pubkey | text PK | 支払い元（TransferChecked の権限者）の公開鍵 |
+| principal_id | text FK → principals | 初回の支払いで作る |
+| created_at | timestamptz | |
+
+`x402_payments`: 支払いの取引 1 件につき 1 行。二重の決済を防ぐ。
+
+| 列 | 型 | 説明 |
+|---|---|---|
+| signature | text PK | 取引 ID（手数料の支払者の署名） |
+| payer | text | 支払い元の公開鍵 |
+| amount | numeric(20,6) | 受け取った額（USDC） |
+| state | text | `PENDING`（送信中）・`CONFIRMED`・`FAILED` |
+| request_hash | bytea | 本文のハッシュ。同じ支払いで別の依頼を作らせない |
+| credential_id | text FK NULL | この支払いで発行したキー |
+| verification_id | text FK NULL | この支払いで作った依頼 |
+| error | text NULL | 送信に失敗した理由 |
+| created_at / updated_at | timestamptz | `PENDING` のまま 120 秒たてば送り直してよい |
 
 ## 4. 保持期間と削除
 

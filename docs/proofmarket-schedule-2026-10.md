@@ -21,7 +21,7 @@
 | 担当 | 作業 | 指示書 | 状態 |
 |---|---|---|---|
 | — | この予定表と指示書をリポジトリに置く | — | 完了 |
-| A | x402 で、API キーなしに USDC を払って依頼できる窓口と、払って依頼する見本のエージェント | `docs/agents/A-x402.md` | 未着手 |
+| A | x402 で、API キーなしに USDC を払って依頼できる窓口と、払って依頼する見本のエージェント | `docs/agents/A-x402.md` | 完了（feat/x402。本番の反映待ち） |
 | B | 証拠の写真を最大4枚にする | `docs/agents/B-multi-photo.md` | 完了（DB の移行なし） |
 | C | 公開の実績ページ `/stats` と、サイトの看板の言い換え | `docs/agents/C-stats-and-copy.md` | 完了（本番の手順なし。x402 への言及は A の取り込み後） |
 | D | ピッチ資料・動画3本の台本・X の投稿文・worker 募集文（文書だけ） | `docs/agents/D-pitch-materials.md` | 完了 |
@@ -57,3 +57,5 @@
 ## 本番で必要な手順（各担当が書き足す）
 
 - B（写真4枚）: DB の移行は無い。取り込み後に `git -C ~/Solana-idea pull` で main を最新にする。launchd は `~/Solana-idea` の `scripts/review-runner.ts` をそのまま動かすので、入れ直しは要らない。pull するまでは古い runner が1枚目（`image_url`）だけで判定する
+- A（x402）: Supabase に移行 0019（`x402_wallets`・`x402_payments`、どちらも RLS 有効）を当てる。Vercel の環境変数は足さなくてよい（既存の `OPERATOR_SECRET_KEY`・`BOUNTY_MINT`・`SOLANA_RPC_URL`・`SOLANA_EXPECTED_GENESIS_HASH` を使う）。x402 の手数料は運営者のウォレットの SOL から出るので、残高を見ておく
+- A（x402）: 反映後に Devnet の実取引で確かめる。`pnpm --filter @proofmarket/scripts run run x402-fund-agent.ts --amount 1`（treasury から見本のエージェントへ 1 USDC）→ `pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url https://proofmarket-rosy.vercel.app`。402、支払いの取引、201 と verification_id が出れば成功

@@ -6,7 +6,10 @@ import type {
   OnChainTask,
   RefundInput,
   SettlementAdapter,
+  X402Facilitator,
 } from "@proofmarket/solana";
+import { createOfflineX402Facilitator } from "@proofmarket/solana";
+import type { VersionedTransaction } from "@proofmarket/solana/web3";
 
 type Mode = "ok" | "retry" | "halt" | "land-but-timeout";
 
@@ -102,5 +105,38 @@ export class FakeChain implements SettlementAdapter {
     if (m === "retry") return { kind: "retry", signature: s, error: "rpc down" };
     t.status = "Refunded";
     return { kind: "confirmed", signature: s, alreadyDone: false, taskAccount: t.address };
+  }
+}
+
+/** x402 facilitator over the offline one (co-signs, never sends), with a switch for chain-side failures. */
+export class FakeX402 implements X402Facilitator {
+  /** Base seed of the fee payer; tests build payments against `feePayer`. */
+  private inner = createOfflineX402Facilitator({
+    appEnv: "test",
+    operatorSeed: new Uint8Array(32).fill(9),
+    bountyMint: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+    genesisHash: "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  });
+  readonly network = this.inner.network;
+  readonly asset = this.inner.asset;
+  readonly payTo = this.inner.payTo;
+  readonly feePayer = this.inner.feePayer;
+  readonly decimals = this.inner.decimals;
+  /** Source token accounts that "exist". Empty = every account exists. */
+  existing = new Set<string>();
+  settleMode: "ok" | "fail" = "ok";
+  settled: string[] = [];
+
+  async accountExists(address: string) {
+    return this.existing.size === 0 || this.existing.has(address);
+  }
+  signatureOf(tx: VersionedTransaction) {
+    return this.inner.signatureOf(tx);
+  }
+  async settle(tx: VersionedTransaction) {
+    if (this.settleMode === "fail") return { ok: false as const, error: "simulated failure" };
+    const r = await this.inner.settle(tx);
+    if (r.ok) this.settled.push(r.signature);
+    return r;
   }
 }

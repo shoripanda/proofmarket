@@ -779,3 +779,31 @@ export const consoleSessions = pgTable("console_sessions", {
   createdAt: tsz("created_at").notNull().defaultNow(),
   expiresAt: tsz("expires_at").notNull(),
 });
+
+// ---------- x402 (01 §4.19) ----------
+/** One principal per paying wallet; every paid request gets a fresh credential under it. */
+export const x402Wallets = pgTable("x402_wallets", {
+  pubkey: text("pubkey").primaryKey(),
+  principalId: text("principal_id")
+    .notNull()
+    .references(() => principals.id),
+  createdAt: tsz("created_at").notNull().defaultNow(),
+});
+
+/** One row per payment transaction (its fee-payer signature): the duplicate-settlement guard. */
+export const x402Payments = pgTable(
+  "x402_payments",
+  {
+    signature: text("signature").primaryKey(),
+    payer: text("payer").notNull(),
+    amount: money("amount").notNull(),
+    state: text("state").notNull(),
+    requestHash: bytea("request_hash").notNull(),
+    credentialId: text("credential_id").references(() => requesterCredentials.id),
+    verificationId: text("verification_id").references(() => verificationRequests.id),
+    error: text("error"),
+    createdAt: tsz("created_at").notNull().defaultNow(),
+    updatedAt: tsz("updated_at").notNull().defaultNow(),
+  },
+  (_t) => [check("x402_payments_state_chk", oneOf("state", ["PENDING", "CONFIRMED", "FAILED"]))],
+);

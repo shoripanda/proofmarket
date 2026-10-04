@@ -6,6 +6,7 @@
   "description": "Settlement Adapter: builds, sends and confirms ProofMarket program transactions (06 §4-5). Server-only.",
   "exports": {
     ".": "./src/index.ts",
+    "./web3": "./src/web3.ts",
     "./idl": "./idl/proofmarket.json"
   },
   "scripts": {

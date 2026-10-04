@@ -33,6 +33,7 @@
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
 | GET | `/v1/public/stats` | 誰でも | P1 | 追加（2026-10-04）。公開の実績（集計だけ）。4.1 節。約 60 秒キャッシュ |
+| POST | `/v1/x402/verifications` | x402 の支払い | P2 | 追加（2026-10-04）。API キーなしで、USDC を払って依頼を作る（01 §4.19、7 節） |
 | GET / POST | `/v1/store/{token}` | 店舗のリンク | P2 | 追加（2026-10-04）。GET は店舗名と今の申告、POST は申告（01 §4.13）。token ごとに 1 分 10 件まで |
 | POST | `/v1/public/removal-requests` | 誰でも | P2 | 追加。写真の削除・公開停止の依頼（04 §3.21）。IP ごとに 1 分 5 件まで |
 | POST | `/v1/public/participation-requests` | 誰でも | P2 | 追加。参加・API キーの申し込み（04 §3.20）。IP ごとに 1 分 5 件まで |
@@ -405,14 +406,34 @@ Claude や ChatGPT のアプリは、MCP の認可仕様（OAuth 2.1）に沿っ
 - 承認画面は `frame-ancestors 'none'` で他サイトに埋め込ませない。承認は監査ログに `oauth_granted`（キーの先頭8文字とクライアント名）で残す
 - テーブル: `oauth_clients`（登録したクライアント）、`oauth_codes`（認可コードのハッシュ）、`oauth_tokens`（トークンのハッシュ・期限・取り消し・同じ接続をまとめる `grant_id`）
 
-## 7. x402 V2（Stretch）
+## 7. x402 V2（2026-10-04 実装）
 
-x402 は残高への入金にだけ使い、タスクごとのエスクローとは分ける（`architecture.md` 6 節）。
+当初は残高への入金（`POST /v1/balance/topup`）にだけ使う予定だった。2026-10-04 に、依頼そのものを x402 で払う窓口へ変えた（01 §4.19）。入金だけだと、エージェントは結局 API キーを手に入れる必要があり、登録なしで使えるという利点が消えるため。支払いとエスクローを分ける決まり（`architecture.md` 6 節）は守る。支払いは TOPUP として台帳に入り、エスクローへの入金は従来の FUND_TASK が別の取引で行う。
 
-- `POST /v1/balance/topup`（追加）: 支払いがなければ 402 と `PAYMENT-REQUIRED` ヘッダーを返す。クライアントが `PAYMENT-SIGNATURE` を付けて再送したら検証して決済し、`PAYMENT-RESPONSE` を返して `requester_ledger` に TOPUP を記帳する
-- スキームは `exact`、ネットワークは CAIP-2 の `solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1`（Devnet）
-- サーバーは `@x402/core`・`@x402/svm` を使う。V1 の `X-PAYMENT` ヘッダーは実装しない（REQ-P-007）
-- 実装前に `https://solana.com/docs/payments/agentic-payments/x402` で最新の仕様を確認する
+`POST /v1/x402/verifications`
+
+- 本文: `POST /v1/verifications` から `principal_ref` を除いたもの（`X402CreateVerificationRequestSchema`）
+- 支払いなし: 402。本文とヘッダー `PAYMENT-REQUIRED`（base64）に同じ `PaymentRequired` を入れる。`accepts` は次の 1 つ
+
+```json
+{
+  "scheme": "exact",
+  "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+  "amount": "500000",
+  "asset": "<BOUNTY_MINT>",
+  "payTo": "<運営者の公開鍵>",
+  "maxTimeoutSeconds": 60,
+  "extra": { "feePayer": "<運営者の公開鍵>" }
+}
+```
+
+- 支払いあり: クライアントは `PAYMENT-SIGNATURE` に `PaymentPayload`（`payload.transaction` は部分署名した取引の base64）を入れて同じ本文を送り直す
+  - 成功: 201。ヘッダー `PAYMENT-RESPONSE`（`success: true`、`transaction` は取引の署名、`network`、`payer`）。本文は作成のレスポンスに `api_key` と `payment`（`signature`・`explorer_url`・`network`・`payer`・`amount`）を足したもの（`X402CreateVerificationResponseSchema`）
+  - 同じ支払いの再送: 200。同じ verification_id、`api_key: null`
+  - 検証や送信の失敗: 402。`PAYMENT-REQUIRED` と `PAYMENT-RESPONSE`（`success: false`、`errorReason`）。`errorReason` は `invalid_payment_requirements`、`invalid_exact_svm_payload_*`（instructions・compute_price・fee_payer・mint・recipient_mismatch・amount_mismatch・memo）、`insufficient_funds`（送金元の口座が無い）、`invalid_transaction_state`（送信の失敗）など。ヘッダーが読めないときは 400 `invalid_payload`
+  - 依頼の中身の誤り: 払う前に通常のエラー形式（1.5 節）で返す
+- ヘッダー名は x402 v2 の HTTP transport に従う。V1 の `X-PAYMENT` は実装しない（REQ-P-007）
+- 公式の `@x402/svm` は使わず、検証と送信は `packages/solana/src/x402.ts` に自前で書いた。web3.js v1 と Anchor を使う既存の決済コードに合わせるため。検証項目は `scheme_exact_svm.md`（coinbase/x402 の main、2026-10-04 時点）の MUST に合わせてある
 
 ## 8. エラーコード一覧
 
@@ -436,6 +457,8 @@ x402 は残高への入金にだけ使い、タスクごとのエスクローと
 | `RATE_LIMITED` | 429 | true | 全体 |
 | `IDEMPOTENCY_KEY_CONFLICT` | 409 | false | 作成・提出 |
 | `IDEMPOTENCY_IN_PROGRESS` | 409 | true | 作成・提出 |
+| `PAYMENT_IN_PROGRESS` | 409 | true | x402（同じ支払いを送信中） |
+| `PAYMENT_ALREADY_USED` | 409 | false | x402（その支払いは別の依頼に使われた） |
 | `VERIFICATION_NOT_FOUND` | 404 | false | requester・worker |
 | `TASK_NOT_CANCELLABLE` | 409 | 状況による | キャンセル |
 | `EVIDENCE_ACCESS_REVOKED` | 403 | false | 証拠の取得 |

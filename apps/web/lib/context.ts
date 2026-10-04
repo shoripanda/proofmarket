@@ -3,10 +3,24 @@ import { join } from "node:path";
 import { type BBox, parseBBox } from "@proofmarket/core";
 import { createDb, type Db } from "@proofmarket/db";
 import { openPgliteDb } from "@proofmarket/db/testing";
-import { createSettlementAdapter, type SettlementAdapter } from "@proofmarket/solana";
+import {
+  createOfflineX402Facilitator,
+  createSettlementAdapter,
+  createX402Facilitator,
+  type SettlementAdapter,
+  type X402Facilitator,
+} from "@proofmarket/solana";
 import bs58 from "bs58";
 import { createClaudeReviewer } from "./adapters/claude-reviewer";
-import { assertDevAllowed, devChain, devIdentity, localStorage } from "./adapters/dev";
+import {
+  assertDevAllowed,
+  DEVNET_GENESIS,
+  DEVNET_USDC,
+  devChain,
+  devIdentity,
+  devX402Seed,
+  localStorage,
+} from "./adapters/dev";
 import { createPrivyIdentity } from "./adapters/privy";
 import { createSupabaseStorage } from "./adapters/supabase-storage";
 import { createWebPushSender } from "./adapters/web-push";
@@ -22,6 +36,8 @@ export interface AppContext {
   storage: EvidenceStorage;
   /** Lazy: only chain jobs need it, and it validates the RPC/config on first use (06 §5.2). */
   settlement: () => SettlementAdapter;
+  /** Lazy like settlement: verifies and submits x402 payments with the operator key as fee payer (01 §4.19). */
+  x402: () => X402Facilitator;
   /** Null when VAPID keys are not configured: push is simply unavailable. */
   push: PushSender | null;
   /** Null when ANTHROPIC_API_KEY is not set: vision_consistency is then not_run (01 §4.16). */
@@ -71,6 +87,15 @@ function buildContext(): AppContext {
       identity: devIdentity,
       storage: localStorage(join(DEV_DATA_DIR, "storage"), e.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"),
       settlement: () => chain,
+      x402: once(() =>
+        createOfflineX402Facilitator({
+          appEnv: e.APP_ENV,
+          // A fixed, publicly known dev key: the offline facilitator never sends anything.
+          operatorSeed: devX402Seed(),
+          bountyMint: DEVNET_USDC,
+          genesisHash: DEVNET_GENESIS,
+        }),
+      ),
       push: pushFromEnv(e),
       reviewer: reviewerFromEnv(),
     };
@@ -94,6 +119,14 @@ function buildContext(): AppContext {
         bountyMint: e.BOUNTY_MINT,
         operatorSecretKey: bs58.decode(e.OPERATOR_SECRET_KEY),
         verifierSecretKey: bs58.decode(e.VERIFIER_SECRET_KEY),
+      }),
+    ),
+    x402: once(() =>
+      createX402Facilitator({
+        rpcUrl: e.SOLANA_RPC_URL,
+        expectedGenesisHash: e.SOLANA_EXPECTED_GENESIS_HASH,
+        bountyMint: e.BOUNTY_MINT,
+        operatorSecretKey: bs58.decode(e.OPERATOR_SECRET_KEY),
       }),
     ),
     push: pushFromEnv(e),

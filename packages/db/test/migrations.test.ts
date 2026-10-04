@@ -39,11 +39,11 @@ beforeAll(async () => {
 });
 
 describe("migrations", () => {
-  it("create all 34 tables (24 + 3 OAuth, 05 §6.2, + 7 added 2026-10-04, 04 §3.20-25) and seed 4 platform flags", async () => {
+  it("create all 36 tables (24 + 3 OAuth, 05 §6.2, + 7 added 2026-10-04, 04 §3.20-25, + 2 x402, 04 §3.26) and seed 4 platform flags", async () => {
     const t = await db.query<{ n: number }>(
       "select count(*)::int n from information_schema.tables where table_schema='public'",
     );
-    expect(t.rows[0]?.n).toBe(34);
+    expect(t.rows[0]?.n).toBe(36);
     const f = await db.query<{ n: number }>("select count(*)::int n from platform_flags where value");
     expect(f.rows[0]?.n).toBe(4);
   });

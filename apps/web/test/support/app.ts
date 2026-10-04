@@ -4,7 +4,7 @@ import { createTestDb } from "@proofmarket/db/testing";
 import type { AppContext } from "../../lib/context";
 import { route } from "../../lib/http";
 import { createPrincipal, issueApiKey, registerPlace, topUp } from "../../lib/services/admin-service";
-import { FakeChain } from "./chain";
+import { FakeChain, FakeX402 } from "./chain";
 import { FakeIdentity, FakePush, FakeReviewer, FakeStorage } from "./fakes";
 
 export const SHOP = { lat: 35.6595, lng: 139.7005 };
@@ -15,6 +15,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
   const identity = new FakeIdentity();
   const storage = new FakeStorage(() => now);
   const chain = new FakeChain();
+  const x402 = new FakeX402();
   const push = new FakePush();
   const reviewer = new FakeReviewer();
   const app: AppContext = {
@@ -23,6 +24,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
     identity,
     storage,
     settlement: () => chain,
+    x402: () => x402,
     push,
     // Off by default so other tests are unaffected; `t.app.reviewer = t.reviewer` turns it on.
     reviewer: null,
@@ -51,6 +53,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
     identity,
     storage,
     chain,
+    x402,
     push,
     reviewer,
     principalId,

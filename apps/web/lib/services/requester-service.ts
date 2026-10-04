@@ -298,7 +298,7 @@ export async function createVerification(
   return { status: 201, body: createdBody(row) };
 }
 
-function createdBody(row: TaskRow): CreateResult["body"] {
+export function createdBody(row: TaskRow): CreateResult["body"] {
   return {
     verification_id: row.id,
     status: "CREATED",
