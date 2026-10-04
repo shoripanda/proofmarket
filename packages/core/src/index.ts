@@ -8,6 +8,7 @@ export * from "./errors.ts";
 export * from "./evidence/bundle.ts";
 export * from "./ids.ts";
 export * from "./policy/rules.ts";
+export * from "./task/answers.ts";
 export * from "./task/transitions.ts";
 export * from "./verification/checks.ts";
 export * from "./verification/consensus.ts";

@@ -4,7 +4,7 @@ import type { TaskType } from "@proofmarket/core";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button, Card, Notice, remaining, SAFETY_NOTES, Shell, useNow, yen } from "@/components/ui";
-import { answerJa, TASK_TYPE_JA } from "@/lib/answers";
+import { type AnswerSchemaView, answerFormatJa, TASK_TYPE_JA } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 
 interface Task {
@@ -12,7 +12,8 @@ interface Task {
   type: string;
   question: string;
   answer_values: string[];
-  location: { lat: number; lng: number; radius_m: number };
+  answer_schema: AnswerSchemaView;
+  location: { lat: number; lng: number; radius_m: number } | null;
   reward: { amount: string };
   deadline: string;
   freshness_max_age_seconds: number;
@@ -54,9 +55,7 @@ export default function TaskDetailPage() {
               確かめること・{TASK_TYPE_JA[t.type as TaskType]?.name ?? t.type}
             </p>
             <p className="mt-1 text-xl font-bold leading-snug">{t.question}</p>
-            <p className="mt-3 text-sm text-slate-600">
-              回答の選択肢: {t.answer_values.map((v) => answerJa(v)).join(" / ")}
-            </p>
+            <p className="mt-3 text-sm text-slate-600">{answerFormatJa(t.answer_schema)}</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
               {TASK_TYPE_JA[t.type as TaskType]?.howTo}
             </p>
@@ -67,21 +66,25 @@ export default function TaskDetailPage() {
               <dd className="text-right text-lg font-bold text-teal-700">{yen(t.reward.amount)}</dd>
               <dt className="text-slate-500">締切まで</dt>
               <dd className="text-right font-medium">{remaining(t.deadline, now)}</dd>
-              <dt className="text-slate-500">撮影場所</dt>
-              <dd className="text-right font-medium">店舗から {t.location.radius_m} m 以内</dd>
+              <dt className="text-slate-500">場所</dt>
+              <dd className="text-right font-medium">
+                {t.location ? `指定地点から ${t.location.radius_m} m 以内` : "どこでも"}
+              </dd>
               <dt className="text-slate-500">撮影の受付時間</dt>
               <dd className="text-right font-medium">
                 「撮影を始める」から {Math.round(t.freshness_max_age_seconds / 60)} 分
               </dd>
             </dl>
-            <a
-              className="mt-4 block rounded-xl bg-slate-100 py-3 text-center text-sm font-medium text-slate-700"
-              href={`https://www.google.com/maps/search/?api=1&query=${t.location.lat},${t.location.lng}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              地図アプリで場所を開く
-            </a>
+            {t.location ? (
+              <a
+                className="mt-4 block rounded-xl bg-slate-100 py-3 text-center text-sm font-medium text-slate-700"
+                href={`https://www.google.com/maps/search/?api=1&query=${t.location.lat},${t.location.lng}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                地図アプリで場所を開く
+              </a>
+            ) : null}
           </Card>
           <Card>
             <h2 className="mb-2 font-bold">撮影の注意</h2>

@@ -58,18 +58,81 @@ export const UPLOAD_STATES = ["PENDING", "FINALIZED", "DISCARDED"] as const;
 export type UploadState = (typeof UPLOAD_STATES)[number];
 
 /**
- * Task types. The MVP type is PLACE_STATUS_VERIFICATION (REQ-T-001); the other two were added 2026-10-04 (01 §4.8)
- * and are only accepted for API keys whose allowed_task_types include them. All are visible from outside the shop.
+ * Task types (01 §4.8, §4.15). The first three are the original shop-front types; the rest were added 2026-10-04
+ * so an agent can ask for any physical-world work it cannot do itself. Each API key accepts only its
+ * allowed_task_types.
  */
-export const TASK_TYPES = ["PLACE_STATUS_VERIFICATION", "QUEUE_LENGTH", "NOTICE_POSTED"] as const;
+export const TASK_TYPES = [
+  // at a place: choice
+  "PLACE_STATUS_VERIFICATION",
+  "QUEUE_LENGTH",
+  "NOTICE_POSTED",
+  "CROWD_LEVEL",
+  "SEAT_AVAILABILITY",
+  "PARKING_AVAILABILITY",
+  "STOCK_CHECK",
+  // at a place: number / text
+  "PRICE_CHECK",
+  "SIGN_TRANSCRIPTION",
+  "SITE_REPORT",
+  // anywhere
+  "DOCUMENT_TRANSCRIPTION",
+  "DOCUMENT_QA",
+  "PRODUCT_INSPECTION",
+  "PHONE_INQUIRY",
+  "MEASUREMENT",
+  "CUSTOM_CHOICE",
+  "CUSTOM_TASK",
+] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
 
-/** Answers each type may use. UNCLEAR is always available so nobody is pushed into guessing. */
-export const TASK_TYPE_ANSWERS = {
-  PLACE_STATUS_VERIFICATION: ["OPEN", "CLOSED", "UNCLEAR"],
-  QUEUE_LENGTH: ["NO_QUEUE", "SHORT_QUEUE", "LONG_QUEUE", "UNCLEAR"],
-  NOTICE_POSTED: ["POSTED", "NOT_POSTED", "UNCLEAR"],
-} as const satisfies Record<TaskType, readonly string[]>;
+/** How a worker answers: pick one of fixed values, enter a number, or write text. */
+export const ANSWER_KINDS = ["enum", "number", "text"] as const;
+export type AnswerKind = (typeof ANSWER_KINDS)[number];
+
+/** required: the request must give a location and the photo is geofenced. optional: location may be omitted. */
+export type LocationRule = "required" | "optional";
+
+export interface TaskTypeSpec {
+  answer: AnswerKind;
+  location: LocationRule;
+  /** enum only. null = the requester defines the choices (CUSTOM_CHOICE). */
+  values?: readonly string[] | null;
+}
+
+/** UNCLEAR is offered on every fixed-choice type so nobody is pushed into guessing. */
+export const TASK_TYPE_SPECS = {
+  PLACE_STATUS_VERIFICATION: { answer: "enum", location: "required", values: ["OPEN", "CLOSED", "UNCLEAR"] },
+  QUEUE_LENGTH: {
+    answer: "enum",
+    location: "required",
+    values: ["NO_QUEUE", "SHORT_QUEUE", "LONG_QUEUE", "UNCLEAR"],
+  },
+  NOTICE_POSTED: { answer: "enum", location: "required", values: ["POSTED", "NOT_POSTED", "UNCLEAR"] },
+  CROWD_LEVEL: { answer: "enum", location: "required", values: ["EMPTY", "MODERATE", "CROWDED", "UNCLEAR"] },
+  SEAT_AVAILABILITY: { answer: "enum", location: "required", values: ["SEATS_AVAILABLE", "FULL", "UNCLEAR"] },
+  PARKING_AVAILABILITY: {
+    answer: "enum",
+    location: "required",
+    values: ["SPACES_AVAILABLE", "FULL", "UNCLEAR"],
+  },
+  STOCK_CHECK: { answer: "enum", location: "required", values: ["IN_STOCK", "OUT_OF_STOCK", "UNCLEAR"] },
+  PRICE_CHECK: { answer: "number", location: "required" },
+  SIGN_TRANSCRIPTION: { answer: "text", location: "required" },
+  SITE_REPORT: { answer: "text", location: "required" },
+  DOCUMENT_TRANSCRIPTION: { answer: "text", location: "optional" },
+  DOCUMENT_QA: { answer: "text", location: "optional" },
+  PRODUCT_INSPECTION: { answer: "text", location: "optional" },
+  PHONE_INQUIRY: { answer: "text", location: "optional" },
+  MEASUREMENT: { answer: "number", location: "optional" },
+  CUSTOM_CHOICE: { answer: "enum", location: "optional", values: null },
+  CUSTOM_TASK: { answer: "text", location: "optional" },
+} as const satisfies Record<TaskType, TaskTypeSpec>;
+
+/** Fixed choices per enum type (CUSTOM_CHOICE has none: the requester names them). */
+export const TASK_TYPE_ANSWERS: Partial<Record<TaskType, readonly string[]>> = Object.fromEntries(
+  Object.entries(TASK_TYPE_SPECS).flatMap(([t, s]) => ("values" in s && s.values ? [[t, s.values]] : [])),
+);
 
 export const ANSWER_VALUES = [
   "OPEN",
@@ -79,8 +142,17 @@ export const ANSWER_VALUES = [
   "LONG_QUEUE",
   "POSTED",
   "NOT_POSTED",
+  "EMPTY",
+  "MODERATE",
+  "CROWDED",
+  "SEATS_AVAILABLE",
+  "SPACES_AVAILABLE",
+  "FULL",
+  "IN_STOCK",
+  "OUT_OF_STOCK",
   "UNCLEAR",
 ] as const;
+/** Fixed answer codes. Answers in general are strings: numbers and text are stored as written. */
 export type AnswerValue = (typeof ANSWER_VALUES)[number];
 
 /** Evidence checks (07 §3, 04 §3.12). Order of CHECK_ORDER is the execution order after pre-checks. */

@@ -1,8 +1,9 @@
 // S-03 開発者向け — connect over MCP or REST, the request fields, and how to read the result.
-import { LIMITS, TASK_TYPE_ANSWERS, WEBHOOK_EVENTS } from "@proofmarket/core";
+import { LIMITS, TASK_TYPE_ANSWERS, type TaskType, WEBHOOK_EVENTS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Code, PageHero, Section } from "@/components/site";
+import { TASK_TYPE_JA } from "@/lib/answers";
 
 export const metadata: Metadata = { title: "開発者向け | ProofMarket" };
 export const dynamic = "force-dynamic";
@@ -26,21 +27,26 @@ const TOOLS = [
 const FIELDS: [string, string][] = [
   [
     "question",
-    `確かめたいこと。${LIMITS.question.maxChars}字まで。人の尾行や私有地への立ち入りが要る質問は受け付けない`,
+    `確かめたいこと・してほしい作業。${LIMITS.question.maxChars}字まで。本なら書名・ページ・箇所まで書く`,
   ],
   [
     "type",
-    "PLACE_STATUS_VERIFICATION（営業しているか）、QUEUE_LENGTH（店の外の行列）、NOTICE_POSTED（店頭の掲示）。後ろの2つは API キーごとに許可したときだけ使える",
+    (Object.keys(TASK_TYPE_JA) as TaskType[]).map((t) => `${t}（${TASK_TYPE_JA[t].name}）`).join("、") +
+      "。API キーごとに使える種類を絞れる",
   ],
   [
-    "answer_schema.values",
-    `答えの選択肢を2個以上。type ごとに ${Object.entries(TASK_TYPE_ANSWERS)
-      .map(([t, v]) => `${t}: ${v.join("・")}`)
-      .join("、")} から選ぶ`,
+    "answer_schema",
+    `答えの形。type ごとに決まっている。選択式は { "type": "enum", "values": [...] }（${Object.entries(
+      TASK_TYPE_ANSWERS,
+    )
+      .map(([t, v]) => `${t}: ${v?.join("・")}`)
+      .join(
+        "、",
+      )} から2個以上。CUSTOM_CHOICE は自分で${LIMITS.answer.maxChoices}個まで決める）。数値は { "type": "number", "unit": "円" }（PRICE_CHECK・MEASUREMENT）。文章は { "type": "text", "max_chars": 2000 }（ほかの種類）。文章の答えは結果の answers に全員分が入り、answer にはその SHA-256 が入る`,
   ],
   [
     "location",
-    `緯度・経度と半径（${LIMITS.radiusM.min}〜${LIMITS.radiusM.max}m）。登録済みの店舗の${LIMITS.placeMatchRadiusM}m以内であること`,
+    `緯度・経度と半径（${LIMITS.radiusM.min}〜${LIMITS.radiusM.max}m）。現地で行う種類では必須。本・電話・実物の確認など、場所を問わない種類では省ける`,
   ],
   [
     "deadline",

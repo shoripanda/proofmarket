@@ -3,6 +3,7 @@ import "server-only";
 
 import {
   ApiError,
+  answerSchemaOf,
   CLAIMABLE_STATUSES,
   eligible,
   fromMicro,
@@ -24,6 +25,7 @@ import { appendAudit } from "./audit";
 import { randomToken, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
 import { applyTaskEvent, lockTask, type TaskRow, taskCounts } from "./task-engine";
+import { taskLocation } from "./task-location";
 
 export const SAFETY_NOTES_VERSION = LEGAL_VERSIONS.safety_rules;
 export const CONSENT_DOCS = ["worker_terms", "safety_rules", "privacy_notice"] as const;
@@ -195,19 +197,27 @@ const taskGate = (t: TaskRow) => ({
 
 // ---------- tasks ----------
 
-function workerTaskView(t: TaskRow, distanceM: number, slots: number) {
+function workerTaskView(t: TaskRow, distanceM: number | null, slots: number) {
+  const location = taskLocation(t);
   return {
     verification_id: t.id,
     type: t.type,
     question: t.question,
     answer_values: t.answerValues,
-    location: { lat: t.targetLat, lng: t.targetLng, radius_m: t.radiusM },
-    distance_m: Math.round(distanceM),
+    answer_schema: answerSchemaOf(
+      t.answerKind,
+      t.answerValues,
+      t.answerSpec as Record<string, unknown> | null,
+    ),
+    location,
+    distance_m: distanceM === null ? null : Math.round(distanceM),
     reward: { asset: "USDC" as const, amount: fromMicro(toMicro(t.bountyAmount)) },
     deadline: t.deadline.toISOString(),
     freshness_max_age_seconds: t.freshnessMaxAgeS,
     open_slots: slots,
-    requirements: ["photo", "location", "task_nonce"] as const,
+    requirements: location
+      ? (["photo", "location", "task_nonce"] as const)
+      : (["photo", "task_nonce"] as const),
     safety_notes_version: SAFETY_NOTES_VERSION,
   };
 }
@@ -238,13 +248,15 @@ export async function listTasks(
   for (const t of rows) {
     if (claimed.has(t.id)) continue;
     if (!eligible(tier, taskGate(t))) continue;
-    const d = haversineM(q, { lat: t.targetLat, lng: t.targetLng });
-    if (d > q.radius_km * 1000) continue;
+    // Work that can be done anywhere is listed for everyone, after the nearby tasks (01 §4.15).
+    const loc = taskLocation(t);
+    const d = loc ? haversineM(q, loc) : null;
+    if (d !== null && d > q.radius_km * 1000) continue;
     const c = await taskCounts(app.db, t.id);
     const slots = openSlots({ requiredWitnesses: t.requiredWitnesses, ...c });
     if (slots > 0) out.push(workerTaskView(t, d, slots));
   }
-  out.sort((a, b) => a.distance_m - b.distance_m);
+  out.sort((a, b) => (a.distance_m ?? Number.MAX_SAFE_INTEGER) - (b.distance_m ?? Number.MAX_SAFE_INTEGER));
   return { tasks: out };
 }
 
@@ -256,7 +268,7 @@ export async function taskDetail(app: AppContext, verificationId: string) {
   if (!t || !(CLAIMABLE_STATUSES as readonly string[]).includes(t.status))
     throw new ApiError("VERIFICATION_NOT_FOUND");
   const c = await taskCounts(app.db, t.id);
-  return workerTaskView(t, 0, openSlots({ requiredWitnesses: t.requiredWitnesses, ...c }));
+  return workerTaskView(t, null, openSlots({ requiredWitnesses: t.requiredWitnesses, ...c }));
 }
 
 // ---------- claims / challenges ----------
@@ -422,7 +434,11 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
   const [task] = await app.db
     .select({
       type: schema.verificationRequests.type,
+      question: schema.verificationRequests.question,
       answerValues: schema.verificationRequests.answerValues,
+      answerKind: schema.verificationRequests.answerKind,
+      answerSpec: schema.verificationRequests.answerSpec,
+      targetLat: schema.verificationRequests.targetLat,
     })
     .from(schema.verificationRequests)
     .where(eq(schema.verificationRequests.id, claim.verificationId));
@@ -444,6 +460,13 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
     })),
     task_result: result && accepted ? { status: result.outcome, answer: result.finalAnswer } : null,
     type: task?.type ?? "PLACE_STATUS_VERIFICATION",
+    question: task?.question ?? "",
     answer_values: task?.answerValues ?? [],
+    answer_schema: answerSchemaOf(
+      task?.answerKind ?? "enum",
+      task?.answerValues ?? [],
+      (task?.answerSpec as Record<string, unknown> | null) ?? null,
+    ),
+    location_required: task?.targetLat != null,
   };
 }

@@ -172,12 +172,16 @@ export const verificationRequests = pgTable(
     type: text("type").notNull(),
     question: text("question").notNull(),
     answerValues: text("answer_values").array().notNull(),
-    targetLat: doublePrecision("target_lat").notNull(),
-    targetLng: doublePrecision("target_lng").notNull(),
-    placeId: text("place_id")
-      .notNull()
-      .references(() => places.id),
-    radiusM: integer("radius_m").notNull(),
+    /** enum | number | text (01 §4.15). answer_values is empty unless enum. */
+    answerKind: text("answer_kind").notNull().default("enum"),
+    /** number: { unit, min, max }; text: { max_chars }. Null for enum. */
+    answerSpec: jsonb("answer_spec"),
+    /** All three null for work that can be done anywhere (01 §4.15). */
+    targetLat: doublePrecision("target_lat"),
+    targetLng: doublePrecision("target_lng"),
+    /** Registered place the location falls on, if any. No longer required (01 §4.15). */
+    placeId: text("place_id").references(() => places.id),
+    radiusM: integer("radius_m"),
     deadline: tsz("deadline").notNull(),
     freshnessMaxAgeS: integer("freshness_max_age_s").notNull(),
     evidencePhotoRequired: boolean("evidence_photo_required").notNull().default(true),
@@ -212,9 +216,14 @@ export const verificationRequests = pgTable(
   (t) => [
     check("vr_min_tier_chk", sql`min_worker_tier is null or min_worker_tier in ('standard','trusted')`),
     check("vr_type_chk", oneOf("type", TASK_TYPES)),
-    check("vr_question_len_chk", sql`char_length(question) <= 280`),
+    check("vr_question_len_chk", sql`char_length(question) <= 1000`),
+    check("vr_answer_kind_chk", sql`answer_kind in ('enum','number','text')`),
+    check(
+      "vr_location_chk",
+      sql`(target_lat is null) = (target_lng is null) and (target_lat is null) = (radius_m is null)`,
+    ),
     check("vr_radius_chk", sql`radius_m between 25 and 500`),
-    check("vr_freshness_chk", sql`freshness_max_age_s between 60 and 900`),
+    check("vr_freshness_chk", sql`freshness_max_age_s between 60 and 3600`),
     check("vr_witnesses_chk", sql`required_witnesses between 1 and 5`),
     check("vr_quorum_chk", sql`quorum between 1 and required_witnesses`),
     check("vr_bounty_chk", sql`bounty_amount > 0`),

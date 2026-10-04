@@ -2,9 +2,12 @@
 // Values that operators may tune per environment are read from env in apps/web, with these as defaults.
 
 export const LIMITS = {
-  question: { maxChars: 280 },
+  /** 1000 so a request can name a book, page and passage (01 §4.15). */
+  question: { maxChars: 1000 },
+  answer: { maxTextChars: 4000, maxChoiceChars: 40, maxChoices: 6 },
   radiusM: { min: 25, max: 500 },
-  freshnessMaxAgeS: { min: 60, max: 900, default: 300 },
+  /** Up to an hour: transcribing or a phone call takes longer than a shop-front photo (01 §4.15). */
+  freshnessMaxAgeS: { min: 60, max: 3600, default: 300 },
   deadlineFromNow: { minMinutes: 10, maxHours: 24 },
   witnesses: { max: 5 }, // also bounded by MAX_WITNESSES env (1 until PR-14)
   claimTtlS: 1800,

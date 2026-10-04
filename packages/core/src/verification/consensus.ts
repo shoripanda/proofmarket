@@ -26,6 +26,18 @@ export function decide(valid: readonly { answer: string }[], quorum: number): Co
   return { kind: "REJECTED", reason: "NO_CONSENSUS", answerCounts };
 }
 
+/**
+ * Text answers (01 §4.15): free text rarely matches word for word, so there is no vote. Once `quorum` valid
+ * submissions exist the task is VERIFIED; `answer` is the earliest one and every text is returned to the requester.
+ * Callers pass submissions oldest first. answerCounts stays empty so no text leaks into counts.
+ */
+export function decideText(valid: readonly { answer: string }[], quorum: number): ConsensusOutcome {
+  const [first] = valid;
+  if (valid.length < quorum || first === undefined)
+    return { kind: "EXPIRED", reason: "INSUFFICIENT_WITNESSES", answerCounts: {} };
+  return { kind: "VERIFIED", answer: first.answer, answerCounts: {} };
+}
+
 /** consensus_ratio = top count / valid count, rounded to 4 decimals. API-only; excluded from result_hash (07 §5.2). */
 export function consensusRatio(answerCounts: Readonly<Record<string, number>>): number | null {
   const counts = Object.values(answerCounts);

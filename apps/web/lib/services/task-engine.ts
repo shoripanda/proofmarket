@@ -108,6 +108,8 @@ export async function applyTaskEvent(
 ): Promise<{ rule: TransitionRule; next: TaskStatus; domainEffects: DomainEffect[] }> {
   const now = app.now();
   const counts = await taskCounts(tx, task.id);
+  // Text answers are not voted on (01 §4.15): every valid one counts toward the same result.
+  if (task.answerKind === "text") counts.answerCounts = counts.validCount ? { text: counts.validCount } : {};
   const ctx: TransitionContext = {
     now,
     deadline: task.deadline,

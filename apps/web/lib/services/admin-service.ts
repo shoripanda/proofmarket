@@ -34,7 +34,7 @@ export async function issueApiKey(
     maxTaskAmount: string;
     dailySpendLimit: string;
     rateLimitPerMin?: number;
-    /** Defaults to the DB default (PLACE_STATUS_VERIFICATION only, 01 §4.8). */
+    /** Defaults to every type (01 §4.15). */
     allowedTaskTypes?: TaskType[];
     operator: string;
   },
@@ -54,7 +54,7 @@ export async function issueApiKey(
     maxTaskAmount: o.maxTaskAmount,
     dailySpendLimit: o.dailySpendLimit,
     rateLimitPerMin: o.rateLimitPerMin ?? 30,
-    ...(o.allowedTaskTypes ? { allowedTaskTypes: o.allowedTaskTypes } : {}),
+    allowedTaskTypes: o.allowedTaskTypes ?? [...TASK_TYPES],
   });
   await appendAudit(db, {
     verificationId: null,

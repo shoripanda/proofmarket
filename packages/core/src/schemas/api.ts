@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import {
-  ANSWER_VALUES,
+  ANSWER_KINDS,
   API_SETTLEMENT_STATUSES,
   CHECK_REASON_CODES,
   CHECK_STATUSES,
@@ -45,7 +45,37 @@ const Amount = z
 const Sha256Hex = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 const SolanaSignature = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{64,88}$/);
 
-export const AnswerValueSchema = z.enum(ANSWER_VALUES);
+/** An answer as stored: a fixed code, a requester-defined choice, a number or text (01 §4.15). */
+export const AnswerValueSchema = z.string().min(1).max(LIMITS.answer.maxTextChars);
+const ChoiceValue = z.string().trim().min(1).max(LIMITS.answer.maxChoiceChars);
+
+/** How the worker answers. enum values must fit the type (TASK_TYPE_SPECS); checked in validateAnswerSchema. */
+export const AnswerSchemaSpec = z.discriminatedUnion("type", [
+  z
+    .object({ type: z.literal("enum"), values: z.array(ChoiceValue).min(2).max(LIMITS.answer.maxChoices) })
+    .strict(),
+  z
+    .object({
+      type: z.literal("number"),
+      unit: z.string().trim().min(1).max(16).optional(),
+      min: z.number().optional(),
+      max: z.number().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("text"),
+      max_chars: z.number().int().min(1).max(LIMITS.answer.maxTextChars).optional(),
+    })
+    .strict(),
+]);
+export type AnswerSchemaSpec = z.infer<typeof AnswerSchemaSpec>;
+export const AnswerKindSchema = z.enum(ANSWER_KINDS);
+const LocationSchema = z.object({
+  lat: Lat,
+  lng: Lng,
+  radius_m: z.number().int().min(LIMITS.radiusM.min).max(LIMITS.radiusM.max),
+});
 export const IdempotencyKeyHeader = z.string().min(1).max(255);
 
 // ---------- errors ----------
@@ -105,16 +135,10 @@ export const CreateVerificationRequestSchema = z
   .object({
     type: z.enum(TASK_TYPES),
     question: z.string().min(1).max(LIMITS.question.maxChars),
-    answer_schema: z.object({
-      type: z.literal("enum"),
-      // Must be a subset of TASK_TYPE_ANSWERS[type]; checked in the service (05 §2.1 row 7).
-      values: z.array(AnswerValueSchema).min(2).max(4),
-    }),
-    location: z.object({
-      lat: Lat,
-      lng: Lng,
-      radius_m: z.number().int().min(LIMITS.radiusM.min).max(LIMITS.radiusM.max),
-    }),
+    // Must match the type's answer kind and, for fixed-choice types, its values (validateAnswerSchema).
+    answer_schema: AnswerSchemaSpec,
+    /** Required for at-a-place types; may be omitted for work that can be done anywhere (TASK_TYPE_SPECS). */
+    location: LocationSchema.optional(),
     deadline: IsoDateTime,
     freshness: z
       .object({
@@ -172,8 +196,10 @@ export const VerificationResultSchema = z.object({
   status: z.enum(OUTCOMES),
   reason: z.enum(OUTCOME_REASONS).nullable(),
   answer: AnswerValueSchema.nullable(),
+  /** Text answers: every accepted answer, oldest first. `answer` is the first of them. */
+  answers: z.array(AnswerValueSchema).optional(),
   witnesses: z.object({ valid: z.number().int(), required: z.number().int(), quorum: z.number().int() }),
-  answer_counts: z.record(AnswerValueSchema, z.number().int()),
+  answer_counts: z.record(z.string(), z.number().int()),
   consensus_ratio: z.number().min(0).max(1).nullable(),
   checks: z.object({
     geofence: CheckStatusSchema,
@@ -210,8 +236,8 @@ export const GetVerificationResponseSchema = z.object({
   type: z.enum(TASK_TYPES),
   status: z.enum(TASK_STATUSES),
   question: z.string(),
-  answer_schema: CreateVerificationRequestSchema.shape.answer_schema,
-  location: CreateVerificationRequestSchema.shape.location,
+  answer_schema: AnswerSchemaSpec,
+  location: LocationSchema.nullable(),
   deadline: IsoDateTime,
   /** Set on a task created by a dispute: the original task (01 §4.12). */
   recheck_of: VerificationIdSchema.nullable(),
@@ -317,8 +343,10 @@ export const WorkerTaskSchema = z.object({
   type: z.enum(TASK_TYPES),
   question: z.string(),
   answer_values: z.array(AnswerValueSchema),
-  location: CreateVerificationRequestSchema.shape.location,
-  distance_m: z.number().int(),
+  answer_schema: AnswerSchemaSpec,
+  /** null: the work can be done anywhere. */
+  location: LocationSchema.nullable(),
+  distance_m: z.number().int().nullable(),
   reward: z.object({ asset: z.literal("USDC"), amount: Amount }),
   deadline: IsoDateTime,
   freshness_max_age_seconds: z.number().int(),
@@ -364,9 +392,10 @@ export const SubmitEvidenceRequestSchema = z
     answer: AnswerValueSchema,
     capture: z.object({
       client_timestamp: IsoDateTime,
-      lat: Lat,
-      lng: Lng,
-      accuracy_m: z.number().min(0).max(10_000),
+      // Required when the task has a location; optional for work that can be done anywhere.
+      lat: Lat.optional(),
+      lng: Lng.optional(),
+      accuracy_m: z.number().min(0).max(10_000).optional(),
     }),
     challenge: z.object({ nonce: z.string().min(1).max(128) }),
     evidence: z
@@ -399,7 +428,10 @@ export const ClaimDetailResponseSchema = z.object({
   submissions: z.array(SubmitEvidenceResponseSchema.omit({ claim_state: true, attempts_remaining: true })),
   task_result: z.object({ status: z.enum(OUTCOMES), answer: AnswerValueSchema.nullable() }).nullable(),
   type: z.enum(TASK_TYPES),
+  question: z.string(),
   answer_values: z.array(AnswerValueSchema),
+  answer_schema: AnswerSchemaSpec,
+  location_required: z.boolean(),
 });
 
 export const PayoutsResponseSchema = z.object({

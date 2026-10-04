@@ -110,15 +110,23 @@ export async function runNotifyWorkers(app: AppContext, verificationId: string):
     .from(schema.verificationRequests)
     .where(eq(schema.verificationRequests.id, verificationId));
   if (!task || task.status !== "OPEN" || task.deadline <= app.now()) return { sent: 0 };
-  const area: ParticipationArea = areaOf({ lat: task.targetLat, lng: task.targetLng });
+  // Work that can be done anywhere (01 §4.15) goes to every subscribed worker regardless of area.
+  const area: ParticipationArea | null =
+    task.targetLat !== null && task.targetLng !== null
+      ? areaOf({ lat: task.targetLat, lng: task.targetLng })
+      : null;
   const subs = await app.db
     .select({ s: schema.pushSubscriptions })
     .from(schema.pushSubscriptions)
     .innerJoin(schema.workers, eq(schema.workers.id, schema.pushSubscriptions.workerId))
-    .where(and(eq(schema.workers.status, "active"), arrayContains(schema.pushSubscriptions.areas, [area])));
+    .where(
+      area
+        ? and(eq(schema.workers.status, "active"), arrayContains(schema.pushSubscriptions.areas, [area]))
+        : eq(schema.workers.status, "active"),
+    );
   const payload = JSON.stringify({
-    title: "近くで新しい確認の依頼",
-    body: `${AREA_LABELS[area]}・1人 ${Number(task.bountyAmount)} USDC・${jst(task.deadline)} まで`,
+    title: area ? "近くで新しい依頼" : "新しい依頼（場所を問わない作業）",
+    body: `${area ? AREA_LABELS[area] : "どこでも"}・1人 ${Number(task.bountyAmount)} USDC・${jst(task.deadline)} まで`,
     url: `/tasks/${task.id}`,
     tag: task.id,
   });
