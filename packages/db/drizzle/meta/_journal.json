@@ -127,6 +127,13 @@
       "when": 1791088116189,
       "tag": "0017_task_types_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791092421976,
+      "tag": "0018_external_review_flag",
+      "breakpoints": true
     }
   ]
 }

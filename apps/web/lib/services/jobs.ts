@@ -3,7 +3,7 @@ import "server-only";
 // transaction stays open while waiting for chain confirmation; expired leases are reclaimed.
 
 import { LIMITS, OUTBOX_RETRY, type OutboxJobKind, type WebhookEvent } from "@proofmarket/core";
-import { schema } from "@proofmarket/db";
+import { type Db, schema } from "@proofmarket/db";
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
@@ -118,6 +118,22 @@ export async function kick(app: AppContext, dedupeKey: string): Promise<void> {
 }
 
 const DEADLINE_STATUSES = ["FUNDED", "OPEN", "CLAIMED", "SUBMITTED"];
+/** How long a deadline waits for a pending outside review (01 §4.17). */
+const REVIEW_GRACE_MS = 30 * 60_000;
+
+/** Time (ms) since the oldest submission of the task started waiting for review; -Infinity if none waits. */
+async function pendingReviewSince(db: Db, verificationId: string): Promise<number> {
+  const [row] = await db
+    .select({ at: sql<Date | null>`min(${schema.witnessSubmissions.serverReceivedAt})` })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.verificationId, verificationId),
+        eq(schema.witnessSubmissions.state, "CHECKING"),
+      ),
+    );
+  return row?.at ? new Date(row.at).getTime() : Number.NEGATIVE_INFINITY;
+}
 
 /** /api/internal/tick: expire what is due, then drain up to maxJobs jobs. */
 export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: number; jobsRun: number }> {
@@ -133,6 +149,8 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
       ),
     );
   for (const { id } of due) {
+    // 01 §4.17: a submission waiting for the outside AI review holds the deadline for up to REVIEW_GRACE_MS.
+    if (now.getTime() - (await pendingReviewSince(app.db, id)) < REVIEW_GRACE_MS) continue;
     await app.db.transaction(async (tx) => {
       const t = await lockTask(tx, id);
       if (DEADLINE_STATUSES.includes(t.status) && t.deadline <= now) await handleDeadline(tx, app, t);
@@ -142,7 +160,14 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
   await app.db
     .update(schema.claims)
     .set({ state: "EXPIRED", closedAt: now, closeReason: "CLAIM_TTL" })
-    .where(and(eq(schema.claims.state, "ACTIVE"), lte(schema.claims.expiresAt, now)));
+    .where(
+      and(
+        eq(schema.claims.state, "ACTIVE"),
+        lte(schema.claims.expiresAt, now),
+        // a claim whose submission is waiting for review is decided by the review, not by its TTL
+        sql`not exists (select 1 from witness_submissions ws where ws.claim_id = ${schema.claims.id} and ws.state = 'CHECKING')`,
+      ),
+    );
   await app.db
     .update(schema.challenges)
     .set({ state: "EXPIRED" })

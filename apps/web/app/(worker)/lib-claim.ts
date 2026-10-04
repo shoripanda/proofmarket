@@ -8,7 +8,7 @@ export interface ClaimDetail {
   attempts_remaining: number;
   submissions: {
     submission_id: string;
-    state: "VALID" | "INVALID";
+    state: "VALID" | "INVALID" | "CHECKING";
     reason_code: string | null;
     reason_message_ja: string | null;
   }[];

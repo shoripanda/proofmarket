@@ -84,6 +84,16 @@ export const ERROR_CATALOG = {
   },
   TASK_EXPIRED: { http: 410, retryable: false, message: "The task deadline has passed." },
   CLAIM_NOT_ACTIVE: { http: 409, retryable: false, message: "The claim is not active." },
+  REVIEW_PENDING: {
+    http: 409,
+    retryable: true,
+    message: "The previous submission is still being reviewed. Wait for its result.",
+  },
+  SUBMISSION_NOT_PENDING: {
+    http: 409,
+    retryable: false,
+    message: "The submission is not waiting for review.",
+  },
   NONCE_INVALID: { http: 400, retryable: false, message: "The challenge nonce is invalid." },
   NONCE_USED: { http: 409, retryable: false, message: "The challenge nonce has already been used." },
   NONCE_EXPIRED: {
