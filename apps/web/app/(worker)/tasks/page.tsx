@@ -1,17 +1,20 @@
 "use client";
+import type { TaskType } from "@proofmarket/core";
 // W-03 タスク一覧 — 現在地（小数3桁に丸める）から近い順。開いている間は30秒ごとに取り直し、新着に印を付ける。
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PushOptIn } from "@/components/push-opt-in";
 import { Button, Card, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
+import { TASK_TYPE_JA } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 
 const REFRESH_MS = 30_000;
 
 interface Task {
   verification_id: string;
+  type: string;
   question: string;
-  distance_m: number;
+  distance_m: number | null;
   reward: { amount: string };
   deadline: string;
   open_slots: number;
@@ -101,12 +104,20 @@ export default function TasksPage() {
                 ) : null}
               </span>
               <span className="text-sm text-slate-500">
-                {t.distance_m < 1000 ? `${t.distance_m} m` : `${(t.distance_m / 1000).toFixed(1)} km`}
+                {t.distance_m === null
+                  ? "どこでも"
+                  : t.distance_m < 1000
+                    ? `${t.distance_m} m`
+                    : `${(t.distance_m / 1000).toFixed(1)} km`}
               </span>
             </div>
-            <p className="mt-2 font-medium">{t.question}</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              {TASK_TYPE_JA[t.type as TaskType]?.name ?? t.type}
+            </p>
+            <p className="mt-1 line-clamp-3 font-medium">{t.question}</p>
             <p className="mt-2 text-sm text-slate-500">
-              締切まで {remaining(t.deadline, now)}・写真と位置が必要
+              締切まで {remaining(t.deadline, now)}・
+              {t.distance_m === null ? "写真が必要" : "写真と位置が必要"}
             </p>
           </Card>
         </Link>

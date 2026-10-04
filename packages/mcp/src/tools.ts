@@ -1,5 +1,6 @@
 // MCP tool definitions (05 §6, api-contract.md §10). Descriptions are registered verbatim.
 
+import { TASK_TYPE_SPECS } from "@proofmarket/core";
 import {
   AssuranceInputSchema,
   CreateVerificationRequestSchema,
@@ -7,16 +8,33 @@ import {
 } from "@proofmarket/core/schemas/api";
 import { z } from "zod";
 
+const TYPE_GUIDE = Object.entries(TASK_TYPE_SPECS)
+  .map(([t, sp]) => {
+    const values = "values" in sp ? sp.values : null;
+    const ans =
+      sp.answer === "enum"
+        ? `enum ${values ? values.join("/") : "(your own 2-6 choices)"}`
+        : sp.answer === "number"
+          ? 'number (e.g. { "type": "number", "unit": "JPY" })'
+          : "text";
+    return `${t}: ${ans}${sp.location === "optional" ? ", location optional" : ""}`;
+  })
+  .join("; ");
+
 export const REQUEST_TOOL = {
   name: "request_reality_verification",
   title: "Request a real-world verification",
   description:
-    "Ask a real human witness to check a fact about a public physical place (for example, whether a shop is open right now). " +
-    "This is asynchronous: a person must travel to the location, so results typically take 10–60 minutes. " +
+    "Ask a real human to do something in the physical world that an AI cannot: check a place (is a shop open, how long " +
+    "is the queue, are seats or parking free, is an item in stock, what is the price), transcribe a sign, menu, book or " +
+    "paper document, answer a question from a printed source, inspect a physical product, phone someone and report, " +
+    "measure an object, or any other hands-on task. " +
+    "This is asynchronous: a person must do the work, so results typically take 10–60 minutes. " +
     "This tool returns a verification_id immediately; call get_reality_verification to read the result. " +
     "Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED. " +
-    "Types: PLACE_STATUS_VERIFICATION (answers OPEN / CLOSED / UNCLEAR), QUEUE_LENGTH (NO_QUEUE / SHORT_QUEUE = up to about 5 people / LONG_QUEUE = 6 or more / UNCLEAR, people queuing outside), " +
-    "NOTICE_POSTED (POSTED / NOT_POSTED / UNCLEAR, whether the notice named in the question is posted at the storefront). " +
+    `Types and answer_schema: ${TYPE_GUIDE}. ` +
+    "location is required for at-a-place types and may be omitted for work that can be done anywhere. " +
+    "For text answers, result.answers holds every accepted text and result.answer is the SHA-256 of the first. " +
     "An API key may allow only some types.",
   inputSchema: {
     ...CreateVerificationRequestSchema.omit({ principal_ref: true }).shape,

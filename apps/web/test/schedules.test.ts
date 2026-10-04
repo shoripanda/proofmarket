@@ -3,7 +3,7 @@ import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { authenticateApiKey } from "../lib/auth/requester";
-import { suspendCredential } from "../lib/services/admin-service";
+import { setAllowedTaskTypes, suspendCredential } from "../lib/services/admin-service";
 import { createSchedule, runDueSchedules, stopSchedule } from "../lib/services/schedule-service";
 import { createBody, createTestApp } from "./support/app";
 
@@ -90,6 +90,7 @@ describe("recurring checks", () => {
   });
 
   it("validates up front, caps active schedules, and can be stopped by its owner", async () => {
+    await setAllowedTaskTypes(t.db, t.credentialId, ["PLACE_STATUS_VERIFICATION"], "test");
     const a = await auth();
     expect(await err(createSchedule(t.app, a, body({ times_jst: ["25:00"] })))).toBe("VALIDATION_FAILED");
     expect(

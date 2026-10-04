@@ -1,9 +1,10 @@
 import "server-only";
+import { createHash } from "node:crypto";
 // Read models for the API (05 §2.2, §2.4, §4). Side-effect free (REQ-N-005).
 
 import {
-  type AnswerValue,
   type ApiSettlementStatus,
+  answerSchemaOf,
   type CheckStatus,
   consensusRatio,
   fromMicro,
@@ -17,9 +18,10 @@ import {
   type VerificationResult,
 } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { activeReport } from "./store-service";
 import type { TaskRow } from "./task-engine";
+import { taskLocation } from "./task-location";
 
 const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
 const hex = (b: Buffer) => `sha256:${b.toString("hex")}` as const;
@@ -96,7 +98,12 @@ export async function buildResult(db: Db, task: TaskRow): Promise<VerificationRe
     verification_id: task.id,
     status: res.outcome as VerificationResult["status"],
     reason: (res.outcomeReason as VerificationResult["reason"]) ?? null,
-    answer: (res.finalAnswer as AnswerValue | null) ?? null,
+    // Text: `answer` is the SHA-256 commitment in the result hash; the texts themselves are in `answers`.
+    answer:
+      res.finalAnswer !== null && task.answerKind === "text"
+        ? (`sha256:${createHash("sha256").update(res.finalAnswer).digest("hex")}` as const)
+        : (res.finalAnswer ?? null),
+    ...(task.answerKind === "text" ? { answers: await acceptedTexts(db, res.acceptedSubmissionIds) } : {}),
     witnesses: { valid: res.validWitnessCount, required: res.requiredWitnesses, quorum: res.quorum },
     answer_counts: answerCounts as VerificationResult["answer_counts"],
     consensus_ratio: consensusRatio(answerCounts),
@@ -149,10 +156,21 @@ async function recheckView(db: Db, task: TaskRow): Promise<GetVerificationRespon
   return {
     verification_id: child.id as GetVerificationResponse["verification_id"],
     status: child.status as GetVerificationResponse["status"],
-    answer: (theirs?.finalAnswer as AnswerValue | null) ?? null,
+    answer: theirs?.finalAnswer ?? null,
     matches_original:
       theirs?.outcome === "VERIFIED" && mine?.finalAnswer ? theirs.finalAnswer === mine.finalAnswer : null,
   };
+}
+
+/** Every accepted text answer, oldest first (01 §4.15). Requester-only: never on public pages. */
+async function acceptedTexts(db: Db, ids: readonly string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const rows = await db
+    .select({ answer: schema.witnessSubmissions.answer })
+    .from(schema.witnessSubmissions)
+    .where(inArray(schema.witnessSubmissions.id, [...ids]))
+    .orderBy(asc(schema.witnessSubmissions.serverReceivedAt));
+  return rows.map((r) => r.answer);
 }
 
 export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetVerificationResponse> {
@@ -182,12 +200,16 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
     type: task.type as TaskType,
     status: task.status as GetVerificationResponse["status"],
     question: task.question,
-    answer_schema: { type: "enum", values: task.answerValues as AnswerValue[] },
-    location: { lat: task.targetLat, lng: task.targetLng, radius_m: task.radiusM },
+    answer_schema: answerSchemaOf(
+      task.answerKind,
+      task.answerValues,
+      task.answerSpec as Record<string, unknown> | null,
+    ),
+    location: taskLocation(task),
     deadline: task.deadline.toISOString(),
     recheck_of: (task.recheckOf as GetVerificationResponse["recheck_of"]) ?? null,
     recheck: await recheckView(db, task),
-    store_report: await activeReport(db, task.placeId, await reportTime(db, task)),
+    store_report: task.placeId ? await activeReport(db, task.placeId, await reportTime(db, task)) : null,
     worker_requirements: task.minWorkerTier
       ? { min_tier: task.minWorkerTier as "standard" | "trusted" }
       : null,

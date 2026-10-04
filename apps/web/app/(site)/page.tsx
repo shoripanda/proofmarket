@@ -120,7 +120,7 @@ export default function Home() {
       <Section title="試験運用中の範囲">
         <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
           <li className="rounded-2xl bg-slate-50 p-4">
-            場所は渋谷・新宿を含む東京都心の、登録済みの店舗だけです。
+            現地での確認は地図上のどこでも頼めます。本・電話・実物の確認など、場所を問わない作業も頼めます。
           </li>
           <li className="rounded-2xl bg-slate-50 p-4">
             参加できる worker は、招待コードを受け取った人だけです。

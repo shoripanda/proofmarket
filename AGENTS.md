@@ -153,7 +153,7 @@ J-クレジットの無断tokenizationではなく、**local environmental actio
 
 ### ProofMarket
 
-汎用gig marketplaceではなく、**AI agentが物理世界のfresh factを人間へ検証依頼し、machine-readable resultを得るReality Verification Network**。MVPの中心は `PLACE_STATUS_VERIFICATION`。2026-10-04 に、店の外から確かめられる `QUEUE_LENGTH`・`NOTICE_POSTED` を API キーごとの許可制で追加した（`specs/proofmarket/implementation/ja/01-requirements-definition.md` 4.8 節）。raw photo / GPSはoff-chain、Solanaはsettlement / attestationの最小レイヤーとする。
+汎用gig marketplaceではなく、**AI agentが物理世界のfresh factを人間へ検証依頼し、machine-readable resultを得るReality Verification Network**。MVPの中心は `PLACE_STATUS_VERIFICATION`。2026-10-04 に、店の外から確かめられる `QUEUE_LENGTH`・`NOTICE_POSTED` を API キーごとの許可制で追加した（`specs/proofmarket/implementation/ja/01-requirements-definition.md` 4.8 節）。同日、オーナーの判断で、本・紙資料・実物・電話など人の手が要る作業まで広げた（17 種類、数値と文章の答え、場所の省略、店舗の許可リストの廃止。同 4.15 節）。raw photo / GPSはoff-chain、Solanaはsettlement / attestationの最小レイヤーとする。
 
 ## 8. 現時点の優先順位
 

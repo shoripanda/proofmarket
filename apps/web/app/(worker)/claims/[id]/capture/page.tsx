@@ -31,10 +31,12 @@ export default function CapturePage() {
   const [ch, setCh] = useState<Challenge | null>(null);
   const [photo, setPhoto] = useState<{ blob: Blob; url: string; takenAt: string } | null>(null);
   const [fix, setFix] = useState<Fix | null>(null);
-  const [answer, setAnswer] = useState<string | null>(null);
+  const [answer, setAnswer] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const answers = (claim?.answer_values ?? []).map((v) => ({
+  const schema = claim?.answer_schema;
+  const needsLocation = claim?.location_required ?? true;
+  const answers = (schema?.type === "enum" ? schema.values : (claim?.answer_values ?? [])).map((v) => ({
     value: v,
     label: ANSWER_JA[v as AnswerValue]?.label ?? v,
     tone: ANSWER_JA[v as AnswerValue]?.tone ?? "bg-slate-700",
@@ -75,7 +77,10 @@ export default function CapturePage() {
     navigator.geolocation.getCurrentPosition(
       (p) =>
         setFix({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: Math.round(p.coords.accuracy) }),
-      () => setErr("位置情報の利用を許可してください。お店の近くにいることの確認に使います。"),
+      () => {
+        if (needsLocation)
+          setErr("位置情報の利用を許可してください。指定の場所の近くにいることの確認に使います。");
+      },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
     );
   }
@@ -100,7 +105,7 @@ export default function CapturePage() {
   }
 
   async function submit() {
-    if (!ch || !photo || !fix || !answer || !claim) return;
+    if (!ch || !photo || (needsLocation && !fix) || !answer.trim() || !claim) return;
     setBusy(true);
     setErr(null);
     try {
@@ -120,7 +125,10 @@ export default function CapturePage() {
         body: {
           claim_id: id,
           answer,
-          capture: { client_timestamp: photo.takenAt, lat: fix.lat, lng: fix.lng, accuracy_m: fix.accuracy },
+          capture: {
+            client_timestamp: photo.takenAt,
+            ...(fix ? { lat: fix.lat, lng: fix.lng, accuracy_m: fix.accuracy } : {}),
+          },
           challenge: { nonce: ch.nonce },
           evidence: [{ type: "photo", object_ref: up.upload_id }],
         },
@@ -135,6 +143,9 @@ export default function CapturePage() {
   const expired = ch ? new Date(ch.expires_at).getTime() <= now : false;
   return (
     <Shell title="撮影と回答" back={`/claims/${id}`}>
+      {claim ? (
+        <p className="whitespace-pre-wrap rounded-2xl bg-slate-50 p-3 text-sm">{claim.question}</p>
+      ) : null}
       {ch ? (
         <Notice tone={expired ? "error" : "info"}>
           撮影の受付時間: <b className="tabular-nums">{remaining(ch.expires_at, now)}</b>
@@ -152,7 +163,7 @@ export default function CapturePage() {
         )}
       </div>
       <p className="text-xs text-slate-500">
-        {TASK_TYPE_JA[claim?.type as TaskType]?.howTo ?? "店頭・看板・営業時間の掲示を写してください。"}
+        {TASK_TYPE_JA[claim?.type as TaskType]?.howTo ?? "確かめた物が分かる写真を撮ってください。"}
         人の顔が大きく写らないようにしてください。
       </p>
 
@@ -168,25 +179,53 @@ export default function CapturePage() {
 
       {photo ? (
         <>
-          <p className="text-sm text-slate-600">
-            {fix ? `位置を取得しました（誤差 約${fix.accuracy} m）` : "位置を取得しています…"}
-            {fix && fix.accuracy > 100
-              ? " — 精度が足りません。空の見える場所で少し待ってから撮り直してください。"
-              : ""}
-          </p>
-          <div className="grid gap-3">
-            {answers.map((a) => (
-              <button
-                key={a.value}
-                type="button"
-                onClick={() => setAnswer(a.value)}
-                className={`rounded-2xl px-4 py-4 text-lg font-bold text-white transition ${a.tone} ${answer === a.value ? "ring-4 ring-offset-2 ring-teal-400" : "opacity-80"}`}
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-          <Button onClick={submit} disabled={!answer || !fix || busy || expired}>
+          {needsLocation ? (
+            <p className="text-sm text-slate-600">
+              {fix ? `位置を取得しました（誤差 約${fix.accuracy} m）` : "位置を取得しています…"}
+              {fix && fix.accuracy > 100
+                ? " — 精度が足りません。空の見える場所で少し待ってから撮り直してください。"
+                : ""}
+            </p>
+          ) : null}
+          {schema?.type === "number" ? (
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              数字で答える{schema.unit ? `（単位: ${schema.unit}）` : ""}
+              <input
+                inputMode="decimal"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                className="rounded-2xl border border-slate-300 px-4 py-4 text-2xl font-bold tabular-nums"
+                placeholder="例: 1280"
+              />
+            </label>
+          ) : schema?.type === "text" ? (
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              文章で答える{schema.max_chars ? `（${schema.max_chars}字まで）` : ""}
+              <textarea
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                maxLength={schema.max_chars ?? 4000}
+                rows={8}
+                className="rounded-2xl border border-slate-300 px-4 py-3 text-base leading-relaxed"
+                placeholder="見たこと・書かれていたこと・聞いたことを、そのまま書いてください"
+              />
+              <span className="text-right text-xs text-slate-400">{answer.length} 字</span>
+            </label>
+          ) : (
+            <div className="grid gap-3">
+              {answers.map((a) => (
+                <button
+                  key={a.value}
+                  type="button"
+                  onClick={() => setAnswer(a.value)}
+                  className={`rounded-2xl px-4 py-4 text-lg font-bold text-white transition ${a.tone} ${answer === a.value ? "ring-4 ring-offset-2 ring-teal-400" : "opacity-80"}`}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          )}
+          <Button onClick={submit} disabled={!answer.trim() || (needsLocation && !fix) || busy || expired}>
             {busy ? "送信中…" : "この内容で送信する"}
           </Button>
         </>

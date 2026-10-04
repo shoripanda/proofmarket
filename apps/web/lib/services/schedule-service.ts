@@ -2,7 +2,14 @@ import "server-only";
 // Recurring checks (04 §3.23, 05 §1). Each due run goes through createVerification like any other request,
 // so balance, spend limits, policy checks and funding apply unchanged.
 
-import { ApiError, evaluateQuestion, newId, nextRunAt, parseId, TASK_TYPE_ANSWERS } from "@proofmarket/core";
+import {
+  ApiError,
+  evaluateQuestion,
+  newId,
+  nextRunAt,
+  parseId,
+  validateAnswerSchema,
+} from "@proofmarket/core";
 import { CreateScheduleRequestSchema, CreateVerificationRequestSchema } from "@proofmarket/core/schemas/api";
 import { schema } from "@proofmarket/db";
 import { and, count, eq, lte } from "drizzle-orm";
@@ -41,14 +48,7 @@ export async function createSchedule(app: AppContext, auth: RequesterAuth, raw: 
   // Early checks so a schedule that can never run is refused now; every run is fully re-checked anyway.
   if (!auth.allowedTaskTypes.includes(b.request.type)) throw new ApiError("UNSUPPORTED_TASK_TYPE");
   if (b.request.principal_ref !== auth.principalId) throw new ApiError("PRINCIPAL_MISMATCH");
-  const allowed: readonly string[] = TASK_TYPE_ANSWERS[b.request.type];
-  if (!b.request.answer_schema.values.every((v) => allowed.includes(v))) {
-    throw new ApiError("VALIDATION_FAILED", {
-      field: "answer_schema.values",
-      reason: "not_for_type",
-      allowed,
-    });
-  }
+  validateAnswerSchema(b.request.type, b.request.answer_schema);
   const policy = evaluateQuestion(b.request.question);
   if (!policy.ok) throw new ApiError("TASK_POLICY_VIOLATION", { rule_id: policy.ruleId });
   const now = app.now();

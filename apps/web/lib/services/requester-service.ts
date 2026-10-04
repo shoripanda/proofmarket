@@ -3,17 +3,19 @@ import "server-only";
 
 import {
   ApiError,
+  answerSchemaOf,
   evaluateQuestion,
   fromMicro,
   haversineM,
   inBBox,
   LIMITS,
+  locationRequired,
   newId,
   POLICY_RULE_VERSION,
   SPEND_LIMIT_TIMEZONE,
-  TASK_TYPE_ANSWERS,
   taskIdHash,
   toMicro,
+  validateAnswerSchema,
 } from "@proofmarket/core";
 import {
   type CreateVerificationRequest,
@@ -83,16 +85,23 @@ export interface CreateResult {
 }
 
 /** Types whose answer does not depend on the question wording, so a result can serve another request. */
-const REUSABLE_TYPES: readonly string[] = ["PLACE_STATUS_VERIFICATION", "QUEUE_LENGTH"];
+const REUSABLE_TYPES: readonly string[] = [
+  "PLACE_STATUS_VERIFICATION",
+  "QUEUE_LENGTH",
+  "CROWD_LEVEL",
+  "SEAT_AVAILABILITY",
+  "PARKING_AVAILABILITY",
+];
 
 /** 01 §4.9: newest shared VERIFIED result for the same place, type and answer set, within max age. */
 async function findReusable(
   tx: Db,
-  placeId: string,
+  placeId: string | null,
   body: CreateVerificationRequest,
   now: Date,
 ): Promise<CreateResult | null> {
-  if (!body.reuse || !REUSABLE_TYPES.includes(body.type)) return null;
+  if (!body.reuse || !placeId || !REUSABLE_TYPES.includes(body.type) || body.answer_schema.type !== "enum")
+    return null;
   const since = new Date(now.getTime() - body.reuse.max_age_seconds * 1000);
   const rows = await tx
     .select({ task: schema.verificationRequests })
@@ -164,16 +173,10 @@ export async function createVerification(
   if (!(await flagEnabled(tx, "tasks_create_enabled"))) throw new ApiError("FEATURE_DISABLED");
   if (!auth.allowedTaskTypes.includes(body.type)) throw new ApiError("UNSUPPORTED_TASK_TYPE");
   if (body.principal_ref !== auth.principalId) throw new ApiError("PRINCIPAL_MISMATCH");
-  if (new Set(body.answer_schema.values).size !== body.answer_schema.values.length) {
-    throw new ApiError("VALIDATION_FAILED", { field: "answer_schema.values", reason: "duplicates" });
-  }
-  const allowedAnswers: readonly string[] = TASK_TYPE_ANSWERS[body.type];
-  if (!body.answer_schema.values.every((v) => allowedAnswers.includes(v))) {
-    throw new ApiError("VALIDATION_FAILED", {
-      field: "answer_schema.values",
-      reason: "not_for_type",
-      allowed: allowedAnswers,
-    });
+  validateAnswerSchema(body.type, body.answer_schema);
+  const loc = body.location ?? null;
+  if (!loc && locationRequired(body.type)) {
+    throw new ApiError("VALIDATION_FAILED", { field: "location", reason: "required_for_type" });
   }
   const deadline = new Date(body.deadline);
   const minMs = LIMITS.deadlineFromNow.minMinutes * 60_000;
@@ -181,6 +184,8 @@ export async function createVerification(
   if (deadline.getTime() - now.getTime() < minMs || deadline.getTime() - now.getTime() > maxMs) {
     throw new ApiError("DEADLINE_OUT_OF_RANGE");
   }
+  // 01 §4.15: any location may be asked for. A per-key bbox, if an operator set one, still applies;
+  // a registered place under the location is recorded for reuse and shop reports but is not required.
   const bbox = auth.limits.allowedBbox
     ? {
         minLat: auth.limits.allowedBbox[0] ?? 0,
@@ -188,10 +193,9 @@ export async function createVerification(
         maxLat: auth.limits.allowedBbox[2] ?? 0,
         maxLng: auth.limits.allowedBbox[3] ?? 0,
       }
-    : app.config.pilotBBox;
-  if (!inBBox(body.location, bbox)) throw new ApiError("LOCATION_OUT_OF_PILOT_AREA");
-  const placeId = await matchPlace(tx, body.location.lat, body.location.lng);
-  if (!placeId) throw new ApiError("LOCATION_NOT_ALLOWLISTED");
+    : null;
+  if (loc && bbox && !inBBox(loc, bbox)) throw new ApiError("LOCATION_OUT_OF_PILOT_AREA");
+  const placeId = loc ? await matchPlace(tx, loc.lat, loc.lng) : null;
   const { required_witnesses: n, quorum } = body.assurance;
   if (n > app.config.maxWitnesses || quorum > n) {
     throw new ApiError("VALIDATION_FAILED", { field: "assurance", max_witnesses: app.config.maxWitnesses });
@@ -234,11 +238,14 @@ export async function createVerification(
       principalId: auth.principalId,
       type: body.type,
       question: body.question,
-      answerValues: body.answer_schema.values,
-      targetLat: body.location.lat,
-      targetLng: body.location.lng,
+      answerValues: body.answer_schema.type === "enum" ? body.answer_schema.values : [],
+      answerKind: body.answer_schema.type,
+      answerSpec:
+        body.answer_schema.type === "enum" ? null : (({ type: _t, ...rest }) => rest)(body.answer_schema),
+      targetLat: loc?.lat ?? null,
+      targetLng: loc?.lng ?? null,
       placeId,
-      radiusM: body.location.radius_m,
+      radiusM: loc?.radius_m ?? null,
       deadline,
       freshnessMaxAgeS: body.freshness.max_age_seconds,
       requiredWitnesses: n,
@@ -379,8 +386,14 @@ export async function disputeVerification(app: AppContext, auth: RequesterAuth, 
   const body = CreateVerificationRequestSchema.parse({
     type: orig.type,
     question: orig.question,
-    answer_schema: { type: "enum", values: orig.answerValues },
-    location: { lat: orig.targetLat, lng: orig.targetLng, radius_m: orig.radiusM },
+    answer_schema: answerSchemaOf(
+      orig.answerKind,
+      orig.answerValues,
+      orig.answerSpec as Record<string, unknown> | null,
+    ),
+    ...(orig.targetLat !== null && orig.targetLng !== null && orig.radiusM !== null
+      ? { location: { lat: orig.targetLat, lng: orig.targetLng, radius_m: orig.radiusM } }
+      : {}),
     deadline: new Date(now.getTime() + (r.data.deadline_minutes ?? 60) * 60_000).toISOString(),
     freshness: { max_age_seconds: orig.freshnessMaxAgeS },
     evidence_requirements: { photo: true, task_nonce: true },

@@ -120,6 +120,13 @@
       "when": 1791051706681,
       "tag": "0016_console_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791088116189,
+      "tag": "0017_task_types_v2",
+      "breakpoints": true
     }
   ]
 }

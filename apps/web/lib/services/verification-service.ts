@@ -1,11 +1,12 @@
 import "server-only";
 // Consensus and result persistence (07 §4-5, 03 T08-T12).
 
+import { createHash } from "node:crypto";
 import {
-  type AnswerValue,
   type CheckStatus,
   consensusRatio,
   decide,
+  decideText,
   EVIDENCE_BUNDLE_SCHEMA,
   type EvidenceBundle,
   evidenceRoot,
@@ -15,7 +16,7 @@ import {
   toSha256Hex,
 } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
 import { witnessRef } from "./crypto";
@@ -76,8 +77,11 @@ export async function saveResult(
     )
     .groupBy(schema.witnessSubmissions.reasonCode);
 
+  // Text answers (01 §4.15): kept out of counts, and the public bundle carries only their SHA-256.
+  const isText = task.answerKind === "text";
   const answerCounts: Record<string, number> = {};
-  for (const v of valid) answerCounts[v.answer] = (answerCounts[v.answer] ?? 0) + 1;
+  if (!isText) for (const v of valid) answerCounts[v.answer] = (answerCounts[v.answer] ?? 0) + 1;
+  const publicAnswer = (a: string) => (isText ? toSha256Hex(createHash("sha256").update(a).digest()) : a);
 
   const bundle: EvidenceBundle = {
     schema: EVIDENCE_BUNDLE_SCHEMA,
@@ -85,11 +89,11 @@ export async function saveResult(
     task_id_hash: toSha256Hex(task.taskIdHash),
     type: task.type as TaskType,
     question_hash: questionHash(task.question),
-    answer_values: task.answerValues as AnswerValue[],
+    answer_values: [...task.answerValues],
     assurance: { required_witnesses: task.requiredWitnesses, quorum: task.quorum },
     submissions: valid.map((v) => ({
       witness_ref: witnessRef(app.config.workerRefSalt, v.workerId, task.id),
-      answer: v.answer as AnswerValue,
+      answer: publicAnswer(v.answer),
       evidence_sha256: evidence.filter((e) => e.submissionId === v.id).map((e) => toSha256Hex(e.sha256)),
       server_received_at: new Date(Math.floor(v.serverReceivedAt.getTime() / 1000) * 1000)
         .toISOString()
@@ -103,7 +107,7 @@ export async function saveResult(
       ),
     })),
     outcome: outcome.status,
-    final_answer: (outcome.answer as AnswerValue | null) ?? null,
+    final_answer: outcome.answer === null ? null : publicAnswer(outcome.answer),
     finalized_at: finalizedAt.toISOString().replace(".000Z", "Z"),
   };
   const root = evidenceRoot(bundle);
@@ -112,7 +116,7 @@ export async function saveResult(
     verification_id: task.id,
     status: outcome.status,
     reason: outcome.reason,
-    answer: outcome.answer,
+    answer: outcome.answer === null ? null : publicAnswer(outcome.answer),
     witnesses: { valid: valid.length, required: task.requiredWitnesses, quorum: task.quorum },
     answer_counts: answerCounts,
     checks: Object.fromEntries(
@@ -178,8 +182,9 @@ export async function evaluateConsensus(tx: Db, app: AppContext, task: TaskRow):
         eq(schema.witnessSubmissions.verificationId, task.id),
         eq(schema.witnessSubmissions.state, "VALID"),
       ),
-    );
-  const d = decide(valid, task.quorum);
+    )
+    .orderBy(asc(schema.witnessSubmissions.serverReceivedAt));
+  const d = task.answerKind === "text" ? decideText(valid, task.quorum) : decide(valid, task.quorum);
   const verified = d.kind === "VERIFIED";
   await saveResult(tx, app, task, {
     status: verified ? "VERIFIED" : "REJECTED",

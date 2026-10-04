@@ -4,6 +4,7 @@ import "server-only";
 
 import {
   ApiError,
+  answerSchemaOf,
   CHECK_ORDER,
   type CheckOutcome,
   type CheckReasonCode,
@@ -16,6 +17,7 @@ import {
   LIMITS,
   NON_RETRYABLE_REASONS,
   newId,
+  normalizeAnswer,
   PRE_CHECKS,
   RETENTION_DAYS,
   runChecks,
@@ -29,6 +31,7 @@ import { appendAudit } from "./audit";
 import { encryptBytes, encryptLocation, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
 import { applyTaskEvent, taskCounts } from "./task-engine";
+import { taskLocation } from "./task-location";
 import { evaluateConsensus } from "./verification-service";
 import { lockOwnClaim } from "./worker-service";
 
@@ -127,7 +130,20 @@ export async function submitEvidence(
   if (!upload || upload.claimId !== claim.id || upload.state !== "PENDING")
     throw new ApiError("UPLOAD_NOT_FOUND");
   if (upload.challengeId !== ch.id) throw new ApiError("NONCE_INVALID");
-  if (!task.answerValues.includes(body.answer)) throw new ApiError("ANSWER_INVALID");
+  const answer = normalizeAnswer(
+    answerSchemaOf(task.answerKind, task.answerValues, task.answerSpec as Record<string, unknown> | null),
+    body.answer,
+  );
+  if (answer === null) throw new ApiError("ANSWER_INVALID");
+  // Location is checked only for tasks that have one; work that can be done anywhere skips the geofence (01 §4.15).
+  const target = taskLocation(task);
+  const { lat, lng, accuracy_m } = body.capture;
+  const observed =
+    lat !== undefined && lng !== undefined && accuracy_m !== undefined
+      ? { lat, lng, accuracyM: accuracy_m }
+      : null;
+  if (target && !observed)
+    throw new ApiError("VALIDATION_FAILED", { field: "capture.lat", reason: "required" });
 
   // ---- record the submission ----
   const submissionId = newId("submission");
@@ -144,7 +160,7 @@ export async function submitEvidence(
     claimId: claim.id,
     workerId,
     challengeId: ch.id,
-    answer: body.answer,
+    answer,
     state: "CHECKING",
     clientTimestamp: new Date(body.capture.client_timestamp),
     serverReceivedAt: now,
@@ -214,9 +230,10 @@ export async function submitEvidence(
           )
       : [];
 
-  const target = { lat: task.targetLat, lng: task.targetLng, radiusM: task.radiusM };
-  const observed = { lat: body.capture.lat, lng: body.capture.lng, accuracyM: body.capture.accuracy_m };
-  const geo = checkGeofence({ target, observed });
+  const geo: CheckOutcome =
+    target && observed
+      ? checkGeofence({ target: { lat: target.lat, lng: target.lng, radiusM: target.radius_m }, observed })
+      : { type: "geofence", status: "not_run" };
   const results: CheckOutcome[] = runChecks(CHECK_ORDER, [
     () =>
       checkMediaSchema({
@@ -263,17 +280,19 @@ export async function submitEvidence(
     });
   }
   const geoDetails = (geo.details ?? {}) as { distance_m?: number };
-  await tx.insert(schema.locationObservations).values({
-    submissionId,
-    coordsEnc: encryptLocation(app.config.locationEncKey, body.capture.lat, body.capture.lng),
-    accuracyM: body.capture.accuracy_m,
-    distanceToTargetM: geoDetails.distance_m ?? 0,
-    geofencePass: geo.status === "pass",
-    clientTimestamp: new Date(body.capture.client_timestamp),
-    serverReceivedAt: now,
-    riskFlags: results.flatMap((r) => r.riskFlags ?? []),
-    deleteAfter: new Date(now.getTime() + RETENTION_DAYS.precise_location * 86_400_000),
-  });
+  if (observed) {
+    await tx.insert(schema.locationObservations).values({
+      submissionId,
+      coordsEnc: encryptLocation(app.config.locationEncKey, observed.lat, observed.lng),
+      accuracyM: observed.accuracyM,
+      distanceToTargetM: geoDetails.distance_m ?? 0,
+      geofencePass: geo.status !== "fail",
+      clientTimestamp: new Date(body.capture.client_timestamp),
+      serverReceivedAt: now,
+      riskFlags: results.flatMap((r) => r.riskFlags ?? []),
+      deleteAfter: new Date(now.getTime() + RETENTION_DAYS.precise_location * 86_400_000),
+    });
+  }
 
   // ---- outcome ----
   const failed = firstFailure(results);
@@ -346,7 +365,7 @@ export async function submitEvidence(
     reason_message_ja: failed?.reasonCode
       ? reasonMessage(failed.reasonCode, {
           d: d?.distance_m ?? "",
-          r: d?.radius_m ?? task.radiusM,
+          r: d?.radius_m ?? task.radiusM ?? "",
           a: d?.accuracy_m ?? "",
           n: Math.round(task.freshnessMaxAgeS / 60),
         })

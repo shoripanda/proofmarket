@@ -58,9 +58,10 @@ describe("POST /v1/verifications", () => {
     );
   });
 
-  it("01 §4.8: new task types need the key's permission and answers that belong to the type", async () => {
+  it("01 §4.8: task types need the key's permission and answers that belong to the type", async () => {
     const queue = (values: string[]) =>
       createBody(t.principalId, { type: "QUEUE_LENGTH", answer_schema: { type: "enum", values } });
+    await setAllowedTaskTypes(t.db, t.credentialId, ["PLACE_STATUS_VERIFICATION"], "test");
     expect(await errCode(await create(queue(["NO_QUEUE", "SHORT_QUEUE", "LONG_QUEUE", "UNCLEAR"])))).toBe(
       "UNSUPPORTED_TASK_TYPE",
     );
@@ -124,7 +125,7 @@ describe("POST /v1/verifications", () => {
     );
   });
 
-  it("checks principal, deadline window, pilot area and the places allowlist", async () => {
+  it("checks principal, deadline window and a per-key area", async () => {
     expect(await errCode(await create(createBody("prn_01J9Z4K8T3W6Q2M5N7P0R4S8V1")))).toBe(
       "PRINCIPAL_MISMATCH",
     );
@@ -134,19 +135,67 @@ describe("POST /v1/verifications", () => {
     expect(await errCode(await create(createBody(t.principalId, { deadline: "2026-10-10T03:00:01Z" })))).toBe(
       "DEADLINE_OUT_OF_RANGE",
     );
-    expect(
-      await errCode(
-        await create(createBody(t.principalId, { location: { lat: 34.7, lng: 135.5, radius_m: 80 } })),
-      ),
-    ).toBe("LOCATION_OUT_OF_PILOT_AREA");
+    // 01 §4.15: any location is accepted unless an operator gave the key its own area.
+    const osaka = createBody(t.principalId, { location: { lat: 34.7, lng: 135.5, radius_m: 80 } });
+    expect((await create(osaka)).status).toBe(201);
+    await t.db
+      .update(schema.requesterCredentials)
+      .set({ allowedBbox: [35.6, 139.65, 35.72, 139.78] })
+      .where(eq(schema.requesterCredentials.id, t.credentialId));
+    expect(await errCode(await create(osaka))).toBe("LOCATION_OUT_OF_PILOT_AREA");
   });
 
-  it("I-CRT-06: 31 m from the allowlisted place -> LOCATION_NOT_ALLOWLISTED; 29 m -> ok", async () => {
+  it("01 §4.15: a registered place is recorded when within 30 m, but is no longer required", async () => {
     const m = 1 / 111_195;
     const at = (d: number) =>
       createBody(t.principalId, { location: { lat: SHOP.lat + d * m, lng: SHOP.lng, radius_m: 80 } });
-    expect(await errCode(await create(at(31)))).toBe("LOCATION_NOT_ALLOWLISTED");
-    expect((await create(at(29))).status).toBe(201);
+    const placeOf = async (res: Response) => {
+      const { verification_id } = (await res.json()) as { verification_id: string };
+      const [row] = await t.db
+        .select()
+        .from(schema.verificationRequests)
+        .where(eq(schema.verificationRequests.id, verification_id));
+      return row?.placeId ?? null;
+    };
+    expect(await placeOf(await create(at(31)))).toBeNull();
+    expect(await placeOf(await create(at(29)))).not.toBeNull();
+  });
+
+  it("01 §4.15: answer kinds per type, and location only where the type needs it", async () => {
+    const { location: _drop, ...noLocation } = createBody(t.principalId) as Record<string, unknown>;
+    const text = {
+      ...noLocation,
+      type: "DOCUMENT_TRANSCRIPTION",
+      answer_schema: { type: "text", max_chars: 500 },
+    };
+    const res = await create(text);
+    expect(res.status).toBe(201);
+    const { verification_id: id } = (await res.json()) as { verification_id: string };
+    const view = (await (
+      await call((r) => handleGet(t.app, r, id), jsonReq("GET", `/v1/verifications/${id}`, { key: t.apiKey }))
+    ).json()) as { location: unknown; answer_schema: unknown };
+    expect(view).toMatchObject({ location: null, answer_schema: { type: "text", max_chars: 500 } });
+
+    // wrong kind for the type
+    expect(await errCode(await create({ ...text, answer_schema: { type: "number" } }))).toBe(
+      "VALIDATION_FAILED",
+    );
+    // at-a-place type without a location
+    const price = { ...noLocation, type: "PRICE_CHECK", answer_schema: { type: "number", unit: "円" } };
+    expect(await errCode(await create(price))).toBe("VALIDATION_FAILED");
+    expect(
+      (await create({ ...price, location: { lat: SHOP.lat, lng: SHOP.lng, radius_m: 80 } })).status,
+    ).toBe(201);
+    // the requester names the choices
+    const custom = {
+      ...noLocation,
+      type: "CUSTOM_CHOICE",
+      answer_schema: { type: "enum", values: ["はい", "いいえ", "分からない"] },
+    };
+    expect((await create(custom)).status).toBe(201);
+    expect(
+      await errCode(await create({ ...custom, answer_schema: { type: "enum", values: ["はい", "はい"] } })),
+    ).toBe("VALIDATION_FAILED");
   });
 
   it("I-CRT-05: a prohibited question -> 422 with rule_id, nothing created or reserved", async () => {

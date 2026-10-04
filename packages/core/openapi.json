@@ -62,45 +62,102 @@
                     "enum": [
                       "PLACE_STATUS_VERIFICATION",
                       "QUEUE_LENGTH",
-                      "NOTICE_POSTED"
+                      "NOTICE_POSTED",
+                      "CROWD_LEVEL",
+                      "SEAT_AVAILABILITY",
+                      "PARKING_AVAILABILITY",
+                      "STOCK_CHECK",
+                      "PRICE_CHECK",
+                      "SIGN_TRANSCRIPTION",
+                      "SITE_REPORT",
+                      "DOCUMENT_TRANSCRIPTION",
+                      "DOCUMENT_QA",
+                      "PRODUCT_INSPECTION",
+                      "PHONE_INQUIRY",
+                      "MEASUREMENT",
+                      "CUSTOM_CHOICE",
+                      "CUSTOM_TASK"
                     ]
                   },
                   "question": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 280
+                    "maxLength": 1000
                   },
                   "answer_schema": {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "enum"
-                        ]
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "enum"
+                            ]
+                          },
+                          "values": {
+                            "minItems": 2,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 40
+                            }
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "values"
+                        ],
+                        "additionalProperties": false
                       },
-                      "values": {
-                        "minItems": 2,
-                        "maxItems": 4,
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
-                        }
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "number"
+                            ]
+                          },
+                          "unit": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 16
+                          },
+                          "min": {
+                            "type": "number"
+                          },
+                          "max": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "text"
+                            ]
+                          },
+                          "max_chars": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4000
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
                       }
-                    },
-                    "required": [
-                      "type",
-                      "values"
                     ]
                   },
                   "location": {
@@ -143,7 +200,7 @@
                         "default": 300,
                         "type": "integer",
                         "minimum": 60,
-                        "maximum": 900
+                        "maximum": 3600
                       }
                     }
                   },
@@ -278,7 +335,6 @@
                   "type",
                   "question",
                   "answer_schema",
-                  "location",
                   "deadline",
                   "evidence_requirements",
                   "assurance",
@@ -465,7 +521,21 @@
                       "enum": [
                         "PLACE_STATUS_VERIFICATION",
                         "QUEUE_LENGTH",
-                        "NOTICE_POSTED"
+                        "NOTICE_POSTED",
+                        "CROWD_LEVEL",
+                        "SEAT_AVAILABILITY",
+                        "PARKING_AVAILABILITY",
+                        "STOCK_CHECK",
+                        "PRICE_CHECK",
+                        "SIGN_TRANSCRIPTION",
+                        "SITE_REPORT",
+                        "DOCUMENT_TRANSCRIPTION",
+                        "DOCUMENT_QA",
+                        "PRODUCT_INSPECTION",
+                        "PHONE_INQUIRY",
+                        "MEASUREMENT",
+                        "CUSTOM_CHOICE",
+                        "CUSTOM_TASK"
                       ]
                     },
                     "status": {
@@ -489,39 +559,83 @@
                       "type": "string"
                     },
                     "answer_schema": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "enum"
-                          ]
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "enum"
+                              ]
+                            },
+                            "values": {
+                              "minItems": 2,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 40
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "values"
+                          ],
+                          "additionalProperties": false
                         },
-                        "values": {
-                          "minItems": 2,
-                          "maxItems": 4,
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "enum": [
-                              "OPEN",
-                              "CLOSED",
-                              "NO_QUEUE",
-                              "SHORT_QUEUE",
-                              "LONG_QUEUE",
-                              "POSTED",
-                              "NOT_POSTED",
-                              "UNCLEAR"
-                            ]
-                          }
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "number"
+                              ]
+                            },
+                            "unit": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 16
+                            },
+                            "min": {
+                              "type": "number"
+                            },
+                            "max": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "text"
+                              ]
+                            },
+                            "max_chars": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 4000
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
                         }
-                      },
-                      "required": [
-                        "type",
-                        "values"
                       ]
                     },
                     "location": {
+                      "nullable": true,
                       "type": "object",
                       "properties": {
                         "lat": {
@@ -584,16 +698,8 @@
                         "answer": {
                           "nullable": true,
                           "type": "string",
-                          "enum": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 4000
                         },
                         "matches_original": {
                           "nullable": true,
@@ -795,16 +901,16 @@
                         "answer": {
                           "nullable": true,
                           "type": "string",
-                          "enum": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 4000
+                        },
+                        "answers": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000
+                          }
                         },
                         "witnesses": {
                           "type": "object",
@@ -837,17 +943,7 @@
                             "type": "integer",
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
-                          },
-                          "required": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
+                          }
                         },
                         "consensus_ratio": {
                           "nullable": true,
@@ -1210,7 +1306,21 @@
                       "enum": [
                         "PLACE_STATUS_VERIFICATION",
                         "QUEUE_LENGTH",
-                        "NOTICE_POSTED"
+                        "NOTICE_POSTED",
+                        "CROWD_LEVEL",
+                        "SEAT_AVAILABILITY",
+                        "PARKING_AVAILABILITY",
+                        "STOCK_CHECK",
+                        "PRICE_CHECK",
+                        "SIGN_TRANSCRIPTION",
+                        "SITE_REPORT",
+                        "DOCUMENT_TRANSCRIPTION",
+                        "DOCUMENT_QA",
+                        "PRODUCT_INSPECTION",
+                        "PHONE_INQUIRY",
+                        "MEASUREMENT",
+                        "CUSTOM_CHOICE",
+                        "CUSTOM_TASK"
                       ]
                     },
                     "status": {
@@ -1234,39 +1344,83 @@
                       "type": "string"
                     },
                     "answer_schema": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "enum"
-                          ]
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "enum"
+                              ]
+                            },
+                            "values": {
+                              "minItems": 2,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 40
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "values"
+                          ],
+                          "additionalProperties": false
                         },
-                        "values": {
-                          "minItems": 2,
-                          "maxItems": 4,
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "enum": [
-                              "OPEN",
-                              "CLOSED",
-                              "NO_QUEUE",
-                              "SHORT_QUEUE",
-                              "LONG_QUEUE",
-                              "POSTED",
-                              "NOT_POSTED",
-                              "UNCLEAR"
-                            ]
-                          }
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "number"
+                              ]
+                            },
+                            "unit": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 16
+                            },
+                            "min": {
+                              "type": "number"
+                            },
+                            "max": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "text"
+                              ]
+                            },
+                            "max_chars": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 4000
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
                         }
-                      },
-                      "required": [
-                        "type",
-                        "values"
                       ]
                     },
                     "location": {
+                      "nullable": true,
                       "type": "object",
                       "properties": {
                         "lat": {
@@ -1329,16 +1483,8 @@
                         "answer": {
                           "nullable": true,
                           "type": "string",
-                          "enum": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 4000
                         },
                         "matches_original": {
                           "nullable": true,
@@ -1540,16 +1686,16 @@
                         "answer": {
                           "nullable": true,
                           "type": "string",
-                          "enum": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 4000
+                        },
+                        "answers": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000
+                          }
                         },
                         "witnesses": {
                           "type": "object",
@@ -1582,17 +1728,7 @@
                             "type": "integer",
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
-                          },
-                          "required": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
+                          }
                         },
                         "consensus_ratio": {
                           "nullable": true,
@@ -2276,45 +2412,102 @@
                         "enum": [
                           "PLACE_STATUS_VERIFICATION",
                           "QUEUE_LENGTH",
-                          "NOTICE_POSTED"
+                          "NOTICE_POSTED",
+                          "CROWD_LEVEL",
+                          "SEAT_AVAILABILITY",
+                          "PARKING_AVAILABILITY",
+                          "STOCK_CHECK",
+                          "PRICE_CHECK",
+                          "SIGN_TRANSCRIPTION",
+                          "SITE_REPORT",
+                          "DOCUMENT_TRANSCRIPTION",
+                          "DOCUMENT_QA",
+                          "PRODUCT_INSPECTION",
+                          "PHONE_INQUIRY",
+                          "MEASUREMENT",
+                          "CUSTOM_CHOICE",
+                          "CUSTOM_TASK"
                         ]
                       },
                       "question": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 280
+                        "maxLength": 1000
                       },
                       "answer_schema": {
-                        "type": "object",
-                        "properties": {
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "enum"
-                            ]
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "enum"
+                                ]
+                              },
+                              "values": {
+                                "minItems": 2,
+                                "maxItems": 6,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 40
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "values"
+                            ],
+                            "additionalProperties": false
                           },
-                          "values": {
-                            "minItems": 2,
-                            "maxItems": 4,
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "enum": [
-                                "OPEN",
-                                "CLOSED",
-                                "NO_QUEUE",
-                                "SHORT_QUEUE",
-                                "LONG_QUEUE",
-                                "POSTED",
-                                "NOT_POSTED",
-                                "UNCLEAR"
-                              ]
-                            }
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "number"
+                                ]
+                              },
+                              "unit": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 16
+                              },
+                              "min": {
+                                "type": "number"
+                              },
+                              "max": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "type"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "text"
+                                ]
+                              },
+                              "max_chars": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 4000
+                              }
+                            },
+                            "required": [
+                              "type"
+                            ],
+                            "additionalProperties": false
                           }
-                        },
-                        "required": [
-                          "type",
-                          "values"
                         ]
                       },
                       "location": {
@@ -2352,7 +2545,7 @@
                             "default": 300,
                             "type": "integer",
                             "minimum": 60,
-                            "maximum": 900
+                            "maximum": 3600
                           }
                         }
                       },
@@ -2487,7 +2680,6 @@
                       "type",
                       "question",
                       "answer_schema",
-                      "location",
                       "evidence_requirements",
                       "assurance",
                       "bounty",
@@ -3530,7 +3722,21 @@
                             "enum": [
                               "PLACE_STATUS_VERIFICATION",
                               "QUEUE_LENGTH",
-                              "NOTICE_POSTED"
+                              "NOTICE_POSTED",
+                              "CROWD_LEVEL",
+                              "SEAT_AVAILABILITY",
+                              "PARKING_AVAILABILITY",
+                              "STOCK_CHECK",
+                              "PRICE_CHECK",
+                              "SIGN_TRANSCRIPTION",
+                              "SITE_REPORT",
+                              "DOCUMENT_TRANSCRIPTION",
+                              "DOCUMENT_QA",
+                              "PRODUCT_INSPECTION",
+                              "PHONE_INQUIRY",
+                              "MEASUREMENT",
+                              "CUSTOM_CHOICE",
+                              "CUSTOM_TASK"
                             ]
                           },
                           "question": {
@@ -3540,19 +3746,88 @@
                             "type": "array",
                             "items": {
                               "type": "string",
-                              "enum": [
-                                "OPEN",
-                                "CLOSED",
-                                "NO_QUEUE",
-                                "SHORT_QUEUE",
-                                "LONG_QUEUE",
-                                "POSTED",
-                                "NOT_POSTED",
-                                "UNCLEAR"
-                              ]
+                              "minLength": 1,
+                              "maxLength": 4000
                             }
                           },
+                          "answer_schema": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "enum"
+                                    ]
+                                  },
+                                  "values": {
+                                    "minItems": 2,
+                                    "maxItems": 6,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 40
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "values"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "number"
+                                    ]
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 16
+                                  },
+                                  "min": {
+                                    "type": "number"
+                                  },
+                                  "max": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "text"
+                                    ]
+                                  },
+                                  "max_chars": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 4000
+                                  }
+                                },
+                                "required": [
+                                  "type"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
                           "location": {
+                            "nullable": true,
                             "type": "object",
                             "properties": {
                               "lat": {
@@ -3578,6 +3853,7 @@
                             ]
                           },
                           "distance_m": {
+                            "nullable": true,
                             "type": "integer",
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
@@ -3636,6 +3912,7 @@
                           "type",
                           "question",
                           "answer_values",
+                          "answer_schema",
                           "location",
                           "distance_m",
                           "reward",
@@ -3773,7 +4050,21 @@
                       "enum": [
                         "PLACE_STATUS_VERIFICATION",
                         "QUEUE_LENGTH",
-                        "NOTICE_POSTED"
+                        "NOTICE_POSTED",
+                        "CROWD_LEVEL",
+                        "SEAT_AVAILABILITY",
+                        "PARKING_AVAILABILITY",
+                        "STOCK_CHECK",
+                        "PRICE_CHECK",
+                        "SIGN_TRANSCRIPTION",
+                        "SITE_REPORT",
+                        "DOCUMENT_TRANSCRIPTION",
+                        "DOCUMENT_QA",
+                        "PRODUCT_INSPECTION",
+                        "PHONE_INQUIRY",
+                        "MEASUREMENT",
+                        "CUSTOM_CHOICE",
+                        "CUSTOM_TASK"
                       ]
                     },
                     "question": {
@@ -3783,19 +4074,88 @@
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": [
-                          "OPEN",
-                          "CLOSED",
-                          "NO_QUEUE",
-                          "SHORT_QUEUE",
-                          "LONG_QUEUE",
-                          "POSTED",
-                          "NOT_POSTED",
-                          "UNCLEAR"
-                        ]
+                        "minLength": 1,
+                        "maxLength": 4000
                       }
                     },
+                    "answer_schema": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "enum"
+                              ]
+                            },
+                            "values": {
+                              "minItems": 2,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 40
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "values"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "number"
+                              ]
+                            },
+                            "unit": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 16
+                            },
+                            "min": {
+                              "type": "number"
+                            },
+                            "max": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "text"
+                              ]
+                            },
+                            "max_chars": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 4000
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
                     "location": {
+                      "nullable": true,
                       "type": "object",
                       "properties": {
                         "lat": {
@@ -3821,6 +4181,7 @@
                       ]
                     },
                     "distance_m": {
+                      "nullable": true,
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -3879,6 +4240,7 @@
                     "type",
                     "question",
                     "answer_values",
+                    "answer_schema",
                     "location",
                     "distance_m",
                     "reward",
@@ -4477,16 +4839,8 @@
                   },
                   "answer": {
                     "type": "string",
-                    "enum": [
-                      "OPEN",
-                      "CLOSED",
-                      "NO_QUEUE",
-                      "SHORT_QUEUE",
-                      "LONG_QUEUE",
-                      "POSTED",
-                      "NOT_POSTED",
-                      "UNCLEAR"
-                    ]
+                    "minLength": 1,
+                    "maxLength": 4000
                   },
                   "capture": {
                     "type": "object",
@@ -4513,10 +4867,7 @@
                       }
                     },
                     "required": [
-                      "client_timestamp",
-                      "lat",
-                      "lng",
-                      "accuracy_m"
+                      "client_timestamp"
                     ]
                   },
                   "challenge": {
@@ -4863,16 +5214,8 @@
                         "answer": {
                           "nullable": true,
                           "type": "string",
-                          "enum": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 4000
                         }
                       },
                       "required": [
@@ -4885,24 +5228,112 @@
                       "enum": [
                         "PLACE_STATUS_VERIFICATION",
                         "QUEUE_LENGTH",
-                        "NOTICE_POSTED"
+                        "NOTICE_POSTED",
+                        "CROWD_LEVEL",
+                        "SEAT_AVAILABILITY",
+                        "PARKING_AVAILABILITY",
+                        "STOCK_CHECK",
+                        "PRICE_CHECK",
+                        "SIGN_TRANSCRIPTION",
+                        "SITE_REPORT",
+                        "DOCUMENT_TRANSCRIPTION",
+                        "DOCUMENT_QA",
+                        "PRODUCT_INSPECTION",
+                        "PHONE_INQUIRY",
+                        "MEASUREMENT",
+                        "CUSTOM_CHOICE",
+                        "CUSTOM_TASK"
                       ]
+                    },
+                    "question": {
+                      "type": "string"
                     },
                     "answer_values": {
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": [
-                          "OPEN",
-                          "CLOSED",
-                          "NO_QUEUE",
-                          "SHORT_QUEUE",
-                          "LONG_QUEUE",
-                          "POSTED",
-                          "NOT_POSTED",
-                          "UNCLEAR"
-                        ]
+                        "minLength": 1,
+                        "maxLength": 4000
                       }
+                    },
+                    "answer_schema": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "enum"
+                              ]
+                            },
+                            "values": {
+                              "minItems": 2,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 40
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "values"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "number"
+                              ]
+                            },
+                            "unit": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 16
+                            },
+                            "min": {
+                              "type": "number"
+                            },
+                            "max": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "text"
+                              ]
+                            },
+                            "max_chars": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 4000
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "location_required": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -4914,7 +5345,10 @@
                     "submissions",
                     "task_result",
                     "type",
-                    "answer_values"
+                    "question",
+                    "answer_values",
+                    "answer_schema",
+                    "location_required"
                   ]
                 }
               }
@@ -5132,16 +5566,8 @@
                         "answer": {
                           "nullable": true,
                           "type": "string",
-                          "enum": [
-                            "OPEN",
-                            "CLOSED",
-                            "NO_QUEUE",
-                            "SHORT_QUEUE",
-                            "LONG_QUEUE",
-                            "POSTED",
-                            "NOT_POSTED",
-                            "UNCLEAR"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 4000
                         }
                       },
                       "required": [
@@ -5154,24 +5580,112 @@
                       "enum": [
                         "PLACE_STATUS_VERIFICATION",
                         "QUEUE_LENGTH",
-                        "NOTICE_POSTED"
+                        "NOTICE_POSTED",
+                        "CROWD_LEVEL",
+                        "SEAT_AVAILABILITY",
+                        "PARKING_AVAILABILITY",
+                        "STOCK_CHECK",
+                        "PRICE_CHECK",
+                        "SIGN_TRANSCRIPTION",
+                        "SITE_REPORT",
+                        "DOCUMENT_TRANSCRIPTION",
+                        "DOCUMENT_QA",
+                        "PRODUCT_INSPECTION",
+                        "PHONE_INQUIRY",
+                        "MEASUREMENT",
+                        "CUSTOM_CHOICE",
+                        "CUSTOM_TASK"
                       ]
+                    },
+                    "question": {
+                      "type": "string"
                     },
                     "answer_values": {
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": [
-                          "OPEN",
-                          "CLOSED",
-                          "NO_QUEUE",
-                          "SHORT_QUEUE",
-                          "LONG_QUEUE",
-                          "POSTED",
-                          "NOT_POSTED",
-                          "UNCLEAR"
-                        ]
+                        "minLength": 1,
+                        "maxLength": 4000
                       }
+                    },
+                    "answer_schema": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "enum"
+                              ]
+                            },
+                            "values": {
+                              "minItems": 2,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 40
+                              }
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "values"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "number"
+                              ]
+                            },
+                            "unit": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 16
+                            },
+                            "min": {
+                              "type": "number"
+                            },
+                            "max": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "text"
+                              ]
+                            },
+                            "max_chars": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 4000
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "location_required": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -5183,7 +5697,10 @@
                     "submissions",
                     "task_result",
                     "type",
-                    "answer_values"
+                    "question",
+                    "answer_values",
+                    "answer_schema",
+                    "location_required"
                   ]
                 }
               }
@@ -5476,16 +5993,16 @@
                     "answer": {
                       "nullable": true,
                       "type": "string",
-                      "enum": [
-                        "OPEN",
-                        "CLOSED",
-                        "NO_QUEUE",
-                        "SHORT_QUEUE",
-                        "LONG_QUEUE",
-                        "POSTED",
-                        "NOT_POSTED",
-                        "UNCLEAR"
-                      ]
+                      "minLength": 1,
+                      "maxLength": 4000
+                    },
+                    "answers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4000
+                      }
                     },
                     "witnesses": {
                       "type": "object",
@@ -5518,17 +6035,7 @@
                         "type": "integer",
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991
-                      },
-                      "required": [
-                        "OPEN",
-                        "CLOSED",
-                        "NO_QUEUE",
-                        "SHORT_QUEUE",
-                        "LONG_QUEUE",
-                        "POSTED",
-                        "NOT_POSTED",
-                        "UNCLEAR"
-                      ]
+                      }
                     },
                     "consensus_ratio": {
                       "nullable": true,

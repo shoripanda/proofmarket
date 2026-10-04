@@ -1,4 +1,5 @@
 "use client";
+import type { AnswerSchemaView } from "@/lib/answers";
 export interface ClaimDetail {
   claim_id: string;
   verification_id: string;
@@ -13,5 +14,8 @@ export interface ClaimDetail {
   }[];
   task_result: { status: string; answer: string | null } | null;
   type: string;
+  question: string;
   answer_values: string[];
+  answer_schema: AnswerSchemaView;
+  location_required: boolean;
 }

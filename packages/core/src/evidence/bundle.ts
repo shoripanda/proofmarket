@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
-import type { AnswerValue, CheckStatus, Outcome, TaskType } from "../domain/enums.ts";
+import type { CheckStatus, Outcome, TaskType } from "../domain/enums.ts";
 
 export const EVIDENCE_BUNDLE_SCHEMA = "proofmarket.evidence-bundle.v1" as const;
 export const TASK_ID_HASH_DOMAIN = "proofmarket:task:v1:" as const;
@@ -13,7 +13,8 @@ export type Sha256Hex = `sha256:${string}`;
 export interface BundleSubmission {
   /** HMAC-SHA256(WORKER_REF_SALT, worker_id + ":" + verification_id) — differs per task (07 §5.1). */
   witness_ref: `hmac:${string}`;
-  answer: AnswerValue;
+  /** Fixed code or number as written; a text answer appears only as its SHA-256 (01 §4.15). */
+  answer: string;
   evidence_sha256: Sha256Hex[];
   server_received_at: string; // ISO 8601, UTC, second precision
   checks: Partial<
@@ -31,11 +32,11 @@ export interface EvidenceBundle {
   task_id_hash: Sha256Hex;
   type: TaskType;
   question_hash: Sha256Hex;
-  answer_values: AnswerValue[];
+  answer_values: string[];
   assurance: { required_witnesses: number; quorum: number };
   submissions: BundleSubmission[];
   outcome: Outcome;
-  final_answer: AnswerValue | null;
+  final_answer: string | null;
   finalized_at: string; // decided once by the app, stored identically in DB (04 §3.13)
 }
 
@@ -82,6 +83,8 @@ export const RESULT_HASH_EXCLUDED_FIELDS = [
   "attestation",
   "settlement",
   "verified_at",
+  /** Text answers in full (01 §4.15). `answer` carries their commitment: the SHA-256 of the first one. */
+  "answers",
 ] as const;
 
 /** result_hash = SHA-256(JCS(result without RESULT_HASH_EXCLUDED_FIELDS)). */

@@ -104,6 +104,55 @@ describe("worker flow", () => {
     expect(v).toMatchObject({ type: "QUEUE_LENGTH", status: "VERIFIED", result: { answer: "LONG_QUEUE" } });
   });
 
+  it("01 §4.15: a text task with no location is listed anywhere, skips the geofence and returns every text", async () => {
+    const id = await openTask(t, {
+      type: "DOCUMENT_TRANSCRIPTION",
+      question: "『坊っちゃん』新潮文庫版 12ページの1段落目を書き起こしてください",
+      answer_schema: { type: "text", max_chars: 500 },
+      location: undefined,
+    });
+    // listed even far from any shop, with no distance
+    const far = (await (await W(t, alice).list("lat=43.064&lng=141.347")).json()) as {
+      tasks: { verification_id: string; distance_m: number | null; location: unknown }[];
+    };
+    expect(far.tasks).toEqual([
+      expect.objectContaining({ verification_id: id, distance_m: null, location: null }),
+    ]);
+    const tooLong = await witness(t, alice, id, { answer: "あ".repeat(501) });
+    expect(tooLong.res.status).toBe(400);
+    const text = "親譲りの無鉄砲で小供の時から損ばかりしている。";
+    const { body } = await witness(t, alice, id, {
+      answer: `  ${text}\n`,
+      at: { lat: 43.064, lng: 141.347 },
+      claimId: tooLong.claimId,
+    });
+    expect(body).toMatchObject({ state: "VALID", checks: { geofence: "not_run" } });
+    const v = await getView(id);
+    expect(v.status).toBe("VERIFIED");
+    expect(v.result.answers).toEqual([text]);
+    expect(v.result.answer).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(v.result.answer_counts).toEqual({});
+    // the public bundle never holds the text itself
+    const [res] = await t.db
+      .select()
+      .from(schema.verificationResults)
+      .where(eq(schema.verificationResults.verificationId, id));
+    expect(JSON.stringify(res?.evidenceBundle)).not.toContain(text);
+  });
+
+  it("01 §4.15: a number task stores the number in canonical form and checks the range", async () => {
+    const id = await openTask(t, {
+      type: "PRICE_CHECK",
+      question: "店頭のカフェラテ（M）の値段",
+      answer_schema: { type: "number", unit: "円", min: 0, max: 100000 },
+    });
+    const bad = await witness(t, alice, id, { answer: "高い" });
+    expect(bad.res.status).toBe(400);
+    const { body } = await witness(t, alice, id, { answer: "1,280", claimId: bad.claimId });
+    expect(body).toMatchObject({ state: "VALID", checks: { geofence: "pass" } });
+    expect((await getView(id)).result).toMatchObject({ status: "VERIFIED", answer: "1280" });
+  });
+
   it("01 §4.10: a worker can register and withdraw interest in yen payouts; /me reports it", async () => {
     const me = async () =>
       (await (
