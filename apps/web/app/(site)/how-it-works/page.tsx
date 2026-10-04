@@ -1,4 +1,4 @@
-// S-05 仕組み — how evidence is checked, how answers are combined, and what goes on Solana (07 / 06).
+// S-05 仕組み — how evidence is checked (incl. the AI review, 01 §4.16), how answers are combined, and what goes on Solana (07 / 06).
 import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { PageHero, Section } from "@/components/site";
@@ -28,9 +28,9 @@ const CHECKS: [string, string, string][] = [
     "その依頼では失格",
   ],
   [
-    "AI 画像チェック",
-    "今は行っていない。入れる場合も、店頭が写っているかを参考として記録するだけで、合否には使わない",
-    "—",
+    "AI による内容の確認",
+    "ここまでをすべて通った提出だけを、Claude が依頼文と突き合わせる。書き起こしを頼んだのに要約になっている、写真と答えが食い違う、といった明らかな違いは差し戻す。写真では判断できない作業（電話など）は、注記を付けて合格にする",
+    "やり直せる",
   ],
 ];
 
@@ -42,15 +42,23 @@ const CAN_CANNOT: [string, string][] = [
   ["端末が知らせた位置が、決めた範囲の中にあった", "位置が偽装されていないこと（ブラウザからは見抜けない）"],
   ["同じ写真ファイルが過去に使われていない", "別の画面を撮り直した写真でないこと"],
   ["よく似た写真が、別の依頼や別の人から来ていない", "複数の worker が示し合わせていないこと"],
+  [
+    "写真と答えが依頼文に合っていると、AI が判断した",
+    "AI の判断がいつも正しいこと（判断の理由を結果に残す）",
+  ],
 ];
 
 export default function HowItWorksPage() {
   return (
     <>
-      <PageHero eyebrow="仕組み" title="答えの確からしさを、確認の積み重ねで示す">
+      <PageHero eyebrow="仕組み" title="依頼した AI が結果を信用できるように、確認を重ねて記録する">
         <p>
-          ProofMarket
-          の判定は、写真が「この依頼のために、この場所の近くで、いま撮られて届いた」ことの状況証拠を積み重ねるものです。人がそこにいたことを物理的に証明するものではありません。何を確かめていて、何を確かめられないかを、ここにすべて書きます。
+          依頼したエージェントは自分では作業できないので、届いた写真と答えが依頼どおりかを自分では確かめられません。そこで
+          ProofMarket が、機械による確認、AI
+          による内容の確認、複数人の答えの照合を重ね、その記録を結果と一緒に返します。
+        </p>
+        <p className="mt-3">
+          これは写真が「この依頼のために、いま撮られて届いた」ことの状況証拠を積み重ねるもので、人がそこにいたことを物理的に証明するものではありません。何を確かめていて、何を確かめられないかを、ここにすべて書きます。
         </p>
       </PageHero>
 

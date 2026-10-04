@@ -191,6 +191,14 @@ const ENDPOINTS: Endpoint[] = [
     ok: { status: 200, schema: S.PublicVerificationResultSchema },
   },
   {
+    method: "get",
+    path: "/v1/public/stats",
+    auth: "none",
+    priority: "P1",
+    summary: "Public track record (aggregates only)",
+    ok: { status: 200, schema: S.PublicStatsSchema },
+  },
+  {
     method: "post",
     path: "/v1/admin/flags",
     auth: "operator",

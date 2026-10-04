@@ -23,7 +23,7 @@
 | — | この予定表と指示書をリポジトリに置く | — | 完了 |
 | A | x402 で、API キーなしに USDC を払って依頼できる窓口と、払って依頼する見本のエージェント | `docs/agents/A-x402.md` | 未着手 |
 | B | 証拠の写真を最大4枚にする | `docs/agents/B-multi-photo.md` | 完了（DB の移行なし） |
-| C | 公開の実績ページ `/stats` と、サイトの看板の言い換え | `docs/agents/C-stats-and-copy.md` | 未着手 |
+| C | 公開の実績ページ `/stats` と、サイトの看板の言い換え | `docs/agents/C-stats-and-copy.md` | 完了（本番の手順なし。x402 への言及は A の取り込み後） |
 | D | ピッチ資料・動画3本の台本・X の投稿文・worker 募集文（文書だけ） | `docs/agents/D-pitch-materials.md` | 完了 |
 | E | Claude・ChatGPT から本番の MCP / API につなぐ確認と、接続手順のページ | `docs/agents/E-agent-clients.md` | 未着手 |
 | 本体 | 各担当の「本番で必要な手順」（Supabase の移行、launchd の入れ直しなど）をまとめて行う | — | 待機 |
