@@ -18,7 +18,16 @@ export interface BundleSubmission {
   evidence_sha256: Sha256Hex[];
   server_received_at: string; // ISO 8601, UTC, second precision
   checks: Partial<
-    Record<"freshness" | "geofence" | "media_schema" | "replay" | "task_nonce" | "duplicate", CheckStatus>
+    Record<
+      | "freshness"
+      | "geofence"
+      | "media_schema"
+      | "replay"
+      | "task_nonce"
+      | "duplicate"
+      | "vision_consistency",
+      CheckStatus
+    >
   >;
 }
 
@@ -85,6 +94,8 @@ export const RESULT_HASH_EXCLUDED_FIELDS = [
   "verified_at",
   /** Text answers in full (01 §4.15). `answer` carries their commitment: the SHA-256 of the first one. */
   "answers",
+  /** AI review texts (01 §4.16). The pass/warning status itself is in `checks.vision_consistency`. */
+  "reviews",
 ] as const;
 
 /** result_hash = SHA-256(JCS(result without RESULT_HASH_EXCLUDED_FIELDS)). */

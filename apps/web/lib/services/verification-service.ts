@@ -22,7 +22,15 @@ import { appendAudit } from "./audit";
 import { witnessRef } from "./crypto";
 import { applyTaskEvent, type TaskRow } from "./task-engine";
 
-const BUNDLE_CHECKS = ["freshness", "geofence", "media_schema", "replay", "task_nonce", "duplicate"] as const;
+const BUNDLE_CHECKS = [
+  "freshness",
+  "geofence",
+  "media_schema",
+  "replay",
+  "task_nonce",
+  "duplicate",
+  "vision_consistency",
+] as const;
 const RESULT_CHECKS = [
   "geofence",
   "freshness",

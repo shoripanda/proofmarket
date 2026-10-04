@@ -198,6 +198,20 @@ export const VerificationResultSchema = z.object({
   answer: AnswerValueSchema.nullable(),
   /** Text answers: every accepted answer, oldest first. `answer` is the first of them. */
   answers: z.array(AnswerValueSchema).optional(),
+  /**
+   * AI review of each accepted submission (01 §4.16): did the photo and answer do what was asked?
+   * Absent when no reviewer is configured. Requester-only; excluded from result_hash (its status is in checks).
+   */
+  reviews: z
+    .array(
+      z.object({
+        verdict: z.enum(["pass", "uncertain", "unavailable"]),
+        reason: z.string(),
+        observed: z.string(),
+        model: z.string().nullable(),
+      }),
+    )
+    .optional(),
   witnesses: z.object({ valid: z.number().int(), required: z.number().int(), quorum: z.number().int() }),
   answer_counts: z.record(z.string(), z.number().int()),
   consensus_ratio: z.number().min(0).max(1).nullable(),

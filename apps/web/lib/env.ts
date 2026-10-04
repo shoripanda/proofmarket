@@ -38,7 +38,9 @@ const FullSchema = z.object({
   WEBHOOK_SIGNING_SECRET_PEPPER: z.string().min(16),
   INTERNAL_CRON_SECRET: z.string().min(32),
   ADMIN_TOKEN: z.string().min(32),
+  /** Enables the AI review of submissions (01 §4.16). */
   ANTHROPIC_API_KEY: z.string().optional(),
+  REVIEW_MODEL: z.string().optional(),
 });
 
 const DEV_SECRET = "dev-only-not-a-secret-dev-only-not-a-secret";

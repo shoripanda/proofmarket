@@ -198,6 +198,8 @@ export const CHECK_REASON_CODES = [
   "LOCATION_ACCURACY_TOO_LOW",
   "EVIDENCE_OUTSIDE_GEOFENCE",
   "EVIDENCE_NEAR_DUPLICATE",
+  /** AI review: the photo or answer does not do what was asked (01 §4.16). Retryable. */
+  "EVIDENCE_MISMATCH",
 ] as const;
 export type CheckReasonCode = (typeof CHECK_REASON_CODES)[number];
 

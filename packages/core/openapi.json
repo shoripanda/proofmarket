@@ -912,6 +912,38 @@
                             "maxLength": 4000
                           }
                         },
+                        "reviews": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "verdict": {
+                                "type": "string",
+                                "enum": [
+                                  "pass",
+                                  "uncertain",
+                                  "unavailable"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string"
+                              },
+                              "observed": {
+                                "type": "string"
+                              },
+                              "model": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "verdict",
+                              "reason",
+                              "observed",
+                              "model"
+                            ]
+                          }
+                        },
                         "witnesses": {
                           "type": "object",
                           "properties": {
@@ -1043,7 +1075,8 @@
                             "EVIDENCE_STALE",
                             "LOCATION_ACCURACY_TOO_LOW",
                             "EVIDENCE_OUTSIDE_GEOFENCE",
-                            "EVIDENCE_NEAR_DUPLICATE"
+                            "EVIDENCE_NEAR_DUPLICATE",
+                            "EVIDENCE_MISMATCH"
                           ]
                         },
                         "evidence_root": {
@@ -1697,6 +1730,38 @@
                             "maxLength": 4000
                           }
                         },
+                        "reviews": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "verdict": {
+                                "type": "string",
+                                "enum": [
+                                  "pass",
+                                  "uncertain",
+                                  "unavailable"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string"
+                              },
+                              "observed": {
+                                "type": "string"
+                              },
+                              "model": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "verdict",
+                              "reason",
+                              "observed",
+                              "model"
+                            ]
+                          }
+                        },
                         "witnesses": {
                           "type": "object",
                           "properties": {
@@ -1828,7 +1893,8 @@
                             "EVIDENCE_STALE",
                             "LOCATION_ACCURACY_TOO_LOW",
                             "EVIDENCE_OUTSIDE_GEOFENCE",
-                            "EVIDENCE_NEAR_DUPLICATE"
+                            "EVIDENCE_NEAR_DUPLICATE",
+                            "EVIDENCE_MISMATCH"
                           ]
                         },
                         "evidence_root": {
@@ -4950,7 +5016,8 @@
                         "EVIDENCE_STALE",
                         "LOCATION_ACCURACY_TOO_LOW",
                         "EVIDENCE_OUTSIDE_GEOFENCE",
-                        "EVIDENCE_NEAR_DUPLICATE"
+                        "EVIDENCE_NEAR_DUPLICATE",
+                        "EVIDENCE_MISMATCH"
                       ]
                     },
                     "reason_message_ja": {
@@ -5166,7 +5233,8 @@
                               "EVIDENCE_STALE",
                               "LOCATION_ACCURACY_TOO_LOW",
                               "EVIDENCE_OUTSIDE_GEOFENCE",
-                              "EVIDENCE_NEAR_DUPLICATE"
+                              "EVIDENCE_NEAR_DUPLICATE",
+                              "EVIDENCE_MISMATCH"
                             ]
                           },
                           "reason_message_ja": {
@@ -5518,7 +5586,8 @@
                               "EVIDENCE_STALE",
                               "LOCATION_ACCURACY_TOO_LOW",
                               "EVIDENCE_OUTSIDE_GEOFENCE",
-                              "EVIDENCE_NEAR_DUPLICATE"
+                              "EVIDENCE_NEAR_DUPLICATE",
+                              "EVIDENCE_MISMATCH"
                             ]
                           },
                           "reason_message_ja": {
@@ -6002,6 +6071,38 @@
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 4000
+                      }
+                    },
+                    "reviews": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "pass",
+                              "uncertain",
+                              "unavailable"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "observed": {
+                            "type": "string"
+                          },
+                          "model": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "verdict",
+                          "reason",
+                          "observed",
+                          "model"
+                        ]
                       }
                     },
                     "witnesses": {

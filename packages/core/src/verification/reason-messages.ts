@@ -1,5 +1,5 @@
 // Worker-facing rejection messages (07 §6). Japanese first; English is P1.
-// Placeholders: {n} minutes, {a} accuracy m, {d} distance m, {r} radius m.
+// Placeholders: {n} minutes, {a} accuracy m, {d} distance m, {r} radius m, {x} the AI reviewer's reason.
 
 import type { CheckReasonCode } from "../domain/enums.ts";
 
@@ -16,5 +16,8 @@ export const REASON_MESSAGES: Partial<Record<CheckReasonCode | "NONCE_EXPIRED", 
   MEDIA_DECODE_FAILED: { ja: "写真を読み込めませんでした。撮り直してください。" },
   EVIDENCE_REPLAYED: { ja: "以前に使われた写真と同じファイルです。このタスクは終了しました。" },
   EVIDENCE_NEAR_DUPLICATE: { ja: "ほかの提出とほぼ同じ写真です。このタスクは終了しました。" },
+  EVIDENCE_MISMATCH: {
+    ja: "依頼の内容と合っていないと判定されました。{x} 内容を直して、もう一度送ってください。",
+  },
   NONCE_EXPIRED: { ja: "撮影の受付時間を過ぎました。もう一度「撮影を始める」を押してください。" },
 };

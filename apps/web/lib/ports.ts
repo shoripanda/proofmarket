@@ -25,3 +25,30 @@ export interface PushSender {
     payload: string,
   ): Promise<{ ok: true } | { ok: false; gone: boolean }>;
 }
+
+/** What the reviewer is shown for one submission (01 §4.16). */
+export interface ReviewInput {
+  type: string;
+  /** The requester's instruction, verbatim. Untrusted. */
+  question: string;
+  answerFormat: string;
+  /** The worker's answer, verbatim. Untrusted. */
+  answer: string;
+  /** The EXIF-free derived JPEG (long edge <= 1280 px). */
+  image: Buffer;
+}
+
+export interface ReviewOutput {
+  /** pass: the work was done as asked. fail: clearly not. uncertain: cannot tell from what was sent. */
+  verdict: "pass" | "fail" | "uncertain";
+  /** One or two sentences in Japanese, shown to the worker on fail and to the requester always. */
+  reason: string;
+  /** What the photo shows, briefly. Requester-only. */
+  observed: string;
+  model: string;
+}
+
+/** AI review of whether a submission fulfils the request (01 §4.16). Null when no API key is configured. */
+export interface SubmissionReviewer {
+  review(input: ReviewInput): Promise<ReviewOutput>;
+}

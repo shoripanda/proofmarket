@@ -5,12 +5,13 @@ import { createDb, type Db } from "@proofmarket/db";
 import { openPgliteDb } from "@proofmarket/db/testing";
 import { createSettlementAdapter, type SettlementAdapter } from "@proofmarket/solana";
 import bs58 from "bs58";
+import { createClaudeReviewer } from "./adapters/claude-reviewer";
 import { assertDevAllowed, devChain, devIdentity, localStorage } from "./adapters/dev";
 import { createPrivyIdentity } from "./adapters/privy";
 import { createSupabaseStorage } from "./adapters/supabase-storage";
 import { createWebPushSender } from "./adapters/web-push";
 import { env, isDev } from "./env";
-import type { EvidenceStorage, IdentityProvider, PushSender } from "./ports";
+import type { EvidenceStorage, IdentityProvider, PushSender, SubmissionReviewer } from "./ports";
 
 /** Everything a service needs, injected so integration tests can use PGlite and fakes. */
 export interface AppContext {
@@ -23,6 +24,8 @@ export interface AppContext {
   settlement: () => SettlementAdapter;
   /** Null when VAPID keys are not configured: push is simply unavailable. */
   push: PushSender | null;
+  /** Null when ANTHROPIC_API_KEY is not set: vision_consistency is then not_run (01 §4.16). */
+  reviewer: SubmissionReviewer | null;
 }
 
 export interface AppConfig {
@@ -69,6 +72,7 @@ function buildContext(): AppContext {
       storage: localStorage(join(DEV_DATA_DIR, "storage"), e.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"),
       settlement: () => chain,
       push: pushFromEnv(e),
+      reviewer: reviewerFromEnv(),
     };
     return ctx;
   }
@@ -93,8 +97,16 @@ function buildContext(): AppContext {
       }),
     ),
     push: pushFromEnv(e),
+    reviewer: reviewerFromEnv(),
   };
   return ctx;
+}
+
+function reviewerFromEnv(): SubmissionReviewer | null {
+  const key = process.env.ANTHROPIC_API_KEY;
+  return key
+    ? createClaudeReviewer({ apiKey: key, model: process.env.REVIEW_MODEL || "claude-opus-5-5" })
+    : null;
 }
 
 function pushFromEnv(e: ReturnType<typeof env>): PushSender | null {

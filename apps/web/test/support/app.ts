@@ -5,7 +5,7 @@ import type { AppContext } from "../../lib/context";
 import { route } from "../../lib/http";
 import { createPrincipal, issueApiKey, registerPlace, topUp } from "../../lib/services/admin-service";
 import { FakeChain } from "./chain";
-import { FakeIdentity, FakePush, FakeStorage } from "./fakes";
+import { FakeIdentity, FakePush, FakeReviewer, FakeStorage } from "./fakes";
 
 export const SHOP = { lat: 35.6595, lng: 139.7005 };
 
@@ -16,6 +16,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
   const storage = new FakeStorage(() => now);
   const chain = new FakeChain();
   const push = new FakePush();
+  const reviewer = new FakeReviewer();
   const app: AppContext = {
     db,
     now: () => now,
@@ -23,6 +24,8 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
     storage,
     settlement: () => chain,
     push,
+    // Off by default so other tests are unaffected; `t.app.reviewer = t.reviewer` turns it on.
+    reviewer: null,
     config: {
       appEnv: "test",
       pilotBBox: { minLat: 35.6, minLng: 139.65, maxLat: 35.72, maxLng: 139.78 },
@@ -49,6 +52,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
     storage,
     chain,
     push,
+    reviewer,
     principalId,
     credentialId,
     apiKey,

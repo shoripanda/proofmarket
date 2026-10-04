@@ -140,6 +140,76 @@ describe("worker flow", () => {
     expect(JSON.stringify(res?.evidenceBundle)).not.toContain(text);
   });
 
+  it("01 §4.16: the AI review sends a mismatched submission back, then records the passing review", async () => {
+    t.app.reviewer = t.reviewer;
+    const id = await openTask(t, {
+      type: "DOCUMENT_TRANSCRIPTION",
+      question: "手元の本の書名と、どこかのページの最初の1文を書き起こしてください",
+      answer_schema: { type: "text" },
+      location: undefined,
+    });
+    t.reviewer.next = { verdict: "fail", reason: "書名が書かれていません。", observed: "本の見開き" };
+    const first = await witness(t, alice, id, { answer: "会社の作り方について書かれている。" });
+    expect(first.body).toMatchObject({
+      state: "INVALID",
+      reason_code: "EVIDENCE_MISMATCH",
+      retryable: true,
+      checks: { vision_consistency: "fail" },
+    });
+    expect(first.body.reason_message_ja).toContain("書名が書かれていません。");
+    // the reviewer saw the request, the answer and the photo
+    expect(t.reviewer.seen[0]).toMatchObject({
+      type: "DOCUMENT_TRANSCRIPTION",
+      answer: "会社の作り方について書かれている。",
+    });
+    expect(t.reviewer.seen[0]?.question).toContain("書名");
+    expect(t.reviewer.seen[0]?.image.length).toBeGreaterThan(0);
+    // the worker's claim detail shows the reason too
+    const detail = (await (
+      await call(
+        (r) => handleClaimDetail(t.app, r, first.claimId),
+        jsonReq("GET", `/v1/worker/claims/${first.claimId}`, { key: alice }),
+      )
+    ).json()) as { submissions: { reason_message_ja: string }[] };
+    expect(detail.submissions[0]?.reason_message_ja).toContain("書名が書かれていません。");
+
+    t.reviewer.next = { verdict: "pass", reason: "書名と1文がそろっています。", observed: "本のページ" };
+    const second = await witness(t, alice, id, {
+      answer: "『起業の教科書』 株式会社は一人でも作れる。",
+      claimId: first.claimId,
+    });
+    expect(second.body).toMatchObject({ state: "VALID", checks: { vision_consistency: "pass" } });
+    const v = await getView(id);
+    expect(v.result.checks.vision_consistency).toBe("pass");
+    expect(v.result.reviews).toEqual([
+      {
+        verdict: "pass",
+        reason: "書名と1文がそろっています。",
+        observed: "本のページ",
+        model: "fake-reviewer",
+      },
+    ]);
+  });
+
+  it("01 §4.16: an uncertain review or a review outage passes with a warning", async () => {
+    t.app.reviewer = t.reviewer;
+    t.reviewer.next = { verdict: "uncertain", reason: "文字が読めません。", observed: "ぼやけた紙" };
+    const a = await openTask(t);
+    expect((await witness(t, alice, a)).body).toMatchObject({
+      state: "VALID",
+      checks: { vision_consistency: "warning" },
+    });
+    t.reviewer.fail = true;
+    const b = await openTask(t);
+    expect((await witness(t, bob, b, { bytes: await photo(1280, 960) })).body).toMatchObject({
+      state: "VALID",
+      checks: { vision_consistency: "warning" },
+    });
+    expect((await getView(b)).result.reviews).toEqual([
+      { verdict: "unavailable", reason: "", observed: "", model: null },
+    ]);
+  });
+
   it("01 §4.15: a number task stores the number in canonical form and checks the range", async () => {
     const id = await openTask(t, {
       type: "PRICE_CHECK",
