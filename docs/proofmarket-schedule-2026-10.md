@@ -1,6 +1,6 @@
 # ProofMarket 提出までのスケジュール（Crypto World's Fair）
 
-最終更新: 2026-10-04 15:30 JST
+最終更新: 2026-10-04 16:10 JST
 締め切り: 2026-10-12（Colosseum への提出）。提出後も開発は止めない（面談まで進捗を見せる）。
 
 このファイルは、作業する人とエージェント全員の共有の予定表。作業を始めるとき・終えたときに「状態」を書き換える。
@@ -16,15 +16,17 @@
 
 ## 今日（10/4）19:00 JST までの作業
 
-| # | 作業 | 担当 | 状態 |
+オーナーがターミナルで画面を担当の数だけ開き、それぞれに `docs/agents/README.md` と担当の指示書を読ませて進める。エージェントは自分でサブエージェントを起動しない（トークンを大量に使うため）。
+
+| 担当 | 作業 | 指示書 | 状態 |
 |---|---|---|---|
-| 0 | この予定表をリポジトリに置く | Claude（本体） | 完了 |
-| 1 | x402 で、API キーなしに USDC を払って依頼できる窓口（REST）と、払って依頼する見本のエージェント | Claude（本体） | 作業中 |
-| 2 | 証拠の写真を複数枚（最大4枚）にする | Claude（別エージェント・worktree） | 作業中 |
-| 3 | 公開の実績ページ `/stats`（完了件数・worker 数・支払い額・Solana の記録へのリンク） | Claude（別エージェント・worktree） | 作業中 |
-| 4 | ピッチ資料・ピッチ動画/技術デモ動画/宣伝動画の台本・X の投稿文の下書き（日英） | Claude（別エージェント） | 作業中 |
-| 5 | 看板の言い換えをサイト（トップ・開発者向け・仕組み）に反映 | Claude（本体、1 の後） | 未着手 |
-| 6 | Claude（claude.ai・Claude Code）と ChatGPT から本番の MCP につないで依頼→結果まで通す確認と、接続手順のページ | Claude（本体）＋オーナー（claude.ai / ChatGPT の画面操作） | 未着手 |
+| — | この予定表と指示書をリポジトリに置く | — | 完了 |
+| A | x402 で、API キーなしに USDC を払って依頼できる窓口と、払って依頼する見本のエージェント | `docs/agents/A-x402.md` | 未着手 |
+| B | 証拠の写真を最大4枚にする | `docs/agents/B-multi-photo.md` | 未着手 |
+| C | 公開の実績ページ `/stats` と、サイトの看板の言い換え | `docs/agents/C-stats-and-copy.md` | 未着手 |
+| D | ピッチ資料・動画3本の台本・X の投稿文・worker 募集文（文書だけ） | `docs/agents/D-pitch-materials.md` | 未着手 |
+| E | Claude・ChatGPT から本番の MCP / API につなぐ確認と、接続手順のページ | `docs/agents/E-agent-clients.md` | 未着手 |
+| 本体 | 各担当の「本番で必要な手順」（Supabase の移行、launchd の入れ直しなど）をまとめて行う | — | 待機 |
 
 ## 10/5〜10/12
 
@@ -51,3 +53,7 @@
 - Solana: Devnet（program `A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s`）
 - AI による内容の確認: オーナーの Mac の launchd `com.proofmarket.review-runner`（2分ごと、`scripts/review-runner.ts`）
 - 秘密の値は `~/.config/proofmarket/` にだけ置く。リポジトリとチャットには書かない
+
+## 本番で必要な手順（各担当が書き足す）
+
+- （まだ無い）
