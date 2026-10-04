@@ -19,7 +19,7 @@ import bs58 from "bs58";
 import type { Proofmarket } from "../packages/solana/idl/proofmarket.ts";
 import { args, need } from "./lib.ts";
 
-const DEVNET_GENESIS = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1";
+const DEVNET_GENESIS = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
 const CIRCLE_DEVNET_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 const DIR = join(homedir(), ".config", "proofmarket");
 
