@@ -452,7 +452,17 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
       submission_id: s.id,
       state: s.state as "VALID" | "INVALID",
       reason_code: s.reasonCode,
-      reason_message_ja: s.reasonCode ? reasonMessage(s.reasonCode, {}) : null,
+      reason_message_ja: s.reasonCode
+        ? reasonMessage(s.reasonCode, {
+            x:
+              (
+                checks.find((c) => c.submissionId === s.id && c.checkType === "vision_consistency")
+                  ?.machineDetails as {
+                  reason?: string;
+                } | null
+              )?.reason ?? "",
+          })
+        : null,
       retryable: s.state === "INVALID" && claim.state === "ACTIVE",
       checks: Object.fromEntries(
         checks.filter((c) => c.submissionId === s.id).map((c) => [c.checkType, c.status]),

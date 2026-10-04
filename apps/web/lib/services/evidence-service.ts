@@ -27,13 +27,44 @@ import { constraintName, type Db, pgErrorCode, schema } from "@proofmarket/db";
 import { and, eq, gte, isNotNull, ne } from "drizzle-orm";
 import sharp from "sharp";
 import type { AppContext } from "../context";
+import type { SubmissionReviewer } from "../ports";
 import { appendAudit } from "./audit";
 import { encryptBytes, encryptLocation, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
-import { applyTaskEvent, taskCounts } from "./task-engine";
+import { applyTaskEvent, type TaskRow, taskCounts } from "./task-engine";
 import { taskLocation } from "./task-location";
 import { evaluateConsensus } from "./verification-service";
 import { lockOwnClaim } from "./worker-service";
+
+async function reviewSubmission(
+  reviewer: SubmissionReviewer,
+  task: TaskRow,
+  answer: string,
+  image: Buffer,
+): Promise<CheckOutcome> {
+  const spec = answerSchemaOf(
+    task.answerKind,
+    task.answerValues,
+    task.answerSpec as Record<string, unknown> | null,
+  );
+  try {
+    const r = await reviewer.review({
+      type: task.type,
+      question: task.question,
+      answerFormat: JSON.stringify(spec),
+      answer,
+      image,
+    });
+    const details = { verdict: r.verdict, reason: r.reason, observed: r.observed, model: r.model };
+    if (r.verdict === "fail")
+      return { type: "vision_consistency", status: "fail", reasonCode: "EVIDENCE_MISMATCH", details };
+    return { type: "vision_consistency", status: r.verdict === "pass" ? "pass" : "warning", details };
+  } catch (e) {
+    // The review service being down must not block workers: the result shows the check as a warning.
+    const error = e instanceof Error ? e.message.slice(0, 200) : "unknown";
+    return { type: "vision_consistency", status: "warning", details: { verdict: "unavailable", error } };
+  }
+}
 
 interface ProcessedImage {
   sha256: Buffer;
@@ -261,6 +292,12 @@ export async function submitEvidence(
         : { type: "duplicate", status: "not_run" },
     () => ({ type: "vision_consistency", status: "not_run" }),
   ]);
+  // AI review (01 §4.16): once every mechanical check has passed, Claude judges whether the photo and the answer
+  // actually do what was asked. A clear miss fails the attempt (retryable); "uncertain" is recorded as a warning.
+  const reviewAt = results.findIndex((r) => r.type === "vision_consistency");
+  if (app.reviewer && img?.derived && !firstFailure(results) && reviewAt >= 0) {
+    results[reviewAt] = await reviewSubmission(app.reviewer, task, answer, img.derived);
+  }
 
   // A replayed file has no evidence row (unique sha256), so nothing would ever purge it: delete it now.
   if (replayConflict) await app.storage.remove("evidence-raw", [upload.objectKey]);
@@ -368,6 +405,7 @@ export async function submitEvidence(
           r: d?.radius_m ?? task.radiusM ?? "",
           a: d?.accuracy_m ?? "",
           n: Math.round(task.freshnessMaxAgeS / 60),
+          x: (failed.details as { reason?: string } | undefined)?.reason ?? "",
         })
       : null,
     retryable: claimState === "ACTIVE",

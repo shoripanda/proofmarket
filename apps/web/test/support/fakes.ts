@@ -1,4 +1,11 @@
-import type { EvidenceStorage, IdentityProvider, PushSender } from "../../lib/ports";
+import type {
+  EvidenceStorage,
+  IdentityProvider,
+  PushSender,
+  ReviewInput,
+  ReviewOutput,
+  SubmissionReviewer,
+} from "../../lib/ports";
 
 /** Tokens look like `tok:<userId>`; addresses come from the map. */
 export class FakeIdentity implements IdentityProvider {
@@ -38,6 +45,18 @@ export class FakeStorage implements EvidenceStorage {
 }
 
 /** Records pushes; endpoints in `gone` answer like a 410. */
+/** Returns `next` for every review and records what it was shown. */
+export class FakeReviewer implements SubmissionReviewer {
+  next: Omit<ReviewOutput, "model"> = { verdict: "pass", reason: "依頼どおりです。", observed: "本のページ" };
+  fail = false;
+  seen: ReviewInput[] = [];
+  async review(input: ReviewInput): Promise<ReviewOutput> {
+    this.seen.push(input);
+    if (this.fail) throw new Error("review service down");
+    return { ...this.next, model: "fake-reviewer" };
+  }
+}
+
 export class FakePush implements PushSender {
   sent: { endpoint: string; payload: string }[] = [];
   gone = new Set<string>();

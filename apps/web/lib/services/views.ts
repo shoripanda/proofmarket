@@ -104,6 +104,7 @@ export async function buildResult(db: Db, task: TaskRow): Promise<VerificationRe
         ? (`sha256:${createHash("sha256").update(res.finalAnswer).digest("hex")}` as const)
         : (res.finalAnswer ?? null),
     ...(task.answerKind === "text" ? { answers: await acceptedTexts(db, res.acceptedSubmissionIds) } : {}),
+    ...(await reviewsOf(db, res.acceptedSubmissionIds)),
     witnesses: { valid: res.validWitnessCount, required: res.requiredWitnesses, quorum: res.quorum },
     answer_counts: answerCounts as VerificationResult["answer_counts"],
     consensus_ratio: consensusRatio(answerCounts),
@@ -159,6 +160,38 @@ async function recheckView(db: Db, task: TaskRow): Promise<GetVerificationRespon
     answer: theirs?.finalAnswer ?? null,
     matches_original:
       theirs?.outcome === "VERIFIED" && mine?.finalAnswer ? theirs.finalAnswer === mine.finalAnswer : null,
+  };
+}
+
+/** AI review per accepted submission (01 §4.16), oldest first. Omitted when nothing was reviewed. */
+async function reviewsOf(db: Db, ids: readonly string[]): Promise<Pick<VerificationResult, "reviews">> {
+  if (ids.length === 0) return {};
+  const rows = await db
+    .select({ details: schema.evidenceChecks.machineDetails, status: schema.evidenceChecks.status })
+    .from(schema.evidenceChecks)
+    .innerJoin(
+      schema.witnessSubmissions,
+      eq(schema.witnessSubmissions.id, schema.evidenceChecks.submissionId),
+    )
+    .where(
+      and(
+        inArray(schema.evidenceChecks.submissionId, [...ids]),
+        eq(schema.evidenceChecks.checkType, "vision_consistency"),
+      ),
+    )
+    .orderBy(asc(schema.witnessSubmissions.serverReceivedAt));
+  const reviewed = rows.filter((r) => r.status !== "not_run");
+  if (reviewed.length === 0) return {};
+  return {
+    reviews: reviewed.map((r) => {
+      const d = (r.details ?? {}) as { verdict?: string; reason?: string; observed?: string; model?: string };
+      return {
+        verdict: d.verdict === "pass" || d.verdict === "uncertain" ? d.verdict : "unavailable",
+        reason: d.reason ?? "",
+        observed: d.observed ?? "",
+        model: d.model ?? null,
+      };
+    }),
   };
 }
 

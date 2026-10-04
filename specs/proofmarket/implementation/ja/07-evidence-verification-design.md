@@ -52,7 +52,7 @@ canvas から JPEG を作るので、元の写真の EXIF はそもそも乗ら�
 | 3 | `freshness` | `now() − challenge.issued_at ≤ freshness_max_age_s`、かつ Storage のオブジェクト作成時刻 ≥ `challenge.issued_at` | `EVIDENCE_STALE` | 可 |
 | 4 | `geofence` | `accuracy_m ≤ 100`、かつ目標地点との距離（haversine）≤ `radius_m` | `LOCATION_ACCURACY_TOO_LOW` / `EVIDENCE_OUTSIDE_GEOFENCE` | 可 |
 | 5 | `duplicate`（P1） | 過去 90 日の他の提出と dHash のハミング距離 > 6 | `EVIDENCE_NEAR_DUPLICATE` | 不可（クレームを REJECTED） |
-| 6 | `vision_consistency`（P1、任意） | 判定しない。結果は `warning` か `pass` として記録するだけ | — | — |
+| 6 | `vision_consistency`（01 章 4.16 節） | 1〜5 がすべて通った後、Claude が写真と答えを依頼文と突き合わせる。`pass` は合格、`uncertain` と判定できなかった場合は `warning` で合格、`fail` は不合格 | `EVIDENCE_MISMATCH` | 可 |
 
 補足:
 
@@ -60,7 +60,7 @@ canvas から JPEG を作るので、元の写真の EXIF はそもそも乗ら�
 - 距離 + 精度が半径を超える（中心は中にあるが誤差円がはみ出す）場合は合格のまま `risk_flags` に `edge_of_geofence` を付ける
 - 判定 2 は DB の一意制約そのもの（04 章 3.10）。同時に同じファイルが 2 件来ても、片方は挿入で失敗して `EVIDENCE_REPLAYED` になる
 - 判定 5 は同じクレーム内の以前の試行を比較対象から外す。同じ店を撮り直せば似た写真になるのは自然なため
-- `vision_consistency` を使う場合、画像に写った文字は信頼できない入力として扱う。プロンプトでは画像を区切って渡し、モデルの出力は「店頭が写っているか」「営業中らしい手がかりがあるか」の 2 項目の列挙値だけを受け取る。結果は合否に使わない（REQ-V-007、`users-and-stakeholders.md` 4 節）
+- `vision_consistency` では、依頼文・答え・画像に写った文字をすべて信頼できない入力として扱う。プロンプトで区切って渡し、その中の指示には従わないよう明示する。モデルの出力は構造化出力で `verdict`・`reason`・`observed` の 3 項目に限る。2026-10-04 に、この判定を合否に使うよう改めた（01 章 4.16 節。旧 REQ-V-007 の「合否に使わない」を置き換える）
 
 ### 3.1 画像の保存
 
