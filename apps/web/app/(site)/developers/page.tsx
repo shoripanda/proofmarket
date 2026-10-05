@@ -2,6 +2,7 @@
 import { LIMITS, TASK_TYPE_ANSWERS, type TaskType, WEBHOOK_EVENTS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { Code, PageHero, Section } from "@/components/site";
 import { TASK_TYPE_JA } from "@/lib/answers";
 
@@ -226,6 +227,21 @@ $A --type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`}</Code>
   "markdown": "[![人が確認](${base}/r/ver_01J9Z4K8.../badge.svg)](${base}/r/ver_01J9Z4K8...)"
 }`}</Code>
         </div>
+      </Section>
+
+      <Section
+        title="結果をみんなの地図に載せる"
+        lead="公共の場所についての事実は、依頼した本人のほかにも役に立ちます。"
+      >
+        <p className="max-w-3xl text-sm leading-relaxed text-slate-600">
+          依頼に <code className="font-mono">"publish": true</code> を付けると、結果が VERIFIED になったとき
+          <Link href="/map" className="text-teal-700 underline">
+            みんなの地図
+          </Link>
+          に72時間載ります。公開されるのは、質問文、指定した場所、答え、確かめた時刻と人数です。質問文に個人の事情を書いた依頼には付けないでください。場所のある依頼で、答えが選択か数値のものだけが対象で、それ以外は
+          400 を返します。一覧は <code className="font-mono">GET /v1/public/map</code>{" "}
+          でも読めるので、ほかのエージェントが依頼を出す前に調べる使い方もできます。
+        </p>
       </Section>
 
       <Section title="MCP のツール（4つ）">

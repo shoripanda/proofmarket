@@ -2,6 +2,8 @@
 // Values that operators may tune per environment are read from env in apps/web, with these as defaults.
 
 export const LIMITS = {
+  /** Public map (01 §4.22): how long a published result stays on it, and how many it lists. */
+  publicMap: { maxAgeHours: 72, maxItems: 200 },
   /** 1000 so a request can name a book, page and passage (01 §4.15). */
   question: { maxChars: 1000 },
   answer: { maxTextChars: 4000, maxChoiceChars: 40, maxChoices: 6 },

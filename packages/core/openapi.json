@@ -316,6 +316,9 @@
                   "allow_reuse": {
                     "type": "boolean"
                   },
+                  "publish": {
+                    "type": "boolean"
+                  },
                   "reuse": {
                     "type": "object",
                     "properties": {
@@ -755,6 +758,9 @@
                     "additionalProperties": false
                   },
                   "allow_reuse": {
+                    "type": "boolean"
+                  },
+                  "publish": {
                     "type": "boolean"
                   },
                   "reuse": {
@@ -3262,6 +3268,9 @@
                         "additionalProperties": false
                       },
                       "allow_reuse": {
+                        "type": "boolean"
+                      },
+                      "publish": {
                         "type": "boolean"
                       },
                       "reuse": {
@@ -6908,6 +6917,39 @@
                         "number",
                         "text"
                       ]
+                    },
+                    "published": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "question": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "object",
+                          "properties": {
+                            "lat": {
+                              "type": "number"
+                            },
+                            "lng": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "lat",
+                            "lng"
+                          ]
+                        },
+                        "place_name": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "question",
+                        "location",
+                        "place_name"
+                      ]
                     }
                   },
                   "required": [
@@ -6925,7 +6967,8 @@
                     "settlement",
                     "verified_at",
                     "type",
-                    "answer_kind"
+                    "answer_kind",
+                    "published"
                   ]
                 }
               }
@@ -7256,6 +7299,224 @@
                     "by_type",
                     "daily_completed",
                     "recent_results"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/map": {
+      "get": {
+        "summary": "Results published to the public map by their requesters",
+        "x-priority": "Stretch",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generated_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "max_age_hours": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "verification_id": {
+                            "type": "string",
+                            "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "PLACE_STATUS_VERIFICATION",
+                              "QUEUE_LENGTH",
+                              "NOTICE_POSTED",
+                              "CROWD_LEVEL",
+                              "SEAT_AVAILABILITY",
+                              "PARKING_AVAILABILITY",
+                              "STOCK_CHECK",
+                              "PRICE_CHECK",
+                              "SIGN_TRANSCRIPTION",
+                              "SITE_REPORT",
+                              "DOCUMENT_TRANSCRIPTION",
+                              "DOCUMENT_QA",
+                              "PRODUCT_INSPECTION",
+                              "PHONE_INQUIRY",
+                              "MEASUREMENT",
+                              "CUSTOM_CHOICE",
+                              "CUSTOM_TASK"
+                            ]
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "answer": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000
+                          },
+                          "answer_kind": {
+                            "type": "string",
+                            "enum": [
+                              "enum",
+                              "number"
+                            ]
+                          },
+                          "unit": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "location": {
+                            "type": "object",
+                            "properties": {
+                              "lat": {
+                                "type": "number"
+                              },
+                              "lng": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "lat",
+                              "lng"
+                            ]
+                          },
+                          "place_name": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "witnesses": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "verified_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "result_url": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "verification_id",
+                          "type",
+                          "question",
+                          "answer",
+                          "answer_kind",
+                          "unit",
+                          "location",
+                          "place_name",
+                          "witnesses",
+                          "verified_at",
+                          "result_url"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "generated_at",
+                    "max_age_hours",
+                    "items"
                   ]
                 }
               }

@@ -33,6 +33,7 @@
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
 | GET | `/v1/public/stats` | 誰でも | P1 | 追加（2026-10-04）。公開の実績（集計だけ）。4.1 節。約 60 秒キャッシュ |
+| GET | `/v1/public/map` | 誰でも | P2 | 追加（2026-10-05）。依頼者が `publish: true` で公開を許した、72 時間以内の VERIFIED の結果（01 §4.22）。約 60 秒キャッシュ |
 | POST | `/v1/x402/verifications` | x402 の支払い | P2 | 追加（2026-10-04）。API キーなしで、USDC を払って依頼を作る（01 §4.19、7 節） |
 | GET / POST | `/v1/store/{token}` | 店舗のリンク | P2 | 追加（2026-10-04）。GET は店舗名と今の申告、POST は申告（01 §4.13）。token ごとに 1 分 10 件まで |
 | POST | `/v1/public/removal-requests` | 誰でも | P2 | 追加。写真の削除・公開停止の依頼（04 §3.21）。IP ごとに 1 分 5 件まで |
@@ -332,7 +333,7 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 
 ## 4. 公開 API と運営者 API
 
-`GET /v1/public/verifications/{id}` は 2.4 の VerificationResult から次を除いて返す: `checks` の内訳以外の提出ごとの情報、質問文、位置、証拠の URL、文章の答え（`answers`）、AI の確認の記録（`reviews`）、`proof`。依頼の種類（`type`）と答えの形（`answer_kind`）は足す（01 §4.21）。ID を知っている人だけが見られる前提で、一覧の API は作らない。
+`GET /v1/public/verifications/{id}` は 2.4 の VerificationResult から次を除いて返す: `checks` の内訳以外の提出ごとの情報、質問文、位置、証拠の URL、文章の答え（`answers`）、AI の確認の記録（`reviews`）、`proof`。依頼の種類（`type`）と答えの形（`answer_kind`）は足す（01 §4.21）。依頼者が `publish: true` を付けた依頼では、`published` に質問文・場所・店舗名も入る（01 §4.22）。それ以外は `published: null`。ID を知っている人だけが見られる前提で、一覧の API は作らない。
 
 例外として、サイトのトップ（S-01）には運営者が「掲載」にした結果だけを並べる（2026-10-04 追加）。掲載は `POST /v1/admin/verifications/{id}/feature` で運営者が1件ずつ決め、requester の依頼が本人の知らないうちに並ぶことはない。並べる項目は上の公開結果と同じ範囲から、答え・状態・証言の数・一致率・確定時刻・決済の状態・Explorer の URL に絞る。一覧の API は作らず、ページのサーバー側で読む。
 

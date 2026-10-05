@@ -69,6 +69,12 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
               <div>
                 <dt className="text-slate-500">確かめたこと</dt>
                 <dd className="text-base font-semibold">{proofTypeName(r.type)}</dd>
+                {r.published ? (
+                  <dd className="mt-1 break-words text-slate-700">
+                    {r.published.place_name ? `${r.published.place_name}｜` : ""}
+                    {r.published.question}
+                  </dd>
+                ) : null}
               </div>
               {answer ? (
                 <div>
@@ -97,6 +103,22 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
                 </dd>
               </div>
             </dl>
+            {r.published ? (
+              <p className="mt-4 text-sm">
+                <a
+                  className="text-teal-700 underline"
+                  href={`https://www.openstreetmap.org/?mlat=${r.published.location.lat}&mlon=${r.published.location.lng}#map=17/${r.published.location.lat}/${r.published.location.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  確認先の場所を地図で見る
+                </a>
+                <span className="mx-2 text-slate-300">|</span>
+                <Link className="text-teal-700 underline" href="/map">
+                  みんなの地図
+                </Link>
+              </p>
+            ) : null}
             {ok ? (
               <p className="mt-4 text-xs leading-relaxed text-slate-600">
                 AI
@@ -167,7 +189,7 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
           </section>
 
           <p className="text-xs leading-relaxed text-slate-500">
-            判定はプラットフォームが運用する単一の検証鍵で行っています（分散した検証ではありません）。写真・正確な位置・質問文・文章の答え・確かめた人の情報は、このページに含みません。{" "}
+            判定はプラットフォームが運用する単一の検証鍵で行っています（分散した検証ではありません）。写真・確かめた人の情報・文章の答えは、このページに含みません。質問文と場所は、依頼者が公開を選んだときだけ出します。{" "}
             <Link href="/how-it-works" className="text-teal-700 underline">
               ProofMarket のしくみ
             </Link>
