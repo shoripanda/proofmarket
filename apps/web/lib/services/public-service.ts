@@ -24,7 +24,29 @@ export async function publicResult(app: AppContext, rawId: string) {
   const result = await buildResult(app.db, task);
   if (!result) throw new ApiError("VERIFICATION_NOT_FOUND", { reason: "no_result_yet" });
   const { rejected_submissions: _r, answers: _a, reviews: _v, proof: _p, ...pub } = result;
-  return { ...pub, type: task.type as TaskType, answer_kind: task.answerKind as AnswerKind };
+  return {
+    ...pub,
+    type: task.type as TaskType,
+    answer_kind: task.answerKind as AnswerKind,
+    published: await publishedView(app, task),
+  };
+}
+
+/** Question and place of a result its requester published (01 §4.22); null otherwise, or once access is revoked. */
+async function publishedView(app: AppContext, task: typeof schema.verificationRequests.$inferSelect) {
+  if (!task.publishResult || task.evidenceAccessRevoked) return null;
+  if (task.targetLat === null || task.targetLng === null) return null;
+  const [place] = task.placeId
+    ? await app.db
+        .select({ name: schema.places.name })
+        .from(schema.places)
+        .where(eq(schema.places.id, task.placeId))
+    : [];
+  return {
+    question: task.question,
+    location: { lat: task.targetLat, lng: task.targetLng },
+    place_name: place?.name ?? null,
+  };
 }
 
 /**

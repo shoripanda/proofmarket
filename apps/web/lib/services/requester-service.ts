@@ -178,6 +178,12 @@ export async function createVerification(
   if (!loc && locationRequired(body.type)) {
     throw new ApiError("VALIDATION_FAILED", { field: "location", reason: "required_for_type" });
   }
+  // The map shows a place and a short answer; text answers stay with the requester (01 §4.22).
+  if (body.publish && !loc)
+    throw new ApiError("VALIDATION_FAILED", { field: "publish", reason: "needs_location" });
+  if (body.publish && body.answer_schema.type === "text") {
+    throw new ApiError("VALIDATION_FAILED", { field: "publish", reason: "not_for_text_answers" });
+  }
   const deadline = new Date(body.deadline);
   const minMs = LIMITS.deadlineFromNow.minMinutes * 60_000;
   const maxMs = LIMITS.deadlineFromNow.maxHours * 3600_000;
@@ -261,6 +267,7 @@ export async function createVerification(
       policyRuleVersion: POLICY_RULE_VERSION,
       callbackEndpointId: await activeEndpoint(tx, auth.credentialId),
       allowReuse: body.allow_reuse ?? false,
+      publishResult: body.publish ?? false,
       minWorkerTier: body.worker_requirements?.min_tier ?? null,
       createdAt: now,
       updatedAt: now,

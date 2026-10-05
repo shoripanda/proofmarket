@@ -169,6 +169,11 @@ export const CreateVerificationRequestSchema = z
       .optional(),
     /** Let other requesters receive this result through `reuse` (01 §4.9). */
     allow_reuse: z.boolean().optional(),
+    /**
+     * Put the VERIFIED result on the public map for 72 hours (01 §4.22). This makes the question, the place,
+     * the answer and the time public. Only for tasks with a location and a choice or number answer.
+     */
+    publish: z.boolean().optional(),
     /** Return a recent shared VERIFIED result for the same place instead of sending someone (01 §4.9). */
     reuse: z
       .object({ max_age_seconds: z.number().int().min(60).max(3600) })
@@ -328,7 +333,40 @@ export const PublicVerificationResultSchema = VerificationResultSchema.omit({
   answers: true,
   reviews: true,
   proof: true,
-}).extend({ type: z.enum(TASK_TYPES), answer_kind: z.enum(ANSWER_KINDS) });
+}).extend({
+  type: z.enum(TASK_TYPES),
+  answer_kind: z.enum(ANSWER_KINDS),
+  /** Set only when the requester published the result (01 §4.22). */
+  published: z
+    .object({
+      question: z.string(),
+      location: z.object({ lat: z.number(), lng: z.number() }),
+      place_name: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+/** Public map (01 §4.22): results their requesters chose to publish, newest first. Never photos or workers. */
+export const PublicMapSchema = z.object({
+  generated_at: IsoDateTime,
+  max_age_hours: z.number().int(),
+  items: z.array(
+    z.object({
+      verification_id: VerificationIdSchema,
+      type: z.enum(TASK_TYPES),
+      question: z.string(),
+      answer: AnswerValueSchema,
+      answer_kind: z.enum(["enum", "number"]),
+      unit: z.string().nullable(),
+      location: z.object({ lat: z.number(), lng: z.number() }),
+      place_name: z.string().nullable(),
+      witnesses: z.number().int(),
+      verified_at: IsoDateTime,
+      result_url: z.string(),
+    }),
+  ),
+});
+export type PublicMap = z.infer<typeof PublicMapSchema>;
 
 /**
  * Public track record (05 §4.1): aggregates only. No question, answer, location, worker or payout address.

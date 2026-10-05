@@ -207,6 +207,8 @@ export const verificationRequests = pgTable(
     minWorkerTier: text("min_worker_tier"),
     /** Other requesters may reuse this result (01 §4.9). */
     allowReuse: boolean("allow_reuse").notNull().default(false),
+    /** The requester put this result on the public map (01 §4.22). */
+    publishResult: boolean("publish_result").notNull().default(false),
     evidenceAccessRevoked: boolean("evidence_access_revoked").notNull().default(false),
     /** Operator featured this result on the site's top page (05 §4). Null = not listed. */
     featuredAt: tsz("featured_at"),

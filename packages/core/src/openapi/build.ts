@@ -209,6 +209,14 @@ const ENDPOINTS: Endpoint[] = [
     ok: { status: 200, schema: S.PublicStatsSchema },
   },
   {
+    method: "get",
+    path: "/v1/public/map",
+    auth: "none",
+    priority: "Stretch",
+    summary: "Results published to the public map by their requesters",
+    ok: { status: 200, schema: S.PublicMapSchema },
+  },
+  {
     method: "post",
     path: "/v1/admin/flags",
     auth: "operator",

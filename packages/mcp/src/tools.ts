@@ -36,6 +36,9 @@ export const REQUEST_TOOL = {
     "location is required for at-a-place types and may be omitted for work that can be done anywhere. " +
     "For text answers, result.answers holds every accepted text and result.answer is the SHA-256 of the first. " +
     "An API key may allow only some types. " +
+    "publish: true puts the verified result on the public map for 72 hours so other people can use it too; this makes " +
+    "the question, place, answer and time public, so set it only for facts about public places with nothing private " +
+    "in the question (needs a location and a choice or number answer). " +
     "Without an API key, any agent with a Solana wallet can make the same request over HTTP by paying in USDC with " +
     "x402: POST /v1/x402/verifications (same body without principal_ref) answers 402 with the payment terms.",
   inputSchema: {
