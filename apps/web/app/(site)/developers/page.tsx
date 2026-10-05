@@ -191,7 +191,14 @@ curl -X POST ${base}/v1/x402/verifications \\
   -H "Content-Type: application/json" -d @request.json \\
   -H "PAYMENT-SIGNATURE: <base64 の PaymentPayload>"`}</Code>
           <Code>{`# 見本のエージェント（リポジトリの scripts/）。402 の受け取りから結果待ちまで通しで動く
-pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url ${base}`}</Code>
+# 17 種類どれでも出せる。種類の一覧は --list-types、送らずに中身を見るなら --dry-run
+A="pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url ${base}"
+
+$A --type DOCUMENT_TRANSCRIPTION --question "届いた紙の請求書の合計金額の行を書き写してください"
+$A --type PHONE_INQUIRY --question "この番号の病院に、今日の午後の外来の受付時間を聞いてください"
+$A --type MEASUREMENT --unit cm --question "玄関のドアの幅を測ってください"
+$A --type CUSTOM_CHOICE --choices "はい,いいえ" --question "この駅のエレベーターは今動いていますか"
+$A --type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`}</Code>
         </div>
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
           同じ取引を2回送っても、依頼は1件しかできません。2回目は同じ verification_id を返し、API

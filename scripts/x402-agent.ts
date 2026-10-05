@@ -3,7 +3,13 @@
 // expects, signs it as the token owner (the server co-signs as fee payer), resends, and waits for the result.
 //
 //   pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url https://<app> \
-//     [--type OTHER] [--question "..."] [--lat 35.6595 --lng 139.7005] [--bounty 0.10] [--deadline-min 45]
+//     [--type DOCUMENT_QA] [--question "..."] [--lat 35.6595 --lng 139.7005 --radius 80] \
+//     [--choices "A,B,C"] [--unit cm] [--bounty 0.10] [--deadline-min 45]
+//   pnpm --filter @proofmarket/scripts run run x402-agent.ts --list-types
+//   add --dry-run to print the request body without sending or paying
+//
+// Any of the 17 task types works; the answer schema comes from the type. Without --type it sends a
+// hands-on task that needs no place (CUSTOM_TASK), or PLACE_STATUS_VERIFICATION when --lat/--lng are given.
 //
 // Wallet: ~/.config/proofmarket/x402-agent.json (created on first run, mode 0600). It needs Devnet USDC
 // (mint 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU) in its token account: get some from
@@ -11,12 +17,45 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { TASK_TYPE_SPECS, TASK_TYPES, type TaskType } from "@proofmarket/core";
 import { buildExactSvmPayment, encodeHeader, type PaymentRequirements } from "@proofmarket/solana";
 import { getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { args, need } from "./lib.ts";
 
 const a = args();
+
+/** A sample question per type, so every kind of task can be tried without writing one. */
+const SAMPLE_QUESTIONS: Record<TaskType, string> = {
+  PLACE_STATUS_VERIFICATION: "Is this shop open right now?",
+  QUEUE_LENGTH: "How long is the queue at the entrance right now?",
+  NOTICE_POSTED: "Is a notice about today's closure posted at the entrance?",
+  CROWD_LEVEL: "How crowded is this place right now?",
+  SEAT_AVAILABILITY: "Are there free seats right now?",
+  PARKING_AVAILABILITY: "Are there free parking spaces right now?",
+  STOCK_CHECK: "Is this item on the shelf right now?",
+  PRICE_CHECK: "What is the posted price of this item, in yen?",
+  SIGN_TRANSCRIPTION: "Copy the opening hours written on the sign at the entrance.",
+  SITE_REPORT: "Describe the state of this place in two or three sentences.",
+  DOCUMENT_TRANSCRIPTION: "Copy the first line of any printed page you have at hand.",
+  DOCUMENT_QA: "Open any printed manual you have and tell us what its first chapter is called.",
+  PRODUCT_INSPECTION: "Look at the item you have at hand and describe any visible damage.",
+  PHONE_INQUIRY: "Call the shop and ask until what time they are open today.",
+  MEASUREMENT: "Measure the width of a desk near you, in centimetres.",
+  CUSTOM_CHOICE: "Which do you see from where you are: sky, ceiling or neither?",
+  CUSTOM_TASK:
+    "Write down, by hand, one thing an AI could not have checked for you today, and photograph it.",
+};
+
+if (a["list-types"]) {
+  for (const t of TASK_TYPES) {
+    const spec = TASK_TYPE_SPECS[t];
+    const values = "values" in spec && spec.values ? ` [${spec.values.join("|")}]` : "";
+    console.log(`${t.padEnd(26)} answer=${spec.answer}${values} location=${spec.location}`);
+  }
+  process.exit(0);
+}
+
 const base = need(a, "base-url").replace(/\/$/, "");
 const rpc = a.rpc ?? "https://api.devnet.solana.com";
 const say = (m: string) => console.log(`[x402-agent ${new Date().toISOString().slice(11, 19)}] ${m}`);
@@ -31,20 +70,37 @@ function loadAgentWallet(): Keypair {
   return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(path, "utf8")) as number[]));
 }
 
-const wallet = loadAgentWallet();
-say(`wallet ${wallet.publicKey.toBase58()}`);
-
 const deadlineMin = Number(a["deadline-min"] ?? 45);
-const type = a.type ?? "PLACE_STATUS_VERIFICATION";
 const location =
   a.lat && a.lng ? { lat: Number(a.lat), lng: Number(a.lng), radius_m: Number(a.radius ?? 80) } : undefined;
-const answer_schema =
-  type === "PLACE_STATUS_VERIFICATION"
-    ? { type: "enum", values: ["OPEN", "CLOSED", "UNCLEAR"] }
-    : { type: "text" };
+const type = (a.type ?? (location ? "PLACE_STATUS_VERIFICATION" : "CUSTOM_TASK")) as TaskType;
+if (!TASK_TYPES.includes(type)) {
+  say(`unknown --type ${type}. Run with --list-types to see all of them.`);
+  process.exit(2);
+}
+const spec = TASK_TYPE_SPECS[type];
+if (spec.location === "required" && !location) {
+  say(`${type} needs a place: add --lat <lat> --lng <lng> [--radius <m>].`);
+  process.exit(2);
+}
+function answerSchemaFor(): Record<string, unknown> {
+  if (spec.answer === "number") return { type: "number", ...(a.unit ? { unit: a.unit } : {}) };
+  if (spec.answer === "text") return { type: "text" };
+  if ("values" in spec && spec.values) return { type: "enum", values: [...spec.values] };
+  const choices = (a.choices ?? (a.question ? "" : "SKY,CEILING,NEITHER"))
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean);
+  if (choices.length < 2) {
+    say(`${type} needs --choices "A,B[,C…]" (2 to 6).`);
+    process.exit(2);
+  }
+  return { type: "enum", values: choices };
+}
+const answer_schema = answerSchemaFor();
 const body = {
   type,
-  question: a.question ?? "Is this shop open right now?",
+  question: a.question ?? SAMPLE_QUESTIONS[type],
   answer_schema,
   ...(location ? { location } : {}),
   deadline: new Date(Date.now() + deadlineMin * 60_000).toISOString(),
@@ -53,6 +109,12 @@ const body = {
   assurance: { required_witnesses: 1, quorum: 1 },
   bounty: { asset: "USDC", amount: a.bounty ?? "0.10", network: "solana-devnet" },
 };
+if (a["dry-run"]) {
+  console.log(JSON.stringify(body, null, 2));
+  process.exit(0);
+}
+const wallet = loadAgentWallet();
+say(`wallet ${wallet.publicKey.toBase58()}`);
 const url = `${base}/v1/x402/verifications`;
 const post = (headers: Record<string, string> = {}) =>
   fetch(url, {
@@ -117,10 +179,19 @@ say(`verification_id=${out.verification_id} (api key ${out.api_key.slice(0, 17)}
 // 4. Wait for a person to answer, with the key the payment came with.
 const until = Date.now() + (deadlineMin + 2) * 60_000;
 while (Date.now() < until) {
-  const r = await fetch(`${base}/v1/verifications/${out.verification_id}`, {
+  // A dropped connection or a non-JSON reply is not the end: the request is still live, so keep waiting.
+  const v = await fetch(`${base}/v1/verifications/${out.verification_id}`, {
     headers: { authorization: `Bearer ${out.api_key}` },
-  });
-  const v = (await r.json()) as { status: string; result?: { status: string; answer: unknown } | null };
+  })
+    .then((r) => r.json() as Promise<{ status: string; result?: { status: string; answer: unknown } | null }>)
+    .catch((e: unknown) => {
+      say(`could not read the status (${e instanceof Error ? e.message : String(e)}); retrying`);
+      return null;
+    });
+  if (!v) {
+    await new Promise((res) => setTimeout(res, 10_000));
+    continue;
+  }
   say(`status=${v.status}`);
   if (v.result) {
     say(`result: ${v.result.status} answer=${JSON.stringify(v.result.answer)}`);
