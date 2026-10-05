@@ -230,6 +230,11 @@ export const VerificationResultSchema = z.object({
       }),
     )
     .optional(),
+  /**
+   * Links to show the person you answer that a human checked this (01 §4.21): the public result page,
+   * a badge image, and Markdown that embeds the badge. Only on the requester's own result; not in result_hash.
+   */
+  proof: z.object({ url: z.url(), badge_url: z.url(), markdown: z.string() }).optional(),
   witnesses: z.object({ valid: z.number().int(), required: z.number().int(), quorum: z.number().int() }),
   answer_counts: z.record(z.string(), z.number().int()),
   consensus_ratio: z.number().min(0).max(1).nullable(),
@@ -314,8 +319,16 @@ export const GetVerificationResponseSchema = z.object({
 });
 export type GetVerificationResponse = z.infer<typeof GetVerificationResponseSchema>;
 
-/** Public result (05 §4): no question, location, evidence URLs or per-submission data. */
-export const PublicVerificationResultSchema = VerificationResultSchema.omit({ rejected_submissions: true });
+/**
+ * Public result (05 §4): no question, location, evidence URLs or per-submission data. Text answers and the
+ * AI review notes are requester-only (01 §4.15, §4.16), so they are left out; the task type is added (01 §4.21).
+ */
+export const PublicVerificationResultSchema = VerificationResultSchema.omit({
+  rejected_submissions: true,
+  answers: true,
+  reviews: true,
+  proof: true,
+}).extend({ type: z.enum(TASK_TYPES), answer_kind: z.enum(ANSWER_KINDS) });
 
 /**
  * Public track record (05 §4.1): aggregates only. No question, answer, location, worker or payout address.

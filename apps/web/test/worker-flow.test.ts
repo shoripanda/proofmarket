@@ -4,7 +4,9 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleGet } from "../lib/handlers/requester";
 import { handleClaimDetail, handleMe, handleOnboarding, handleYenInterest } from "../lib/handlers/worker";
+import { badgeMessage, proofAnswer } from "../lib/proof-text";
 import { setAllowedTaskTypes } from "../lib/services/admin-service";
+import { publicResult } from "../lib/services/public-service";
 import { issueInvite } from "../lib/services/worker-service";
 import { call, createTestApp, jsonReq, SHOP } from "./support/app";
 import { onboardWorker, openTask, photo, W, witness } from "./support/worker";
@@ -138,6 +140,23 @@ describe("worker flow", () => {
       .from(schema.verificationResults)
       .where(eq(schema.verificationResults.verificationId, id));
     expect(JSON.stringify(res?.evidenceBundle)).not.toContain(text);
+    // 01 §4.21: the public result names the kind of task but never carries the text or the review notes
+    const pub = await publicResult(t.app, id);
+    expect(pub).toMatchObject({ status: "VERIFIED", type: "DOCUMENT_TRANSCRIPTION", answer_kind: "text" });
+    expect(pub).not.toHaveProperty("answers");
+    expect(pub).not.toHaveProperty("reviews");
+    expect(pub).not.toHaveProperty("proof");
+    expect(JSON.stringify(pub)).not.toContain(text);
+    // ...while the requester gets the links to show its user
+    expect(v.result.proof).toEqual({
+      url: `http://localhost:3000/r/${id}`,
+      badge_url: `http://localhost:3000/r/${id}/badge.svg`,
+      markdown: `[![人が確認](http://localhost:3000/r/${id}/badge.svg)](http://localhost:3000/r/${id})`,
+    });
+    expect(badgeMessage(pub)).toMatchObject({ label: "人が確認", ok: true });
+    expect(badgeMessage(pub).message).toMatch(/^回答あり・/);
+    expect(proofAnswer(pub)).not.toContain(text);
+    expect(badgeMessage(null)).toEqual({ label: "ProofMarket", message: "確認中", ok: false });
   });
 
   it("01 §4.20: scope=anywhere lists only work that needs no place, without any location", async () => {

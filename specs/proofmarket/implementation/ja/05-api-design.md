@@ -173,6 +173,8 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 
 `api-contract.md` 7 節の形に、追加の項目を足す。
 
+`GET /v1/verifications/{id}` の `result` には `proof` が付く（01 §4.21）。`{ "url": "https://<app>/r/<id>", "badge_url": "https://<app>/r/<id>/badge.svg", "markdown": "[![人が確認](<badge_url>)](<url>)" }`。利用者に見せるためのリンクで、result_hash の計算には入れない。
+
 ```json
 {
   "verification_id": "ver_01J9Z4K8T3W6Q2M5N7P0R4S8V1",
@@ -330,7 +332,7 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 
 ## 4. 公開 API と運営者 API
 
-`GET /v1/public/verifications/{id}` は 2.4 の VerificationResult から次を除いて返す: `checks` の内訳以外の提出ごとの情報、質問文、位置、証拠の URL。ID を知っている人だけが見られる前提で、一覧の API は作らない。
+`GET /v1/public/verifications/{id}` は 2.4 の VerificationResult から次を除いて返す: `checks` の内訳以外の提出ごとの情報、質問文、位置、証拠の URL、文章の答え（`answers`）、AI の確認の記録（`reviews`）、`proof`。依頼の種類（`type`）と答えの形（`answer_kind`）は足す（01 §4.21）。ID を知っている人だけが見られる前提で、一覧の API は作らない。
 
 例外として、サイトのトップ（S-01）には運営者が「掲載」にした結果だけを並べる（2026-10-04 追加）。掲載は `POST /v1/admin/verifications/{id}/feature` で運営者が1件ずつ決め、requester の依頼が本人の知らないうちに並ぶことはない。並べる項目は上の公開結果と同じ範囲から、答え・状態・証言の数・一致率・確定時刻・決済の状態・Explorer の URL に絞る。一覧の API は作らず、ページのサーバー側で読む。
 

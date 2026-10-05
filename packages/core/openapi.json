@@ -1423,6 +1423,27 @@
                             ]
                           }
                         },
+                        "proof": {
+                          "type": "object",
+                          "properties": {
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "badge_url": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "markdown": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "url",
+                            "badge_url",
+                            "markdown"
+                          ]
+                        },
                         "witnesses": {
                           "type": "object",
                           "properties": {
@@ -2244,6 +2265,27 @@
                               "model"
                             ]
                           }
+                        },
+                        "proof": {
+                          "type": "object",
+                          "properties": {
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "badge_url": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "markdown": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "url",
+                            "badge_url",
+                            "markdown"
+                          ]
                         },
                         "witnesses": {
                           "type": "object",
@@ -6632,46 +6674,6 @@
                       "minLength": 1,
                       "maxLength": 4000
                     },
-                    "answers": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 4000
-                      }
-                    },
-                    "reviews": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "verdict": {
-                            "type": "string",
-                            "enum": [
-                              "pass",
-                              "uncertain",
-                              "unavailable"
-                            ]
-                          },
-                          "reason": {
-                            "type": "string"
-                          },
-                          "observed": {
-                            "type": "string"
-                          },
-                          "model": {
-                            "nullable": true,
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "verdict",
-                          "reason",
-                          "observed",
-                          "model"
-                        ]
-                      }
-                    },
                     "witnesses": {
                       "type": "object",
                       "properties": {
@@ -6876,6 +6878,36 @@
                       "type": "string",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "PLACE_STATUS_VERIFICATION",
+                        "QUEUE_LENGTH",
+                        "NOTICE_POSTED",
+                        "CROWD_LEVEL",
+                        "SEAT_AVAILABILITY",
+                        "PARKING_AVAILABILITY",
+                        "STOCK_CHECK",
+                        "PRICE_CHECK",
+                        "SIGN_TRANSCRIPTION",
+                        "SITE_REPORT",
+                        "DOCUMENT_TRANSCRIPTION",
+                        "DOCUMENT_QA",
+                        "PRODUCT_INSPECTION",
+                        "PHONE_INQUIRY",
+                        "MEASUREMENT",
+                        "CUSTOM_CHOICE",
+                        "CUSTOM_TASK"
+                      ]
+                    },
+                    "answer_kind": {
+                      "type": "string",
+                      "enum": [
+                        "enum",
+                        "number",
+                        "text"
+                      ]
                     }
                   },
                   "required": [
@@ -6891,7 +6923,9 @@
                     "result_hash",
                     "attestation",
                     "settlement",
-                    "verified_at"
+                    "verified_at",
+                    "type",
+                    "answer_kind"
                   ]
                 }
               }

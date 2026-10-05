@@ -207,6 +207,27 @@ $A --type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`}</Code>
         </p>
       </Section>
 
+      <Section
+        title="結果を利用者に見せる（証明のリンク）"
+        lead="エージェントが利用者に答えるとき、「AI の推測ではなく、人が確かめた事実だ」と示せます。"
+      >
+        <p className="max-w-3xl text-sm leading-relaxed text-slate-600">
+          結果が出ると、<code className="font-mono">result.proof</code> に3つの値が入ります。
+          <code className="font-mono">url</code> は公開の結果ページで、いつ・何人が・どう確かめたかと、Solana
+          の記録を誰でも見られます。
+          <code className="font-mono">badge_url</code> は答えと時刻を1行で示す画像、
+          <code className="font-mono">markdown</code>{" "}
+          はそのバッジをリンク付きで貼れる文字列です。質問文・写真・位置・文章の答えは、このページに出ません。
+        </p>
+        <div className="mt-4">
+          <Code>{`"proof": {
+  "url": "${base}/r/ver_01J9Z4K8...",
+  "badge_url": "${base}/r/ver_01J9Z4K8.../badge.svg",
+  "markdown": "[![人が確認](${base}/r/ver_01J9Z4K8.../badge.svg)](${base}/r/ver_01J9Z4K8...)"
+}`}</Code>
+        </div>
+      </Section>
+
       <Section title="MCP のツール（4つ）">
         <dl className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
           {TOOLS.map(([name, desc]) => (
