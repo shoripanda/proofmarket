@@ -60,6 +60,22 @@ describe("push notifications", () => {
     expect(JSON.stringify(payload)).not.toMatch(/Is this shop open/);
   });
 
+  it("01 §4.20: a worker with no area only hears about work that needs no place", async () => {
+    await savePushSubscription(t.app, alice, { subscription: sub("a"), areas: [] });
+    await savePushSubscription(t.app, bob, { subscription: sub("b"), areas: ["shibuya"] });
+    expect(await runNotifyWorkers(t.app, await openTask(t))).toEqual({ sent: 1 });
+    expect(t.push.sent.map((s) => s.endpoint)).toEqual([sub("b").endpoint]);
+    t.push.sent.length = 0;
+    const home = await openTask(t, {
+      type: "DOCUMENT_TRANSCRIPTION",
+      question: "手元の本の最初の1行を書き写してください",
+      answer_schema: { type: "text" },
+      location: undefined,
+    });
+    expect(await runNotifyWorkers(t.app, home)).toEqual({ sent: 2 });
+    expect(t.push.sent.map((s) => s.endpoint).sort()).toEqual([sub("a").endpoint, sub("b").endpoint]);
+  });
+
   it("stores endpoints encrypted, re-registering overwrites, and gone endpoints are deleted", async () => {
     await savePushSubscription(t.app, alice, { subscription: sub("a"), areas: ["shibuya"] });
     await savePushSubscription(t.app, alice, { subscription: sub("a"), areas: ["shibuya", "other"] });

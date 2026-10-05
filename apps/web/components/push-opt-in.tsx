@@ -23,12 +23,15 @@ function keyBytes(b64: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
-function readAreas(): Area[] {
+/** null until the worker has saved a choice; an empty list is a choice (home-only, 01 §4.20). */
+function readAreas(): Area[] | null {
   try {
-    const v = JSON.parse(localStorage.getItem(STORE) ?? "[]");
-    return Array.isArray(v) ? v : [];
+    const raw = localStorage.getItem(STORE);
+    if (raw === null) return null;
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : null;
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -52,7 +55,7 @@ export function PushOptIn() {
     const reg = await navigator.serviceWorker.register("/sw.js");
     const sub = await reg.pushManager.getSubscription();
     const saved = readAreas();
-    if (saved.length) setAreas(saved);
+    if (saved) setAreas(saved);
     setState(sub ? "on" : "off");
   }, [api]);
 
@@ -137,7 +140,7 @@ export function PushOptIn() {
     <Card>
       <h2 className="font-bold">{state === "on" ? "新しい依頼を通知中" : "新しい依頼を通知で受け取る"}</h2>
       <p className="mt-1 text-sm leading-relaxed text-slate-600">
-        選んだ地域で依頼が出たら、画面を閉じていても通知します。今いる場所は送りません。
+        選んだ地域で依頼が出たら、画面を閉じていても通知します。今いる場所は送りません。家でできる依頼は、地域に関係なく届きます。地域を1つも選ばなければ、家でできる依頼だけを通知します。
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {AREAS.map(([a, label]) => (
@@ -159,7 +162,7 @@ export function PushOptIn() {
         </div>
       ) : null}
       <div className="mt-3 space-y-2">
-        <Button onClick={enable} disabled={busy || areas.length === 0}>
+        <Button onClick={enable} disabled={busy}>
           {state === "on" ? "地域を保存する" : "通知を受け取る"}
         </Button>
         {state === "on" ? (
