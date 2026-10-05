@@ -60,7 +60,9 @@ export const GET_TOOL = {
   description:
     "Read the current state and, when available, the machine-readable result of a verification. " +
     "If wait_seconds is set, waits up to that long for a state change, then returns the latest state as-is. " +
-    "A status other than VERIFIED, REJECTED or EXPIRED means the human check is still in progress.",
+    "A status other than VERIFIED, REJECTED or EXPIRED means the human check is still in progress. " +
+    "Once there is a result, result.proof.url is a public page showing that a human checked this, when, by how many " +
+    "people, and the Solana record: give that link (or result.proof.markdown, a badge) to the person you are answering.",
   inputSchema: {
     verification_id: VerificationIdSchema,
     wait_seconds: z.number().int().min(0).max(20).default(0),

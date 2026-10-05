@@ -1,7 +1,7 @@
 import "server-only";
 // Public result (05 §4), worker payouts (05 §3.7), requester evidence URLs (05 §2.5).
 
-import { ApiError, LIMITS, parseId } from "@proofmarket/core";
+import { type AnswerKind, ApiError, LIMITS, parseId, type TaskType } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
 import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
@@ -9,7 +9,10 @@ import type { AppContext } from "../context";
 import { witnessRef } from "./crypto";
 import { buildResult, type SettleRecipients } from "./views";
 
-/** Public-safe result only: no question, location, evidence URLs or per-submission data. No listing endpoint. */
+/**
+ * Public-safe result only: no question, location, evidence URLs or per-submission data. Text answers and the
+ * AI review notes stay with the requester (01 §4.15, §4.16). No listing endpoint.
+ */
 export async function publicResult(app: AppContext, rawId: string) {
   const id = parseId("verification", rawId);
   if (!id) throw new ApiError("VERIFICATION_NOT_FOUND");
@@ -20,8 +23,8 @@ export async function publicResult(app: AppContext, rawId: string) {
   if (!task) throw new ApiError("VERIFICATION_NOT_FOUND");
   const result = await buildResult(app.db, task);
   if (!result) throw new ApiError("VERIFICATION_NOT_FOUND", { reason: "no_result_yet" });
-  const { rejected_submissions: _omit, ...pub } = result;
-  return pub;
+  const { rejected_submissions: _r, answers: _a, reviews: _v, proof: _p, ...pub } = result;
+  return { ...pub, type: task.type as TaskType, answer_kind: task.answerKind as AnswerKind };
 }
 
 /**

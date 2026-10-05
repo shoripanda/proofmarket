@@ -19,6 +19,7 @@ import {
 } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { proofLinks } from "../proof";
 import { activeReport } from "./store-service";
 import type { TaskRow } from "./task-engine";
 import { taskLocation } from "./task-location";
@@ -163,6 +164,12 @@ async function recheckView(db: Db, task: TaskRow): Promise<GetVerificationRespon
   };
 }
 
+/** The requester's own result carries the links to show its user (01 §4.21). */
+async function withProof(result: Promise<VerificationResult | null>): Promise<VerificationResult | null> {
+  const r = await result;
+  return r ? { ...r, proof: proofLinks(r.verification_id) } : null;
+}
+
 /** AI review per accepted submission (01 §4.16), oldest first. Omitted when nothing was reviewed. */
 async function reviewsOf(db: Db, ids: readonly string[]): Promise<Pick<VerificationResult, "reviews">> {
   if (ids.length === 0) return {};
@@ -267,7 +274,7 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
       signature: fundSig,
       explorer_url: fundSig ? explorer(fundSig) : null,
     },
-    result: await buildResult(db, task),
+    result: await withProof(buildResult(db, task)),
     created_at: task.createdAt.toISOString(),
     updated_at: task.updatedAt.toISOString(),
   };
