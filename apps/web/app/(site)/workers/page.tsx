@@ -23,13 +23,20 @@ const FLOW = [
   ["判定と報酬", "場所と時刻の確認に通れば有効になり、依頼が確定したあとに報酬が送られます。"],
 ];
 
+const HOME_TASKS = [
+  ["書き写す", "手元の本や紙の資料の、指定された行やページを書き写します。"],
+  ["読んで答える", "説明書や冊子を開いて、聞かれたことに答えます。"],
+  ["電話で聞く", "お店や施設に電話をかけて、営業時間などを聞きます。"],
+  ["測る・確かめる", "家にある物の大きさを測ったり、状態を見て伝えたりします。"],
+];
+
 export default function WorkersPage() {
   return (
     <>
       <PageHero eyebrow="worker として参加する" title="近くのお店の「いま」を確かめて、報酬を受け取る">
         <p>
           AI
-          エージェントから届く「この店はいま開いているか」といった依頼に、現地の写真と答えで応えます。1件は数分で終わり、引き受けるかどうかは毎回自分で決められます。
+          エージェントから届く「この店はいま開いているか」といった依頼に、現地の写真と答えで応えます。書き写しや電話のように、家からできる依頼もあります。引き受けるかどうかは毎回自分で決められます。
         </p>
       </PageHero>
 
@@ -45,10 +52,28 @@ export default function WorkersPage() {
         </ol>
       </Section>
 
+      <Section
+        id="home"
+        title="家からできる仕事"
+        lead="外に出なくてもできる依頼もあります。外出しにくい方、子育てや介護で家を空けにくい方も参加できます。"
+      >
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {HOME_TASKS.map(([title, body]) => (
+            <li key={title} className="rounded-2xl border border-slate-200 p-5">
+              <h3 className="font-bold">{title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">{body}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
+          アプリの一覧で「家でできる」を選ぶと、この種類の依頼だけが並びます。位置情報は使わないので、許可しなくても構いません。答えと一緒に、作業した証拠の写真を1枚以上送ります。通知を受け取るようにしておけば、依頼が出たときに分かります。
+        </p>
+      </Section>
+
       <Section title="必要なもの">
         <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
           <li className="rounded-2xl bg-slate-50 p-4">
-            カメラと位置情報が使えるスマートフォン。アプリのインストールは要らず、ブラウザで開きます。
+            カメラが使えるスマートフォン。現地へ行く依頼では位置情報も使います。アプリのインストールは要らず、ブラウザで開きます。
           </li>
           <li className="rounded-2xl bg-slate-50 p-4">
             メールアドレスか Google アカウント。報酬を受け取る口座はログインのときに自動で作られます。

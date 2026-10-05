@@ -527,7 +527,7 @@ create table push_subscriptions (
   worker_id     text not null references workers(id),
   endpoint_hash bytea not null unique,           -- SHA-256(endpoint)。同じ端末の登録し直しを上書きする
   endpoint_enc  bytea not null,                  -- AES-256-GCM({endpoint, keys})。鍵は LOCATION_ENC_KEY
-  areas         text[] not null,                 -- shibuya / shinjuku / other の部分集合
+  areas         text[] not null,                 -- shibuya / shinjuku / other の部分集合。空なら場所を問わない依頼だけ（01 §4.20）
   failures      int not null default 0,
   created_at    timestamptz not null default now(),
   last_sent_at  timestamptz

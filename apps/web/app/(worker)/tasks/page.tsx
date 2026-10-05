@@ -1,6 +1,7 @@
 "use client";
 import type { TaskType } from "@proofmarket/core";
-// W-03 タスク一覧 — 現在地（小数3桁に丸める）から近い順。開いている間は30秒ごとに取り直し、新着に印を付ける。
+// W-03 タスク一覧 — 「近くで」は現在地（小数3桁に丸める）から近い順、「家でできる」は場所の要らない依頼だけで
+// 位置情報を使わない (01 §4.20)。開いている間は30秒ごとに取り直し、新着に印を付ける。
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PushOptIn } from "@/components/push-opt-in";
@@ -9,6 +10,12 @@ import { TASK_TYPE_JA } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 
 const REFRESH_MS = 30_000;
+const SCOPE_STORE = "pm.tasks.scope";
+type Scope = "nearby" | "anywhere";
+const SCOPES: [Scope, string][] = [
+  ["nearby", "近くで"],
+  ["anywhere", "家でできる"],
+];
 
 interface Task {
   verification_id: string;
@@ -28,43 +35,76 @@ export default function TasksPage() {
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   // null until the first load, so the initial list is not reported as new.
   const seen = useRef<Set<string> | null>(null);
+  // null until the saved choice is read, so the page never asks for location before knowing it has to.
+  const [scope, setScope] = useState<Scope | null>(null);
+  const [noLocation, setNoLocation] = useState(false);
+
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(SCOPE_STORE);
+    } catch {}
+    setScope(saved === "anywhere" ? "anywhere" : "nearby");
+  }, []);
+
+  function choose(next: Scope) {
+    if (next === scope) return;
+    try {
+      localStorage.setItem(SCOPE_STORE, next);
+    } catch {}
+    seen.current = null;
+    setFresh(new Set());
+    setTasks(null);
+    setErr(null);
+    setNoLocation(false);
+    setScope(next);
+  }
 
   // quiet: background refresh — keeps the current list and error on screen until new data arrives.
   const load = useCallback(
     (quiet = false) => {
+      if (!scope) return;
       if (!quiet) setErr(null);
+      const show = async (query: string) => {
+        try {
+          const r = await api<{ tasks: Task[] }>(`/v1/worker/tasks?${query}`);
+          const ids = r.tasks.map((t) => t.verification_id);
+          const added = seen.current ? ids.filter((id) => !seen.current?.has(id)) : [];
+          seen.current = new Set(ids);
+          if (added.length > 0) {
+            setFresh((prev) => new Set([...prev, ...added]));
+            navigator.vibrate?.(200);
+          }
+          setTasks(r.tasks);
+          setErr(null);
+        } catch (e) {
+          if (!quiet) setErr(errorText(e));
+        }
+      };
+      // Work that needs no place: no location is read or sent.
+      if (scope === "anywhere") {
+        void show("scope=anywhere");
+        return;
+      }
       if (!navigator.geolocation) {
-        setErr("この端末では位置情報が使えません。");
+        setNoLocation(true);
         return;
       }
       navigator.geolocation.getCurrentPosition(
-        async (pos) => {
+        (pos) => {
+          setNoLocation(false);
           // Rounded before sending: the URL ends up in access logs (05 §3.2).
           const lat = pos.coords.latitude.toFixed(3);
           const lng = pos.coords.longitude.toFixed(3);
-          try {
-            const r = await api<{ tasks: Task[] }>(`/v1/worker/tasks?lat=${lat}&lng=${lng}&radius_km=5`);
-            const ids = r.tasks.map((t) => t.verification_id);
-            const added = seen.current ? ids.filter((id) => !seen.current?.has(id)) : [];
-            seen.current = new Set(ids);
-            if (added.length > 0) {
-              setFresh((prev) => new Set([...prev, ...added]));
-              navigator.vibrate?.(200);
-            }
-            setTasks(r.tasks);
-            setErr(null);
-          } catch (e) {
-            if (!quiet) setErr(errorText(e));
-          }
+          void show(`lat=${lat}&lng=${lng}&radius_km=5`);
         },
         () => {
-          if (!quiet)
-            setErr("位置情報の利用を許可してください。近くのタスクを探すのに使います（保存はしません）。");
+          if (!quiet) setNoLocation(true);
         },
         { enableHighAccuracy: false, maximumAge: 60_000, timeout: 15_000 },
       );
     },
-    [api],
+    [api, scope],
   );
 
   useEffect(() => {
@@ -83,13 +123,52 @@ export default function TasksPage() {
   const freshCount = tasks?.filter((t) => fresh.has(t.verification_id)).length ?? 0;
 
   return (
-    <Shell title="近くのタスク">
+    <Shell title={scope === "anywhere" ? "家でできるタスク" : "近くのタスク"}>
+      <div
+        className="grid grid-cols-2 gap-1 rounded-full bg-slate-100 p-1"
+        role="tablist"
+        aria-label="タスクの探し方"
+      >
+        {SCOPES.map(([s, label]) => (
+          <button
+            key={s}
+            type="button"
+            role="tab"
+            aria-selected={scope === s}
+            onClick={() => choose(s)}
+            className={`rounded-full px-3 py-2 text-sm font-semibold ${scope === s ? "bg-white text-teal-700 shadow" : "text-slate-500"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {scope === "anywhere" ? (
+        <p className="text-sm leading-relaxed text-slate-500">
+          書き写し・電話・採寸など、外に出なくてもできる依頼です。位置情報は使いません。
+        </p>
+      ) : null}
+      {noLocation && scope === "nearby" ? (
+        <Card>
+          <p className="text-sm leading-relaxed text-slate-700">
+            位置情報が使えないため、近くの依頼を探せません。近くの依頼を見るときは、位置情報の利用を許可してください（保存はしません）。
+          </p>
+          <div className="mt-3">
+            <Button onClick={() => choose("anywhere")}>家でできる依頼を見る</Button>
+          </div>
+        </Card>
+      ) : null}
       {err ? <Notice tone="error">{err}</Notice> : null}
       {freshCount > 0 ? <Notice tone="ok">新しいタスクが {freshCount} 件届きました。</Notice> : null}
       <PushOptIn />
-      {tasks === null && !err ? <p className="text-center text-slate-400">探しています…</p> : null}
+      {tasks === null && !err && !noLocation ? (
+        <p className="text-center text-slate-400">探しています…</p>
+      ) : null}
       {tasks?.length === 0 ? (
-        <Notice>いまは近くにタスクがありません。少し時間をおいて更新してください。</Notice>
+        <Notice>
+          {scope === "anywhere"
+            ? "いまは家でできるタスクがありません。通知を受け取るようにしておくと、出たときに分かります。"
+            : "いまは近くにタスクがありません。少し時間をおいて更新してください。"}
+        </Notice>
       ) : null}
       {tasks?.map((t) => (
         <Link key={t.verification_id} href={`/tasks/${t.verification_id}`} className="block">

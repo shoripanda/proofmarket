@@ -140,6 +140,36 @@ describe("worker flow", () => {
     expect(JSON.stringify(res?.evidenceBundle)).not.toContain(text);
   });
 
+  it("01 §4.20: scope=anywhere lists only work that needs no place, without any location", async () => {
+    const shop = await openTask(t);
+    const later = await openTask(t, {
+      type: "PHONE_INQUIRY",
+      question: "この番号の店に電話して、今日の閉店時刻を聞いてください",
+      answer_schema: { type: "text" },
+      location: undefined,
+      deadline: new Date(t.app.now().getTime() + 90 * 60_000).toISOString(),
+    });
+    const sooner = await openTask(t, {
+      type: "MEASUREMENT",
+      question: "近くの机の幅を測ってください",
+      answer_schema: { type: "number", unit: "cm" },
+      location: undefined,
+      deadline: new Date(t.app.now().getTime() + 30 * 60_000).toISOString(),
+    });
+    type List = { tasks: { verification_id: string; distance_m: number | null }[] };
+    const home = (await (await W(t, alice).list("scope=anywhere")).json()) as List;
+    // soonest deadline first; the shop task is never listed
+    expect(home.tasks.map((x) => x.verification_id)).toEqual([sooner, later]);
+    expect(home.tasks.every((x) => x.distance_m === null)).toBe(true);
+    // a location sent by mistake is ignored
+    const withLoc = (await (await W(t, alice).list("scope=anywhere&lat=35.660&lng=139.700")).json()) as List;
+    expect(withLoc.tasks.map((x) => x.verification_id)).toEqual([sooner, later]);
+    // nearby still needs a location, and still lists the shop first
+    expect((await W(t, alice).list("radius_km=5")).status).toBe(400);
+    const near = (await (await W(t, alice).list()).json()) as List;
+    expect(near.tasks.map((x) => x.verification_id)).toEqual([shop, sooner, later]);
+  });
+
   it("01 §4.16: the AI review sends a mismatched submission back, then records the passing review", async () => {
     t.app.reviewer = t.reviewer;
     const id = await openTask(t, {

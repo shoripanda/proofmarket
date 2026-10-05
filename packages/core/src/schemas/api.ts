@@ -392,16 +392,25 @@ export const WorkerMeResponseSchema = z.object({
 });
 
 /** Client must round lat/lng to 3 decimals before sending (05 §3.2). */
-export const WorkerTaskQuerySchema = z.object({
-  lat: z.coerce.number().pipe(Lat),
-  lng: z.coerce.number().pipe(Lng),
-  radius_km: z.coerce
-    .number()
-    .int()
-    .min(LIMITS.workerTaskSearchRadiusKm.min)
-    .max(LIMITS.workerTaskSearchRadiusKm.max)
-    .default(LIMITS.workerTaskSearchRadiusKm.default),
-});
+/** Which tasks to list: near the worker, or only work that needs no place (01 §4.20). */
+export const WORKER_TASK_SCOPES = ["nearby", "anywhere"] as const;
+
+export const WorkerTaskQuerySchema = z
+  .object({
+    scope: z.enum(WORKER_TASK_SCOPES).default("nearby"),
+    lat: z.coerce.number().pipe(Lat).optional(),
+    lng: z.coerce.number().pipe(Lng).optional(),
+    radius_km: z.coerce
+      .number()
+      .int()
+      .min(LIMITS.workerTaskSearchRadiusKm.min)
+      .max(LIMITS.workerTaskSearchRadiusKm.max)
+      .default(LIMITS.workerTaskSearchRadiusKm.default),
+  })
+  .refine((q) => q.scope === "anywhere" || (q.lat !== undefined && q.lng !== undefined), {
+    path: ["lat"],
+    message: "lat and lng are required unless scope=anywhere",
+  });
 
 export const WorkerTaskSchema = z.object({
   verification_id: VerificationIdSchema,

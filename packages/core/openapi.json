@@ -4254,9 +4254,22 @@
         ],
         "parameters": [
           {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "nearby",
+              "type": "string",
+              "enum": [
+                "nearby",
+                "anywhere"
+              ]
+            }
+          },
+          {
             "name": "lat",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "number"
             }
@@ -4264,7 +4277,7 @@
           {
             "name": "lng",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "number"
             }

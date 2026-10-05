@@ -222,13 +222,18 @@ function workerTaskView(t: TaskRow, distanceM: number | null, slots: number) {
   };
 }
 
-/** Location arrives rounded by the client and is neither stored nor logged (05 §3.2). */
+/**
+ * Location arrives rounded by the client and is neither stored nor logged (05 §3.2).
+ * scope "anywhere" lists only work that needs no place and takes no location at all (01 §4.20).
+ */
 export async function listTasks(
   app: AppContext,
   workerId: string,
-  q: { lat: number; lng: number; radius_km: number },
+  q: { scope?: "nearby" | "anywhere"; lat?: number; lng?: number; radius_km: number },
 ) {
   const now = app.now();
+  const here =
+    q.scope !== "anywhere" && q.lat !== undefined && q.lng !== undefined ? { lat: q.lat, lng: q.lng } : null;
   const rows = await app.db
     .select()
     .from(schema.verificationRequests)
@@ -250,13 +255,19 @@ export async function listTasks(
     if (!eligible(tier, taskGate(t))) continue;
     // Work that can be done anywhere is listed for everyone, after the nearby tasks (01 §4.15).
     const loc = taskLocation(t);
-    const d = loc ? haversineM(q, loc) : null;
+    if (loc && !here) continue;
+    const d = loc && here ? haversineM(here, loc) : null;
     if (d !== null && d > q.radius_km * 1000) continue;
     const c = await taskCounts(app.db, t.id);
     const slots = openSlots({ requiredWitnesses: t.requiredWitnesses, ...c });
     if (slots > 0) out.push(workerTaskView(t, d, slots));
   }
-  out.sort((a, b) => (a.distance_m ?? Number.MAX_SAFE_INTEGER) - (b.distance_m ?? Number.MAX_SAFE_INTEGER));
+  // Nearest first; work with no place keeps the soonest deadline on top.
+  out.sort(
+    (a, b) =>
+      (a.distance_m ?? Number.MAX_SAFE_INTEGER) - (b.distance_m ?? Number.MAX_SAFE_INTEGER) ||
+      a.deadline.localeCompare(b.deadline),
+  );
   return { tasks: out };
 }
 

@@ -41,9 +41,9 @@ const SubscriptionSchema = z.object({
 const PutSchema = z
   .object({
     subscription: SubscriptionSchema.loose(),
+    // No area at all is fine: such a worker only hears about work that needs no place (01 §4.20).
     areas: z
       .array(z.enum(PARTICIPATION_AREAS))
-      .min(1)
       .max(PARTICIPATION_AREAS.length)
       .refine((a) => new Set(a).size === a.length, "duplicate areas"),
   })

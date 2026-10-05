@@ -26,7 +26,7 @@
 | GET | `/v1/worker/claims/{claim_id}` | worker | P0 | 追加。判定結果と理由 |
 | GET | `/v1/worker/payouts` | worker | P1 | 追加 |
 | PUT | `/v1/worker/payout-preference` | worker | P2 | 追加（2026-10-04）。`{"yen_interest": true}` で円での受け取りを希望（01 §4.10）。`/v1/worker/me` が `yen_payout_interest` を返す |
-| GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | 追加（2026-10-04）。GET は通知が使えるか、PUT は宛先と地域の登録、DELETE は解除。VAPID の鍵が無い環境では GET が `available: false` を返す |
+| GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | 追加（2026-10-04）。GET は通知が使えるか、PUT は宛先と地域の登録（地域は 0 個でもよく、その場合は場所を問わない依頼だけが届く。01 §4.20）、DELETE は解除。VAPID の鍵が無い環境では GET が `available: false` を返す |
 | POST | `/v1/verifications/{id}/dispute` | requester | P2 | 追加（2026-10-04）。確定から 24 時間以内に 1 回。再確認の依頼を作る（01 §4.12）。失敗は 409 `DISPUTE_NOT_ALLOWED` |
 | POST | `/v1/console/session`・`/v1/console/logout`・`/v1/console/schedules/{id}/stop` | API キー / 画面のセッション | P2 | 追加（2026-10-04）。requester 用画面のログイン・ログアウト・定期確認の停止（01 §4.14）。Origin が同じときだけ。ログインは IP ごとに 1 分 10 回まで |
 | POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23） |
@@ -257,6 +257,8 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 ```
 
 requester の名前・principal・API キーは返さない（`api-contract.md` 4 節）。
+
+`scope=anywhere` を付けると、場所を省いた依頼だけを締め切りの近い順に返す（01 §4.20）。このとき `lat`・`lng` は要らず、送られても使わない。`scope` を省くと `nearby` で、`lat`・`lng` が必須（無ければ 400 `VALIDATION_FAILED`）。`nearby` は従来どおり、範囲内の依頼のあとに場所を省いた依頼も並べる。
 
 ### 3.3 POST /v1/worker/tasks/{id}/claim
 
