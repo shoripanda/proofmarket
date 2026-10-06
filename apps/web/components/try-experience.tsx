@@ -4,7 +4,7 @@
 // database, the balance or Solana. IDs, signatures and the photo are samples.
 import type { TaskType } from "@proofmarket/core";
 import Link from "next/link";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TASK_TYPE_JA } from "@/lib/answers";
 import { Button, Card, Notice, remaining, SAFETY_NOTES, useNow } from "./ui";
 
@@ -71,14 +71,65 @@ function signPhoto(takenAt: string, tilt: number): string {
 
 // ---------- small pieces ----------
 
-function Json({ title, value, tone = "slate" }: { title: string; value: unknown; tone?: "slate" | "teal" }) {
+/** Reveals text a few characters at a time; `on=false` shows it at once (manual mode). */
+function useTypewriter(text: string, on: boolean, cps = 40): { shown: string; done: boolean } {
+  const [n, setN] = useState(on ? 0 : text.length);
+  useEffect(() => {
+    if (!on) {
+      setN(text.length);
+      return;
+    }
+    setN(0);
+    const step = Math.max(1, Math.round(cps / 25));
+    const id = setInterval(() => {
+      setN((k) => {
+        if (k >= text.length) {
+          clearInterval(id);
+          return k;
+        }
+        return Math.min(text.length, k + step);
+      });
+    }, 40);
+    return () => clearInterval(id);
+  }, [text, on, cps]);
+  return { shown: text.slice(0, n), done: n >= text.length };
+}
+
+function Typed({
+  text,
+  on,
+  cps,
+  className,
+}: {
+  text: string;
+  on: boolean;
+  cps?: number;
+  className?: string;
+}) {
+  const { shown, done } = useTypewriter(text, on, cps);
+  return <span className={`${className ?? ""} ${on && !done ? "typing-caret" : ""}`}>{shown}</span>;
+}
+
+function Json({
+  title,
+  value,
+  tone = "slate",
+  animate = false,
+}: {
+  title: string;
+  value: unknown;
+  tone?: "slate" | "teal";
+  animate?: boolean;
+}) {
+  const text = useMemo(() => JSON.stringify(value, null, 2), [value]);
+  const { shown } = useTypewriter(text, animate, 900);
   return (
     <div
-      className={`rounded-xl border ${tone === "teal" ? "border-teal-200 bg-teal-50" : "border-slate-200 bg-slate-50"} p-3`}
+      className={`fade-in-up rounded-xl border ${tone === "teal" ? "border-teal-200 bg-teal-50" : "border-slate-200 bg-slate-50"} p-3`}
     >
       <p className="font-mono text-xs font-semibold text-slate-500">{title}</p>
       <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-relaxed text-slate-800">
-        {JSON.stringify(value, null, 2)}
+        {shown}
       </pre>
     </div>
   );
@@ -104,7 +155,9 @@ function Phone({ title, children }: { title: string; children: ReactNode }) {
         <h3 className="text-base font-bold">{title}</h3>
         <span className="text-sm font-medium text-teal-700">報酬</span>
       </div>
-      <div className="h-[34rem] space-y-4 overflow-y-auto bg-slate-50 p-4">{children}</div>
+      <div key={title} className="fade-in-up h-[34rem] space-y-4 overflow-y-auto bg-slate-50 p-4">
+        {children}
+      </div>
     </div>
   );
 }
@@ -124,6 +177,12 @@ export function TryExperience() {
   const [checkIdx, setCheckIdx] = useState(0);
   const now = useNow(1000);
   const [startedAt] = useState(() => Date.now());
+  // Autoplay: the page performs every tap itself, like a screen recording you can take over at any moment.
+  const [auto, setAuto] = useState(true);
+  const [speed, setSpeed] = useState<1 | 2>(1);
+  const [pressedId, setPressedId] = useState<string | null>(null);
+  const autoRef = useRef(auto);
+  autoRef.current = auto;
   // The agent log grows downward; keep its newest entry in view as the story advances.
   const log = useRef<HTMLElement>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs on every step change on purpose
@@ -156,13 +215,95 @@ export function TryExperience() {
     };
   }, [step, isSummary, isExact]);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setStep("intro");
     setAttempt(1);
     setPhoto(null);
     setAnswer("");
     setClaimedAt(null);
     setCheckIdx(0);
+    setPressedId(null);
+  }, []);
+
+  // Every tap in the story has a name, so autoplay and a real finger run the same code.
+  const act = useCallback(
+    (id: string) => {
+      switch (id) {
+        case "request":
+          setStep("requesting");
+          break;
+        case "card":
+          setStep("detail");
+          break;
+        case "claim":
+          setClaimedAt(Date.now());
+          setStep("claimed");
+          break;
+        case "arrive":
+          setStep("capture");
+          break;
+        case "shoot":
+          setPhoto(signPhoto(new Date().toISOString().slice(0, 19), attempt === 1 ? -2 : 1.5));
+          break;
+        case "pickSummary":
+          setAnswer(SUMMARY);
+          break;
+        case "pickExact":
+          setAnswer(EXACT);
+          break;
+        case "submit":
+          setCheckIdx(0);
+          setStep("checking");
+          break;
+        case "retry":
+          setAttempt((a) => a + 1);
+          setPhoto(null);
+          setAnswer("");
+          setStep("capture");
+          break;
+      }
+    },
+    [attempt],
+  );
+
+  /** Show the finger on the control for a moment, then do it. */
+  const press = useCallback(
+    (id: string) => {
+      setPressedId(id);
+      setTimeout(() => {
+        setPressedId(null);
+        act(id);
+      }, 320);
+    },
+    [act],
+  );
+
+  // The autoplay script: what happens next, and after how long. Stops the moment the person takes over.
+  useEffect(() => {
+    if (!auto) return;
+    const d = (ms: number) => ms / speed;
+    let next: [string, number] | null = null;
+    if (step === "intro") next = ["request", 5200];
+    else if (step === "open") next = ["card", 2200];
+    else if (step === "detail") next = ["claim", 2600];
+    else if (step === "claimed") next = ["arrive", 2200];
+    else if (step === "capture" && !photo) next = ["shoot", 1800];
+    else if (step === "capture" && photo && !answer)
+      next = [attempt === 1 ? "pickSummary" : "pickExact", 1600];
+    else if (step === "capture" && photo && answer) next = ["submit", 2200];
+    else if (step === "rejected") next = ["retry", 3800];
+    if (!next) return;
+    const [id, ms] = next;
+    const t = setTimeout(() => {
+      if (autoRef.current) press(id);
+    }, d(ms));
+    return () => clearTimeout(t);
+  }, [auto, speed, step, photo, answer, attempt, press]);
+
+  const takeOver = () => setAuto(false);
+  const replay = () => {
+    reset();
+    setAuto(true);
   };
 
   const requestBody = {
@@ -182,6 +323,49 @@ export function TryExperience() {
 
   return (
     <div className="space-y-6">
+      {/* controls */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+        <span className="font-semibold text-slate-700">{auto ? "自動で再生中" : "自分で操作中"}</span>
+        <span className="text-slate-400">·</span>
+        {auto ? (
+          <button
+            type="button"
+            onClick={takeOver}
+            className="rounded-full px-3 py-1 font-semibold text-teal-700 ring-1 ring-teal-700"
+          >
+            止めて自分で操作する
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAuto(true)}
+            className="rounded-full px-3 py-1 font-semibold text-teal-700 ring-1 ring-teal-700"
+          >
+            続きを自動で再生
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={replay}
+          className="rounded-full px-3 py-1 font-semibold text-slate-600 ring-1 ring-slate-300"
+        >
+          最初から
+        </button>
+        <span className="ml-auto flex items-center gap-1 text-xs text-slate-500">
+          速さ
+          {([1, 2] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setSpeed(v)}
+              className={`rounded-full px-2 py-0.5 font-semibold ${speed === v ? "bg-teal-700 text-white" : "text-slate-600 ring-1 ring-slate-300"}`}
+            >
+              {v}x
+            </button>
+          ))}
+        </span>
+      </div>
+
       {/* progress */}
       <ol className="grid gap-2 sm:grid-cols-4">
         {STEP_LABELS.map(([, label], i) => (
@@ -207,12 +391,24 @@ export function TryExperience() {
 
           {step === "intro" ? (
             <>
+              <div className="fade-in-up rounded-xl border border-dashed border-slate-300 bg-white/60 px-3 py-2 text-xs leading-relaxed text-slate-600">
+                <p className="font-semibold text-slate-500">エージェントの考え</p>
+                <Typed
+                  on={auto}
+                  cps={60}
+                  text={
+                    "ウェブの営業時間は古いかもしれない。確実なのは、いま現地にいる人に入口の掲示を書き起こしてもらうこと。" +
+                    "ProofMarket の request_reality_verification を、種類 SIGN_TRANSCRIPTION・場所はこの店・締め切り45分・報酬 0.30 USDC で呼ぶ。"
+                  }
+                />
+              </div>
               <Bubble who="agent">
-                ウェブの情報は古いことがあります。ProofMarket
-                で、いま現地にいる人に掲示を書き起こしてもらいます。{BOUNTY}{" "}
-                USDC、45分以内です。よろしいですか？
+                <Typed
+                  on={auto}
+                  text={`ウェブの情報は古いことがあります。ProofMarket で、いま現地にいる人に掲示を書き起こしてもらいます。${BOUNTY} USDC、45分以内です。よろしいですか？`}
+                />
               </Bubble>
-              <Button onClick={() => setStep("requesting")}>
+              <Button onClick={() => press("request")} pressed={pressedId === "request"}>
                 依頼を出す（request_reality_verification）
               </Button>
             </>
@@ -221,7 +417,7 @@ export function TryExperience() {
           {step !== "intro" ? (
             <>
               <Bubble who="agent">現地の人に頼みます。</Bubble>
-              <Json title="→ tools/call request_reality_verification" value={requestBody} />
+              <Json title="→ tools/call request_reality_verification" value={requestBody} animate={auto} />
             </>
           ) : null}
 
@@ -383,7 +579,7 @@ export function TryExperience() {
                 の記録まで誰でも確かめられます。
               </Notice>
               <div className="grid gap-2 sm:grid-cols-2">
-                <Button variant="secondary" onClick={reset}>
+                <Button variant="secondary" onClick={replay}>
                   最初からもう一度
                 </Button>
                 <Link
@@ -425,7 +621,11 @@ export function TryExperience() {
                 <span className="px-3 py-2 text-center text-slate-500">家でできる</span>
               </div>
               <Notice tone="ok">新しいタスクが 1 件届きました。</Notice>
-              <button type="button" className="block w-full text-left" onClick={() => setStep("detail")}>
+              <button
+                type="button"
+                className={`block w-full rounded-2xl text-left transition ${pressedId === "card" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
+                onClick={() => press("card")}
+              >
                 <Card>
                   <div className="flex items-baseline justify-between">
                     <span className="text-2xl font-bold text-teal-700">
@@ -475,12 +675,7 @@ export function TryExperience() {
                   ))}
                 </ul>
               </Card>
-              <Button
-                onClick={() => {
-                  setClaimedAt(Date.now());
-                  setStep("claimed");
-                }}
-              >
+              <Button onClick={() => press("claim")} pressed={pressedId === "claim"}>
                 引き受ける
               </Button>
               <p className="text-center text-xs text-slate-500">引き受けた後でも、いつでもやめられます。</p>
@@ -496,7 +691,9 @@ export function TryExperience() {
               <Notice>
                 お店の前に着いたら「現地に着いた」を押してください。そこから撮影の受付時間が始まります。
               </Notice>
-              <Button onClick={() => setStep("capture")}>現地に着いた（撮影を始める）</Button>
+              <Button onClick={() => press("arrive")} pressed={pressedId === "arrive"}>
+                現地に着いた（撮影を始める）
+              </Button>
               <Button variant="danger" onClick={reset}>
                 やめる
               </Button>
@@ -531,11 +728,7 @@ export function TryExperience() {
                 {TASK_TYPE_JA[TYPE].howTo}人の顔が大きく写らないようにしてください。
               </p>
               {!photo ? (
-                <Button
-                  onClick={() =>
-                    setPhoto(signPhoto(new Date().toISOString().slice(0, 19), attempt === 1 ? -2 : 1.5))
-                  }
-                >
+                <Button onClick={() => press("shoot")} pressed={pressedId === "shoot"}>
                   撮影する
                 </Button>
               ) : (
@@ -545,15 +738,15 @@ export function TryExperience() {
                     <p className="text-xs font-medium text-slate-500">体験用: 答えの入れ方を選べます</p>
                     <button
                       type="button"
-                      onClick={() => setAnswer(SUMMARY)}
-                      className={`rounded-xl px-3 py-2 text-left text-sm ring-1 ${isSummary ? "bg-amber-50 ring-amber-400" : "bg-white ring-slate-300"}`}
+                      onClick={() => press("pickSummary")}
+                      className={`rounded-xl px-3 py-2 text-left text-sm ring-1 transition ${isSummary ? "bg-amber-50 ring-amber-400" : "bg-white ring-slate-300"} ${pressedId === "pickSummary" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
                     >
                       要約して送る（AI に差し戻される例）
                     </button>
                     <button
                       type="button"
-                      onClick={() => setAnswer(EXACT)}
-                      className={`rounded-xl px-3 py-2 text-left text-sm ring-1 ${isExact ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-300"}`}
+                      onClick={() => press("pickExact")}
+                      className={`rounded-xl px-3 py-2 text-left text-sm ring-1 transition ${isExact ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-300"} ${pressedId === "pickExact" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
                     >
                       書いてあるとおりに書き起こす
                     </button>
@@ -562,7 +755,10 @@ export function TryExperience() {
                     文章で答える（500字まで）
                     <textarea
                       value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
+                      onChange={(e) => {
+                        setAuto(false);
+                        setAnswer(e.target.value);
+                      }}
                       maxLength={500}
                       rows={6}
                       className="rounded-2xl border border-slate-300 px-4 py-3 text-base leading-relaxed"
@@ -571,11 +767,9 @@ export function TryExperience() {
                     <span className="text-right text-xs text-slate-400">{answer.length} 字</span>
                   </label>
                   <Button
-                    onClick={() => {
-                      setCheckIdx(0);
-                      setStep("checking");
-                    }}
+                    onClick={() => press("submit")}
                     disabled={!answer.trim()}
+                    pressed={pressedId === "submit"}
                   >
                     この内容で送信する
                   </Button>
@@ -623,14 +817,7 @@ export function TryExperience() {
                 </p>
                 <p className="mt-2 text-sm text-slate-500">あと {3 - attempt} 回やり直せます。</p>
               </Card>
-              <Button
-                onClick={() => {
-                  setAttempt((a) => a + 1);
-                  setPhoto(null);
-                  setAnswer("");
-                  setStep("capture");
-                }}
-              >
+              <Button onClick={() => press("retry")} pressed={pressedId === "retry"}>
                 撮り直す
               </Button>
               <Button variant="secondary" onClick={reset}>

@@ -31,12 +31,15 @@ export function Button({
   variant = "primary",
   disabled,
   type = "button",
+  pressed = false,
 }: {
   children: ReactNode;
   onClick?: () => void;
   variant?: "primary" | "secondary" | "danger";
   disabled?: boolean;
   type?: "button" | "submit";
+  /** Drawn as if a finger is on it (the /try autoplay shows taps this way). */
+  pressed?: boolean;
 }) {
   const cls = {
     primary: "bg-teal-700 text-white active:bg-teal-800",
@@ -48,7 +51,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-2xl px-4 py-4 text-base font-bold transition disabled:opacity-40 ${cls}`}
+      className={`w-full rounded-2xl px-4 py-4 text-base font-bold transition disabled:opacity-40 ${cls} ${pressed ? "scale-95 ring-4 ring-teal-300 ring-offset-2" : ""}`}
     >
       {children}
     </button>
