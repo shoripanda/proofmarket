@@ -5,6 +5,8 @@
 import type { TaskType } from "@proofmarket/core";
 import Link from "next/link";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FlowDiagram } from "@/components/flow-diagram";
+import { RequestCard, ResultCard, StatusCard } from "@/components/try-cards";
 import { TASK_TYPE_JA } from "@/lib/answers";
 import { Button, Card, Notice, remaining, SAFETY_NOTES, useNow } from "./ui";
 
@@ -108,31 +110,6 @@ function Typed({
 }) {
   const { shown, done } = useTypewriter(text, on, cps);
   return <span className={`${className ?? ""} ${on && !done ? "typing-caret" : ""}`}>{shown}</span>;
-}
-
-function Json({
-  title,
-  value,
-  tone = "slate",
-  animate = false,
-}: {
-  title: string;
-  value: unknown;
-  tone?: "slate" | "teal";
-  animate?: boolean;
-}) {
-  const text = useMemo(() => JSON.stringify(value, null, 2), [value]);
-  const { shown } = useTypewriter(text, animate, 900);
-  return (
-    <div
-      className={`fade-in-up rounded-xl border ${tone === "teal" ? "border-teal-200 bg-teal-50" : "border-slate-200 bg-slate-50"} p-3`}
-    >
-      <p className="font-mono text-xs font-semibold text-slate-500">{title}</p>
-      <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-relaxed text-slate-800">
-        {shown}
-      </pre>
-    </div>
-  );
 }
 
 function Bubble({ who, children }: { who: "user" | "agent"; children: ReactNode }) {
@@ -320,6 +297,21 @@ export function TryExperience() {
   const proofUrl = `https://proofmarket.example/r/${IDS.verification}`;
 
   const stepIndex = STEP_LABELS.findIndex(([steps]) => steps.includes(step));
+  const flowIndex = (
+    {
+      intro: 0,
+      requesting: 0,
+      funding: 1,
+      open: 2,
+      detail: 2,
+      claimed: 2,
+      capture: 3,
+      checking: 3,
+      rejected: 3,
+      verified: 4,
+      settled: 5,
+    } as Record<Step, number>
+  )[step];
 
   return (
     <div className="space-y-6">
@@ -366,17 +358,11 @@ export function TryExperience() {
         </span>
       </div>
 
-      {/* progress */}
-      <ol className="grid gap-2 sm:grid-cols-4">
-        {STEP_LABELS.map(([, label], i) => (
-          <li
-            key={label}
-            className={`rounded-xl px-3 py-2 text-sm font-semibold ${i < stepIndex ? "bg-teal-700 text-white" : i === stepIndex ? "bg-teal-50 text-teal-800 ring-2 ring-teal-600" : "bg-slate-100 text-slate-500"}`}
-          >
-            {label}
-          </li>
-        ))}
-      </ol>
+      {/* where we are, as a picture */}
+      <div className="rounded-2xl border border-slate-200 bg-white px-2 py-3">
+        <FlowDiagram active={flowIndex} compact />
+      </div>
+      <p className="text-center text-sm font-semibold text-teal-800">{STEP_LABELS[stepIndex]?.[1]}</p>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_24rem] lg:items-start">
         {/* ---------- left: the agent ---------- */}
@@ -386,7 +372,7 @@ export function TryExperience() {
         >
           <p className="text-xs font-semibold tracking-wide text-slate-500">AI エージェント（依頼する側）</p>
           <Bubble who="user">
-            渋谷の「坂の上のパン屋」、今日は何時まで開いてる？ 正確なところが知りたい。
+            渋谷の「坂の上のパン屋」、今日は何時まで開いてる？ 正確な時間が知りたい。
           </Bubble>
 
           {step === "intro" ? (
@@ -405,7 +391,7 @@ export function TryExperience() {
               <Bubble who="agent">
                 <Typed
                   on={auto}
-                  text={`ウェブの情報は古いことがあります。ProofMarket で、いま現地にいる人に掲示を書き起こしてもらいます。${BOUNTY} USDC、45分以内です。よろしいですか？`}
+                  text={`ウェブの情報は古いかもしれません。ProofMarket で、いま近くにいる人に入口の掲示をそのまま書き写してもらいます。費用は ${BOUNTY} USDC、45分以内に返ってきます。頼んでいいですか？`}
                 />
               </Bubble>
               <Button onClick={() => press("request")} pressed={pressedId === "request"}>
@@ -417,7 +403,15 @@ export function TryExperience() {
           {step !== "intro" ? (
             <>
               <Bubble who="agent">現地の人に頼みます。</Bubble>
-              <Json title="→ tools/call request_reality_verification" value={requestBody} animate={auto} />
+              <RequestCard
+                typeName={TASK_TYPE_JA[TYPE].name}
+                question={QUESTION}
+                place="渋谷・指定地点から 80 m 以内"
+                deadlineMin={45}
+                bounty={BOUNTY}
+                witnesses={1}
+                raw={requestBody}
+              />
             </>
           ) : null}
 
@@ -428,28 +422,32 @@ export function TryExperience() {
             </p>
           ) : null}
 
-          {[
-            "funding",
-            "open",
-            "detail",
-            "claimed",
-            "capture",
-            "checking",
-            "rejected",
-            "verified",
-            "settled",
-          ].includes(step) ? (
-            <Json
-              title="← 201 Created"
-              value={{
+          {["funding", "open", "detail", "claimed", "capture", "checking", "rejected"].includes(step) ? (
+            <StatusCard
+              status={
+                step === "funding"
+                  ? "CREATED"
+                  : ["open", "detail"].includes(step)
+                    ? "OPEN"
+                    : step === "claimed" || step === "capture"
+                      ? "CLAIMED"
+                      : "SUBMITTED"
+              }
+              escrow={step === "funding" ? "pending" : "locked"}
+              activeClaims={["open", "detail", "funding"].includes(step) ? 0 : 1}
+              raw={{
                 verification_id: IDS.verification,
-                status: step === "funding" ? "CREATED" : "OPEN",
+                status:
+                  step === "funding" ? "CREATED" : ["open", "detail"].includes(step) ? "OPEN" : "CLAIMED",
                 deadline: deadlineIso,
                 funding: {
                   status: step === "funding" ? "PENDING" : "CONFIRMED",
                   explorer_url: step === "funding" ? null : explorer(IDS.fundTx),
                 },
-                note: "A human witness must travel to the place. Poll get_reality_verification for the result.",
+                witness_progress: ["funding", "open", "detail"].includes(step)
+                  ? { valid: 0, active_claims: 0, open_slots: 1, required: 1 }
+                  : { valid: 0, active_claims: 1, open_slots: 0, required: 1 },
+                result: null,
               }}
             />
           ) : null}
@@ -462,48 +460,40 @@ export function TryExperience() {
           ) : null}
 
           {["open", "detail", "claimed", "capture", "checking", "rejected"].includes(step) ? (
-            <>
-              <Notice tone="ok">
-                エスクローに預けました。依頼は worker
-                の一覧に出ています。スマートフォンの画面（横に並ばないときは下）で、worker
-                として引き受けてください。
-              </Notice>
-              <Json
-                title="→ get_reality_verification（20秒ごとに待つ）"
-                value={{
-                  verification_id: IDS.verification,
-                  status: ["open", "detail"].includes(step)
-                    ? "OPEN"
-                    : step === "claimed" || step === "capture"
-                      ? "CLAIMED"
-                      : "SUBMITTED",
-                  witness_progress:
-                    step === "open" || step === "detail"
-                      ? { valid: 0, active_claims: 0, open_slots: 1, required: 1 }
-                      : { valid: 0, active_claims: 1, open_slots: 0, required: 1 },
-                  result: null,
-                }}
-              />
-            </>
+            <Notice tone="ok">
+              報酬を預けました。依頼は worker
+              の一覧に出ています。右のスマートフォン（画面が狭いときは下）で引き受けてください。
+            </Notice>
           ) : null}
 
           {step === "rejected" ? (
             <p className="text-sm text-slate-600">
-              最初の提出は AI の確認で差し戻されました。結果はまだ null のまま、エージェントは待ち続けます。
+              最初の提出は AI
+              の確認で差し戻されました。結果はまだ出ていないので、エージェントはそのまま待ちます。
             </p>
           ) : null}
 
           {step === "verified" || step === "settled" ? (
             <>
-              <Json
-                title="← get_reality_verification"
-                tone="teal"
-                value={{
+              <ResultCard
+                answerLines={SIGN_LINES}
+                settled={step === "settled"}
+                bounty={BOUNTY}
+                reviewReason="掲示の文字がそのまま書き起こされています。"
+                proofUrl={proofUrl}
+                badgeTime={new Date(now).toLocaleString("ja-JP", {
+                  timeZone: "Asia/Tokyo",
+                  month: "numeric",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                raw={{
                   verification_id: IDS.verification,
                   status: step === "settled" ? "SETTLED" : "VERIFIED",
                   result: {
                     status: "VERIFIED",
-                    answer: "sha256:9b1c…（文章の答えは要約値で記録）",
+                    answer: "sha256:9b1c…",
                     answers: [EXACT],
                     reviews: [
                       {
@@ -527,11 +517,7 @@ export function TryExperience() {
                       status: step === "settled" ? "SETTLED" : "PENDING",
                       signature: step === "settled" ? IDS.settleTx : null,
                     },
-                    proof: {
-                      url: proofUrl,
-                      badge_url: `${proofUrl}/badge.svg`,
-                      markdown: `[![人が確認](${proofUrl}/badge.svg)](${proofUrl})`,
-                    },
+                    proof: { url: proofUrl, badge_url: `${proofUrl}/badge.svg` },
                   },
                 }}
               />
@@ -548,7 +534,7 @@ export function TryExperience() {
             <>
               <Bubble who="agent">
                 <p>
-                  いま現地で確かめてもらいました。入口の掲示はこうです。
+                  いま現地で確かめてもらいました。入口の掲示はこのとおりです。
                   <br />
                   <span className="mt-1 block whitespace-pre-wrap rounded-lg bg-slate-100 p-2 font-medium">
                     {EXACT}
@@ -575,7 +561,7 @@ export function TryExperience() {
                 </p>
               </Bubble>
               <Notice tone="ok">
-                利用者には、答えと一緒に「人が確かめた証明」のリンクが渡ります。本番ではこのリンク先が公開ページ（/r/…）で、Solana
+                答えと一緒に「人が確かめた証明」のリンクが利用者に届きます。本番ではリンク先が公開ページ（/r/…）になり、Solana
                 の記録まで誰でも確かめられます。
               </Notice>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -735,7 +721,7 @@ export function TryExperience() {
                 <>
                   <p className="text-sm text-slate-600">位置を取得しました（誤差 約12 m）</p>
                   <div className="grid gap-2">
-                    <p className="text-xs font-medium text-slate-500">体験用: 答えの入れ方を選べます</p>
+                    <p className="text-xs font-medium text-slate-500">体験用：答え方を選べます</p>
                     <button
                       type="button"
                       onClick={() => press("pickSummary")}
@@ -812,7 +798,7 @@ export function TryExperience() {
                 <p className="mt-2 text-sm leading-relaxed text-slate-700">
                   AI の確認:
                   {isSummary
-                    ? "「書いてあるとおりに書き起こす」依頼ですが、送られた答えは要約になっています。掲示の文字をそのまま書いてください。"
+                    ? "依頼は「書いてあるとおりに書き起こす」ことですが、送られた答えは要約になっています。掲示の文字をそのまま書いてください。"
                     : "送られた答えが、写真の掲示の文字と一致しません。掲示の文字をそのまま書いてください。"}
                 </p>
                 <p className="mt-2 text-sm text-slate-500">あと {3 - attempt} 回やり直せます。</p>
@@ -878,5 +864,5 @@ const CHECKS = [
   "写真の形式",
   "指定された場所で撮られたか（位置）",
   "過去の写真の使い回しでないか",
-  "ほかの人の写真とそっくりでないか",
+  "ほかの人の写真と同じでないか",
 ];
