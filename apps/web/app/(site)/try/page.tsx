@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";
-import { TryExperience } from "@/components/try-experience";
+import { TryTabs } from "@/components/try-tabs";
 
 export const metadata: Metadata = {
   title: "体験 | ProofMarket",
@@ -25,7 +25,7 @@ export default function TryPage() {
         </p>
       </PageHero>
       <Section title="やってみる">
-        <TryExperience />
+        <TryTabs />
       </Section>
       <Section title="本物で試すには">
         <div className="grid gap-4 sm:grid-cols-2">
