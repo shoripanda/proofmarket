@@ -7,6 +7,7 @@ import { type Db, schema } from "@proofmarket/db";
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
+import { releaseStaleReviews } from "./evidence-service";
 import { runNotifyWorkers } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
 import { runDueSchedules } from "./schedule-service";
@@ -138,6 +139,8 @@ async function pendingReviewSince(db: Db, verificationId: string): Promise<numbe
 /** /api/internal/tick: expire what is due, then drain up to maxJobs jobs. */
 export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: number; jobsRun: number }> {
   const now = app.now();
+  // 0. Submissions the outside reviewer never answered pass with a warning (01 §4.17), so they still count below.
+  await releaseStaleReviews(app);
   // 1. Task deadlines (T08 / T11 / T12), one transaction per task.
   const due = await app.db
     .select({ id: schema.verificationRequests.id })

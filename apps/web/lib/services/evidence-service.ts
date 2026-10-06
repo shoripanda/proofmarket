@@ -25,7 +25,7 @@ import {
 } from "@proofmarket/core";
 import type { SubmitEvidenceRequest } from "@proofmarket/core/schemas/api";
 import { constraintName, type Db, pgErrorCode, schema } from "@proofmarket/db";
-import { and, asc, eq, gte, inArray, isNotNull, ne } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, lte, ne } from "drizzle-orm";
 import sharp from "sharp";
 import type { AppContext } from "../context";
 import type { SubmissionReviewer } from "../ports";
@@ -499,8 +499,12 @@ async function finishSubmission(
 
 // ---------- outside AI review (01 §4.17) ----------
 
+/** How long a submission waits for the outside reviewer before it is treated as unavailable (01 §4.17). */
+export const REVIEW_WAIT_MAX_MS = 30 * 60_000;
+
 export interface ReviewVerdict {
-  verdict: "pass" | "fail" | "uncertain";
+  /** "unavailable" is only set by the server when no verdict arrived in time (01 §4.16, §4.17). */
+  verdict: "pass" | "fail" | "uncertain" | "unavailable";
   reason: string;
   observed: string;
   model: string;
@@ -558,6 +562,39 @@ export async function listPendingReviews(app: AppContext, limit = 20) {
     });
   }
   return { reviews: out };
+}
+
+/**
+ * Submissions the outside reviewer has not answered within REVIEW_WAIT_MAX_MS pass with a warning, exactly as
+ * when the Claude API is down (01 §4.16): a worker's finished job and a requester's deadline must not hang on
+ * the operator's Mac being on. Called from tick before deadlines are handled.
+ */
+export async function releaseStaleReviews(app: AppContext): Promise<string[]> {
+  const cutoff = new Date(app.now().getTime() - REVIEW_WAIT_MAX_MS);
+  const stale = await app.db
+    .select({ id: schema.witnessSubmissions.id })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.state, "CHECKING"),
+        lte(schema.witnessSubmissions.serverReceivedAt, cutoff),
+      ),
+    );
+  const released: string[] = [];
+  for (const { id } of stale) {
+    try {
+      await applyReview(app, id, {
+        verdict: "unavailable",
+        reason: "確認係から30分以内に判定が届かなかったため、内容の確認なしで受け付けました。",
+        observed: "",
+        model: "none",
+      });
+      released.push(id);
+    } catch (e) {
+      if (!(e instanceof ApiError && e.code === "SUBMISSION_NOT_PENDING")) throw e;
+    }
+  }
+  return released;
 }
 
 /** Apply the outside reviewer's verdict to a CHECKING submission, then decide it like an inline review. */

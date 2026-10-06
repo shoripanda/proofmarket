@@ -107,10 +107,10 @@ describe("outside AI review", () => {
     ]);
   });
 
-  it("a pending review keeps the claim past its TTL and holds the deadline for a grace period", async () => {
+  it("a pending review keeps the claim past its TTL, and a reviewer's late verdict still counts", async () => {
     const id = await transcription();
     const first = await witness(t, alice, id, { answer: "書き起こし" });
-    t.advance(31 * 60_000); // past the 30 min claim TTL
+    t.advance(29 * 60_000); // past the claim TTL is not the point here; the review is still awaited
     await tick(t.app);
     const [claim] = await t.db.select().from(schema.claims).where(eq(schema.claims.id, first.claimId));
     expect(claim?.state).toBe("ACTIVE");
@@ -123,6 +123,26 @@ describe("outside AI review", () => {
     const v = await view(id);
     expect(v.status).toBe("VERIFIED");
     expect(v.result.checks.vision_consistency).toBe("warning");
+  });
+
+  it("01 §4.17: when no verdict arrives within 30 minutes the submission passes with a warning, not an expiry", async () => {
+    const id = await transcription();
+    const first = await witness(t, alice, id, { answer: "書き起こし" });
+    t.advance(31 * 60_000);
+    await tick(t.app);
+    const v = await view(id);
+    expect(v.status).toBe("VERIFIED");
+    expect(v.result.checks.vision_consistency).toBe("warning");
+    expect(v.result.reviews).toEqual([expect.objectContaining({ verdict: "unavailable", model: "none" })]);
+    // the late verdict is refused: the submission is no longer pending
+    await expect(
+      applyReview(t.app, first.body.submission_id as string, {
+        verdict: "pass",
+        reason: "",
+        observed: "",
+        model: "m",
+      }),
+    ).rejects.toMatchObject({ code: "SUBMISSION_NOT_PENDING" });
   });
 
   it("with the flag off nothing is held", async () => {
