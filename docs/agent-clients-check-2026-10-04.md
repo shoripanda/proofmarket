@@ -1,6 +1,6 @@
 # ほかの AI から本番の MCP につなぐ確認（担当 E）
 
-作成: 2026-10-05 ／ 対象: https://proofmarket-rosy.vercel.app/mcp ／ 指示書: `docs/agents/E-agent-clients.md`
+作成: 2026-10-05 ／ 対象: https://proofmarket.fun/mcp ／ 指示書: `docs/agents/E-agent-clients.md`
 
 ## 結果の一覧
 
