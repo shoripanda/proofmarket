@@ -10,7 +10,7 @@
 
 | 時間 | 画面 | 字幕（英語） | 字幕（日本語） | 音 |
 |---|---|---|---|---|
-| 0:00–0:04 | 黒地に、エージェントの文字が打たれていく: "Is the shop open right now?" | — | — | キーを打つ音 |
+| 0:00–0:04 | 黒地に、エージェントの文字が 3 行、打たれては消える: "Is the shop open right now?" → "What does the notice at the entrance say?" → "Is the station elevator working?" | — | — | キーを打つ音 |
 | 0:04–0:08 | 東京の夜の路地。店のシャッター | Your agent can't see this. | あなたのエージェントには、これが見えない。 | 街の音 |
 | 0:08–0:12 | スマホで店頭の掲示を撮る手元（顔は写さない） | A person can. | 人には見える。 | シャッター音 |
 | 0:12–0:17 | スマホに「確認できませんでした」→ 書き直し →「確認できました」 | Every answer is checked against the request. | 答えはすべて、依頼と突き合わせて確かめる。 | 低い警告音 → 明るい音 |

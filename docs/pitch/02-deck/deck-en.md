@@ -1,4 +1,4 @@
-# Pitch deck outline — English (11 slides)
+# Pitch deck outline — English (12 slides)
 
 Created 2026-10-04. Japanese version and owner notes: `deck-ja.md`. Video script: `../03-videos/pitch-video.md`.
 
@@ -50,23 +50,37 @@ Created 2026-10-04. Japanese version and owner notes: `deck-ja.md`. Video script
 - **Talk track**:
   - 17 task types: whether a shop is open, queues, stock, prices, sign transcription, paper documents, phone inquiries, and more
   - Workers join from a phone browser. No crypto knowledge or wallet setup needed
-  - With x402, an agent pays USDC and asks on the spot, with no API key signup (include after Track A's PR is merged)
+  - With x402, an agent pays USDC and asks on the spot, with no API key signup (live; tested end to end on production)
+  - 7 MCP tools, including watches: "tell me when the elevator works again" keeps asking people until a verified answer matches
+  - Every result ships with a proof link and badge the agent can hand to its user: who checked, when, and the Solana record
+  - Live demo at `/try`: play the agent and the worker yourself in three minutes (updated 2026-10-06)
 
 ## 7. Demo
 
 - **Title**: Sent back, fixed, accepted
 - **Message**: A submission that doesn't match the request is sent back with a reason. The worker fixes it, it passes, and the payment lands on Solana.
-- **Visual**: Four frames from the demo video (request → send-back screen → accepted → Explorer). See `../03-videos/demo-video.md`
+- **Visual**: Four frames from the demo video (request → send-back screen → accepted → Explorer). See `../03-videos/demo-video.md`. If the room has a screen, open `/try` live instead of the frames
 - **Talk track**: The moment to show is the send-back. Claude says "you summarized instead of transcribing," the worker rewrites it, and it passes.
 
-## 8. Business Model
+## 8. Beyond agents
+
+- **Title**: One request, many beneficiaries
+- **Message**: The same rails carry work that matters to people who will never build an agent.
+- **Visual**: Three tiles: a phone showing the "work from home" tab; the public map with a station marker; a watch stopping on "elevator: working"
+- **Talk track**:
+  - Work from home: document transcription, phone calls, measurements need no place. People who cannot easily go out — older people, carers, people with disabilities — can take them with no location permission
+  - Public map: a requester can publish a verified fact (an elevator that works, a shelter that is open) for 72 hours. One paid request helps the next person for free
+  - Watches: an agent keeps asking at an interval and stops at the first verified match. Nobody has to go back and look again
+  - All three are live (2026-10-05)
+
+## 9. Business Model
 
 - **Title**: Pay per request
 - **Message**: Agents pay per request: the worker bounty plus a verification fee. More witnesses means more assurance, at a higher price.
 - **Visual**: Breakdown of one request: bounty × witnesses + fee
 - **Talk track**: The fee is zero during the pilot. We'll set it after measuring worker cost, latency, and what requesters will pay. Reusing a recent result for the same shop returns an answer without sending anyone, at lower cost.
 
-## 9. Traction
+## 10. Traction
 
 - **Title**: Traction (verifiable by anyone at `/stats`)
 - **Message**: [completed] requests were completed by real people, and [USDC paid] USDC was paid to workers.
@@ -76,7 +90,7 @@ Created 2026-10-04. Japanese version and owner notes: `deck-ja.md`. Video script
   - Claude sent back [sent back] submissions; [fixed and accepted] were fixed and accepted
   - [external devs] external developers tried it. Feedback: [quote one]
 
-## 10. Team
+## 11. Team
 
 - **Title**: Team
 - **Message**: [Owner: one sentence on why you are the one to solve this]
@@ -84,9 +98,9 @@ Created 2026-10-04. Japanese version and owner notes: `deck-ja.md`. Video script
 - **Talk track**: [Owner writes. Use the three questions in `deck-ja.md`, slide 10.]
   - Fact we can state: spec fixed on Oct 2; by Oct 4 the API, MCP server, worker app, Solana program, and AI review were live in production
 
-## 11. CTA
+## 12. CTA
 
 - **Title**: Try it
 - **Message**: Send one request from your agent today.
-- **Visual**: Two QR codes (developer page and worker sign-up) and the URL
-- **Talk track**: Agent builders: connect over MCP or x402 from the developer page. In Tokyo: join as a worker.
+- **Visual**: Two QR codes (`/en` for the English site and `/try` for the live demo) and the URL
+- **Talk track**: Agent builders: connect over MCP or x402 from `/en/developers`. Anyone: play both sides at `/try`. In Tokyo: join as a worker.
