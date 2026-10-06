@@ -48,7 +48,7 @@
 
 ## 動いている環境
 
-- 本番: https://proofmarket-rosy.vercel.app （GitHub main に入ると自動で公開）
+- 本番: https://proofmarket.fun （旧 https://proofmarket-rosy.vercel.app は転送。GitHub main に入ると自動で公開）
 - データベース: Supabase（移行は `DATABASE_URL=<Session pooler> pnpm db:migrate`）
 - Solana: Devnet（program `A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s`）
 - AI による内容の確認: オーナーの Mac の launchd `com.proofmarket.review-runner`（2分ごと、`scripts/review-runner.ts`）
