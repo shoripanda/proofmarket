@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleCreate } from "../lib/handlers/requester";
 import { revokeEvidenceAccess } from "../lib/services/admin-service";
-import { publicMap } from "../lib/services/map-service";
+import { publicDataset, publicMap } from "../lib/services/map-service";
 import { publicResult } from "../lib/services/public-service";
 import { call, createBody, createTestApp, jsonReq, SHOP } from "./support/app";
 import { onboardWorker, openTask, witness } from "./support/worker";
@@ -93,5 +93,19 @@ describe("public map", () => {
 
     t.advance(72 * 3600_000);
     expect((await publicMap(t.app)).items).toEqual([]);
+    // 01 §4.24: the dataset keeps old observations, still without the revoked one, with hashes and the proof URL
+    const d = await publicDataset(t.app);
+    expect(d.license).toBe("CC-BY-4.0");
+    expect(d.rows.map((r) => r.verification_id)).toEqual([first]);
+    expect(d.rows[0]).toMatchObject({
+      type: "PLACE_STATUS_VERIFICATION",
+      answer: "OPEN",
+      place_name: "test shop",
+      witnesses: 1,
+      proof_url: `http://localhost:3000/r/${first}`,
+    });
+    expect(d.rows[0]?.evidence_root).toMatch(/^[0-9a-f]{64}$/);
+    expect(d.rows[0]?.result_hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.stringify(d)).not.toMatch(/wkr_|Walletalice|storage\.test/);
   });
 });

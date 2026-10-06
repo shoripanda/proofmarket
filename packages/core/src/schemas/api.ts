@@ -368,6 +368,34 @@ export const PublicMapSchema = z.object({
 });
 export type PublicMap = z.infer<typeof PublicMapSchema>;
 
+/** Open dataset (01 §4.24): published VERIFIED results with their on-chain record. Never photos or workers. */
+export const PublicDatasetRowSchema = z.object({
+  verification_id: VerificationIdSchema,
+  type: z.enum(TASK_TYPES),
+  question: z.string(),
+  answer: AnswerValueSchema,
+  answer_kind: z.enum(["enum", "number"]),
+  unit: z.string().nullable(),
+  location: z.object({ lat: z.number(), lng: z.number() }),
+  place_name: z.string().nullable(),
+  witnesses: z.number().int(),
+  verified_at: IsoDateTime,
+  evidence_root: Sha256Hex,
+  result_hash: Sha256Hex,
+  attestation: z
+    .object({ network: z.literal("solana-devnet"), signature: SolanaSignature, explorer_url: z.url() })
+    .nullable(),
+  proof_url: z.url(),
+});
+export const PublicDatasetSchema = z.object({
+  generated_at: IsoDateTime,
+  license: z.literal("CC-BY-4.0"),
+  attribution: z.string(),
+  count: z.number().int(),
+  rows: z.array(PublicDatasetRowSchema),
+});
+export type PublicDataset = z.infer<typeof PublicDatasetSchema>;
+
 /**
  * Public track record (05 §4.1): aggregates only. No question, answer, location, worker or payout address.
  * Recent results link to /r/<id> only when the operator featured them; otherwise just the Explorer transaction.

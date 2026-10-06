@@ -217,6 +217,15 @@ const ENDPOINTS: Endpoint[] = [
     ok: { status: 200, schema: S.PublicMapSchema },
   },
   {
+    method: "get",
+    path: "/v1/public/dataset",
+    auth: "none",
+    priority: "Stretch",
+    summary:
+      "Open dataset of published, verified real-world observations with their Solana record (CC BY 4.0)",
+    ok: { status: 200, schema: S.PublicDatasetSchema },
+  },
+  {
     method: "post",
     path: "/v1/admin/flags",
     auth: "operator",
