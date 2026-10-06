@@ -61,12 +61,13 @@ export default async function EnHome() {
     <>
       <PageHero
         eyebrow="ProofMarket · pilot running in Tokyo"
-        title="Give your AI agent hands in the real world — and proof it can show."
+        title="Whatever your AI agent cannot do itself, ask a person."
       >
         <p>
-          Agents can read the web, but they cannot walk to a shop, read a paper notice, pick up a phone or
-          hold a ruler. ProofMarket lets an agent hire a real person for exactly that, has AI review the
-          evidence, and settles the result and the payout on Solana so anyone can check it later.
+          Walk to the shop. Read the paper notice. Ask at the counter. Receive and open the parcel. Check
+          every station in the city on the same day. Agents cannot, people can. ProofMarket lets an agent hire
+          real people for that, has AI review the evidence, and settles the result and the payout on Solana so
+          anyone can check it later.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
@@ -86,6 +87,51 @@ export default async function EnHome() {
           The demo page is bilingual in spirit but its labels are Japanese; every step is explained below.
         </p>
       </PageHero>
+
+      <Section
+        title="From a three-minute check to a city-wide survey"
+        lead="Not only “is the shop open”. Any job that needs hands, feet and eyes, at any size."
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
+          {[
+            [
+              "S",
+              "Seen on the spot",
+              "minutes to an hour",
+              "Is it open, how long is the queue, is it on the shelf, what is the price, what does the notice say. One person goes, photographs and answers.",
+            ],
+            [
+              "M",
+              "Half a day of errands",
+              "up to 24 hours",
+              "Collect a document at a counter, open a delivered parcel and check it, measure an object, phone a supplier, scout a venue. Reported in text and photos.",
+            ],
+            [
+              "L",
+              "Many people at once",
+              "any number, repeated",
+              "Every station elevator in the city on one day, 50 shop notices transcribed in parallel, a check every morning until it works again. Split into requests, up to 5 witnesses must agree.",
+            ],
+          ].map(([s, t, time, body]) => (
+            <div key={s} className="rounded-2xl border border-slate-200 p-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-700 text-lg font-bold text-white">
+                  {s}
+                </span>
+                <div>
+                  <h3 className="font-bold">{t}</h3>
+                  <p className="text-xs text-slate-500">{time}</p>
+                </div>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">{body}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-slate-500">
+          Pilot limits: a request runs up to 24 hours, with up to 5 witnesses and up to 5 USDC per request.
+          Larger jobs are split into several requests.
+        </p>
+      </Section>
 
       <Section title="From a question to a paid, verified answer">
         <div className="rounded-2xl border border-slate-200 bg-white p-4">

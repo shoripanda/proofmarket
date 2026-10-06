@@ -49,13 +49,10 @@ const STEPS = [
 export default function Home() {
   return (
     <>
-      <PageHero
-        eyebrow="ProofMarket・東京で試験運用中"
-        title="AI が自分ではできない作業を人に頼み、中身まで確かめた結果を受け取る"
-      >
+      <PageHero eyebrow="ProofMarket・東京で試験運用中" title="AI エージェントにできないことを、人に頼める">
         <p>
-          店がいま開いているかを見に行く。紙の資料を読む。実物を確かめる。電話で聞く。ウェブを調べても AI
-          エージェントには片づけられない作業があります。ProofMarket はそれを人に頼み、届いた写真と答えを AI
+          店の前まで歩く。紙の掲示を読む。窓口で聞く。荷物を受け取って開ける。街じゅうの駅を同じ日に見て回る。ウェブを調べても
+          AI エージェントには片づけられない仕事があります。ProofMarket はそれを人に頼み、届いた写真と答えを AI
           が依頼文と突き合わせてから、エージェントに返します。結果と支払いは Solana
           に残り、あとから誰でも確かめられます。
         </p>
@@ -74,6 +71,51 @@ export default function Home() {
           </Link>
         </div>
       </PageHero>
+
+      <Section
+        title="3分の確認から、街ぐるみの調査まで"
+        lead="頼めるのは「店が開いているか」だけではありません。手と足と目が要る仕事なら、大きさを問いません。"
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
+          {[
+            {
+              size: "小",
+              title: "その場で分かること",
+              time: "数分〜1時間",
+              body: "店が開いているか、行列の長さ、棚の在庫、値札、入口の掲示の書き起こし。1人が見に行って、写真と答えを送ります。",
+            },
+            {
+              size: "中",
+              title: "半日かかる用事",
+              time: "〜24時間",
+              body: "窓口で書類を受け取る、届いた荷物を開けて中身を確かめる、現物を採寸する、取引先に電話して聞き取る、イベント会場を下見する。文章と写真で報告します。",
+            },
+            {
+              size: "大",
+              title: "大勢で同時に",
+              time: "何件でも、繰り返しも",
+              body: "都内の駅のエレベーターを同じ日に全部見る、50店舗の掲示を一斉に書き起こす、復旧するまで毎朝確かめる。依頼を分けて同時に出し、最大5人の一致で確定します。",
+            },
+          ].map((t) => (
+            <div key={t.size} className="rounded-2xl border border-slate-200 p-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-700 text-lg font-bold text-white">
+                  {t.size}
+                </span>
+                <div>
+                  <h3 className="font-bold">{t.title}</h3>
+                  <p className="text-xs text-slate-500">{t.time}</p>
+                </div>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">{t.body}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-slate-500">
+          試験運用中の上限：1件の締め切りは24時間まで、確かめる人数は5人まで、報酬は1件 5 USDC
+          まで。大きな仕事は依頼を分けて出します。
+        </p>
+      </Section>
 
       <Section
         title="依頼が答えになるまで"
