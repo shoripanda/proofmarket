@@ -34,6 +34,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
+          <Link href="/en" className="text-sm font-semibold text-slate-600 hover:text-teal-700" lang="en">
+            English
+          </Link>
           <Link
             href="/login"
             className="rounded-full bg-teal-700 px-4 py-1.5 text-sm font-semibold text-white hover:bg-teal-800"
