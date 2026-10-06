@@ -83,7 +83,7 @@ const OUTCOMES: [string, string][] = [
   ["EXPIRED", "締め切りまでに確定しなかった。拘束した額は返金される"],
 ];
 
-/** Per-client steps. `checked` = the operator connected it to this deployment and read a result (2026-10-05). */
+/** Per-client steps. `checked` = the operator connected it to this deployment and listed the tools (2026-10-05/06). */
 const CLIENTS: { name: string; checked: boolean; steps: string[]; note?: string }[] = [
   {
     name: "Claude Code",
@@ -96,7 +96,7 @@ const CLIENTS: { name: string; checked: boolean; steps: string[]; note?: string 
   },
   {
     name: "claude.ai（ブラウザ・アプリ）",
-    checked: false,
+    checked: true,
     steps: [
       "設定 → コネクタ → 「カスタムコネクタを追加」を開く",
       "名前に ProofMarket、URL に <URL>/mcp を入れて追加する",
