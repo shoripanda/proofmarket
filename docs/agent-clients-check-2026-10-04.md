@@ -9,7 +9,7 @@
 | Claude Code（API キーをヘッダーで） | **つながった** | 2026-10-05 | `claude -p --mcp-config` で道具 4 つが見え、`get_reality_verification` の呼び出しがサーバーまで届いた（ID の形式違いを正しく 32602 で返した） |
 | REST（curl） | **つながった** | 2026-10-05 | `tools/list` を直接呼んで 4 つの道具。キー無しは 401 と `WWW-Authenticate: Bearer resource_metadata=...` |
 | OAuth の公開設定 | **そろっている** | 2026-10-05 | `/.well-known/oauth-protected-resource`・`/.well-known/oauth-authorization-server`。登録・認可・トークンの窓口、PKCE S256、公開クライアントのみ |
-| claude.ai のコネクタ | 未確認 | — | オーナーの画面操作待ち。手順は `/developers` の「各 AI からつなぐ」に書いた |
+| claude.ai のコネクタ | **つながった** | 2026-10-06 | `https://proofmarket.fun/mcp` をカスタムコネクタに登録。OAuth（動的クライアント登録 → ProofMarket の許可画面で API キー）を経て、会話から 7 つの道具が見えた |
 | ChatGPT（開発者モードのコネクタ） | 未確認 | — | 同上。公式の案内では DCR に対応（developers.openai.com の Authentication） |
 | Cursor など | 未確認 | — | 手順のみ |
 
