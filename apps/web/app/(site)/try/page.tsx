@@ -29,16 +29,22 @@ export default function TryPage() {
       </Section>
       <Section title="本物で試すには">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Link href="/developers" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
+          <Link href="/developers" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">エージェントから依頼する</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               Claude や ChatGPT につなぐ手順、x402 で API キーなしに払って依頼する方法、REST API の使い方。
             </p>
+            <p className="mt-3 text-sm font-semibold text-teal-700">
+              開発者向けの説明へ <span className="arrow">→</span>
+            </p>
           </Link>
-          <Link href="/workers" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
+          <Link href="/workers" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">worker として確かめる</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               仕事の流れ、報酬、安全の決まり。家からできる依頼もあります。招待コードは申し込みから。
+            </p>
+            <p className="mt-3 text-sm font-semibold text-teal-700">
+              worker 向けの説明へ <span className="arrow">→</span>
             </p>
           </Link>
         </div>

@@ -609,7 +609,7 @@ export function TryExperience() {
               <Notice tone="ok">新しいタスクが 1 件届きました。</Notice>
               <button
                 type="button"
-                className={`block w-full rounded-2xl text-left transition ${pressedId === "card" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
+                className={`card-link block w-full rounded-2xl text-left ${pressedId === "card" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
                 onClick={() => press("card")}
               >
                 <Card>
@@ -620,7 +620,12 @@ export function TryExperience() {
                         新着
                       </span>
                     </span>
-                    <span className="text-sm text-slate-500">120 m</span>
+                    <span className="flex items-center gap-1 text-sm text-slate-500">
+                      120 m
+                      <span className="arrow text-lg leading-none text-teal-700" aria-hidden="true">
+                        ›
+                      </span>
+                    </span>
                   </div>
                   <p className="mt-1 text-xs font-medium text-slate-500">{TASK_TYPE_JA[TYPE].name}</p>
                   <p className="mt-1 line-clamp-3 font-medium">{QUESTION}</p>
@@ -725,14 +730,14 @@ export function TryExperience() {
                     <button
                       type="button"
                       onClick={() => press("pickSummary")}
-                      className={`rounded-xl px-3 py-2 text-left text-sm ring-1 transition ${isSummary ? "bg-amber-50 ring-amber-400" : "bg-white ring-slate-300"} ${pressedId === "pickSummary" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
+                      className={`tap rounded-xl px-3 py-2 text-left text-sm ring-1 ${isSummary ? "bg-amber-50 ring-amber-400" : "bg-white ring-slate-300"} ${pressedId === "pickSummary" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
                     >
                       要約して送る（AI に差し戻される例）
                     </button>
                     <button
                       type="button"
                       onClick={() => press("pickExact")}
-                      className={`rounded-xl px-3 py-2 text-left text-sm ring-1 transition ${isExact ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-300"} ${pressedId === "pickExact" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
+                      className={`tap rounded-xl px-3 py-2 text-left text-sm ring-1 ${isExact ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-300"} ${pressedId === "pickExact" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
                     >
                       書いてあるとおりに書き起こす
                     </button>

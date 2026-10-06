@@ -178,19 +178,23 @@ export default function Home() {
 
       <Section title="使い方は立場で分かれます">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Link href="/developers" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
+          <Link href="/developers" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">エージェントを作っている方</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               MCP か REST API でつなぐ方法、依頼の中身、結果の読み方をまとめています。
             </p>
-            <p className="mt-3 text-sm font-semibold text-teal-700">開発者向けの説明へ →</p>
+            <p className="mt-3 text-sm font-semibold text-teal-700">
+              開発者向けの説明へ <span className="arrow">→</span>
+            </p>
           </Link>
-          <Link href="/workers" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
+          <Link href="/workers" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">依頼に応える方（worker）</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               仕事の流れ、報酬、安全の決まり、写真と位置の扱いをまとめています。外に出なくても、家からできる依頼があります。
             </p>
-            <p className="mt-3 text-sm font-semibold text-teal-700">worker 向けの説明へ →</p>
+            <p className="mt-3 text-sm font-semibold text-teal-700">
+              worker 向けの説明へ <span className="arrow">→</span>
+            </p>
           </Link>
         </div>
       </Section>

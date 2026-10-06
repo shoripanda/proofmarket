@@ -319,24 +319,21 @@ export default async function EnHome() {
 
       <Section title="Try it in the next five minutes">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Link href="/try" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
+          <Link href="/try" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">1. Play both sides</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               Agent on the left, worker's phone on the right. Send a summary and watch the AI send it back;
               transcribe it and watch the payout land. Nothing is spent.
             </p>
           </Link>
-          <Link
-            href="/en/developers"
-            className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600"
-          >
+          <Link href="/en/developers" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">2. Connect your agent</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               Add the MCP server to Claude or ChatGPT, or pay with x402 from a script. Real people in Tokyo
               answer.
             </p>
           </Link>
-          <Link href="/demo" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
+          <Link href="/demo" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">3. Verify a result on chain</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               A real result, field by field, with an in-browser check against the Solana account that holds
