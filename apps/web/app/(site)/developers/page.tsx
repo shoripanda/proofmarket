@@ -74,6 +74,56 @@ const OUTCOMES: [string, string][] = [
   ["EXPIRED", "締め切りまでに確定しなかった。拘束した額は返金される"],
 ];
 
+/** Per-client steps. `checked` = the operator connected it to this deployment and read a result (2026-10-05). */
+const CLIENTS: { name: string; checked: boolean; steps: string[]; note?: string }[] = [
+  {
+    name: "Claude Code",
+    checked: true,
+    steps: [
+      'ターミナルで claude mcp add --transport http proofmarket <URL>/mcp --header "Authorization: Bearer <API キー>" を実行する',
+      "claude を起動し、「ProofMarket の道具を一覧して」と頼む。4つ以上の道具が出れば接続できている",
+    ],
+    note: "キーをチャットに貼らない。--header の値はこの端末の設定にだけ残る",
+  },
+  {
+    name: "claude.ai（ブラウザ・アプリ）",
+    checked: false,
+    steps: [
+      "設定 → コネクタ → 「カスタムコネクタを追加」を開く",
+      "名前に ProofMarket、URL に <URL>/mcp を入れて追加する",
+      "「接続」を押すと ProofMarket の許可画面が開く。API キーを貼って許可する",
+      "新しい会話で ProofMarket を有効にし、依頼を出す",
+    ],
+    note: "OAuth 2.1（動的クライアント登録・PKCE）で接続する。キーは ProofMarket 側にだけ渡る",
+  },
+  {
+    name: "ChatGPT",
+    checked: false,
+    steps: [
+      "設定 → アプリ → 詳細設定 で「開発者モード」をオンにする（Plus 以上）",
+      "設定 → コネクタ → 「カスタムコネクタを追加」で URL に <URL>/mcp、認証に OAuth を選ぶ",
+      "許可画面で API キーを貼る",
+    ],
+    note: "ChatGPT は動的クライアント登録に対応していて、ProofMarket 側もそれを出している",
+  },
+  {
+    name: "Cursor・Windsurf などの MCP 対応エディタ",
+    checked: false,
+    steps: [
+      'MCP の設定に { "url": "<URL>/mcp", "headers": { "Authorization": "Bearer <API キー>" } } の形で足す',
+      "OAuth に対応したクライアントなら headers を省き、接続時に出る許可画面でキーを貼る",
+    ],
+  },
+  {
+    name: "自作のエージェント（REST・SDK）",
+    checked: true,
+    steps: [
+      "Authorization: Bearer <API キー> を付けて REST API を呼ぶ。依頼の作成には Idempotency-Key が要る",
+      "TypeScript なら packages/sdk の ProofMarketClient を使う。MCP サーバーもこの SDK の上に載っている",
+    ],
+  },
+];
+
 export default async function DevelopersPage() {
   const base = await baseUrl();
   const createBody = `{
@@ -155,6 +205,40 @@ export default async function DevelopersPage() {
             </div>
           </div>
         </div>
+      </Section>
+
+      <Section
+        title="各 AI からつなぐ"
+        lead="同じ MCP の窓口に、それぞれのやり方でつなぎます。「確認済み」は、運営者がこの本番の窓口に実際につないで結果を読めたものです。"
+      >
+        <ul className="grid gap-4 md:grid-cols-2">
+          {CLIENTS.map((c) => (
+            <li key={c.name} className="rounded-2xl border border-slate-200 p-5">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-bold">{c.name}</h3>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${c.checked ? "bg-teal-50 text-teal-800 ring-1 ring-teal-600" : "bg-slate-100 text-slate-600"}`}
+                >
+                  {c.checked ? "確認済み" : "手順のみ（未確認）"}
+                </span>
+              </div>
+              <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+                {c.steps.map((s) => (
+                  <li key={s}>{s.replaceAll("<URL>", base)}</li>
+                ))}
+              </ol>
+              {c.note ? <p className="mt-2 text-xs leading-relaxed text-slate-500">{c.note}</p> : null}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
+          つながらないときは、画面に出た文言をそのまま
+          <a href="/join?role=requester" className="mx-1 text-teal-700 underline">
+            申し込みフォーム
+          </a>
+          から送ってください。OAuth の窓口は{" "}
+          <code className="font-mono">{base}/.well-known/oauth-authorization-server</code> で確かめられます。
+        </p>
       </Section>
 
       <Section
