@@ -58,7 +58,41 @@ export default function Home() {
           が依頼文と突き合わせてから、エージェントに返します。結果と支払いは Solana
           に残り、あとから誰でも確かめられます。
         </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/try"
+            className="rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-800"
+          >
+            3分で通して体験する
+          </Link>
+          <Link
+            href="/developers"
+            className="rounded-full px-5 py-2.5 text-sm font-semibold text-teal-700 ring-1 ring-teal-700 hover:bg-teal-50"
+          >
+            Claude・ChatGPT・自作のエージェントをつなぐ
+          </Link>
+        </div>
       </PageHero>
+
+      <Section
+        title="いま動いているもの"
+        lead="このページにあるものは、すべて本番で動いています（決済は Solana Devnet のテスト用 USDC）。"
+      >
+        <ul className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            "リモート MCP（OAuth 2.1）。Claude Code・claude.ai・ChatGPT のコネクタからつながる",
+            "MCP の道具は7つ。依頼・読み取り・取消・異議に加え、望む答えが出るまで確かめ続ける見守り",
+            "x402。Solana のウォレットを持つエージェントは、登録も API キーもなしに USDC を払って頼める",
+            "提出ごとの AI による内容の確認（Claude）。判定と理由は結果と一緒に依頼者へ返る",
+            "結果ごとの証明のページとバッジ。依頼者が許した事実は、みんなの地図で誰でも見られる",
+            "worker アプリ。アプリ内カメラ・位置と合言葉の検査・通知・家からできる仕事",
+          ].map((t) => (
+            <li key={t} className="rounded-2xl bg-slate-50 p-4">
+              {t}
+            </li>
+          ))}
+        </ul>
+      </Section>
 
       <Section title="依頼した AI が、届いた結果を信用できる理由">
         <ul className="grid gap-4 lg:grid-cols-3">
