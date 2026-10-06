@@ -19,6 +19,15 @@ export const SITE_NAV: { href: string; label: string }[] = [
   { href: "/console", label: "依頼者の画面" },
 ];
 
+/** The five the header shows, large. Everything else stays reachable from the footer. */
+export const HEADER_NAV: { href: string; label: string }[] = [
+  { href: "/try", label: "体験" },
+  { href: "/how-it-works", label: "仕組み" },
+  { href: "/stats", label: "実績" },
+  { href: "/developers", label: "開発者向け" },
+  { href: "/workers", label: "worker 向け" },
+];
+
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-white">
@@ -27,19 +36,19 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <Link href="/" className="mr-auto text-lg font-bold tracking-tight text-slate-900 sm:mr-0">
             ProofMarket
           </Link>
-          <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-4 overflow-x-auto whitespace-nowrap px-4 text-sm text-slate-600 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0">
-            {SITE_NAV.filter((n) => n.href !== "/").map((n) => (
-              <Link key={n.href} href={n.href} className="hover:text-teal-700">
+          <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-6 overflow-x-auto whitespace-nowrap px-4 text-base font-semibold text-slate-700 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0 sm:text-lg">
+            {HEADER_NAV.map((n) => (
+              <Link key={n.href} href={n.href} className="py-1 hover:text-teal-700">
                 {n.label}
               </Link>
             ))}
           </nav>
-          <Link href="/en" className="text-sm font-semibold text-slate-600 hover:text-teal-700" lang="en">
+          <Link href="/en" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="en">
             English
           </Link>
           <Link
             href="/login"
-            className="rounded-full bg-teal-700 px-4 py-1.5 text-sm font-semibold text-white hover:bg-teal-800"
+            className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"
           >
             worker ログイン
           </Link>

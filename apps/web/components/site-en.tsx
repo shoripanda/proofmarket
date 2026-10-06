@@ -18,19 +18,19 @@ export function EnShell({ children }: { children: ReactNode }) {
           <Link href="/en" className="mr-auto text-lg font-bold tracking-tight text-slate-900 sm:mr-0">
             ProofMarket
           </Link>
-          <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-4 overflow-x-auto whitespace-nowrap px-4 text-sm text-slate-600 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0">
+          <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-6 overflow-x-auto whitespace-nowrap px-4 text-base font-semibold text-slate-700 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0 sm:text-lg">
             {EN_NAV.filter((n) => n.href !== "/en").map((n) => (
               <Link key={n.href} href={n.href} className="hover:text-teal-700">
                 {n.label}
               </Link>
             ))}
           </nav>
-          <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-teal-700" lang="ja">
+          <Link href="/" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="ja">
             日本語
           </Link>
           <Link
             href="/en/developers"
-            className="rounded-full bg-teal-700 px-4 py-1.5 text-sm font-semibold text-white hover:bg-teal-800"
+            className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"
           >
             Connect your agent
           </Link>
