@@ -42,16 +42,17 @@ export function Button({
   pressed?: boolean;
 }) {
   const cls = {
-    primary: "bg-teal-700 text-white active:bg-teal-800",
-    secondary: "bg-white text-slate-800 ring-1 ring-slate-300 active:bg-slate-100",
-    danger: "bg-white text-rose-700 ring-1 ring-rose-300 active:bg-rose-50",
+    primary: "bg-teal-700 text-white hover:bg-teal-600 hover:shadow-md active:bg-teal-800",
+    secondary:
+      "bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50 hover:ring-slate-400 active:bg-slate-100",
+    danger: "bg-white text-rose-700 ring-1 ring-rose-300 hover:bg-rose-50 active:bg-rose-100",
   }[variant];
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-2xl px-4 py-4 text-base font-bold transition disabled:opacity-40 ${cls} ${pressed ? "scale-95 ring-4 ring-teal-300 ring-offset-2" : ""}`}
+      className={`w-full rounded-2xl px-4 py-4 text-base font-bold transition active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100 ${cls} ${pressed ? "scale-95 ring-4 ring-teal-300 ring-offset-2" : ""}`}
     >
       {children}
     </button>

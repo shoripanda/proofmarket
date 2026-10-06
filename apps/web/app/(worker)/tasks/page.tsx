@@ -171,7 +171,12 @@ export default function TasksPage() {
         </Notice>
       ) : null}
       {tasks?.map((t) => (
-        <Link key={t.verification_id} href={`/tasks/${t.verification_id}`} className="block">
+        <Link
+          key={t.verification_id}
+          href={`/tasks/${t.verification_id}`}
+          className="card-link block rounded-2xl"
+          aria-label={`${t.question}（内容を見る）`}
+        >
           <Card>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold text-teal-700">
@@ -182,12 +187,15 @@ export default function TasksPage() {
                   </span>
                 ) : null}
               </span>
-              <span className="text-sm text-slate-500">
+              <span className="flex items-center gap-1 text-sm text-slate-500">
                 {t.distance_m === null
                   ? "どこでも"
                   : t.distance_m < 1000
                     ? `${t.distance_m} m`
                     : `${(t.distance_m / 1000).toFixed(1)} km`}
+                <span className="arrow text-lg leading-none text-teal-700" aria-hidden="true">
+                  ›
+                </span>
               </span>
             </div>
             <p className="mt-1 text-xs font-medium text-slate-500">

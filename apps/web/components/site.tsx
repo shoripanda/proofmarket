@@ -39,7 +39,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
           </Link>
           <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-6 overflow-x-auto whitespace-nowrap px-4 text-base font-semibold text-slate-700 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0 sm:text-lg">
             {HEADER_NAV.map((n) => (
-              <Link key={n.href} href={n.href} className="py-1 hover:text-teal-700">
+              <Link
+                key={n.href}
+                href={n.href}
+                className="py-1 underline-offset-8 hover:text-teal-700 hover:underline"
+              >
                 {n.label}
               </Link>
             ))}
@@ -60,7 +64,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
           <nav className="flex flex-wrap gap-x-4 gap-y-1">
             {SITE_NAV.map((n) => (
-              <Link key={n.href} href={n.href} className="hover:text-teal-700">
+              <Link
+                key={n.href}
+                href={n.href}
+                className="underline-offset-8 hover:text-teal-700 hover:underline"
+              >
                 {n.label}
               </Link>
             ))}

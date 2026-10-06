@@ -21,7 +21,7 @@ export function TryTabs() {
             role="tab"
             aria-selected={tab === k}
             onClick={() => setTab(k)}
-            className={`rounded-2xl px-4 py-3 text-left transition ${tab === k ? "bg-teal-700 text-white shadow" : "bg-white text-slate-700 ring-1 ring-slate-200 hover:ring-teal-600"}`}
+            className={`tap rounded-2xl px-4 py-3 text-left ${tab === k ? "bg-teal-700 text-white shadow" : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-teal-50 hover:ring-teal-600"}`}
           >
             <p className="text-base font-bold">{label}</p>
             <p className={`text-xs ${tab === k ? "text-teal-100" : "text-slate-500"}`}>{sub}</p>

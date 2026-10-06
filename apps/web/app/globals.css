@@ -40,3 +40,60 @@ body {
     stroke-dashoffset: 0;
   }
 }
+
+/* Anything you can tap says so: a pointer, a lift on hover, a dip on press, a ring for the keyboard. */
+button:not(:disabled),
+a,
+summary,
+[role="button"],
+[role="tab"],
+label[for],
+select,
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.card-link {
+  position: relative;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+.card-link:hover {
+  transform: translateY(-2px);
+  border-color: #0f766e;
+  box-shadow: 0 10px 24px -14px rgb(15 118 110 / 0.45);
+}
+.card-link:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: none;
+}
+.card-link .arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+.card-link:hover .arrow {
+  transform: translateX(4px);
+}
+.tap {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease;
+}
+.tap:hover {
+  box-shadow: 0 6px 16px -10px rgb(15 23 42 / 0.4);
+}
+.tap:active {
+  transform: scale(0.98);
+}
