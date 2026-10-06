@@ -11,7 +11,7 @@ AI エージェントはウェブを読めても、店が今開いているか�
 
 できあがったものは、次の4点にまとまります。第一に、エージェントが「人に確かめてほしいこと」を依頼し、構造化された JSON で結果を受け取れる API です。入口は、AI アプリが外部の道具を呼ぶ共通規格の MCP（Model Context Protocol）、通常の REST、そして HTTP の 402 応答を使って支払いと引き換えに依頼する x402 の3通りです。依頼の種類は17で、店頭の確認から紙資料の書き写し、電話での問い合わせまで含みます。第二に、worker がスマートフォンのブラウザだけで依頼を受け、アプリ内カメラで撮った写真と答えを送る画面です。第三に、提出ごとの機械的な検査（場所・時刻・合言葉・使い回し）に加えて、Claude が写真と答えを依頼文と突き合わせる内容確認です。依頼どおりでない提出は理由つきで差し戻します。第四に、報酬の預かり・結果のハッシュの記録・worker（依頼に応える人）への支払いを、Solana の試験用ネットワーク（Devnet）上の自作プログラムで行う決済です。通貨はドルに連動するステーブルコインの USDC（試験用）です。
 
-本番は https://proofmarket-rosy.vercel.app で動いています。コードは TypeScript と Rust で約2万8千行、自動テストは214件、API は29操作、データベースの移行は21本、仕様書は13本です。10月5日には、API キーを持たないエージェントが USDC を払って依頼を出す x402 の流れを、本番で端から端まで通しました。本文中の PR（pull request）は、機能ごとに分けてレビューと自動検査を経てから取り込んだ変更の単位です。
+本番は https://proofmarket.fun で動いています。コードは TypeScript と Rust で約2万8千行、自動テストは214件、API は29操作、データベースの移行は21本、仕様書は13本です。10月5日には、API キーを持たないエージェントが USDC を払って依頼を出す x402 の流れを、本番で端から端まで通しました。本文中の PR（pull request）は、機能ごとに分けてレビューと自動検査を経てから取り込んだ変更の単位です。
 
 評価の面では限界がはっきりしています。worker は招待制で人数が少なく、実際の依頼の件数はまだ試験の域を出ません。決済は Devnet のテスト用 USDC で、判定は運営者の鍵1つで行っています。したがって本報告が示せるのは「仕組みが設計どおりに動くこと」までで、「市場で成り立つこと」は今後の課題です。
 
@@ -157,13 +157,13 @@ AI による内容確認については、要約を送ると差し戻され、�
 
 | 用途 | URL |
 |---|---|
-| 英語の説明 | https://proofmarket-rosy.vercel.app/en |
-| 日本語の説明 | https://proofmarket-rosy.vercel.app/ |
-| 体験（依頼者と worker を1人で動かす） | https://proofmarket-rosy.vercel.app/try |
-| 実績 | https://proofmarket-rosy.vercel.app/stats |
-| みんなの地図 | https://proofmarket-rosy.vercel.app/map |
-| 開発者向け（MCP・x402・REST） | https://proofmarket-rosy.vercel.app/developers |
-| MCP の窓口 | https://proofmarket-rosy.vercel.app/mcp |
+| 英語の説明 | https://proofmarket.fun/en |
+| 日本語の説明 | https://proofmarket.fun/ |
+| 体験（依頼者と worker を1人で動かす） | https://proofmarket.fun/try |
+| 実績 | https://proofmarket.fun/stats |
+| みんなの地図 | https://proofmarket.fun/map |
+| 開発者向け（MCP・x402・REST） | https://proofmarket.fun/developers |
+| MCP の窓口 | https://proofmarket.fun/mcp |
 | Solana プログラム（Devnet） | `A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s` |
 
 ## B. 依頼の種類（17）
