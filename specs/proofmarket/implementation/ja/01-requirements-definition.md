@@ -303,6 +303,18 @@ API だけでは状況をつかみにくいので、requester が自分の API �
 - 運営者が証拠へのアクセスを止めた依頼（`evidence_access_revoked`）は、地図にも結果ページの質問文にも出さない。削除の申し出（決まりのページ）を受けたときの止め方として使う
 - `allow_reuse`（4.9 節）とは別の許可にする。再利用は「ほかの依頼者に結果を渡す」、公開は「誰でも見られる」で、範囲が違う
 
+### 4.23 見守り依頼（2026-10-05）
+
+「エレベーターが復旧したら知らせて」「棚に入荷したら知らせて」のように、答えが望む値になるまで確かめ続け、なったら止まって知らせる依頼。何度も見に行ったり問い合わせたりする手間を、依頼する側からもなくす。定期確認（4.14 節・04 §3.23）の拡張として作り、1 回ごとの依頼・残高・支払いは変えない。
+
+- 定期確認に 2 つ目の回し方を足す。`every_minutes`（15〜1440 分おき）。従来の `times_jst`・`days_jst` とどちらか一方を指定する
+- `max_runs`（1〜200 回）で回数の上限を決められる。上限に達したら止まる（`stopped_reason: "max_runs"`）。使ったぶんだけ払う仕組みは変えない
+- `stop_when` で止める条件を決める。`{ "answer": "OPEN" }`・`{ "answer_in": ["OPEN", "UNCLEAR"] }`（選択の依頼）、`{ "number": { "min": 1 } }`・`{ "number": { "max": 300 } }`（数値の依頼）。文章の依頼には付けられない。選択肢に無い値は 400
+- 条件は、作られた依頼の結果が VERIFIED になったときに調べる（tick ごと、1 分以内）。合えば定期確認を止め、`stopped_reason: "condition_met"` と `matched_verification_id` を記録する。合わなければ次の回を待つ
+- 知らせ方は、合った依頼の `verification.verified` の Webhook と、定期確認の一覧（`GET /v1/schedules`）の `stopped_reason`。新しい Webhook の種類は足さない
+- MCP に 3 つのツールを足す: `watch_reality_verification`（見守りの開始）、`list_reality_verification_watches`（一覧）、`stop_reality_verification_watch`（停止）。見守りも定期確認も同じ表なので、一覧には両方が出る
+- 1 つの API キーで同時に動かせる定期確認の上限（10 件）は変えない
+
 ## 5. 業務フロー
 
 ### 5.1 正常系（1 witness）

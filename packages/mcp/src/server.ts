@@ -4,7 +4,15 @@ import { createHash } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { jcs } from "@proofmarket/core";
 import { ProofMarketApiError, type ProofMarketClient } from "@proofmarket/sdk";
-import { CANCEL_TOOL, DISPUTE_TOOL, GET_TOOL, REQUEST_TOOL } from "./tools.ts";
+import {
+  CANCEL_TOOL,
+  DISPUTE_TOOL,
+  GET_TOOL,
+  LIST_WATCHES_TOOL,
+  REQUEST_TOOL,
+  STOP_WATCH_TOOL,
+  WATCH_TOOL,
+} from "./tools.ts";
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
@@ -43,6 +51,9 @@ export function createServer(
   const { name: gName, ...gDef } = GET_TOOL;
   const { name: cName, ...cDef } = CANCEL_TOOL;
   const { name: dName, ...dDef } = DISPUTE_TOOL;
+  const { name: wName, ...wDef } = WATCH_TOOL;
+  const { name: lName, ...lDef } = LIST_WATCHES_TOOL;
+  const { name: sName, ...sDef } = STOP_WATCH_TOOL;
 
   server.registerTool(rName, rDef, async (args) => {
     try {
@@ -88,6 +99,40 @@ export function createServer(
   server.registerTool(dName, dDef, async ({ verification_id, ...body }) => {
     try {
       return ok(await client.disputeVerification(verification_id, body));
+    } catch (e) {
+      return err(e);
+    }
+  });
+
+  // Watches (01 §4.23): the schedule API with the owner's principal filled in.
+  server.registerTool(wName, wDef, async (args) => {
+    try {
+      const { request, ...rest } = args;
+      const s = await client.createSchedule({
+        ...rest,
+        request: { ...request, principal_ref: request.principal_ref ?? opts.principalRef },
+      });
+      return ok({
+        ...s,
+        note: s.stop_when
+          ? "Runs continue until a VERIFIED answer matches stop_when (or max_runs/ends_at). Each run is paid. " +
+            "Check list_reality_verification_watches for stopped_reason=condition_met and matched_verification_id."
+          : "Runs continue on this schedule until stopped. Each run is paid.",
+      });
+    } catch (e) {
+      return err(e);
+    }
+  });
+  server.registerTool(lName, lDef, async () => {
+    try {
+      return ok(await client.listSchedules());
+    } catch (e) {
+      return err(e);
+    }
+  });
+  server.registerTool(sName, sDef, async ({ schedule_id }) => {
+    try {
+      return ok(await client.stopSchedule(schedule_id));
     } catch (e) {
       return err(e);
     }

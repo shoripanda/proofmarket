@@ -3324,6 +3324,74 @@
                     },
                     "description": "0 = Sunday ... 6 = Saturday"
                   },
+                  "every_minutes": {
+                    "type": "integer",
+                    "minimum": 15,
+                    "maximum": 1440
+                  },
+                  "max_runs": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  },
+                  "stop_when": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "answer": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000
+                          }
+                        },
+                        "required": [
+                          "answer"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "answer_in": {
+                            "minItems": 1,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 4000
+                            }
+                          }
+                        },
+                        "required": [
+                          "answer_in"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "number": {
+                            "type": "object",
+                            "properties": {
+                              "min": {
+                                "type": "number"
+                              },
+                              "max": {
+                                "type": "number"
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "number"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
                   "ends_at": {
                     "type": "string",
                     "format": "date-time",
@@ -3332,9 +3400,7 @@
                 },
                 "required": [
                   "request",
-                  "deadline_minutes",
-                  "times_jst",
-                  "days_jst"
+                  "deadline_minutes"
                 ],
                 "additionalProperties": false
               }
@@ -3399,6 +3465,98 @@
                     "last_error": {
                       "nullable": true,
                       "type": "string"
+                    },
+                    "every_minutes": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "max_runs": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "runs": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "stop_when": {
+                      "nullable": true,
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "answer": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 4000
+                            }
+                          },
+                          "required": [
+                            "answer"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "answer_in": {
+                              "minItems": 1,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 4000
+                              }
+                            }
+                          },
+                          "required": [
+                            "answer_in"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "number": {
+                              "type": "object",
+                              "properties": {
+                                "min": {
+                                  "type": "number"
+                                },
+                                "max": {
+                                  "type": "number"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "number"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "stopped_reason": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "condition_met",
+                        "max_runs",
+                        "ended",
+                        "failures",
+                        "suspended",
+                        "stopped"
+                      ]
+                    },
+                    "matched_verification_id": {
+                      "nullable": true,
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -3411,7 +3569,13 @@
                     "next_run_at",
                     "last_run_at",
                     "last_verification_id",
-                    "last_error"
+                    "last_error",
+                    "every_minutes",
+                    "max_runs",
+                    "runs",
+                    "stop_when",
+                    "stopped_reason",
+                    "matched_verification_id"
                   ]
                 }
               }
@@ -3574,6 +3738,98 @@
                           "last_error": {
                             "nullable": true,
                             "type": "string"
+                          },
+                          "every_minutes": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "max_runs": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "runs": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "stop_when": {
+                            "nullable": true,
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "answer": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 4000
+                                  }
+                                },
+                                "required": [
+                                  "answer"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "answer_in": {
+                                    "minItems": 1,
+                                    "maxItems": 6,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 4000
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "answer_in"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "number": {
+                                    "type": "object",
+                                    "properties": {
+                                      "min": {
+                                        "type": "number"
+                                      },
+                                      "max": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "number"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "stopped_reason": {
+                            "nullable": true,
+                            "type": "string",
+                            "enum": [
+                              "condition_met",
+                              "max_runs",
+                              "ended",
+                              "failures",
+                              "suspended",
+                              "stopped"
+                            ]
+                          },
+                          "matched_verification_id": {
+                            "nullable": true,
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -3586,7 +3842,13 @@
                           "next_run_at",
                           "last_run_at",
                           "last_verification_id",
-                          "last_error"
+                          "last_error",
+                          "every_minutes",
+                          "max_runs",
+                          "runs",
+                          "stop_when",
+                          "stopped_reason",
+                          "matched_verification_id"
                         ]
                       }
                     }
@@ -3761,6 +4023,98 @@
                     "last_error": {
                       "nullable": true,
                       "type": "string"
+                    },
+                    "every_minutes": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "max_runs": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "runs": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "stop_when": {
+                      "nullable": true,
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "answer": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 4000
+                            }
+                          },
+                          "required": [
+                            "answer"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "answer_in": {
+                              "minItems": 1,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 4000
+                              }
+                            }
+                          },
+                          "required": [
+                            "answer_in"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "number": {
+                              "type": "object",
+                              "properties": {
+                                "min": {
+                                  "type": "number"
+                                },
+                                "max": {
+                                  "type": "number"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "number"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "stopped_reason": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "condition_met",
+                        "max_runs",
+                        "ended",
+                        "failures",
+                        "suspended",
+                        "stopped"
+                      ]
+                    },
+                    "matched_verification_id": {
+                      "nullable": true,
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -3773,7 +4127,13 @@
                     "next_run_at",
                     "last_run_at",
                     "last_verification_id",
-                    "last_error"
+                    "last_error",
+                    "every_minutes",
+                    "max_runs",
+                    "runs",
+                    "stop_when",
+                    "stopped_reason",
+                    "matched_verification_id"
                   ]
                 }
               }

@@ -3,6 +3,7 @@
 import { TASK_TYPE_SPECS } from "@proofmarket/core";
 import {
   AssuranceInputSchema,
+  CreateScheduleRequestSchema,
   CreateVerificationRequestSchema,
   VerificationIdSchema,
 } from "@proofmarket/core/schemas/api";
@@ -70,6 +71,46 @@ export const GET_TOOL = {
     verification_id: VerificationIdSchema,
     wait_seconds: z.number().int().min(0).max(20).default(0),
   },
+} as const;
+
+export const WATCH_TOOL = {
+  name: "watch_reality_verification",
+  title: "Watch a real-world fact until it changes",
+  description:
+    "Keep checking something with real people until the answer you are waiting for comes back, then stop: " +
+    "'tell me when the station elevator works again', 'when this item is back on the shelf', 'when the queue is short'. " +
+    "Every run is a normal paid verification (same request body as request_reality_verification, without deadline). " +
+    "Choose every_minutes (15–1440, first run right away) or fixed times_jst + days_jst (Japan time). " +
+    "stop_when ends the watch at the first VERIFIED result that matches: {answer}, {answer_in} for choice answers, " +
+    "{number: {min, max}} for number answers; not for text answers. Set max_runs to cap the cost. " +
+    "Read progress with list_reality_verification_watches: stopped_reason is condition_met and matched_verification_id " +
+    "names the run that matched (read it with get_reality_verification). A verification.verified webhook also fires.",
+  inputSchema: {
+    ...CreateScheduleRequestSchema.shape,
+    request: CreateVerificationRequestSchema.omit({ deadline: true, principal_ref: true })
+      .extend({
+        principal_ref: CreateVerificationRequestSchema.shape.principal_ref
+          .optional()
+          .describe("Defaults to the principal bound to PROOFMARKET_API_KEY"),
+      })
+      .strict(),
+  },
+} as const;
+
+export const LIST_WATCHES_TOOL = {
+  name: "list_reality_verification_watches",
+  title: "List watches and recurring checks",
+  description:
+    "Every watch and recurring check of this API key, with next_run_at, runs, last_verification_id, " +
+    "stopped_reason (condition_met, max_runs, ended, failures, suspended, stopped) and matched_verification_id.",
+  inputSchema: {},
+} as const;
+
+export const STOP_WATCH_TOOL = {
+  name: "stop_reality_verification_watch",
+  title: "Stop a watch or recurring check",
+  description: "Stop it now. Runs already created keep going and are paid as usual.",
+  inputSchema: { schedule_id: z.string().regex(/^sch_/) },
 } as const;
 
 export const CANCEL_TOOL = {
