@@ -1,19 +1,107 @@
-@page { size: A4; margin: 20mm 18mm; }
-body { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; font-size: 10.5pt; line-height: 1.75; color: #1e293b; max-width: 100%; }
-h1.title { font-size: 20pt; line-height: 1.4; margin-bottom: 4pt; }
-p.subtitle { color: #475569; margin-top: 0; }
-p.author { color: #475569; margin-bottom: 24pt; }
-h1 { font-size: 15pt; margin-top: 28pt; border-bottom: 2px solid #0f766e; padding-bottom: 3pt; page-break-after: avoid; }
-h2 { font-size: 12pt; margin-top: 18pt; page-break-after: avoid; }
-p { text-align: justify; margin: 0 0 9pt; }
-blockquote { border-left: 3px solid #0f766e; margin: 10pt 0; padding: 4pt 12pt; color: #334155; background: #f0fdfa; }
-table { border-collapse: collapse; width: 100%; font-size: 9.5pt; margin: 8pt 0 12pt; page-break-inside: avoid; }
-th, td { border: 1px solid #cbd5e1; padding: 4pt 6pt; text-align: left; vertical-align: top; }
-th { background: #f1f5f9; }
-code { font-family: Menlo, "SF Mono", monospace; font-size: 9pt; background: #f1f5f9; padding: 0 3px; border-radius: 3px; }
-pre { background: #0f172a; color: #e2e8f0; padding: 10pt; border-radius: 6pt; font-size: 8.5pt; line-height: 1.5; overflow: hidden; white-space: pre-wrap; page-break-inside: avoid; }
-pre code { background: none; color: inherit; font-size: inherit; padding: 0; }
-figure { margin: 12pt 0 14pt; text-align: center; page-break-inside: avoid; }
-figure img { max-width: 100%; max-height: 92mm; border: 1px solid #e2e8f0; border-radius: 6pt; }
-figcaption { font-size: 9pt; color: #475569; margin-top: 4pt; }
-strong { color: #0f172a; }
+@page {
+  size: A4;
+  margin: 20mm 18mm;
+}
+body {
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.75;
+  color: #1e293b;
+  max-width: 100%;
+}
+h1.title {
+  font-size: 20pt;
+  line-height: 1.4;
+  margin-bottom: 4pt;
+}
+p.subtitle {
+  color: #475569;
+  margin-top: 0;
+}
+p.author {
+  color: #475569;
+  margin-bottom: 24pt;
+}
+h1 {
+  font-size: 15pt;
+  margin-top: 28pt;
+  border-bottom: 2px solid #0f766e;
+  padding-bottom: 3pt;
+  page-break-after: avoid;
+}
+h2 {
+  font-size: 12pt;
+  margin-top: 18pt;
+  page-break-after: avoid;
+}
+p {
+  text-align: justify;
+  margin: 0 0 9pt;
+}
+blockquote {
+  border-left: 3px solid #0f766e;
+  margin: 10pt 0;
+  padding: 4pt 12pt;
+  color: #334155;
+  background: #f0fdfa;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9.5pt;
+  margin: 8pt 0 12pt;
+  page-break-inside: avoid;
+}
+th,
+td {
+  border: 1px solid #cbd5e1;
+  padding: 4pt 6pt;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: #f1f5f9;
+}
+code {
+  font-family: Menlo, "SF Mono", monospace;
+  font-size: 9pt;
+  background: #f1f5f9;
+  padding: 0 3px;
+  border-radius: 3px;
+}
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10pt;
+  border-radius: 6pt;
+  font-size: 8.5pt;
+  line-height: 1.5;
+  overflow: hidden;
+  white-space: pre-wrap;
+  page-break-inside: avoid;
+}
+pre code {
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+figure {
+  margin: 12pt 0 14pt;
+  text-align: center;
+  page-break-inside: avoid;
+}
+figure img {
+  max-width: 100%;
+  max-height: 92mm;
+  border: 1px solid #e2e8f0;
+  border-radius: 6pt;
+}
+figcaption {
+  font-size: 9pt;
+  color: #475569;
+  margin-top: 4pt;
+}
+strong {
+  color: #0f172a;
+}
