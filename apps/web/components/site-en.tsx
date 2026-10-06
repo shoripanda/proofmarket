@@ -8,6 +8,7 @@ export const EN_NAV: { href: string; label: string }[] = [
   { href: "/en/developers", label: "Developers" },
   { href: "/stats", label: "Numbers" },
   { href: "/map", label: "Map" },
+  { href: "/data", label: "Data" },
 ];
 
 export function EnShell({ children }: { children: ReactNode }) {

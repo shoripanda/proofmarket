@@ -282,6 +282,41 @@ export default async function EnHome() {
         </div>
       </Section>
 
+      <Section
+        title="A network of human sensors, and the data it produces"
+        lead="Every published result is an observation a person made on the spot, time-stamped, place-bound and hashed on Solana. Together they are a dataset no crawler can build."
+      >
+        <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+          <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+            <p>
+              Requesters who set <code className="font-mono">publish: true</code> put their verified facts on
+              the public map for 72 hours and into an open dataset for good: question, place, answer, time,
+              witness count, the evidence root and result hash, and the Solana transaction that carries them.
+              Photos and workers never leave the platform.
+            </p>
+            <p>
+              Agents use it to check before they ask. Teams building Physical AI use it as ground truth with a
+              timestamp. Cities can read how their stations and shops actually behave. Licence: CC BY 4.0.
+            </p>
+            <p className="text-xs text-slate-500">
+              <Link href="/data" className="font-semibold text-teal-700 underline">
+                /data
+              </Link>{" "}
+              · <code className="font-mono">GET /v1/public/dataset</code> ·{" "}
+              <code className="font-mono">/v1/public/dataset.jsonl</code>
+            </p>
+          </div>
+          <pre className="overflow-x-auto rounded-2xl bg-slate-900 p-5 text-xs leading-relaxed text-slate-100">
+            {`{"type":"PLACE_STATUS_VERIFICATION","question":"Is the elevator working?",
+ "answer":"OPEN","location":{"lat":35.6595,"lng":139.7005},
+ "place_name":"Shibuya Sta.","witnesses":2,
+ "verified_at":"2026-10-07T03:00:00Z",
+ "result_hash":"9b1c…","attestation":{"signature":"5Try…"},
+ "proof_url":"https://proofmarket.fun/r/ver_…"}`}
+          </pre>
+        </div>
+      </Section>
+
       <Section title="Try it in the next five minutes">
         <div className="grid gap-4 sm:grid-cols-3">
           <Link href="/try" className="rounded-2xl border border-slate-200 p-5 hover:border-teal-600">
