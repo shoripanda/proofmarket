@@ -36,7 +36,7 @@
 
 ## 送る前に決めること（オーナー）
 
-- 【サイトの URL】: 本番は https://proofmarket-rosy.vercel.app
+- 【サイトの URL】: 本番は https://proofmarket.fun
 - 【連絡先】: 問い合わせを受ける先（X の DM、メールなど）
 - 試してほしい件数と期間
 - 招待コードの発行（1人1つ）

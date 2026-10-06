@@ -14,7 +14,7 @@ const a = args();
 const BASE = (
   a["base-url"] ??
   process.env.PROOFMARKET_BASE_URL ??
-  "https://proofmarket-rosy.vercel.app"
+  "https://proofmarket.fun"
 ).replace(/\/$/, "");
 const CLAUDE = process.env.CLAUDE_BIN ?? join(homedir(), ".local/bin/claude");
 const ADMIN_TOKEN = readFileSync(join(homedir(), ".config/proofmarket/env.secrets"), "utf8")
