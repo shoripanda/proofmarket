@@ -2,6 +2,7 @@
 import { LIMITS, TASK_TYPES } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FlowDiagram } from "@/components/flow-diagram";
 import { PageHero, Section } from "@/components/site";
 import { BigNumber, duration, loadStats } from "@/components/stats";
 import { env, isDev } from "@/lib/env";
@@ -85,6 +86,12 @@ export default async function EnHome() {
           The demo page is bilingual in spirit but its labels are Japanese; every step is explained below.
         </p>
       </PageHero>
+
+      <Section title="From a question to a paid, verified answer">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <FlowDiagram loop en />
+        </div>
+      </Section>
 
       <Section
         title="What is live today"

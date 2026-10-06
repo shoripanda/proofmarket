@@ -1,6 +1,7 @@
 // S-01 トップ — what ProofMarket is, what sets it apart, the track record, and where each reader goes next.
 import Link from "next/link";
 import { FeaturedResults } from "@/components/featured-results";
+import { FlowDiagram } from "@/components/flow-diagram";
 import { PageHero, Section } from "@/components/site";
 import { StatsHighlights } from "@/components/stats";
 
@@ -73,6 +74,15 @@ export default function Home() {
           </Link>
         </div>
       </PageHero>
+
+      <Section
+        title="依頼が答えになるまで"
+        lead="エージェントの一言から、人が確かめ、Solana で払われるまで。点が流れる順に進みます。"
+      >
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <FlowDiagram loop />
+        </div>
+      </Section>
 
       <Section
         title="いま動いているもの"
