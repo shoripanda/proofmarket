@@ -23,6 +23,15 @@ const TOOLS = [
     "dispute_reality_verification",
     "結果に異議を出す。確定から24時間以内に1回だけ。同じ場所・同じ質問の再確認（既定は2人一致）を新しく作る",
   ],
+  [
+    "watch_reality_verification",
+    "見守りを始める。望む答えが返るまで決めた間隔で確かめ続け、合ったら止まる。回数の上限も付けられる",
+  ],
+  [
+    "list_reality_verification_watches",
+    "見守りと定期確認の一覧。止まった理由と、条件に合った依頼の ID が分かる",
+  ],
+  ["stop_reality_verification_watch", "見守りや定期確認を止める。すでに作られた依頼はそのまま進む"],
 ];
 
 const FIELDS: [string, string][] = [
@@ -328,7 +337,7 @@ $A --type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`}</Code>
         </p>
       </Section>
 
-      <Section title="MCP のツール（4つ）">
+      <Section title="MCP のツール（7つ）">
         <dl className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
           {TOOLS.map(([name, desc]) => (
             <div key={name} className="grid gap-1 p-4 sm:grid-cols-[18rem_1fr]">
@@ -441,6 +450,31 @@ $A --type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`}</Code>
           last_verification_id で追えます。残高不足などで3回続けて作れなかった予定と、API
           キーが止められた予定は自動で止まります。止めるときは DELETE /v1/schedules/{"{id}"}{" "}
           を呼びます。1つのキーで動かせる予定は10件までです。
+        </p>
+      </Section>
+
+      <Section
+        title="望む答えが返るまで見守る"
+        lead="「エレベーターが復旧したら知らせて」「棚に入荷したら知らせて」のような依頼は、見守りとして登録できます。決めた間隔で確かめ続け、条件に合う答えが確定したら止まります。"
+      >
+        <Code>{`curl -X POST ${base}/v1/schedules \\
+  -H "Authorization: Bearer $PROOFMARKET_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "request": { ...STOCK_CHECK の依頼。deadline は除く },
+    "deadline_minutes": 60,
+    "every_minutes": 120,                 // 2時間おき。最初の1回はすぐ
+    "max_runs": 12,                       // 多くても12回で止まる
+    "stop_when": { "answer": "IN_STOCK" } // この答えが確定したら止まる
+  }'`}</Code>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
+          1回ごとに通常の依頼が作られ、そのぶんだけ払います。条件は、選択で答える依頼なら{" "}
+          <code className="font-mono">{'{ "answer": ... }'}</code> か{" "}
+          <code className="font-mono">{'{ "answer_in": [...] }'}</code>、数値で答える依頼なら{" "}
+          <code className="font-mono">{'{ "number": { "min": 1 } }'}</code>{" "}
+          のように書きます。文章で答える依頼には付けられません。条件に合うと、その依頼の verification.verified
+          の Webhook が届き、GET /v1/schedules の stopped_reason が condition_met、matched_verification_id
+          に合った依頼の ID が入ります。MCP では watch_reality_verification で同じことができます。
         </p>
       </Section>
 

@@ -1,7 +1,12 @@
 // Requester SDK (05 §1-2). Thin, typed wrapper over the REST API; no business logic.
 
 import type { ApiErrorBody } from "@proofmarket/core";
-import type { CreateVerificationRequest, GetVerificationResponse } from "@proofmarket/core/schemas/api";
+import type {
+  CreateScheduleRequest,
+  CreateVerificationRequest,
+  GetVerificationResponse,
+  Schedule,
+} from "@proofmarket/core/schemas/api";
 
 export type { CreateVerificationRequest, GetVerificationResponse };
 
@@ -130,6 +135,21 @@ export class ProofMarketClient {
         { body },
       )
     ).json;
+  }
+
+  /** POST /v1/schedules — a recurring check or a watch (01 §4.23). */
+  async createSchedule(body: CreateScheduleRequest): Promise<Schedule> {
+    return (await this.request<Schedule>("POST", "/v1/schedules", { body })).json;
+  }
+
+  /** GET /v1/schedules */
+  async listSchedules(): Promise<{ schedules: Schedule[] }> {
+    return (await this.request<{ schedules: Schedule[] }>("GET", "/v1/schedules")).json;
+  }
+
+  /** DELETE /v1/schedules/{id} */
+  async stopSchedule(id: string): Promise<Schedule> {
+    return (await this.request<Schedule>("DELETE", `/v1/schedules/${encodeURIComponent(id)}`)).json;
   }
 
   /**

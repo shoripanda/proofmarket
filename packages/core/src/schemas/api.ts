@@ -605,16 +605,55 @@ export const WebhookPayloadSchema = z.object({
 
 // ---------- recurring checks (04 §3.23) ----------
 const HhmmSchema = z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "HH:MM (Japan time)");
+/** When to stop a watch (01 §4.23): the first VERIFIED result whose answer matches ends the schedule. */
+export const StopWhenSchema = z.union([
+  z.object({ answer: AnswerValueSchema }).strict(),
+  z.object({ answer_in: z.array(AnswerValueSchema).min(1).max(LIMITS.answer.maxChoices) }).strict(),
+  z
+    .object({ number: z.object({ min: z.number().optional(), max: z.number().optional() }).strict() })
+    .strict()
+    .refine((s) => s.number.min !== undefined || s.number.max !== undefined, "min or max is required"),
+]);
+export type StopWhen = z.infer<typeof StopWhenSchema>;
+
 export const CreateScheduleRequestSchema = z
   .object({
     request: CreateVerificationRequestSchema.omit({ deadline: true }),
     deadline_minutes: z.number().int().min(10).max(1440),
-    times_jst: z.array(HhmmSchema).min(1).max(24),
-    days_jst: z.array(z.number().int().min(0).max(6)).min(1).max(7).describe("0 = Sunday ... 6 = Saturday"),
+    /** Fixed times mode: both are required together. */
+    times_jst: z.array(HhmmSchema).min(1).max(24).optional(),
+    days_jst: z
+      .array(z.number().int().min(0).max(6))
+      .min(1)
+      .max(7)
+      .describe("0 = Sunday ... 6 = Saturday")
+      .optional(),
+    /** Interval mode (01 §4.23): a run every N minutes, the first one right away. */
+    every_minutes: z.number().int().min(15).max(1440).optional(),
+    /** Stop after this many runs (01 §4.23). */
+    max_runs: z.number().int().min(1).max(200).optional(),
+    /** Stop once a VERIFIED result matches (01 §4.23). Not for text answers. */
+    stop_when: StopWhenSchema.optional(),
     ends_at: IsoDateTime.optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (b) => (b.every_minutes !== undefined) !== (b.times_jst !== undefined && b.days_jst !== undefined),
+    {
+      path: ["every_minutes"],
+      message: "give either every_minutes, or times_jst with days_jst",
+    },
+  );
 export type CreateScheduleRequest = z.infer<typeof CreateScheduleRequestSchema>;
+
+export const SCHEDULE_STOP_REASONS = [
+  "condition_met",
+  "max_runs",
+  "ended",
+  "failures",
+  "suspended",
+  "stopped",
+] as const;
 
 export const ScheduleSchema = z.object({
   schedule_id: z.string(),
@@ -627,7 +666,14 @@ export const ScheduleSchema = z.object({
   last_run_at: IsoDateTime.nullable(),
   last_verification_id: z.string().nullable(),
   last_error: z.string().nullable(),
+  every_minutes: z.number().int().nullable(),
+  max_runs: z.number().int().nullable(),
+  runs: z.number().int(),
+  stop_when: StopWhenSchema.nullable(),
+  stopped_reason: z.enum(SCHEDULE_STOP_REASONS).nullable(),
+  matched_verification_id: z.string().nullable(),
 });
+export type Schedule = z.infer<typeof ScheduleSchema>;
 export const ScheduleListResponseSchema = z.object({ schedules: z.array(ScheduleSchema) });
 
 // ---------- disputes (01 §4.12) ----------

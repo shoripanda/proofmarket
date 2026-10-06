@@ -65,14 +65,17 @@ describe("MCP tools", () => {
     return mcp;
   }
 
-  it("lists the four tools with the asynchronous warning in the description", async () => {
+  it("lists the seven tools with the asynchronous warning in the description", async () => {
     const mcp = await connect();
     const { tools } = await mcp.listTools();
     expect(tools.map((x) => x.name).sort()).toEqual([
       "cancel_reality_verification",
       "dispute_reality_verification",
       "get_reality_verification",
+      "list_reality_verification_watches",
       "request_reality_verification",
+      "stop_reality_verification_watch",
+      "watch_reality_verification",
     ]);
     expect(tools.find((x) => x.name === "request_reality_verification")?.description).toMatch(
       /Never assume or invent the outcome/,

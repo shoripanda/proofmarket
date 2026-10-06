@@ -731,6 +731,13 @@ export const verificationSchedules = pgTable(
     lastError: text("last_error"),
     consecutiveFailures: integer("consecutive_failures").notNull().default(0),
     createdAt: tsz("created_at").notNull().defaultNow(),
+    // Watches (01 §4.23): interval mode, a run cap and a stop condition.
+    everyMinutes: integer("every_minutes"),
+    maxRuns: integer("max_runs"),
+    runs: integer("runs").notNull().default(0),
+    stopWhen: jsonb("stop_when"),
+    stoppedReason: text("stopped_reason"),
+    matchedVerificationId: text("matched_verification_id"),
   },
   (t) => [
     check("schedule_deadline_chk", sql`deadline_minutes between 10 and 1440`),

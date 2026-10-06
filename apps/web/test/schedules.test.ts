@@ -4,8 +4,14 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { authenticateApiKey } from "../lib/auth/requester";
 import { setAllowedTaskTypes, suspendCredential } from "../lib/services/admin-service";
-import { createSchedule, runDueSchedules, stopSchedule } from "../lib/services/schedule-service";
+import {
+  createSchedule,
+  runDueSchedules,
+  settleWatches,
+  stopSchedule,
+} from "../lib/services/schedule-service";
 import { createBody, createTestApp } from "./support/app";
+import { onboardWorker, openCreated, witness } from "./support/worker";
 
 let t: Awaited<ReturnType<typeof createTestApp>>; // starts Fri 2026-10-09 12:00 JST
 beforeEach(async () => {
@@ -32,6 +38,91 @@ const err = async (p: Promise<unknown>) => {
   }
 };
 const tasks = () => t.db.select().from(schema.verificationRequests);
+
+describe("watches (01 §4.23)", () => {
+  const watch = (o: Record<string, unknown> = {}) => ({
+    request: request(),
+    deadline_minutes: 30,
+    every_minutes: 60,
+    stop_when: { answer: "OPEN" },
+    ...o,
+  });
+
+  it("validates the mode and the stop condition against the answer schema", async () => {
+    const a = await auth();
+    expect(await err(createSchedule(t.app, a, { ...watch(), times_jst: ["12:30"], days_jst: [5] }))).toBe(
+      "VALIDATION_FAILED",
+    );
+    expect(await err(createSchedule(t.app, a, { ...watch(), every_minutes: undefined }))).toBe(
+      "VALIDATION_FAILED",
+    );
+    expect(await err(createSchedule(t.app, a, watch({ stop_when: { answer: "IN_STOCK" } })))).toBe(
+      "VALIDATION_FAILED",
+    );
+    expect(await err(createSchedule(t.app, a, watch({ stop_when: { number: { min: 1 } } })))).toBe(
+      "VALIDATION_FAILED",
+    );
+    const text = { ...request(), type: "SIGN_TRANSCRIPTION", answer_schema: { type: "text" } };
+    expect(await err(createSchedule(t.app, a, watch({ request: text })))).toBe("VALIDATION_FAILED");
+  });
+
+  it("runs right away, then every interval, and stops with condition_met when a VERIFIED answer matches", async () => {
+    const alice = (await onboardWorker(t, "alice")).token;
+    const s = await createSchedule(t.app, await auth(), watch({ stop_when: { answer_in: ["OPEN"] } }));
+    expect(s).toMatchObject({
+      every_minutes: 60,
+      runs: 0,
+      stopped_reason: null,
+      next_run_at: t.app.now().toISOString(),
+    });
+    const [first] = await runDueSchedules(t.app);
+    expect(first).toBeDefined();
+    await openCreated(t, first as string);
+    // a CLOSED answer does not match: the watch keeps going
+    await witness(t, alice, first as string, { answer: "CLOSED" });
+    expect(await settleWatches(t.app)).toEqual([]);
+    t.advance(60 * 60_000);
+    const [second] = await runDueSchedules(t.app);
+    expect(second).toBeDefined();
+    expect(second).not.toBe(first);
+    await openCreated(t, second as string);
+    const bob = (await onboardWorker(t, "bob")).token;
+    await witness(t, bob, second as string, { answer: "OPEN" });
+    expect(await settleWatches(t.app)).toEqual([s.schedule_id]);
+    t.advance(60 * 60_000);
+    expect(await runDueSchedules(t.app)).toEqual([]); // stopped: no third run
+    const [row] = await t.db.select().from(schema.verificationSchedules);
+    expect(row).toMatchObject({
+      active: false,
+      runs: 2,
+      stoppedReason: "condition_met",
+      matchedVerificationId: second,
+    });
+  });
+
+  it("number conditions, max_runs and a manual stop record their reason", async () => {
+    const a = await auth();
+    const priced = { ...request(), type: "PRICE_CHECK", answer_schema: { type: "number", unit: "yen" } };
+    const s = await createSchedule(
+      t.app,
+      a,
+      watch({ request: priced, stop_when: { number: { max: 300 } }, max_runs: 1 }),
+    );
+    expect(s.stop_when).toEqual({ number: { max: 300 } });
+    const [id] = await runDueSchedules(t.app);
+    expect(id).toBeDefined();
+    let [row] = await t.db.select().from(schema.verificationSchedules);
+    expect(row).toMatchObject({ active: false, runs: 1, stoppedReason: "max_runs" });
+    const other = await createSchedule(t.app, a, watch({ every_minutes: 15 }));
+    const stopped = await stopSchedule(t.app, a, other.schedule_id);
+    expect(stopped).toMatchObject({ active: false, stopped_reason: "stopped" });
+    [row] = await t.db
+      .select()
+      .from(schema.verificationSchedules)
+      .where(eq(schema.verificationSchedules.id, s.schedule_id));
+    expect(row?.stoppedReason).toBe("max_runs");
+  });
+});
 
 describe("recurring checks", () => {
   it("creates one normal task at the due time, with the deadline window, and moves to the next week", async () => {

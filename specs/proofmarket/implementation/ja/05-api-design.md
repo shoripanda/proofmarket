@@ -29,7 +29,7 @@
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | 追加（2026-10-04）。GET は通知が使えるか、PUT は宛先と地域の登録（地域は 0 個でもよく、その場合は場所を問わない依頼だけが届く。01 §4.20）、DELETE は解除。VAPID の鍵が無い環境では GET が `available: false` を返す |
 | POST | `/v1/verifications/{id}/dispute` | requester | P2 | 追加（2026-10-04）。確定から 24 時間以内に 1 回。再確認の依頼を作る（01 §4.12）。失敗は 409 `DISPUTE_NOT_ALLOWED` |
 | POST | `/v1/console/session`・`/v1/console/logout`・`/v1/console/schedules/{id}/stop` | API キー / 画面のセッション | P2 | 追加（2026-10-04）。requester 用画面のログイン・ログアウト・定期確認の停止（01 §4.14）。Origin が同じときだけ。ログインは IP ごとに 1 分 10 回まで |
-| POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23） |
+| POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23）。2026-10-05: `every_minutes`・`max_runs`・`stop_when` で見守り依頼にも使う（01 §4.23） |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
 | GET | `/v1/public/stats` | 誰でも | P1 | 追加（2026-10-04）。公開の実績（集計だけ）。4.1 節。約 60 秒キャッシュ |

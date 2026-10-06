@@ -555,7 +555,14 @@ create table verification_schedules (
   last_verification_id text,
   last_error           text,                      -- 直近の失敗のエラーコード
   consecutive_failures int not null default 0,    -- 3 回続けて失敗したら active=false
-  created_at           timestamptz not null default now()
+  created_at           timestamptz not null default now(),
+  -- 見守り依頼（01 §4.23、2026-10-05 追加）
+  every_minutes        int,                       -- 間隔で回すとき。15〜1440。times_jst/days_jst は空配列
+  max_runs             int,                       -- 回数の上限
+  runs                 int not null default 0,    -- 作った依頼の数
+  stop_when            jsonb,                     -- 止める条件。answer / answer_in / number
+  stopped_reason       text,                      -- condition_met / max_runs / ended / failures / suspended / stopped
+  matched_verification_id text                    -- 条件に合った依頼
 );
 create index on verification_schedules (active, next_run_at);
 ```

@@ -54,6 +54,12 @@ export async function openTask(t: T, o: Record<string, unknown> = {}): Promise<s
     }),
   );
   const { verification_id: id } = (await res.json()) as { verification_id: string };
+  await openCreated(t, id);
+  return id;
+}
+
+/** Move a CREATED task to OPEN as the FUND_TASK job would (PR-11). */
+export async function openCreated(t: T, id: string): Promise<void> {
   await t.db.transaction(async (tx) => {
     const task = await lockTask(tx, id);
     await applyTaskEvent(tx, t.app, task, "FUNDING_CONFIRMED", {
@@ -64,7 +70,6 @@ export async function openTask(t: T, o: Record<string, unknown> = {}): Promise<s
     });
     await applyTaskEvent(tx, t.app, task, "OPEN", { actorType: "system", actorRef: null, correlationId: id });
   });
-  return id;
 }
 
 export const W = (t: T, token: string) => ({

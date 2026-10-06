@@ -23,6 +23,14 @@ const jst = (iso: string | null) =>
       })
     : "—";
 const DAYS = ["日", "月", "火", "水", "木", "金", "土"];
+const STOP_JA: Record<string, string> = {
+  condition_met: "条件に合った",
+  max_runs: "回数の上限",
+  ended: "期間の終わり",
+  failures: "3回続けて失敗",
+  suspended: "キーの停止",
+  stopped: "手動",
+};
 
 function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
@@ -104,12 +112,18 @@ export default async function ConsolePage() {
               <li key={s.schedule_id} className="flex flex-wrap items-center justify-between gap-2 p-4">
                 <div>
                   <p className="font-semibold">
-                    {s.days_jst.map((n) => DAYS[n]).join("・")} {s.times_jst.join("・")}
-                    {s.active ? "" : "（停止中）"}
+                    {s.every_minutes !== null
+                      ? `${s.every_minutes}分おき${s.stop_when ? "の見守り" : ""}`
+                      : `${s.days_jst.map((n) => DAYS[n]).join("・")} ${s.times_jst.join("・")}`}
+                    {s.max_runs !== null ? `・最大${s.max_runs}回` : ""}
+                    {s.active
+                      ? ""
+                      : `（停止${s.stopped_reason ? `：${STOP_JA[s.stopped_reason] ?? s.stopped_reason}` : ""}）`}
                   </p>
                   <p className="text-xs text-slate-500">
-                    次回 {jst(s.next_run_at)}・前回 {jst(s.last_run_at)}
+                    次回 {jst(s.next_run_at)}・前回 {jst(s.last_run_at)}・{s.runs}回実行
                     {s.last_error ? `・前回の失敗 ${s.last_error}` : ""}
+                    {s.matched_verification_id ? `・合った依頼 ${s.matched_verification_id}` : ""}
                   </p>
                 </div>
                 {s.active ? <StopScheduleButton id={s.schedule_id} /> : null}
