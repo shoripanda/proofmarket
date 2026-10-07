@@ -1,31 +1,20 @@
 # AGENTS.md
 
-このリポジトリは、Solanaを使って社会課題を解決するサービスを調査・設計・実装するための共同作業領域である。
+このリポジトリは ProofMarket（AI エージェントが自分ではできないことを人に頼み、証拠つきの答えを受け取るための仕組み）を設計・実装・運用するための共同作業領域である。
 
-ChatGPT、Codex、Claude Code、OpenClaw、その他AIエージェントは、作業開始時にこのファイルを読み、以下のルールに従うこと。
+ChatGPT、Codex、Claude Code、OpenClaw、その他 AI エージェントは、作業開始時にこのファイルを読み、以下のルールに従うこと。
 
 ## 1. 最初に読むファイル
 
 原則として次の順番で読む。
 
 1. `README.md`
-2. `docs/solana-research-2026-09-11.md`
-3. `docs/japan-social-issues-2026-09-11.md`
-4. `docs/competitive-landscape-and-market-size-2026-09-11.md`
-5. 作業対象の `ideas/*.md`
+2. `docs/proofmarket-concept-2026-10-02.md`（製品の構想と wedge）
+3. `specs/proofmarket/README.md` と、そこに書かれた read order の仕様一式
+4. `specs/proofmarket/implementation/ja/`（実装設計書。ja が正本、en は訳）
+5. `docs/solana-research-2026-09-11.md`（Solana の技術メモ。必要なときだけ）
 
-各アイデア:
-
-- `ideas/01-circulartrace-japan.md`
-- `ideas/02-ruralride-ledger.md`
-- `ideas/03-foodrescue-proof.md`
-- `ideas/04-reliefpass.md`
-- `ideas/05-pharmatrace.md`
-- `ideas/06-local-carbon-proof.md`
-- `ideas/07-learnpass-japan.md`
-- `ideas/08-proofmarket.md`
-
-ProofMarketを実装・変更する場合は、上記に加えて **`specs/proofmarket/README.md` とそこから参照される仕様一式を必ず読むこと。**
+ProofMarket を実装・変更する場合は、**`specs/proofmarket/README.md` とそこから参照される仕様一式を必ず読むこと。**
 
 ## 2. リポジトリの目的
 
@@ -121,67 +110,13 @@ ProofMarketを実装・変更する場合は、上記に加えて **`specs/proof
 - 契約書本文
 - 大容量raw data
 
-## 7. 現在の8案と主仮説
+## 7. 製品の主仮説
 
-### CircularTrace Japan
-
-DPPやOuranosの代替ではなく、企業DB・data spaceをまたぐ**proof / audit / incentive layer**。
-
-### RuralRide Ledger
-
-新しいMaaS/配車appではなく、自治体と複数交通事業者をつなぐ**voucher / proof / settlement layer**。
-
-### FoodRescue Proof
-
-Too Good To Go/Kuradashi型marketplaceではなく、食品寄附の**proof / audit / ESG reporting layer**。
-
-### ReliefPass
-
-現金給付をcryptoへ置換するのではなく、災害時の**用途限定voucher + multi-organization coordination + offline-first settlement**。
-
-### PharmaTrace
-
-ERP/WMSの置換ではなく、医薬品物流の**custody / sensor-hash / recall verification layer**。
-
-### Local Carbon Proof
-
-J-クレジットの無断tokenizationではなく、**local environmental action proof + reward**。CircularTraceとのmodule統合も検討する。
-
-### LearnPass Japan
-
-大学・資格・企業研修等に分散するcredentialを本人中心に統合する構想。Open Badge / VCで十分かを先に反証し、Solanaは必要最小限のproof layerとして検討する。
-
-### ProofMarket
-
-汎用gig marketplaceではなく、**AI agentが物理世界のfresh factを人間へ検証依頼し、machine-readable resultを得るReality Verification Network**。MVPの中心は `PLACE_STATUS_VERIFICATION`。2026-10-04 に、店の外から確かめられる `QUEUE_LENGTH`・`NOTICE_POSTED` を API キーごとの許可制で追加した（`specs/proofmarket/implementation/ja/01-requirements-definition.md` 4.8 節）。同日、オーナーの判断で、本・紙資料・実物・電話など人の手が要る作業まで広げた（17 種類、数値と文章の答え、場所の省略、店舗の許可リストの廃止。同 4.15 節）。raw photo / GPSはoff-chain、Solanaはsettlement / attestationの最小レイヤーとする。
+汎用 gig marketplace ではなく、**AI agent が物理世界の fresh fact を人間へ検証依頼し、machine-readable result を得る Reality Verification Network**。MVP の中心は `PLACE_STATUS_VERIFICATION`。2026-10-04 に、店の外から確かめられる `QUEUE_LENGTH`・`NOTICE_POSTED` を API キーごとの許可制で追加した（`specs/proofmarket/implementation/ja/01-requirements-definition.md` 4.8 節）。同日、オーナーの判断で、本・紙資料・実物・電話など人の手が要る作業まで広げた（17 種類、数値と文章の答え、場所の省略、店舗の許可リストの廃止。同 4.15 節）。raw photo / GPS は off-chain、Solana は settlement / attestation の最小レイヤーとする。
 
 ## 8. 現時点の優先順位
 
-### 2026秋 Hackathon
-
-**ProofMarketを主要実装候補として進める。** 実装判断は `specs/proofmarket/requirements.md` と `specs/proofmarket/acceptance-criteria.md` を優先する。
-
-既存案のresearch上の参考順位:
-
-技術・政策的独自性:
-
-1. CircularTrace Japan
-2. ReliefPass
-3. RuralRide Ledger
-4. FoodRescue Proof
-5. PharmaTrace
-6. Local Carbon Proof
-
-MVPの作りやすさ:
-
-1. FoodRescue Proof
-2. CircularTrace Japan
-3. Local Carbon Proof
-4. RuralRide Ledger
-5. ReliefPass
-6. PharmaTrace
-
-これは固定ではない。新しい一次資料・競合・法改正・PoC結果があれば更新する。
+**2026 年秋の Colosseum Crypto World's Fair（締切 2026-10-12）に向けて、本番（https://proofmarket.fun）を動かしながら仕上げる。** 実装判断は `specs/proofmarket/requirements.md` と `specs/proofmarket/acceptance-criteria.md` を優先する。要件を変えるときは `specs/proofmarket/implementation/ja/01-requirements-definition.md` を先に直す。
 
 ## 9. 新規調査を保存するとき
 
@@ -189,8 +124,8 @@ MVPの作りやすさ:
 
 例:
 
-- `docs/competitive-landscape-and-market-size-2026-09-11.md`
-- `research/dpp-standards-2026-10-01.md`
+- `docs/solana-research-2026-09-11.md`
+- `docs/agent-clients-check-2026-10-04.md`
 
 各調査には最低限、以下を含める。
 
@@ -254,12 +189,12 @@ specs/<project>/
 
 ## 13. READMEとの関係
 
-READMEはリポジトリの入口・概要として簡潔に保つ。詳細調査は`docs/`、個別サービス案は`ideas/`、実装仕様は`specs/`へ置く。
+READMEはリポジトリの入口・概要として簡潔に保つ。調査・運用メモ・提出資料は`docs/`、仕様は`specs/`へ置く。
 
 AIエージェントが新しい重要文書を追加した場合、必要に応じてREADMEまたは関連indexからリンクする。
 
 ## 14. 現在の基準日
 
-既存7案の競合・統計・Solana仕様の主な基準日は **2026-09-11**。ProofMarketの仕様・競合・法務チェックの基準日は **2026-10-02**。
+Solana 仕様の技術メモの基準日は **2026-09-11**。ProofMarket の仕様・競合・法務チェックの基準日は **2026-10-02**。
 
 将来の作業では、時間依存する数字・制度・Solana network仕様は必ず最新の一次資料で再確認すること。

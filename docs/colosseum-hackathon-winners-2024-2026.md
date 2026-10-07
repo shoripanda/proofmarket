@@ -84,7 +84,7 @@ Grand Championだけを見ても、単純なDEX/NFT marketplaceではなく、�
 - Zircon — Public Goods
 - AquaSave — Climate
 
-重要な示唆: 初期からDePIN、payments、AI/automation、real-world infrastructureの芽がある。Blockmeshはbandwidth、DeChargeはEV charging、CHRO+はhealthcare data networkであり、Solana-ideaの社会課題路線との接点が大きい。
+重要な示唆: 初期からDePIN、payments、AI/automation、real-world infrastructureの芽がある。Blockmeshはbandwidth、DeChargeはEV charging、CHRO+はhealthcare data networkであり、ProofMarketの「人が現実を確かめる」路線との接点が大きい。
 
 Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-renaissance-hackathon/
 
@@ -363,19 +363,9 @@ AI Agent × Finance / RWA / Stablecoin / Prediction Markets / Physical AI / Robo
 
 Unruggableは複数大会で改善を続け、Renaissance/Radarでの露出、Breakout Infrastructure 3位を経てCypherpunk Grand Championになった。Colosseumでは一度で完成させるより、ship → feedback → iterateを高速に続けるfounder behaviorも重要。
 
-## Solana-ideaとの接続
+## ProofMarketとの接続
 
-既存案は最近のwinner clusterと以下のように接続する。
-
-- CircularTrace Japan → real-world proof / RWA / DePIN
-- RuralRide Ledger → payments / public infrastructure / DePIN
-- FoodRescue Proof → real-world proof / incentive network
-- ReliefPass → stablecoin / payment / programmable voucher
-- PharmaTrace → RWA / supply-chain proof
-- Local Carbon Proof → environmental asset / DePIN / RWA
-- LearnPass Japan → credential / identity / human capital
-
-ただし「カテゴリーが合う」こと自体に価値はない。各案について、過去winnerとの重複を調べ、既存winnerが解決していないproblemとdistribution wedgeを明確にする。
+ProofMarketは最近のwinner clusterのうち、real-world proof / DePIN / AI agent infrastructure / payments（x402・stablecoin settlement）に接続する。ただし「カテゴリーが合う」こと自体に価値はない。過去winnerとの重複を調べ、既存winnerが解決していないproblem（AI agentが物理世界の事実を確かめられない）とdistribution wedge（MCP / x402でagentから直接呼べる）を明確にする。
 
 ## 2026秋に向けた評価原則
 

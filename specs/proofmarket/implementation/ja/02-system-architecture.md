@@ -65,7 +65,7 @@
 ## 3. リポジトリ構成
 
 ```text
-Solana-idea/
+proofmarket/
 ├── apps/
 │   └── web/                      Next.js（worker 画面・API・公開ページ）
 │       ├── app/
@@ -91,7 +91,7 @@ Solana-idea/
 │   └── demo-agent.ts             デモ用エージェント
 ├── tests/
 │   └── e2e/                      Playwright（P1）
-├── specs/ docs/ ideas/           既存
+├── specs/ docs/                  仕様と資料
 ├── Anchor.toml
 ├── pnpm-workspace.yaml
 └── .github/workflows/ci.yml

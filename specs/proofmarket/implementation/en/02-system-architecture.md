@@ -67,7 +67,7 @@ The mapping to the logical components in `architecture.md` is as follows.
 ## 3. Repository layout
 
 ```text
-Solana-idea/
+proofmarket/
 ├── apps/
 │   └── web/                      Next.js (worker screens, API, public pages)
 │       ├── app/
@@ -93,7 +93,7 @@ Solana-idea/
 │   └── demo-agent.ts             Demo agent
 ├── tests/
 │   └── e2e/                      Playwright (P1)
-├── specs/ docs/ ideas/           Existing
+├── specs/ docs/                  specs and documents
 ├── Anchor.toml
 ├── pnpm-workspace.yaml
 └── .github/workflows/ci.yml

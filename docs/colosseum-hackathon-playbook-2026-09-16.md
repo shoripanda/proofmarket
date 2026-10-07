@@ -5,7 +5,7 @@
 Primary source: Superteam Japan, **Colosseum Hackathon Playbook**
 https://superteam-japan.gitbook.io/hackathon-playbook
 
-この文書は、2026年秋のColosseum Hackathon（Crypto World's Fair）での入賞を目的として、Superteam Japanが過去winner、judge、多数のteamへのinterview / analysisを基に作成したPlaybookを、Solana-ideaの実行ルールへ変換したもの。
+この文書は、2026年秋のColosseum Hackathon（Crypto World's Fair）での入賞を目的として、Superteam Japanが過去winner、judge、多数のteamへのinterview / analysisを基に作成したPlaybookを、このリポジトリの実行ルールへ変換したもの。
 
 > 注意: Playbookを「これを守れば自動的に入賞する保証」とは扱わない。競争相手、judge、product quality、execution等で結果は変わる。ただし、応募プロセス上の重要な実践知として原則すべて反映する。
 
@@ -42,7 +42,7 @@ Lean Canvasを用いてproblem、solution、customer segment等を一枚で整�
 
 hackathon終了時点までに結果を出すためのKey Success Factorsを管理する。
 
-Solana-ideaでは各候補案に最低限以下を用意する。
+このリポジトリでは各候補案に最低限以下を用意する。
 
 - Problem
 - Initial target user
@@ -81,7 +81,7 @@ Playbookが強調する最重要点は「なぜこのprojectを作るのか」�
 - key informationが欠ける
 - 意味のないdesign / visualization
 
-### Solana-ideaへのルール
+### このリポジトリへのルール
 
 「日本人」「企業」「学生」「自治体」などの広すぎるtargetは禁止。最初のuserを具体的に狭める。
 
@@ -164,7 +164,7 @@ Videoはattention獲得に非常に有効。
 
 Playbookは大きくNarrative Type / Teaser Typeを例示している。
 
-Solana-ideaではHype Videoを単なる広告にせず、projectのone-line narrativeを視覚的に伝えるassetとして作る。
+このリポジトリではHype Videoを単なる広告にせず、projectのone-line narrativeを視覚的に伝えるassetとして作る。
 
 目的:
 - projectを一度で記憶させる
@@ -183,7 +183,7 @@ Rule: **3分未満**。
 
 過去winnerとしてTokamai、The Arena、FXSwap、Windfall、UNKOMON等のpitch videoをreferenceとしている。
 
-Solana-ideaではsubmission直前に作るのではなく、pitch deck iterationと同時にscriptを更新する。
+このリポジトリではsubmission直前に作るのではなく、pitch deck iterationと同時にscriptを更新する。
 
 Pitch Videoでjudgeが短時間に理解できる状態:
 
@@ -208,7 +208,7 @@ productがbehind the scenesでどう動くかを説明する。ただしcodeを�
 
 参考例としてLootGO、Crypto Fantasy League、Daikoが掲載されている。
 
-Solana-ideaではtechnical demoに以下を必ず含める。
+このリポジトリではtechnical demoに以下を必ず含める。
 
 1. working product
 2. user action
@@ -301,7 +301,7 @@ Personal X:
 - mention / link等のblue textを多用
 - first postにlinkを置く
 
-### Solana-idea rule
+### このリポジトリのルール
 
 Build in Publicはvanity metrics目的ではなく、以下を記録する。
 
@@ -399,7 +399,7 @@ Source: https://superteam-japan.gitbook.io/hackathon-playbook/to-those-close-to-
 
 # 14. 2026秋用 Mandatory Gate
 
-今後Solana-ideaからColosseum候補を選ぶ際、以下をすべて確認する。
+今後このリポジトリからColosseum候補を選ぶ際、以下をすべて確認する。
 
 ## Problem / Founder
 - [ ] initial userが狭く具体的
