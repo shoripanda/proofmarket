@@ -343,7 +343,18 @@ export default async function EnHome() {
         </div>
         <p className="mt-6 text-sm text-slate-600">
           Pilot limits: workers join by invitation; bounties are test USDC on Devnet. Source code and the full
-          specification set are available to judges on request.
+          specification set are public at{" "}
+          <a
+            href="https://github.com/shoripanda/proofmarket"
+            className="font-semibold text-teal-700 underline"
+          >
+            github.com/shoripanda/proofmarket
+          </a>
+          ; a 60-second{" "}
+          <a href="https://youtu.be/iLKIMbX94-Y" className="font-semibold text-teal-700 underline">
+            technical demo video
+          </a>{" "}
+          shows one request end to end.
         </p>
       </Section>
     </>
