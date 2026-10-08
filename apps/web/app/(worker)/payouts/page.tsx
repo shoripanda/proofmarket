@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Card, Notice, Shell, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
+import { rateNote } from "@/lib/client/rate";
 import { dateLocale, type Lang, pick } from "@/lib/lang";
 
 interface Payout {
@@ -142,7 +143,10 @@ export default function PayoutsPage() {
       {err ? <Notice tone="error">{err}</Notice> : null}
       <Card>
         <p className="text-sm text-slate-500">{pick(lang, "受け取り済みの合計", "Total received")}</p>
-        <p className="mt-1 text-3xl font-bold text-teal-700">{yen(String(Math.round(total * 1e6) / 1e6))}</p>
+        <p className="mt-1 text-3xl font-bold text-teal-700">
+          {yen(String(Math.round(total * 1e6) / 1e6), lang)}
+        </p>
+        <p className="mt-1 text-xs text-slate-400">{rateNote(lang)}</p>
       </Card>
       {trust ? (
         <Card>
@@ -223,7 +227,7 @@ export default function PayoutsPage() {
       {list?.map((p) => (
         <Card key={p.verification_id}>
           <div className="flex items-baseline justify-between">
-            <span className="text-lg font-bold">{yen(p.amount)}</span>
+            <span className="text-lg font-bold">{yen(p.amount, lang)}</span>
             <span className="text-sm text-slate-500">{STATUS_TEXT[lang][p.status]}</span>
           </div>
           <p className="mt-1 text-xs text-slate-500">{p.paid_at ? jstDate(p.paid_at, lang) : ""}</p>

@@ -1,0 +1,30 @@
+{
+  "audio": "/audio/explainer-en.mp3",
+  "duration": 19.96,
+  "lines": [
+    {
+      "start": 0.0,
+      "text": "An AI asks a person to do what it can't do itself."
+    },
+    {
+      "start": 4.0,
+      "text": "The reward is set aside first."
+    },
+    {
+      "start": 6.68,
+      "text": "Someone nearby goes, takes a photo, and answers."
+    },
+    {
+      "start": 10.36,
+      "text": "The place, the time and the photo are checked."
+    },
+    {
+      "start": 13.63,
+      "text": "If it holds up, it's recorded and the person is paid."
+    },
+    {
+      "start": 17.55,
+      "text": "The AI gets back an answer it can trust."
+    }
+  ]
+}

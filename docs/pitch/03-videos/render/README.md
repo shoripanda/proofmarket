@@ -66,3 +66,16 @@ node render.mjs ~/Desktop/ProofMarket-pitch-v2.mp4 music.mp3
 ## 置き場所と公開
 
 できた mp4 はリポジトリに置かず、YouTube に限定公開で上げて提出フォームに URL を書く。表題スライドと説明文に「語りは合成音声」と明記する。自分の声で録ったものに差し替えるときは、`cue*.wav` を置き換えるだけでよい。
+
+## トップの「30 秒でわかる」の語り（2026-10-08、13 §7）
+
+字幕の文は `apps/web/public/audio/explainer-{ja,en}.json` の `lines[].text` が正本。文を直したら、次で mp3 と各文の開始秒を作り直す（どちらも同じ JSON に書き戻す）。合計が 30 秒を超えると止まる。
+
+```bash
+cd docs/pitch/03-videos/render/tts
+uv pip install --python .venv/bin/python "misaki[ja]"   # 日本語だけ。pyopenjtalk をソースからビルドするので数分〜数十分
+../tts/.venv/bin/python ../explainer/make.py en af_heart 0.95
+../tts/.venv/bin/python ../explainer/make.py ja jf_alpha
+```
+
+日本語は misaki の `JAG2P(version="pyopenjtalk")` で読みを発音記号にしてから Kokoro に渡す。既定の cutlet 版は 770MB の unidic 辞書を要求するので使わない。pyopenjtalk 版の戻り値は「発音記号＋同じ長さの高低記号」がつながった文字列なので、前半だけを渡す。「AI」は「エーアイ」と読ませ、字幕は AI のまま。`jf_nezumi` は 30 秒を超えたので `jf_alpha` にした。

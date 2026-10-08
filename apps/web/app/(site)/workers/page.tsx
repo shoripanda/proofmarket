@@ -2,8 +2,11 @@
 import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Picture, type PictureKey } from "@/components/illustrations";
 import { safetyNotes } from "@/components/safety";
 import { PageHero, Section } from "@/components/site";
+import { ListenButton } from "@/components/ui";
+import { Plain } from "@/lib/client/plain";
 import { type Lang, langHref } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -16,6 +19,12 @@ const COPY = {
     title: "近くのお店の「いま」を確かめて、報酬を受け取る",
     intro:
       "AI エージェントから届く「この店はいま開いているか」といった依頼に、現地の写真と答えで応えます。書き写しや電話のように、家からできる依頼もあります。引き受けるかどうかは毎回自分で決められます。",
+    three: [
+      ["signup", "スマホで登録します。メールか Google があれば始められます。"],
+      ["nearby", "近くの依頼が、場所と報酬つきで並びます。"],
+      ["paid", "その場で撮って答えると、報酬が届きます。"],
+    ] as [PictureKey, string][],
+    more: "くわしい流れ・家でできる仕事・必要なもの・写真と位置の扱い",
     flowTitle: "1件の流れ",
     flow: [
       [
@@ -78,6 +87,12 @@ const COPY = {
     title: "Check what's happening at shops near you, and get paid",
     intro:
       "AI agents send requests such as “is this shop open right now?”. You answer with a photo and an answer from the spot. Some requests, like transcribing or phoning, can be done from home. Whether to take a request is always your call.",
+    three: [
+      ["signup", "Sign up on your phone. An email or a Google account is all it takes."],
+      ["nearby", "Requests near you appear, with the place and the pay."],
+      ["paid", "Take a photo there, answer, and the pay arrives."],
+    ] as [PictureKey, string][],
+    more: "The steps in detail, work from home, what you need, photos and location",
     flowTitle: "One request, step by step",
     flow: [
       [
@@ -145,46 +160,43 @@ export default async function WorkersPage() {
   const h = (p: string) => langHref(lang, p);
   return (
     <>
-      <PageHero eyebrow={c.eyebrow} title={c.title}>
-        <p>{c.intro}</p>
-      </PageHero>
+      <PageHero eyebrow={c.eyebrow} title={c.title} />
 
-      <Section title={c.flowTitle}>
-        <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {c.flow.map(([title, body], i) => (
-            <li key={title} className="rounded-2xl border border-slate-200 p-5">
-              <span className="text-sm font-bold text-teal-700">{i + 1}</span>
-              <h3 className="mt-1 font-bold">{title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">{body}</p>
+      <section className="mx-auto max-w-5xl px-4 py-10">
+        <ol className="grid gap-6 sm:grid-cols-3">
+          {c.three.map(([k, line], i) => (
+            <li
+              key={k}
+              className="flex flex-col items-center rounded-3xl border border-slate-200 p-5 text-center"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-700 text-base font-bold text-white">
+                {i + 1}
+              </span>
+              <div className="mt-3 w-44">
+                <Picture k={k} lang={lang} />
+              </div>
+              <p className="mt-3 text-lg font-semibold leading-relaxed text-slate-800">{line}</p>
+              <div className="mt-3">
+                <ListenButton text={line} />
+              </div>
             </li>
           ))}
         </ol>
-      </Section>
-
-      <Section id="home" title={c.home.title} lead={c.home.lead}>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {c.home.items.map(([title, body]) => (
-            <li key={title} className="rounded-2xl border border-slate-200 p-5">
-              <h3 className="font-bold">{title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">{body}</p>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">{c.home.note}</p>
-      </Section>
-
-      <Section title={c.needs.title}>
-        <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
-          {c.needs.items.map((t) => (
-            <li key={t} className="rounded-2xl bg-slate-50 p-4">
-              {t}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 text-sm leading-relaxed text-slate-600">{c.needs.note}</p>
-      </Section>
-
-      <Section title={c.pay.title} lead={c.pay.lead} />
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link
+            href={h("/join?role=worker")}
+            className="rounded-full bg-teal-700 px-6 py-3 text-base font-semibold text-white hover:bg-teal-800"
+          >
+            {c.join.apply}
+          </Link>
+          <Link
+            href={h("/login")}
+            className="rounded-full px-6 py-3 text-base font-semibold text-teal-700 ring-1 ring-teal-700 hover:bg-teal-50"
+          >
+            {c.join.login}
+          </Link>
+        </div>
+      </section>
 
       <Section title={c.safety.title} lead={c.safety.lead}>
         <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
@@ -194,30 +206,61 @@ export default async function WorkersPage() {
         </ul>
       </Section>
 
-      <Section title={c.privacy.title}>
-        <div className="max-w-3xl space-y-3 text-sm leading-relaxed text-slate-600">
-          <p>{c.privacy.p1}</p>
-          <p>{c.privacy.p2}</p>
-          <p>{c.privacy.p3}</p>
-        </div>
-      </Section>
+      <div className="mx-auto max-w-5xl px-4">
+        <details className="rounded-2xl border border-slate-200">
+          <summary className="cursor-pointer select-none p-4 text-sm font-semibold text-teal-700">
+            {c.more}
+          </summary>
+          <p className="px-4 leading-relaxed text-slate-600">{c.intro}</p>
 
-      <Section title={c.join.title}>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href={h("/join?role=worker")}
-            className="rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-800"
-          >
-            {c.join.apply}
-          </Link>
-          <Link
-            href={h("/login")}
-            className="rounded-full px-5 py-2.5 text-sm font-semibold text-teal-700 ring-1 ring-teal-700 hover:bg-teal-50"
-          >
-            {c.join.login}
-          </Link>
-        </div>
-      </Section>
+          <Section title={c.flowTitle}>
+            <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {c.flow.map(([title, body], i) => (
+                <li key={title} className="rounded-2xl border border-slate-200 p-5">
+                  <span className="text-sm font-bold text-teal-700">{i + 1}</span>
+                  <h3 className="mt-1 font-bold">{title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{body}</p>
+                </li>
+              ))}
+            </ol>
+          </Section>
+
+          <Section id="home" title={c.home.title} lead={c.home.lead}>
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {c.home.items.map(([title, body]) => (
+                <li key={title} className="rounded-2xl border border-slate-200 p-5">
+                  <h3 className="font-bold">{title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{body}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">{c.home.note}</p>
+          </Section>
+
+          <Section title={c.needs.title}>
+            <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
+              {c.needs.items.map((t) => (
+                <li key={t} className="rounded-2xl bg-slate-50 p-4">
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-sm leading-relaxed text-slate-600">
+              <Plain>{c.needs.note}</Plain>
+            </p>
+          </Section>
+
+          <Section title={c.pay.title} lead={<Plain>{c.pay.lead}</Plain>} />
+
+          <Section title={c.privacy.title}>
+            <div className="max-w-3xl space-y-3 text-sm leading-relaxed text-slate-600">
+              <p>{c.privacy.p1}</p>
+              <p>{c.privacy.p2}</p>
+              <p>{c.privacy.p3}</p>
+            </div>
+          </Section>
+        </details>
+      </div>
     </>
   );
 }

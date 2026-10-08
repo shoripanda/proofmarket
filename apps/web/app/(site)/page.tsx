@@ -1,10 +1,12 @@
 // S-01 トップ — what ProofMarket is, what sets it apart, the track record, and where each reader goes next.
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Explainer } from "@/components/explainer";
 import { FeaturedResults } from "@/components/featured-results";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { PageHero, Section } from "@/components/site";
 import { StatsHighlights } from "@/components/stats";
+import { Plain } from "@/lib/client/plain";
 import { type Lang, langHref } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -275,7 +277,9 @@ export default async function Home() {
   return (
     <>
       <PageHero eyebrow={c.eyebrow} title={c.title}>
-        <p>{c.intro}</p>
+        <p>
+          <Plain>{c.intro}</Plain>
+        </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href={h("/try")}
@@ -291,6 +295,8 @@ export default async function Home() {
           </Link>
         </div>
       </PageHero>
+
+      <Explainer />
 
       <Section title={c.sizes.title} lead={c.sizes.lead}>
         <div className="grid gap-4 lg:grid-cols-3">
@@ -309,10 +315,12 @@ export default async function Home() {
             </div>
           ))}
         </div>
-        <p className="mt-4 text-xs text-slate-500">{c.sizes.limits}</p>
+        <p className="mt-4 text-xs text-slate-500">
+          <Plain>{c.sizes.limits}</Plain>
+        </p>
       </Section>
 
-      <Section title={c.flow.title} lead={c.flow.lead}>
+      <Section title={c.flow.title} lead={<Plain>{c.flow.lead}</Plain>}>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <FlowDiagram loop />
         </div>
@@ -322,7 +330,7 @@ export default async function Home() {
         <ul className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
           {c.live.items.map((t) => (
             <li key={t} className="rounded-2xl bg-slate-50 p-4">
-              {t}
+              <Plain>{t}</Plain>
             </li>
           ))}
         </ul>
@@ -332,8 +340,12 @@ export default async function Home() {
         <ul className="grid gap-4 lg:grid-cols-3">
           {c.trust.points.map((p) => (
             <li key={p.title} className="rounded-2xl bg-teal-50 p-5">
-              <h3 className="font-bold text-teal-900">{p.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">{p.body}</p>
+              <h3 className="font-bold text-teal-900">
+                <Plain>{p.title}</Plain>
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                <Plain>{p.body}</Plain>
+              </p>
             </li>
           ))}
         </ul>
@@ -349,7 +361,9 @@ export default async function Home() {
                 {i + 1}
               </span>
               <h3 className="mt-3 font-bold">{s.title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">{s.body}</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                <Plain>{s.body}</Plain>
+              </p>
             </li>
           ))}
         </ol>
@@ -359,7 +373,9 @@ export default async function Home() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Link href={h("/developers")} className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">{c.roles.dev.title}</h3>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">{c.roles.dev.body}</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              <Plain>{c.roles.dev.body}</Plain>
+            </p>
             <p className="mt-3 text-sm font-semibold text-teal-700">
               {c.roles.dev.link} <span className="arrow">→</span>
             </p>
@@ -401,7 +417,9 @@ export default async function Home() {
               <strong className="text-slate-900">{c.example.strong}</strong>
               {c.example.p1}
             </p>
-            <p>{c.example.p2}</p>
+            <p>
+              <Plain>{c.example.p2}</Plain>
+            </p>
             <p>
               <Link href={h("/how-it-works")} className="font-semibold text-teal-700 underline">
                 {c.example.link}
@@ -415,7 +433,7 @@ export default async function Home() {
         <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
           {c.pilot.items.map((t) => (
             <li key={t} className="rounded-2xl bg-slate-50 p-4">
-              {t}
+              <Plain>{t}</Plain>
             </li>
           ))}
         </ul>

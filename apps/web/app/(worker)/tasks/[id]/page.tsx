@@ -106,7 +106,7 @@ export default function TaskDetailPage() {
                   <span className="font-semibold text-amber-600">
                     {" → "}
                     {pick(lang, "最大 ", "up to ")}
-                    {yen(t.reward.max)}
+                    {yen(t.reward.max, lang)}
                   </span>
                   <span className="block text-xs text-slate-500">
                     {pick(
@@ -117,7 +117,7 @@ export default function TaskDetailPage() {
                   </span>
                 </dd>
               ) : (
-                <dd className="text-right text-lg font-bold text-teal-700">{yen(t.reward.amount)}</dd>
+                <dd className="text-right text-lg font-bold text-teal-700">{yen(t.reward.amount, lang)}</dd>
               )}
               <dt className="text-slate-500">{pick(lang, "締切まで", "Deadline in")}</dt>
               <dd className="text-right font-medium">{remaining(t.deadline, now, lang)}</dd>
