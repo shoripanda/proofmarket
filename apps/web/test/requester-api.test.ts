@@ -2,7 +2,7 @@
 import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { handleCancel, handleCreate, handleGet } from "../lib/handlers/requester";
+import { handleCancel, handleCreate, handleCreateBatch, handleGet } from "../lib/handlers/requester";
 import { setAllowedTaskTypes } from "../lib/services/admin-service";
 import { call, createBody, createTestApp, jsonReq, SHOP } from "./support/app";
 
@@ -251,6 +251,157 @@ describe("POST /v1/verifications", () => {
       (l) => l.entryType === "RESERVE",
     );
     expect(reserves).toHaveLength(2);
+  });
+});
+
+describe("01 §4.25: the requester decides the shape of the work", () => {
+  const get = async (id: string) =>
+    (await (
+      await call((r) => handleGet(t.app, r, id), jsonReq("GET", `/v1/verifications/${id}`, { key: t.apiKey }))
+    ).json()) as Record<string, unknown>;
+  const FORM = {
+    type: "form",
+    fields: [
+      { key: "price", label: "Price", type: "number", unit: "JPY" },
+      { key: "stock", label: "On the shelf?", type: "enum", values: ["YES", "NO"] },
+      { key: "note", label: "Note", type: "text", max_chars: 200, required: false },
+    ],
+  };
+
+  it("acceptance_criteria is stored, read back, and shown to workers", async () => {
+    const res = await create(
+      createBody(t.principalId, { acceptance_criteria: "  The price tag must be legible.  " }),
+    );
+    expect(res.status).toBe(201);
+    const { verification_id: id } = (await res.json()) as { verification_id: string };
+    expect((await get(id)).acceptance_criteria).toBe("The price tag must be legible.");
+    const plain = (await (await create(createBody(t.principalId))).json()) as { verification_id: string };
+    expect((await get(plain.verification_id)).acceptance_criteria).toBeNull();
+    expect(
+      await errCode(await create(createBody(t.principalId, { acceptance_criteria: "x".repeat(501) }))),
+    ).toBe("VALIDATION_FAILED");
+  });
+
+  it("a form answer_schema is accepted for text types, stored as text, and refused for choice types", async () => {
+    const res = await create(
+      createBody(t.principalId, { type: "CUSTOM_TASK", answer_schema: FORM, location: undefined }),
+    );
+    expect(res.status).toBe(201);
+    const { verification_id: id } = (await res.json()) as { verification_id: string };
+    const view = await get(id);
+    expect(view.answer_schema).toEqual({
+      type: "form",
+      fields: FORM.fields.map((f) => ({ required: true, ...f })),
+    });
+    const [row] = await t.db
+      .select()
+      .from(schema.verificationRequests)
+      .where(eq(schema.verificationRequests.id, id));
+    expect(row?.answerKind).toBe("text");
+    const wrong = await create(createBody(t.principalId, { answer_schema: FORM }));
+    expect(wrong.status).toBe(400);
+    expect(
+      ((await wrong.json()) as { error: { details: { allowed: string[] } } }).error.details.allowed,
+    ).toEqual(["enum"]);
+    const dup = { ...FORM, fields: [FORM.fields[0], FORM.fields[0]] };
+    expect(
+      await errCode(
+        await create(
+          createBody(t.principalId, { type: "CUSTOM_TASK", answer_schema: dup, location: undefined }),
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    // a form cannot go on the public map (text answers never do)
+    expect(
+      await errCode(
+        await create(createBody(t.principalId, { type: "SITE_REPORT", answer_schema: FORM, publish: true })),
+      ),
+    ).toBe("VALIDATION_FAILED");
+  });
+
+  it("work with no location may be due up to 7 days out; work at a place stays within 24 h", async () => {
+    const far = { type: "CUSTOM_TASK", answer_schema: { type: "text" }, location: undefined };
+    expect(
+      (await create(createBody(t.principalId, { ...far, deadline: "2026-10-16T02:00:00Z" }))).status,
+    ).toBe(201);
+    expect(
+      await errCode(await create(createBody(t.principalId, { ...far, deadline: "2026-10-16T03:00:01Z" }))),
+    ).toBe("DEADLINE_OUT_OF_RANGE");
+    expect(
+      await errCode(
+        await create(
+          createBody(t.principalId, {
+            type: "CUSTOM_TASK",
+            answer_schema: { type: "text" },
+            deadline: "2026-10-12T03:00:00Z",
+          }),
+        ),
+      ),
+    ).toBe("DEADLINE_OUT_OF_RANGE");
+  });
+
+  describe("POST /v1/verifications/batch", () => {
+    const batch = (body: unknown, idem = crypto.randomUUID()) =>
+      call(
+        (r) => handleCreateBatch(t.app, r),
+        jsonReq("POST", "/v1/verifications/batch", { key: t.apiKey, body, idem }),
+      );
+    // Built per test: `t` only exists after beforeEach.
+    const templateOf = () => {
+      const { location: _l, question: _q, ...rest } = createBody(t.principalId);
+      return rest;
+    };
+    const items = [
+      { location: { ...SHOP, radius_m: 80 }, question: "Is shop A open?" },
+      { location: { lat: 35.66, lng: 139.7, radius_m: 80 }, question: "Is shop B open?" },
+      { location: { lat: 35.67, lng: 139.71, radius_m: 80 }, question: "Is shop C open?" },
+    ];
+
+    it("creates one task per item, in order, each reserved and funded like a single request", async () => {
+      const res = await batch({ template: templateOf(), items });
+      expect(res.status).toBe(201);
+      const { verifications } = (await res.json()) as {
+        verifications: { verification_id: string; status: string }[];
+      };
+      expect(verifications).toHaveLength(3);
+      expect(new Set(verifications.map((v) => v.verification_id)).size).toBe(3);
+      for (const [i, v] of verifications.entries()) {
+        expect(v.status).toBe("CREATED");
+        expect((await get(v.verification_id)).question).toBe(items[i]?.question);
+      }
+      const ledger = await t.db.select().from(schema.requesterLedger);
+      expect(ledger.filter((l) => l.entryType === "RESERVE")).toHaveLength(3);
+      expect((await t.db.select().from(schema.outboxJobs)).map((j) => j.dedupeKey).sort()).toEqual(
+        verifications.map((v) => `FUND_TASK:${v.verification_id}`).sort(),
+      );
+    });
+
+    it("is all or nothing: one bad item rejects the batch and creates no task", async () => {
+      const bad = [...items, { question: "No place given" }]; // location required for this type
+      const res = await batch({ template: templateOf(), items: bad });
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as { error: { code: string; details: { index?: number } } };
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+      expect(body.error.details.index).toBe(3);
+      expect(await t.db.select().from(schema.verificationRequests)).toHaveLength(0);
+      expect(await errCode(await batch({ template: templateOf(), items: [] }))).toBe("VALIDATION_FAILED");
+    });
+
+    it("replays on the same Idempotency-Key and keeps the template's own location when an item has none", async () => {
+      const withLoc = { ...templateOf(), location: { ...SHOP, radius_m: 80 } };
+      const a = await batch(
+        { template: withLoc, items: [{ question: "q1" }, { question: "q2" }] },
+        "batch-1",
+      );
+      expect(a.status).toBe(201);
+      const b = await batch(
+        { template: withLoc, items: [{ question: "q1" }, { question: "q2" }] },
+        "batch-1",
+      );
+      expect(b.headers.get("Idempotent-Replayed")).toBe("true");
+      expect(await b.json()).toEqual(await a.json());
+      expect(await t.db.select().from(schema.verificationRequests)).toHaveLength(2);
+    });
   });
 });
 

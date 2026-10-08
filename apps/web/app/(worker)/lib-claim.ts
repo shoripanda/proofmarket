@@ -15,6 +15,7 @@ export interface ClaimDetail {
   task_result: { status: string; answer: string | null } | null;
   type: string;
   question: string;
+  acceptance_criteria: string | null;
   answer_values: string[];
   answer_schema: AnswerSchemaView;
   location_required: boolean;

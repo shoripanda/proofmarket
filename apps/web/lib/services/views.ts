@@ -240,6 +240,7 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
     type: task.type as TaskType,
     status: task.status as GetVerificationResponse["status"],
     question: task.question,
+    acceptance_criteria: task.acceptanceCriteria ?? null,
     answer_schema: answerSchemaOf(
       task.answerKind,
       task.answerValues,

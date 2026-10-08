@@ -112,7 +112,7 @@ ProofMarket を実装・変更する場合は、**`specs/proofmarket/README.md` 
 
 ## 7. 製品の主仮説
 
-汎用 gig marketplace ではなく、**AI agent が物理世界の fresh fact を人間へ検証依頼し、machine-readable result を得る Reality Verification Network**。MVP の中心は `PLACE_STATUS_VERIFICATION`。2026-10-04 に、店の外から確かめられる `QUEUE_LENGTH`・`NOTICE_POSTED` を API キーごとの許可制で追加した（`specs/proofmarket/implementation/ja/01-requirements-definition.md` 4.8 節）。同日、オーナーの判断で、本・紙資料・実物・電話など人の手が要る作業まで広げた（17 種類、数値と文章の答え、場所の省略、店舗の許可リストの廃止。同 4.15 節）。raw photo / GPS は off-chain、Solana は settlement / attestation の最小レイヤーとする。
+汎用 gig marketplace ではなく、**AI agent が物理世界の fresh fact を人間へ検証依頼し、machine-readable result を得る Reality Verification Network**。MVP の中心は `PLACE_STATUS_VERIFICATION`。2026-10-04 に、店の外から確かめられる `QUEUE_LENGTH`・`NOTICE_POSTED` を API キーごとの許可制で追加した（`specs/proofmarket/implementation/ja/01-requirements-definition.md` 4.8 節）。同日、オーナーの判断で、本・紙資料・実物・電話など人の手が要る作業まで広げた（17 種類、数値と文章の答え、場所の省略、店舗の許可リストの廃止。同 4.15 節）。2026-10-08 に、依頼者が仕事の「形」も決められるようにした（複数項目の答え `form`、受け取りの条件 `acceptance_criteria`、場所を問わない依頼の締切 7 日、一括依頼 `POST /v1/verifications/batch`。同 4.25 節。17 種類は見本の位置づけ）。raw photo / GPS は off-chain、Solana は settlement / attestation の最小レイヤーとする。
 
 ## 8. 現時点の優先順位
 

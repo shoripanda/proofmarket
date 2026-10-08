@@ -52,6 +52,7 @@ async function reviewSubmission(
     const r = await reviewer.review({
       type: task.type,
       question: task.question,
+      ...(task.acceptanceCriteria ? { acceptanceCriteria: task.acceptanceCriteria } : {}),
       answerFormat: JSON.stringify(spec),
       answer,
       images,
@@ -549,6 +550,8 @@ export async function listPendingReviews(app: AppContext, limit = 20) {
       verification_id: task.id,
       type: task.type,
       question: task.question,
+      /** What the requester will accept (01 §4.25). */
+      acceptance_criteria: task.acceptanceCriteria ?? null,
       answer_schema: answerSchemaOf(
         task.answerKind,
         task.answerValues,

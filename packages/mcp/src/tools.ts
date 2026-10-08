@@ -4,6 +4,7 @@ import { TASK_TYPE_SPECS } from "@proofmarket/core";
 import {
   AssuranceInputSchema,
   CreateScheduleRequestSchema,
+  CreateVerificationBatchRequestSchema,
   CreateVerificationRequestSchema,
   VerificationIdSchema,
 } from "@proofmarket/core/schemas/api";
@@ -34,7 +35,12 @@ export const REQUEST_TOOL = {
     "This tool returns a verification_id immediately; call get_reality_verification to read the result. " +
     "Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED. " +
     `Types and answer_schema: ${TYPE_GUIDE}. ` +
-    "location is required for at-a-place types and may be omitted for work that can be done anywhere. " +
+    "Text types also take a form: { type: 'form', fields: [{ key, label, type: enum|number|text, ... }] } (1-8 fields) " +
+    "when you need several things back at once (say a price, a stock status and a note); the answer comes back as one " +
+    "JSON object per witness. The 17 types are examples: CUSTOM_TASK / CUSTOM_CHOICE take any hands-on work. " +
+    "acceptance_criteria (up to 500 chars) tells the worker and the AI review what you will accept. " +
+    "location is required for at-a-place types and may be omitted for work that can be done anywhere; " +
+    "deadline is within 24 h for work at a place and up to 7 days without one. " +
     "For text answers, result.answers holds every accepted text and result.answer is the SHA-256 of the first. " +
     "An API key may allow only some types. " +
     "publish: true puts the verified result on the public map for 72 hours so other people can use it too; this makes " +
@@ -54,6 +60,34 @@ export const REQUEST_TOOL = {
       .optional()
       .describe(
         "Defaults to SHA-256 of the canonicalized arguments, so an identical retry never creates a second task",
+      ),
+  },
+} as const;
+
+export const BATCH_TOOL = {
+  name: "request_reality_verifications_batch",
+  title: "Request many real-world verifications at once",
+  description:
+    "Send one request body to many places, or many questions to one place, in a single call: the same shelf check " +
+    "at 30 shops, the same price question across a city, a set of different questions about one site. " +
+    "template is a normal request_reality_verification body without location/question; each item adds its own " +
+    "location and/or question. Up to 50 items. All items are created or none is (one error names details.index). " +
+    "Each result is a separate verification_id to poll with get_reality_verification; the total bounty is " +
+    "amount × witnesses × items and must fit the key's limits.",
+  inputSchema: {
+    template: CreateVerificationBatchRequestSchema.shape.template.omit({ principal_ref: true }).extend({
+      principal_ref: CreateVerificationRequestSchema.shape.principal_ref
+        .optional()
+        .describe("Defaults to the principal bound to PROOFMARKET_API_KEY"),
+    }),
+    items: CreateVerificationBatchRequestSchema.shape.items,
+    idempotency_key: z
+      .string()
+      .min(1)
+      .max(255)
+      .optional()
+      .describe(
+        "Defaults to SHA-256 of the canonicalized arguments, so an identical retry never creates a second batch",
       ),
   },
 } as const;

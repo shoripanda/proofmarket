@@ -142,8 +142,8 @@ window.setup = (tl) => {
     const a = card2("AI agent", "#0f766e", [[true, "Reads everything at once"], [true, "Compares, edits, builds"], [false, "No body. No senses."]], "position:absolute; left:200px; top:300px");
     const p = card2("A person", "#c2410c", [[true, "Is in the place"], [true, "Warm, cold, a smell, the view"], [false, "Holds little. Slow."]], "position:absolute; left:1020px; top:300px");
     d.append(a, p); show(a, s.voice + 0.6, { from: "translateX(-40px)" }); show(p, s.voice + 1.2, { from: "translateX(40px)" });
-    [...a.querySelectorAll(".check")].forEach((c, i) => show(c, s.voice + 1.4 + i * 0.3, { from: "translateX(-16px)", dur: 0.5 }));
-    [...p.querySelectorAll(".check")].forEach((c, i) => show(c, s.voice + 1.8 + i * 0.5, { from: "translateX(16px)", dur: 0.5 }));
+    for (const [i, c] of [...a.querySelectorAll(".check")].entries()) show(c, s.voice + 1.4 + i * 0.3, { from: "translateX(-16px)", dur: 0.5 });
+    for (const [i, c] of [...p.querySelectorAll(".check")].entries()) show(c, s.voice + 1.8 + i * 0.5, { from: "translateX(16px)", dur: 0.5 });
   }
   // 3 — together
   { const s = S[3]; const d = scene("light", s);

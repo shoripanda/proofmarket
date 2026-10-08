@@ -46,7 +46,7 @@ describe("POST /mcp", () => {
   it("request without principal_ref -> owner's principal; retry is idempotent; cancel kicks the refund", async () => {
     const mcp = await connect(t.apiKey);
     const { tools } = await mcp.listTools();
-    expect(tools).toHaveLength(7);
+    expect(tools).toHaveLength(8);
 
     const { principal_ref: _p, ...args } = createBody(t.principalId);
     type Created = { structuredContent: { verification_id: string; replayed: boolean } };

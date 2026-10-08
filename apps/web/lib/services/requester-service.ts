@@ -13,11 +13,15 @@ import {
   newId,
   POLICY_RULE_VERSION,
   SPEND_LIMIT_TIMEZONE,
+  storedAnswerKind,
+  storedAnswerSpec,
   taskIdHash,
   toMicro,
   validateAnswerSchema,
 } from "@proofmarket/core";
 import {
+  type CreateVerificationBatchRequest,
+  CreateVerificationBatchRequestSchema,
   type CreateVerificationRequest,
   CreateVerificationRequestSchema,
   DisputeRequestSchema,
@@ -40,14 +44,27 @@ import {
 import { buildResult, buildVerificationView } from "./views";
 import { activeEndpoint } from "./webhook-service";
 
-export function parseCreateBody(raw: unknown): CreateVerificationRequest {
+export function parseCreateBody(raw: unknown, index?: number): CreateVerificationRequest {
   const r = CreateVerificationRequestSchema.safeParse(raw);
+  if (!r.success) {
+    throw new ApiError("VALIDATION_FAILED", {
+      ...(index === undefined ? {} : { index }),
+      issues: r.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+    });
+  }
+  return r.data;
+}
+
+/** 01 §4.25: the batch body, then each item laid over the template and checked like a single request. */
+export function parseBatchBody(raw: unknown): CreateVerificationRequest[] {
+  const r = CreateVerificationBatchRequestSchema.safeParse(raw);
   if (!r.success) {
     throw new ApiError("VALIDATION_FAILED", {
       issues: r.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
     });
   }
-  return r.data;
+  const { template, items }: CreateVerificationBatchRequest = r.data;
+  return items.map((item, index) => parseCreateBody({ ...template, ...item }, index));
 }
 
 async function flagEnabled(db: Db, key: "tasks_create_enabled"): Promise<boolean> {
@@ -181,12 +198,13 @@ export async function createVerification(
   // The map shows a place and a short answer; text answers stay with the requester (01 §4.22).
   if (body.publish && !loc)
     throw new ApiError("VALIDATION_FAILED", { field: "publish", reason: "needs_location" });
-  if (body.publish && body.answer_schema.type === "text") {
+  if (body.publish && storedAnswerKind(body.answer_schema) === "text") {
     throw new ApiError("VALIDATION_FAILED", { field: "publish", reason: "not_for_text_answers" });
   }
   const deadline = new Date(body.deadline);
   const minMs = LIMITS.deadlineFromNow.minMinutes * 60_000;
-  const maxMs = LIMITS.deadlineFromNow.maxHours * 3600_000;
+  // Work with no place may wait up to a week (01 §4.25); work at a place stays within a day.
+  const maxMs = (loc ? LIMITS.deadlineFromNow.maxHours : LIMITS.deadlineFromNow.maxHoursAnywhere) * 3600_000;
   if (deadline.getTime() - now.getTime() < minMs || deadline.getTime() - now.getTime() > maxMs) {
     throw new ApiError("DEADLINE_OUT_OF_RANGE");
   }
@@ -244,10 +262,10 @@ export async function createVerification(
       principalId: auth.principalId,
       type: body.type,
       question: body.question,
+      acceptanceCriteria: body.acceptance_criteria ?? null,
       answerValues: body.answer_schema.type === "enum" ? body.answer_schema.values : [],
-      answerKind: body.answer_schema.type,
-      answerSpec:
-        body.answer_schema.type === "enum" ? null : (({ type: _t, ...rest }) => rest)(body.answer_schema),
+      answerKind: storedAnswerKind(body.answer_schema),
+      answerSpec: storedAnswerSpec(body.answer_schema),
       targetLat: loc?.lat ?? null,
       targetLng: loc?.lng ?? null,
       placeId,
@@ -303,6 +321,29 @@ export async function createVerification(
     metadata: { place_id: placeId, total: fromMicro(total) },
   });
   return { status: 201, body: createdBody(row) };
+}
+
+/**
+ * 01 §4.25: every item is created like a single request, in this one transaction, so a batch either
+ * exists in full or not at all. Item i uses `<key>#i` as its idempotency key; limits 15-17 add up.
+ */
+export async function createVerificationBatch(
+  app: AppContext,
+  tx: Db,
+  auth: RequesterAuth,
+  bodies: CreateVerificationRequest[],
+  idempotencyKey: string,
+): Promise<{ status: 201; body: { verifications: CreateResult["body"][] } }> {
+  const verifications: CreateResult["body"][] = [];
+  for (const [index, body] of bodies.entries()) {
+    try {
+      verifications.push((await createVerification(app, tx, auth, body, `${idempotencyKey}#${index}`)).body);
+    } catch (e) {
+      if (e instanceof ApiError) throw new ApiError(e.code, { ...e.details, index });
+      throw e;
+    }
+  }
+  return { status: 201, body: { verifications } };
 }
 
 export function createdBody(row: TaskRow): CreateResult["body"] {

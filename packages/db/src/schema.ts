@@ -171,6 +171,8 @@ export const verificationRequests = pgTable(
       .references(() => principals.id),
     type: text("type").notNull(),
     question: text("question").notNull(),
+    /** What the requester will accept, shown to the worker and the reviewer (01 §4.25). */
+    acceptanceCriteria: text("acceptance_criteria"),
     answerValues: text("answer_values").array().notNull(),
     /** enum | number | text (01 §4.15). answer_values is empty unless enum. */
     answerKind: text("answer_kind").notNull().default("enum"),
@@ -219,6 +221,10 @@ export const verificationRequests = pgTable(
     check("vr_min_tier_chk", sql`min_worker_tier is null or min_worker_tier in ('standard','trusted')`),
     check("vr_type_chk", oneOf("type", TASK_TYPES)),
     check("vr_question_len_chk", sql`char_length(question) <= 1000`),
+    check(
+      "vr_acceptance_len_chk",
+      sql`acceptance_criteria is null or char_length(acceptance_criteria) <= 500`,
+    ),
     check("vr_answer_kind_chk", sql`answer_kind in ('enum','number','text')`),
     check(
       "vr_location_chk",
