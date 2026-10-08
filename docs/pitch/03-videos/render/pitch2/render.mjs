@@ -9,9 +9,9 @@ const D = import.meta.dirname;
 const [out, music] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const preview = process.argv.includes("--preview"); // 2 fps, no audio: for checking layout
 const FPS = preview ? 2 : 30;
-const GAP = 0.5; // silence between narration lines
+const GAP = 0.4; // silence between narration lines
 const LEAD = 0.35; // the picture changes this much before the voice starts
-const TAIL = 2.5; // seconds after the last line
+const TAIL = 2.0; // seconds after the last line
 
 const dur = (f) =>
   Number(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]));
