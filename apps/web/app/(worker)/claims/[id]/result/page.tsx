@@ -7,7 +7,7 @@ import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
 import { langHref, pick } from "@/lib/lang";
 import { reasonText } from "@/lib/reasons";
-import type { ClaimDetail } from "../../../lib-claim";
+import { type ClaimDetail, useClaimCues } from "../../../lib-claim";
 
 export default function ResultPage() {
   const lang = useLang();
@@ -17,6 +17,7 @@ export default function ResultPage() {
   const [c, setC] = useState<ClaimDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const go = (p: string) => router.push(langHref(lang, p));
+  useClaimCues(c);
 
   const last = c?.submissions.at(-1);
   const reviewing = last?.state === "CHECKING";

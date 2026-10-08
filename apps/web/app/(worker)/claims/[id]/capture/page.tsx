@@ -5,10 +5,12 @@ import { LIMITS } from "@proofmarket/core/domain/limits";
 // -> upload each photo -> submit (01 §4.18). Photos come only from the in-app camera; there is no gallery picker (07 §2).
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Notice, remaining, Shell, useNow } from "@/components/ui";
+import { Button, ListenButton, Notice, remaining, Shell, SpeakButton, useNow } from "@/components/ui";
 import { ANSWER_JA, answerText, taskTypeText } from "@/lib/answers";
+import { captureGuide } from "@/lib/capture-guide";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
+import { cue } from "@/lib/client/sound";
 import { langHref, pick } from "@/lib/lang";
 import { AttestationBand } from "../../../attestation-band";
 import type { ClaimDetail } from "../../../lib-claim";
@@ -178,7 +180,7 @@ export default function CapturePage() {
         if (!put.ok) throw new Error(`upload ${put.status}`);
         refs.push(up.upload_id);
       }
-      await api(`/v1/worker/tasks/${claim.verification_id}/evidence`, {
+      const sent = await api<{ state: string }>(`/v1/worker/tasks/${claim.verification_id}/evidence`, {
         method: "POST",
         idem: `ev-${refs[0]}`,
         body: {
@@ -192,6 +194,8 @@ export default function CapturePage() {
           evidence: refs.map((object_ref) => ({ type: "photo", object_ref })),
         },
       });
+      // Sent back at once by a mechanical check: the result screen plays "back" instead.
+      if (sent.state !== "INVALID") cue("ok");
       router.replace(langHref(lang, `/claims/${id}/result`));
     } catch (e) {
       setErr(errorText(e, lang));
@@ -200,12 +204,24 @@ export default function CapturePage() {
   }
 
   const expired = ch ? new Date(ch.expires_at).getTime() <= now : false;
+  // 13 §6: what the photo must show, laid over the camera (always shown, not ticked off).
+  const guide = claim ? captureGuide(claim.acceptance_criteria, types[claim.type as TaskType]?.howTo) : [];
   const full = photos.length >= MAX_PHOTOS;
   return (
     <Shell title={pick(lang, "撮影と回答", "Shoot and answer")} back={`/claims/${id}`}>
       <AttestationBand lang={lang} attestation={claim?.attestation} className="rounded-2xl" />
       {claim ? (
-        <p className="whitespace-pre-wrap rounded-2xl bg-slate-50 p-3 text-sm">{claim.question}</p>
+        <div className="flex items-start gap-2 rounded-2xl bg-slate-50 p-3">
+          <p className="flex-1 whitespace-pre-wrap text-sm">{claim.question}</p>
+          <ListenButton
+            text={[
+              claim.question,
+              claim.acceptance_criteria
+                ? `${pick(lang, "受け取りの条件。", "Accepted when: ")}${claim.acceptance_criteria}`
+                : "",
+            ].join("\n")}
+          />
+        </div>
       ) : null}
       {claim?.acceptance_criteria ? (
         <p className="whitespace-pre-wrap rounded-2xl bg-amber-50 p-3 text-sm leading-relaxed text-amber-900">
@@ -225,8 +241,21 @@ export default function CapturePage() {
       {err ? <Notice tone="error">{err}</Notice> : null}
 
       {/* Stays mounted so the camera keeps running; hidden once the photo limit is reached. */}
-      <div className={`overflow-hidden rounded-2xl bg-black ${full ? "hidden" : ""}`}>
+      <div className={`relative overflow-hidden rounded-2xl bg-black ${full ? "hidden" : ""}`}>
         <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full object-cover" />
+        {guide.length ? (
+          <ul
+            aria-label={pick(lang, "撮影の案内", "What to capture")}
+            className="pointer-events-none absolute inset-x-0 bottom-0 space-y-1 bg-black/55 px-3 py-2 text-sm font-medium leading-snug text-white"
+          >
+            {guide.map((g) => (
+              <li key={g} className="flex gap-2">
+                <span aria-hidden="true">□</span>
+                <span>{g}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
       <p className="text-xs text-slate-500">
         {types[claim?.type as TaskType]?.howTo ??
@@ -372,13 +401,23 @@ export default function CapturePage() {
                       placeholder={pick(lang, "例: 1280", "e.g. 1280")}
                     />
                   ) : (
-                    <textarea
-                      value={fields[f.key] ?? ""}
-                      onChange={(e) => setFields((s) => ({ ...s, [f.key]: e.target.value }))}
-                      maxLength={f.max_chars ?? 4000}
-                      rows={3}
-                      className="rounded-2xl border border-slate-300 px-4 py-3 text-base leading-relaxed"
-                    />
+                    <>
+                      <textarea
+                        value={fields[f.key] ?? ""}
+                        onChange={(e) => setFields((s) => ({ ...s, [f.key]: e.target.value }))}
+                        maxLength={f.max_chars ?? 4000}
+                        rows={3}
+                        className="rounded-2xl border border-slate-300 px-4 py-3 text-base leading-relaxed"
+                      />
+                      <SpeakButton
+                        onText={(add) =>
+                          setFields((s) => ({
+                            ...s,
+                            [f.key]: add(s[f.key] ?? "").slice(0, f.max_chars ?? 4000),
+                          }))
+                        }
+                      />
+                    </>
                   )}
                 </div>
               ))}
@@ -420,6 +459,7 @@ export default function CapturePage() {
               <span className="text-right text-xs text-slate-400">
                 {pick(lang, `${answer.length} 字`, `${answer.length} chars`)}
               </span>
+              <SpeakButton onText={(add) => setAnswer((a) => add(a).slice(0, schema.max_chars ?? 4000))} />
             </label>
           ) : (
             <div className="grid gap-3">
