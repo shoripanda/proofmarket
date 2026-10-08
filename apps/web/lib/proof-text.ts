@@ -11,6 +11,8 @@ export interface ProofFacts {
   answer_kind: AnswerKind;
   answer: string | null;
   verified_at: string;
+  /** 13 §5: what the agent asked a person to confirm it did; the headline names it. */
+  agent_attestation?: { description: string } | null;
 }
 
 const jst = (iso: string, lang: Lang, opts: Intl.DateTimeFormatOptions) =>
@@ -56,7 +58,13 @@ export function proofAnswer(f: Pick<ProofFacts, "answer" | "answer_kind">, lang:
   return answerLabel(lang, f.answer);
 }
 
-export function proofHeadline(f: Pick<ProofFacts, "status" | "reason">, lang: Lang = "ja"): string {
+export function proofHeadline(
+  f: Pick<ProofFacts, "status" | "reason" | "agent_attestation">,
+  lang: Lang = "ja",
+): string {
+  const did = f.agent_attestation?.description;
+  if (f.status === "VERIFIED" && did)
+    return pick(lang, `${did} が行われたことを、人が確かめました`, `A person confirmed that ${did} was done`);
   if (f.status === "VERIFIED") return pick(lang, "人が確かめました", "Verified by a person");
   if (f.status === "EXPIRED")
     return pick(lang, "期限までに確かめられませんでした", "Not verified before the deadline");

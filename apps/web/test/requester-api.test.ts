@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleCancel, handleCreate, handleCreateBatch, handleGet } from "../lib/handlers/requester";
 import { handleClaimDetail, handleTaskDetail } from "../lib/handlers/worker";
+import { proofHeadline } from "../lib/proof-text";
 import { setAllowedTaskTypes } from "../lib/services/admin-service";
 import { publicResult } from "../lib/services/public-service";
 import { call, createBody, createTestApp, jsonReq, SHOP } from "./support/app";
@@ -313,7 +314,15 @@ describe("01 §4.25: the requester decides the shape of the work", () => {
     );
     expect(((await claim.json()) as { attestation: unknown }).attestation).toEqual(want);
     await witness(t, alice, id, { answer: "OPEN", claimId: claim_id });
-    expect((await publicResult(t.app, id)).agent_attestation).toEqual(want);
+    const pub = await publicResult(t.app, id);
+    expect(pub.agent_attestation).toEqual(want);
+    expect(proofHeadline(pub, "ja")).toBe(
+      "Delivered the parcel to room 302 が行われたことを、人が確かめました",
+    );
+    expect(proofHeadline(pub, "en")).toBe(
+      "A person confirmed that Delivered the parcel to room 302 was done",
+    );
+    expect(proofHeadline({ ...pub, agent_attestation: null }, "ja")).toBe("人が確かめました");
 
     for (const bad of [
       { subject: "agent_action", description: "x".repeat(201) },

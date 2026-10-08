@@ -220,7 +220,17 @@ export type FormFieldView =
       max?: number;
       required?: boolean;
     }
-  | { type: "text"; key: string; label: string; max_chars?: number; required?: boolean };
+  | { type: "text"; key: string; label: string; max_chars?: number; required?: boolean }
+  | {
+      /** Sense index (13 §4): a whole number from `min` (1) to `max` (5 or 10). */
+      type: "scale";
+      key: string;
+      label: string;
+      min?: number;
+      max: number;
+      labels: [string, string];
+      required?: boolean;
+    };
 
 export type AnswerSchemaView =
   | { type: "enum"; values: string[] }
@@ -231,7 +241,9 @@ export type AnswerSchemaView =
 /** One line telling the worker how to answer (01 §4.15). */
 export function answerFormat(lang: Lang, s: AnswerSchemaView | undefined): string {
   const choices = (s?.type === "enum" ? s.values : []).map((v) => answerLabel(lang, v)).join(" / ");
-  const labels = (s?.type === "form" ? s.fields : []).map((f) => f.label).join(lang === "en" ? ", " : "、");
+  const labels = (s?.type === "form" ? s.fields : [])
+    .map((f) => (f.type === "scale" ? `${f.label}${scaleFormat(lang, f)}` : f.label))
+    .join(lang === "en" ? ", " : "、");
   if (lang === "en") {
     if (!s || s.type === "enum") return `Choose one: ${choices}`;
     if (s.type === "number") return `Answer with a number${s.unit ? ` (unit: ${s.unit})` : ""}`;
@@ -243,4 +255,7 @@ export function answerFormat(lang: Lang, s: AnswerSchemaView | undefined): strin
   if (s.type === "form") return `${s.fields.length} 項目に答える: ${labels}`;
   return `文章で答える${s.max_chars ? `（${s.max_chars}字まで）` : ""}`;
 }
+/** 13 §4: how a scale field is answered, e.g. "（尺度で答える 1〜5）". */
+export const scaleFormat = (lang: Lang, f: { min?: number; max: number }) =>
+  lang === "en" ? ` (on a scale of ${f.min ?? 1}-${f.max})` : `（尺度で答える ${f.min ?? 1}〜${f.max}）`;
 export const answerFormatJa = (s: AnswerSchemaView | undefined) => answerFormat("ja", s);

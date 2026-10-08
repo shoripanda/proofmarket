@@ -34,7 +34,8 @@ async function formTask(witnesses: number) {
     type: "SITE_REPORT",
     question: "How does the cafe feel right now?",
     answer_schema: FORM,
-    assurance: { required_witnesses: witnesses, quorum: witnesses },
+    // high is 3 witnesses (quorum 2); the task still waits for all three before the result is saved
+    assurance: witnesses === 3 ? { level: "high" } : { required_witnesses: witnesses, quorum: witnesses },
   });
 }
 
@@ -76,7 +77,12 @@ describe("sense index (13 §4)", () => {
       await witness(t, token, id, { answer: JSON.stringify({ noise, clean: 5, seats: i }) });
     }
     const result = await getResult(id);
-    expect((result?.aggregate as Record<string, unknown>).noise).toEqual({ median: 2, min: 1, max: 5, n: 4 });
+    expect(result?.aggregate).toHaveProperty("noise", {
+      median: 2,
+      min: 1,
+      max: 5,
+      n: 4,
+    });
 
     const two = await formTask(2);
     for (const i of [0, 1]) {

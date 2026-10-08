@@ -8,12 +8,14 @@ import { type AnswerSchemaView, answerFormat, taskTypeText } from "@/lib/answers
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
 import { langHref, pick } from "@/lib/lang";
+import { AttestationBand, type AttestationView } from "../../attestation-band";
 
 interface Task {
   verification_id: string;
   type: string;
   question: string;
   acceptance_criteria: string | null;
+  attestation: AttestationView | null;
   answer_values: string[];
   answer_schema: AnswerSchemaView;
   location: { lat: number; lng: number; radius_m: number } | null;
@@ -61,6 +63,7 @@ export default function TaskDetailPage() {
               {pick(lang, "確かめること・", "What to check · ")}
               {types[t.type as TaskType]?.name ?? t.type}
             </p>
+            <AttestationBand lang={lang} attestation={t.attestation} className="mt-2" />
             <p className="mt-1 text-xl font-bold leading-snug">{t.question}</p>
             {t.acceptance_criteria ? (
               <p className="mt-3 whitespace-pre-wrap rounded-xl bg-amber-50 p-3 text-sm leading-relaxed text-amber-900">
