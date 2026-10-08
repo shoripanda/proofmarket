@@ -20,6 +20,7 @@ import {
   WEBHOOK_EVENTS,
 } from "../domain/enums.ts";
 import { LIMITS } from "../domain/limits.ts";
+import { LOCATION_PRIVACY } from "../domain/location-privacy.ts";
 import { REQUIRABLE_TIERS, WORKER_TIERS } from "../domain/trust.ts";
 import { ERROR_CATALOG, type ErrorCode } from "../errors.ts";
 
@@ -271,6 +272,11 @@ export const CreateVerificationRequestSchema = z
      * the answer and the time public. Only for tasks with a location and a choice or number answer.
      */
     publish: z.boolean().optional(),
+    /**
+     * How precisely public surfaces (proof page, map, dataset) show the place (13 §9 PR 7). "coarse" rounds it to
+     * the centre of its geohash-6 cell, about 1 km. The requester always sees it exact. Default "exact".
+     */
+    location_privacy: z.enum(LOCATION_PRIVACY).optional(),
     /** Return a recent shared VERIFIED result for the same place instead of sending someone (01 §4.9). */
     reuse: z
       .object({ max_age_seconds: z.number().int().min(60).max(3600) })
@@ -416,6 +422,12 @@ export const GetVerificationResponseSchema = z.object({
   attestation: AgentAttestationSchema.nullable(),
   answer_schema: AnswerSchemaSpec,
   location: LocationSchema.nullable(),
+  location_privacy: z.enum(LOCATION_PRIVACY),
+  /**
+   * The salt of the evidence bundle's location_commitment (13 §9 PR 7); null on work with no place. Give it out
+   * together with the place only to someone who should be able to check that the work happened there.
+   */
+  location_salt: z.string().nullable(),
   deadline: IsoDateTime,
   /** Set on a task created by a dispute: the original task (01 §4.12). */
   recheck_of: VerificationIdSchema.nullable(),
@@ -492,6 +504,8 @@ export const PublicVerificationResultSchema = VerificationResultSchema.omit({
     .object({
       question: z.string(),
       location: z.object({ lat: z.number(), lng: z.number() }),
+      /** Meters the place may be off by: 1200 when the requester asked for "coarse" (13 §9 PR 7); null when exact. */
+      location_precision_m: z.number().int().nullable(),
       place_name: z.string().nullable(),
     })
     .nullable(),
@@ -535,6 +549,8 @@ export const PublicMapSchema = z.object({
       answer_kind: z.enum(["enum", "number"]),
       unit: z.string().nullable(),
       location: z.object({ lat: z.number(), lng: z.number() }),
+      /** Meters the place may be off by: 1200 when the requester asked for "coarse" (13 §9 PR 7); null when exact. */
+      location_precision_m: z.number().int().nullable(),
       place_name: z.string().nullable(),
       witnesses: z.number().int(),
       verified_at: IsoDateTime,
@@ -553,6 +569,8 @@ export const PublicDatasetRowSchema = z.object({
   answer_kind: z.enum(["enum", "number"]),
   unit: z.string().nullable(),
   location: z.object({ lat: z.number(), lng: z.number() }),
+  /** Meters the place may be off by: 1200 when the requester asked for "coarse" (13 §9 PR 7); null when exact. */
+  location_precision_m: z.number().int().nullable(),
   place_name: z.string().nullable(),
   witnesses: z.number().int(),
   verified_at: IsoDateTime,

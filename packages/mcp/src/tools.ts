@@ -52,6 +52,8 @@ export const REQUEST_TOOL = {
     "publish: true puts the verified result on the public map for 72 hours so other people can use it too; this makes " +
     "the question, place, answer and time public, so set it only for facts about public places with nothing private " +
     "in the question (needs a location and a choice or number answer). " +
+    'location_privacy: "coarse" shows the place on public pages only to about 1 km (and hides the shop name); ' +
+    "the requester still sees it exact. " +
     "Without an API key, any agent with a Solana wallet can make the same request over HTTP by paying in USDC with " +
     "x402: POST /v1/x402/verifications (same body without principal_ref) answers 402 with the payment terms.",
   inputSchema: {

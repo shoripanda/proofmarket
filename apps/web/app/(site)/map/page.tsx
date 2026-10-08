@@ -4,6 +4,7 @@ import { LIMITS } from "@proofmarket/core";
 import type { PublicMap } from "@proofmarket/core/schemas/api";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ApproxPlace } from "@/components/approx-place";
 import { type MapPoint, PublicMapView } from "@/components/public-map";
 import { PageHero, Section } from "@/components/site";
 import { answerLabel, taskTypeText } from "@/lib/answers";
@@ -74,6 +75,7 @@ export default async function MapPage() {
     when: `${when(i)}${sep}${people(i.witnesses)}`,
     href: langHref(lang, i.result_url),
     positive: POSITIVE.has(i.answer),
+    precisionM: i.location_precision_m,
   }));
   const types = taskTypeText(lang);
   return (
@@ -117,8 +119,8 @@ export default async function MapPage() {
             <p className="mt-2 text-xs text-slate-500">
               {pick(
                 lang,
-                "印の位置は、依頼者が指定した確認先の場所です。確かめた人のいた位置や写真は載せていません。確かめた時点の結果なので、時間がたつと状況が変わることがあります。",
-                "Each marker is the place the requester asked about, never where the worker stood, and photos are not shown. A result reflects the moment it was checked; things change.",
+                "印の位置は、依頼者が指定した確認先の場所です。確かめた人のいた位置や写真は載せていません。薄い円は、依頼者が場所をぼかすよう選んだ結果で、円のどこか（約 1 km）を表します。確かめた時点の結果なので、時間がたつと状況が変わることがあります。",
+                "Each marker is the place the requester asked about, never where the worker stood, and photos are not shown. A faint circle means the requester chose to blur the place: it is somewhere in that circle (about 1 km). A result reflects the moment it was checked; things change.",
               )}
             </p>
             {m.items.length === 0 ? (
@@ -142,6 +144,9 @@ export default async function MapPage() {
                         {i.place_name ? `${sep}${i.place_name}` : ""}
                       </p>
                       <p className="mt-0.5 break-words text-sm text-slate-700">{i.question}</p>
+                      {i.location_precision_m ? (
+                        <ApproxPlace precisionM={i.location_precision_m} lang={lang} />
+                      ) : null}
                       <p className="mt-1 text-lg font-bold">{answerText(i, lang)}</p>
                       <p className="text-xs text-slate-500">
                         {when(i)}

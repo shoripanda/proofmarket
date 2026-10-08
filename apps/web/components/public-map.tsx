@@ -15,6 +15,8 @@ export interface MapPoint {
   href: string;
   /** A plain "yes" kind of answer is drawn in teal, the rest in slate. */
   positive: boolean;
+  /** Set on a coarse place (13 §9 PR 7): drawn as a see-through area this wide instead of a pin. */
+  precisionM: number | null;
 }
 
 const TOKYO: [number, number] = [35.6812, 139.7671];
@@ -51,15 +53,24 @@ export function PublicMapView({ points }: { points: MapPoint[] }) {
         link.href = p.href;
         link.textContent = linkText;
         box.append(title, answer, when, link);
-        L.circleMarker([p.lat, p.lng], {
-          radius: 9,
-          color: "#ffffff",
-          weight: 2,
-          fillColor: p.positive ? "#0f766e" : "#475569",
-          fillOpacity: 0.95,
-        })
-          .addTo(map)
-          .bindPopup(box);
+        const fill = p.positive ? "#0f766e" : "#475569";
+        const mark = p.precisionM
+          ? L.circle([p.lat, p.lng], {
+              radius: p.precisionM / 2,
+              color: fill,
+              weight: 1,
+              dashArray: "4 4",
+              fillColor: fill,
+              fillOpacity: 0.18,
+            })
+          : L.circleMarker([p.lat, p.lng], {
+              radius: 9,
+              color: "#ffffff",
+              weight: 2,
+              fillColor: fill,
+              fillOpacity: 0.95,
+            });
+        mark.addTo(map).bindPopup(box);
       }
       if (points.length > 0) {
         map.fitBounds(L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number])).pad(0.3), {

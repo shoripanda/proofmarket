@@ -559,6 +559,13 @@
                   "publish": {
                     "type": "boolean"
                   },
+                  "location_privacy": {
+                    "type": "string",
+                    "enum": [
+                      "exact",
+                      "coarse"
+                    ]
+                  },
                   "reuse": {
                     "type": "object",
                     "properties": {
@@ -1264,6 +1271,13 @@
                       },
                       "publish": {
                         "type": "boolean"
+                      },
+                      "location_privacy": {
+                        "type": "string",
+                        "enum": [
+                          "exact",
+                          "coarse"
+                        ]
                       },
                       "reuse": {
                         "type": "object",
@@ -2007,6 +2021,13 @@
                   "publish": {
                     "type": "boolean"
                   },
+                  "location_privacy": {
+                    "type": "string",
+                    "enum": [
+                      "exact",
+                      "coarse"
+                    ]
+                  },
                   "reuse": {
                     "type": "object",
                     "properties": {
@@ -2620,6 +2641,17 @@
                         "radius_m"
                       ]
                     },
+                    "location_privacy": {
+                      "type": "string",
+                      "enum": [
+                        "exact",
+                        "coarse"
+                      ]
+                    },
+                    "location_salt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "deadline": {
                       "type": "string",
                       "format": "date-time",
@@ -3233,6 +3265,8 @@
                     "attestation",
                     "answer_schema",
                     "location",
+                    "location_privacy",
+                    "location_salt",
                     "deadline",
                     "recheck_of",
                     "recheck",
@@ -3742,6 +3776,17 @@
                         "radius_m"
                       ]
                     },
+                    "location_privacy": {
+                      "type": "string",
+                      "enum": [
+                        "exact",
+                        "coarse"
+                      ]
+                    },
+                    "location_salt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "deadline": {
                       "type": "string",
                       "format": "date-time",
@@ -4355,6 +4400,8 @@
                     "attestation",
                     "answer_schema",
                     "location",
+                    "location_privacy",
+                    "location_salt",
                     "deadline",
                     "recheck_of",
                     "recheck",
@@ -5314,6 +5361,13 @@
                       },
                       "publish": {
                         "type": "boolean"
+                      },
+                      "location_privacy": {
+                        "type": "string",
+                        "enum": [
+                          "exact",
+                          "coarse"
+                        ]
                       },
                       "reuse": {
                         "type": "object",
@@ -10332,6 +10386,12 @@
                             "lng"
                           ]
                         },
+                        "location_precision_m": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
                         "place_name": {
                           "nullable": true,
                           "type": "string"
@@ -10340,6 +10400,7 @@
                       "required": [
                         "question",
                         "location",
+                        "location_precision_m",
                         "place_name"
                       ]
                     }
@@ -11061,6 +11122,12 @@
                               "lng"
                             ]
                           },
+                          "location_precision_m": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "place_name": {
                             "nullable": true,
                             "type": "string"
@@ -11087,6 +11154,7 @@
                           "answer_kind",
                           "unit",
                           "location",
+                          "location_precision_m",
                           "place_name",
                           "witnesses",
                           "verified_at",
@@ -11288,6 +11356,12 @@
                               "lng"
                             ]
                           },
+                          "location_precision_m": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "place_name": {
                             "nullable": true,
                             "type": "string"
@@ -11348,6 +11422,7 @@
                           "answer_kind",
                           "unit",
                           "location",
+                          "location_precision_m",
                           "place_name",
                           "witnesses",
                           "verified_at",

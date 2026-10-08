@@ -109,6 +109,7 @@ function decide(valid: { answer: string }[], quorum: number): Outcome {
   "type": "PLACE_STATUS_VERIFICATION",
   "question_hash": "sha256:...",
   "answer_values": ["CLOSED", "OPEN", "UNCLEAR"],
+  "location_commitment": "sha256:...",
   "assurance": { "required_witnesses": 1, "quorum": 1 },
   "submissions": [
     {
@@ -129,6 +130,8 @@ function decide(valid: { answer: string }[], quorum: number): Outcome {
 - 配列 `answer_values` は辞書順に並べる
 - `witness_ref` は `HMAC-SHA256(WORKER_REF_SALT, worker_id + ":" + verification_id)`。タスクごとに値が変わるので、バンドルを並べても同じ worker を結び付けられない。運営者は DB の対応から追える
 - 座標・写真・質問文そのものは入れない
+- `location_commitment`（13 §9 PR 7、2026-10-08）は、場所のある依頼にだけ入れる。値は `SHA-256("proofmarket:location:v1:" + lat.toFixed(6) + "," + lng.toFixed(6) + ":" + salt)` を `sha256:` 付きの 16 進で書いたもの。緯度経度は依頼者が指定した場所で、worker の位置ではない。`evidence_root` の計算に含まれるので、後から場所を差し替えられない。この欄が無いバンドル（場所の無い依頼と、この欄より前に作ったもの）の root は変わらない
+- salt は `HMAC-SHA256(WORKER_REF_SALT, "location:" + verification_id)` の 16 進。DB には置かず、毎回導く。依頼者は `GET /v1/verifications/{id}` の `location_salt` で受け取り、場所と一緒に渡した相手だけがコミットメントを確かめられる。設計書の当初案は公開値の `task_id_hash` を salt にしていたが、それでは総当たりで場所が割れる。`"coarse"` で公開される区画は小数 6 桁で約 6×10⁷ 点しかなく、数秒で全部試せる。そのため秘密の salt に替えた
 
 ### 5.2 計算
 
