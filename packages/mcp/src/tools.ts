@@ -43,6 +43,8 @@ export const REQUEST_TOOL = {
     "deadline is within 24 h for work at a place and up to 7 days without one. " +
     "For text answers, result.answers holds every accepted text and result.answer is the SHA-256 of the first. " +
     "An API key may allow only some types. " +
+    "bounty.max_amount and ramp_minutes raise the reward from amount toward max_amount until someone takes the task " +
+    "(the amount at the first claim is what every witness is paid; max_amount × witnesses is reserved). " +
     "publish: true puts the verified result on the public map for 72 hours so other people can use it too; this makes " +
     "the question, place, answer and time public, so set it only for facts about public places with nothing private " +
     "in the question (needs a location and a choice or number answer). " +

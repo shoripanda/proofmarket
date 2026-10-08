@@ -14,6 +14,7 @@ export const ProofmarketErrorCode = {
   RecipientAccountMismatch: 6012,
   InsufficientVaultBalance: 6013,
   NotExpired: 6014,
+  AmountIncrease: 6015,
 };
 
 export type ProofmarketErrorName = keyof typeof ProofmarketErrorCode;

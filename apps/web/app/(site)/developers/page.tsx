@@ -227,6 +227,10 @@ const COPY = {
           ],
           ["bounty", "1人あたりの報酬。試験運用中は Solana Devnet のテスト用 USDC"],
           [
+            "bounty.max_amount・ramp_minutes（任意）",
+            "報酬の上限と、上がりきるまでの分数（10〜1440、既定は締切まで）。報酬は amount から直線で上がり、最初に誰かが引き受けた時点の額で全員分が決まる。作成時に max_amount × 人数を引き当て、使わない分はその時点で残高に戻る。x402 では使えない",
+          ],
+          [
             "worker_requirements（任意）",
             '{ "min_tier": "standard" | "trusted" } で、引き受けられる worker を記録の良い人に絞る。trusted は有効な提出が10件以上で、複数人の依頼での一致率が90%以上の人',
           ],
@@ -493,6 +497,10 @@ const COPY = {
             `How many people should check (required_witnesses, up to ${LIMITS.witnesses.max}) and how many must agree (quorum). { "level": "fast" | "standard" | "high" } means one person, two agreeing, or two of three`,
           ],
           ["bounty", "Per person. Test USDC on Solana Devnet during the pilot"],
+          [
+            "bounty.max_amount / ramp_minutes (optional)",
+            "A ceiling for the reward and the minutes it takes to get there (10-1440, default: until the deadline). The reward climbs in a straight line from amount, and the amount when the first person claims is what everyone is paid. max_amount × people is reserved at creation; the unused part returns to the balance at that moment. Not available over x402",
+          ],
           [
             "worker_requirements (optional)",
             '{ "min_tier": "standard" | "trusted" } restricts who may claim to workers with a good record. trusted means 10 or more valid submissions and at least 90% agreement on multi-person requests',

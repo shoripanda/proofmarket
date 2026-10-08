@@ -132,6 +132,7 @@ fn finalize_args(outcome: Outcome, recipients: Vec<Pubkey>) -> FinalizeVerificat
         evidence_root: [0x11; 32],
         result_hash: [0x22; 32],
         recipients,
+        amount_per_witness: None,
     }
 }
 
@@ -953,6 +954,64 @@ fn p_set_04_settle_after_refund_fails() {
     let funded = env.fund(task_args(81));
     let ix = env.ix_settle(&funded, &[]);
     assert_err(env.as_operator(ix), ProofMarketError::InvalidStatus);
+}
+
+#[test]
+fn p_set_05_settles_lowered_amount() {
+    // v1.1 (13 §1): a rising bounty funds max per witness and finalizes the settled amount.
+    let mut env = Env::new();
+    let task = env.fund(task_args(82));
+    let (wallets, atas) = env.new_recipients(2);
+    let settled = AMOUNT * 6 / 10;
+    let mut args = finalize_args(Outcome::Verified, wallets);
+    args.amount_per_witness = Some(settled);
+    let ix = env.ix_finalize(&task, args);
+    assert_ok(env.as_verifier(ix));
+    assert_eq!(env.task(&task).amount_per_witness, settled);
+
+    let ix = env.ix_settle(&task, &atas);
+    let logs = assert_ok(env.as_operator(ix));
+    for ata in &atas {
+        assert_eq!(env.token_balance(ata), settled);
+    }
+    // Funded 3 * AMOUNT; paid 2 * settled; everything else is back in the treasury.
+    assert_eq!(
+        env.token_balance(&env.treasury),
+        TREASURY_START - 2 * settled
+    );
+    let ev: TaskSettled = find_event(&logs).unwrap();
+    assert_eq!(
+        (ev.paid_total, ev.remainder),
+        (2 * settled, 3 * AMOUNT - 2 * settled)
+    );
+    assert_eq!(env.task(&task).paid_total, 2 * settled);
+}
+
+#[test]
+fn p_fin_04_amount_cannot_rise_or_be_zero() {
+    let mut env = Env::new();
+    let task = env.fund(task_args(83));
+    let (wallets, _) = env.new_recipients(2);
+
+    let mut args = finalize_args(Outcome::Verified, wallets.clone());
+    args.amount_per_witness = Some(AMOUNT + 1);
+    let ix = env.ix_finalize(&task, args);
+    assert_err(env.as_verifier(ix), ProofMarketError::AmountIncrease);
+
+    let mut args = finalize_args(Outcome::Verified, wallets.clone());
+    args.amount_per_witness = Some(0);
+    let ix = env.ix_finalize(&task, args);
+    assert_err(env.as_verifier(ix), ProofMarketError::InvalidAmount);
+
+    let t = env.task(&task);
+    assert_eq!((t.status, t.amount_per_witness), (TaskStatus::Funded, AMOUNT));
+
+    // The same amount is allowed (no change).
+    let mut args = finalize_args(Outcome::Verified, wallets);
+    args.amount_per_witness = Some(AMOUNT);
+    let ix = env.ix_finalize(&task, args);
+    assert_ok(env.as_verifier(ix));
+    assert_eq!(env.task(&task).amount_per_witness, AMOUNT);
 }
 
 // ---------------------------------------------------------------------------------------------

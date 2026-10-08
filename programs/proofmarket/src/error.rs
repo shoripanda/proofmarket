@@ -33,4 +33,6 @@ pub enum ProofMarketError {
     InsufficientVaultBalance,
     #[msg("Task deadline has not passed")]
     NotExpired,
+    #[msg("Finalized amount_per_witness may not exceed the funded amount")]
+    AmountIncrease,
 }

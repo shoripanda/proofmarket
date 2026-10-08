@@ -120,6 +120,8 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 | 11 | `evidence_requirements.photo` と `task_nonce` が true（MVP では外せない） | 400 `VALIDATION_FAILED` |
 | 12 | `1 ≤ quorum ≤ required_witnesses ≤ MAX_WITNESSES`（PR-14 までは 1、以降は 5）。`assurance` は人数を直接書くか、`{ "level": "fast" | "standard" | "high" }` で選ぶ（2026-10-04 追加）。fast = 1 人、standard = 2 人一致、high = 3 人中 2 人。level は保存前に人数へ置き換え、GET では人数と一致する level を返す | 400 `VALIDATION_FAILED` |
 | 13 | `bounty.asset = "USDC"`、`network = "solana-devnet"`、`amount > 0`、小数 6 桁以内 | 400 `VALIDATION_FAILED` |
+| 13b | `bounty.max_amount`（任意）は `amount` 以上で小数 6 桁以内。`bounty.ramp_minutes`（任意）は 10〜1440 で、`max_amount` があるときだけ書ける。省くと締切までの分数（10〜1440 に収める）。15〜17 の総額は `max_amount × 人数` で数える（13 §1）。x402 では `max_amount` を受け付けない | 400 `VALIDATION_FAILED` |
+| 13c | `RISING_BOUNTY_ENABLED` が真でなければ `max_amount` を断る（プログラム v1.1 のデプロイ前の安全弁） | 400 `VALIDATION_FAILED`（`details.reason = "disabled"`） |
 | 14 | 質問文のポリシー検査（08 章 3 節） | 422 `TASK_POLICY_VIOLATION`（`details.rule_id` 付き） |
 | 13a | `worker_requirements.min_tier` は `standard` か `trusted`（任意。01 §4.11） | 400 `VALIDATION_FAILED` |
 | 14a | `reuse` があれば再利用できる結果を探す（01 §4.9）。見つかればここで 200 を返し、15 以降は行わない | 200 `reused: true` |

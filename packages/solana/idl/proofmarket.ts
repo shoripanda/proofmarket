@@ -486,6 +486,11 @@ export type Proofmarket = {
       name: "notExpired";
       msg: "Task deadline has not passed";
     },
+    {
+      code: 6015;
+      name: "amountIncrease";
+      msg: "Finalized amount_per_witness may not exceed the funded amount";
+    },
   ];
   types: [
     {
@@ -564,6 +569,16 @@ export type Proofmarket = {
             name: "recipients";
             type: {
               vec: "pubkey";
+            };
+          },
+          {
+            name: "amountPerWitness";
+            docs: [
+              "v1.1 (13 §1): the settled per-witness amount for a rising bounty. Some(a) needs",
+              "0 < a <= task.amount_per_witness and lowers it before settle; None keeps it.",
+            ];
+            type: {
+              option: "u64";
             };
           },
         ];

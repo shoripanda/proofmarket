@@ -42,6 +42,11 @@ export function parseX402Body(raw: unknown): CreateVerificationRequest {
       issues: r.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
     });
   }
+  // 13 §1: a rising bounty hands back what is not paid, but an x402 payment is exact and its credential is
+  // throwaway, so the difference would have nowhere to go. Rising bounties need an API key.
+  if (r.data.bounty.max_amount !== undefined) {
+    throw new ApiError("VALIDATION_FAILED", { field: "bounty.max_amount", reason: "not_for_x402" });
+  }
   return { ...r.data, principal_ref: "" };
 }
 

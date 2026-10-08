@@ -198,7 +198,8 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           onChain.outcome === OUTCOME_NAME[i.outcome] &&
           Buffer.compare(Buffer.from(onChain.evidenceRoot), Buffer.from(i.evidenceRoot)) === 0 &&
           Buffer.compare(Buffer.from(onChain.resultHash), Buffer.from(i.resultHash)) === 0 &&
-          onChain.recipients.join(",") === i.recipients.join(",");
+          onChain.recipients.join(",") === i.recipients.join(",") &&
+          (i.amountPerWitness === undefined || onChain.amountPerWitness === i.amountPerWitness);
         if (!same) return { kind: "halt", error: "on-chain finalize differs from DB (I-SET-05)" };
       }
       const recipients = i.recipients.map((r) => new PublicKey(r));
@@ -224,6 +225,8 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
               evidenceRoot: Array.from(i.evidenceRoot),
               resultHash: Array.from(i.resultHash),
               recipients,
+              amountPerWitness:
+                i.amountPerWitness === undefined ? null : new BN(i.amountPerWitness.toString()),
             })
             .accountsPartial({ verifier: verifier.publicKey, config, task })
             .instruction(),

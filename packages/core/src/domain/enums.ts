@@ -271,6 +271,7 @@ export const AUDIT_EVENT_TYPES = [
   "claim_abandoned",
   "operator_action",
   "oauth_granted",
+  "bounty_fixed",
 ] as const;
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];
 

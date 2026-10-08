@@ -13,6 +13,9 @@ pub struct FinalizeVerificationArgs {
     pub evidence_root: [u8; 32],
     pub result_hash: [u8; 32],
     pub recipients: Vec<Pubkey>,
+    /// v1.1 (13 §1): the settled per-witness amount for a rising bounty. Some(a) needs
+    /// 0 < a <= task.amount_per_witness and lowers it before settle; None keeps it.
+    pub amount_per_witness: Option<u64>,
 }
 
 #[derive(Accounts)]
@@ -31,6 +34,8 @@ pub struct FinalizeVerification<'info> {
 ///   no Pubkey::default() (InvalidRecipients)
 /// - Verified / NoConsensus: recipients >= quorum; InsufficientWitnesses: 1 <= recipients < quorum;
 ///   None: no recipient count is valid for it, so it is rejected as InvalidRecipients
+/// - v1.1: amount_per_witness Some(a) -> 0 < a (InvalidAmount), a <= task.amount_per_witness
+///   (AmountIncrease); task.amount_per_witness = a, so settle pays a and returns the rest
 /// - status = Finalized, finalized_at = now, emit VerificationFinalized
 pub fn handle_finalize_verification(
     ctx: Context<FinalizeVerification>,
@@ -66,6 +71,15 @@ pub fn handle_finalize_verification(
         Outcome::None => false,
     };
     require!(count_ok, ProofMarketError::InvalidRecipients);
+
+    if let Some(amount) = args.amount_per_witness {
+        require!(amount > 0, ProofMarketError::InvalidAmount);
+        require!(
+            amount <= task.amount_per_witness,
+            ProofMarketError::AmountIncrease
+        );
+        task.amount_per_witness = amount;
+    }
 
     let mut stored = [Pubkey::default(); MAX_RECIPIENTS];
     stored[..count].copy_from_slice(recipients);

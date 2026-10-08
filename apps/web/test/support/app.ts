@@ -35,6 +35,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
       locationEncKey: randomBytes(32),
       workerRefSalt: "test-salt-test-salt",
       webhookPepper: "test-pepper-test-pepper",
+      risingBountyEnabled: true,
     },
   };
   const principalId = await createPrincipal(db, { displayName: "Test Agent Co", type: "organization" });

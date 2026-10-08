@@ -1,11 +1,20 @@
 import "server-only";
 // Public result (05 §4), worker payouts (05 §3.7), requester evidence URLs (05 §2.5).
 
-import { type AnswerKind, ApiError, LIMITS, parseId, type TaskType } from "@proofmarket/core";
+import {
+  type AnswerKind,
+  ApiError,
+  fromMicro,
+  LIMITS,
+  parseId,
+  settledPerWitnessMicro,
+  type TaskType,
+} from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
 import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
+import { bountyOf } from "./bounty";
 import { witnessRef } from "./crypto";
 import { buildResult, type SettleRecipients } from "./views";
 
@@ -107,7 +116,7 @@ export async function workerPayouts(app: AppContext, workerId: string) {
   }
   // Valid submissions whose settlement record does not exist yet are shown as PENDING.
   const valid = await app.db
-    .select({ v: schema.witnessSubmissions.verificationId, amount: schema.verificationRequests.bountyAmount })
+    .select({ v: schema.witnessSubmissions.verificationId, task: schema.verificationRequests })
     .from(schema.witnessSubmissions)
     .innerJoin(
       schema.verificationRequests,
@@ -120,7 +129,7 @@ export async function workerPayouts(app: AppContext, workerId: string) {
     if (payouts.some((p) => p.verification_id === v.v)) continue;
     payouts.push({
       verification_id: v.v,
-      amount: String(Number(v.amount)),
+      amount: fromMicro(settledPerWitnessMicro(bountyOf(v.task))), // the fixed amount of a rising bounty (13 §1)
       asset: "USDC" as const,
       status: "PENDING" as const,
       explorer_url: null,
