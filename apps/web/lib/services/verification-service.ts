@@ -18,6 +18,7 @@ import {
 import { type Db, schema } from "@proofmarket/db";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
+import { aggregateOf } from "./aggregate";
 import { appendAudit } from "./audit";
 import { witnessRef } from "./crypto";
 import { applyTaskEvent, type TaskRow } from "./task-engine";
@@ -130,6 +131,7 @@ export async function saveResult(
     reason: outcome.reason,
     answer: outcome.answer === null ? null : publicAnswer(outcome.answer),
     witnesses: { valid: valid.length, required: task.requiredWitnesses, quorum: task.quorum },
+    ...aggregateOf(task, isText ? valid.map((v) => v.answer) : []), // 13 §4: in the hash when present
     answer_counts: answerCounts,
     checks: Object.fromEntries(
       RESULT_CHECKS.map((t) => [

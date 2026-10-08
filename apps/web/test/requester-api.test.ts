@@ -3,8 +3,11 @@ import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleCancel, handleCreate, handleCreateBatch, handleGet } from "../lib/handlers/requester";
+import { handleClaimDetail, handleTaskDetail } from "../lib/handlers/worker";
 import { setAllowedTaskTypes } from "../lib/services/admin-service";
+import { publicResult } from "../lib/services/public-service";
 import { call, createBody, createTestApp, jsonReq, SHOP } from "./support/app";
+import { onboardWorker, openCreated, W, witness } from "./support/worker";
 
 let t: Awaited<ReturnType<typeof createTestApp>>;
 beforeEach(async () => {
@@ -280,6 +283,56 @@ describe("01 §4.25: the requester decides the shape of the work", () => {
     expect(
       await errCode(await create(createBody(t.principalId, { acceptance_criteria: "x".repeat(501) }))),
     ).toBe("VALIDATION_FAILED");
+  });
+
+  it("13 §5: attestation is stored, read back, shown to workers and on the public result", async () => {
+    const attestation = { subject: "agent_action", description: "  Delivered the parcel to room 302  " };
+    const res = await create(createBody(t.principalId, { attestation }));
+    expect(res.status).toBe(201);
+    const { verification_id: id } = (await res.json()) as { verification_id: string };
+    const want = { subject: "agent_action", description: "Delivered the parcel to room 302" };
+    expect((await get(id)).attestation).toEqual(want);
+    const plain = (await (await create(createBody(t.principalId))).json()) as { verification_id: string };
+    expect((await get(plain.verification_id)).attestation).toBeNull();
+
+    await openCreated(t, id);
+    const alice = (await onboardWorker(t, "alice")).token;
+    const list = (await (await W(t, alice).list()).json()) as {
+      tasks: { verification_id: string; attestation: unknown }[];
+    };
+    expect(list.tasks.find((x) => x.verification_id === id)?.attestation).toEqual(want);
+    const detail = await call(
+      (r) => handleTaskDetail(t.app, r, id),
+      jsonReq("GET", `/v1/worker/tasks/${id}`, { key: alice }),
+    );
+    expect(((await detail.json()) as { attestation: unknown }).attestation).toEqual(want);
+    const { claim_id } = (await (await W(t, alice).claim(id)).json()) as { claim_id: string };
+    const claim = await call(
+      (r) => handleClaimDetail(t.app, r, claim_id),
+      jsonReq("GET", `/v1/worker/claims/${claim_id}`, { key: alice }),
+    );
+    expect(((await claim.json()) as { attestation: unknown }).attestation).toEqual(want);
+    await witness(t, alice, id, { answer: "OPEN", claimId: claim_id });
+    expect((await publicResult(t.app, id)).agent_attestation).toEqual(want);
+
+    for (const bad of [
+      { subject: "agent_action", description: "x".repeat(201) },
+      { subject: "agent_action", description: "   " },
+      { subject: "something_else", description: "Cleaned the room" },
+    ]) {
+      expect(await errCode(await create(createBody(t.principalId, { attestation: bad })))).toBe(
+        "VALIDATION_FAILED",
+      );
+    }
+    expect(
+      (
+        await create(
+          createBody(t.principalId, {
+            attestation: { subject: "agent_action", description: "x".repeat(200) },
+          }),
+        )
+      ).status,
+    ).toBe(201);
   });
 
   it("a form answer_schema is accepted for text types, stored as text, and refused for choice types", async () => {

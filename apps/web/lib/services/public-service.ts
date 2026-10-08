@@ -14,6 +14,7 @@ import { schema } from "@proofmarket/db";
 import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
+import { attestationOf } from "./attestation";
 import { bountyOf } from "./bounty";
 import { witnessRef } from "./crypto";
 import { buildResult, type SettleRecipients } from "./views";
@@ -32,11 +33,13 @@ export async function publicResult(app: AppContext, rawId: string) {
   if (!task) throw new ApiError("VERIFICATION_NOT_FOUND");
   const result = await buildResult(app.db, task);
   if (!result) throw new ApiError("VERIFICATION_NOT_FOUND", { reason: "no_result_yet" });
-  const { rejected_submissions: _r, answers: _a, reviews: _v, proof: _p, ...pub } = result;
+  // A form's numbers come from its text answers, which stay with the requester (01 §4.15, 13 §4).
+  const { rejected_submissions: _r, answers: _a, reviews: _v, proof: _p, aggregate: _g, ...pub } = result;
   return {
     ...pub,
     type: task.type as TaskType,
     answer_kind: task.answerKind as AnswerKind,
+    agent_attestation: attestationOf(task),
     published: await publishedView(app, task),
   };
 }

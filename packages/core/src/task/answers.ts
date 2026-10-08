@@ -57,6 +57,13 @@ export function validateAnswerSchema(type: TaskType, spec: AnswerSchemaSpec): vo
           reason: "duplicates",
         });
       }
+      if (f.type === "scale" && f.max !== 5 && f.max !== 10) {
+        throw new ApiError("VALIDATION_FAILED", {
+          field: `answer_schema.fields.${i}.max`,
+          reason: "scale_max",
+          allowed: [5, 10],
+        });
+      }
       if (f.type === "number" && f.min !== undefined && f.max !== undefined && f.min > f.max) {
         throw new ApiError("VALIDATION_FAILED", {
           field: `answer_schema.fields.${i}`,
@@ -68,7 +75,7 @@ export function validateAnswerSchema(type: TaskType, spec: AnswerSchemaSpec): vo
 }
 
 /** A field as a stand-alone answer schema, for normalizing its value. */
-function fieldSpec(f: FormField): AnswerSchemaSpec {
+function fieldSpec(f: Exclude<FormField, { type: "scale" }>): AnswerSchemaSpec {
   if (f.type === "enum") return { type: "enum", values: f.values };
   if (f.type === "number") return { type: "number", unit: f.unit, min: f.min, max: f.max };
   return { type: "text", max_chars: f.max_chars };
@@ -98,6 +105,13 @@ function normalizeForm(fields: readonly FormField[], raw: string): string | null
       continue;
     }
     if (typeof v !== "string" && typeof v !== "number") return null;
+    if (f.type === "scale") {
+      // Sense index (13 §4): a whole number on the row of circles, nothing else.
+      const n = typeof v === "number" ? v : /^\s*\d+\s*$/.test(v) ? Number(v) : Number.NaN;
+      if (!Number.isInteger(n) || n < f.min || n > f.max) return null;
+      out[f.key] = n;
+      continue;
+    }
     const n = normalizeAnswer(fieldSpec(f), String(v));
     if (n === null) return null;
     out[f.key] = f.type === "number" ? Number(n) : n;

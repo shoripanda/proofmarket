@@ -85,3 +85,54 @@ describe("form answers (01 §4.25)", () => {
     expect(storedAnswerSpec({ type: "enum", values: ["OPEN"] })).toBeNull();
   });
 });
+
+describe("scale fields (13 §4)", () => {
+  const SCALE: AnswerSchemaSpec = {
+    type: "form",
+    fields: [
+      {
+        type: "scale",
+        key: "noise",
+        label: "Noise",
+        min: 1,
+        max: 5,
+        labels: ["quiet", "loud"],
+        required: true,
+      },
+      { type: "text", key: "note", label: "Note", required: false },
+    ],
+  };
+
+  it("accepts a whole number from 1 to max and stores it as a number", () => {
+    expect(() => validateAnswerSchema("CUSTOM_TASK", SCALE)).not.toThrow();
+    expect(normalizeAnswer(SCALE, JSON.stringify({ noise: 1 }))).toBe('{"noise":1}');
+    expect(normalizeAnswer(SCALE, JSON.stringify({ noise: 5, note: "ok" }))).toBe('{"noise":5,"note":"ok"}');
+    expect(normalizeAnswer(SCALE, JSON.stringify({ noise: "3" }))).toBe('{"noise":3}');
+  });
+
+  it("refuses values outside the range, fractions and words", () => {
+    for (const noise of [0, 6, -1, 2.5, "loud", "", true]) {
+      const raw = JSON.stringify({ noise });
+      expect(normalizeAnswer(SCALE, raw), raw).toBeNull();
+    }
+  });
+
+  it("allows only 5 or 10 as max", () => {
+    const ten = structuredClone(SCALE);
+    if (ten.type === "form" && ten.fields[0]?.type === "scale") ten.fields[0].max = 10;
+    expect(() => validateAnswerSchema("CUSTOM_TASK", ten)).not.toThrow();
+    const seven = structuredClone(SCALE);
+    if (seven.type === "form" && seven.fields[0]?.type === "scale") seven.fields[0].max = 7;
+    let err: unknown;
+    try {
+      validateAnswerSchema("CUSTOM_TASK", seven);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).details).toMatchObject({
+      field: "answer_schema.fields.0.max",
+      reason: "scale_max",
+    });
+  });
+});
