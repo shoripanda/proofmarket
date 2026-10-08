@@ -1,7 +1,9 @@
 // S-05 仕組み — how evidence is checked (incl. the AI review, 01 §4.16), how answers are combined, and what goes on Solana (07 / 06).
 import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
 import type { Metadata } from "next";
-import { PageHero, Section } from "@/components/site";
+import { PictureSection } from "@/components/illustrations";
+import { PageHero } from "@/components/site";
+import { Plain } from "@/lib/client/plain";
 import type { Lang } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -18,10 +20,12 @@ const COPY = {
       "これは写真が「この依頼のために、いま撮られて届いた」ことの状況証拠を積み重ねるもので、人がそこにいたことを物理的に証明するものではありません。何を確かめていて、何を確かめられないかを、ここにすべて書きます。",
     camera: {
       title: "写真はアプリの中のカメラでしか撮れません",
+      line: "アルバムの写真は使えません。撮るたびに、その場で時間を計り始めます。",
       lead: "端末のアルバムから写真は選べません。撮る直前に、その依頼だけに使える合言葉（nonce）をサーバーが発行し、そこから時間を計ります。依頼した側に見せる画像は、撮影位置などの埋め込み情報（EXIF）を外して作り直したものです。",
     },
     checks: {
       title: "届いた写真は、順番に確認を通ります",
+      line: "形式、使い回し、時刻、場所、中身の順に確かめ、1つでも落ちたら止めます。",
       lead: "途中で1つでも落ちたらそこで止め、理由を worker に返します。撮り直せる理由なら、同じ依頼の中で最大3回まで出し直せます。",
       onFail: "落ちたとき: ",
       items: [
@@ -55,6 +59,7 @@ const COPY = {
     },
     canCannot: {
       title: "確かめられることと、確かめられないこと",
+      line: "できないことも隠さず、両方をここに書いておきます。",
       lead: "右の列の弱さは、1つの依頼を複数の人に頼むこと、worker を招待制にすることで補っています。「偽造できない」とは言いません。",
       can: "確かめていること",
       cannot: "確かめられないこと",
@@ -77,11 +82,13 @@ const COPY = {
     },
     quorum: {
       title: "複数人の答えは、決めた人数がそろったときだけ確定します",
+      line: "1人の答えでは決めません。同じ答えが決めた数だけそろって、はじめて確定です。",
       p1: "依頼する側は「何人に確かめてもらうか」と「何人の答えがそろえば確定か（quorum）」を決めます。確認をすべて通った答えだけを数え、いちばん多い答えが quorum 以上あり、ほかと同数でなければ VERIFIED になります。答えが割れたら REJECTED、締め切りまでに有効な答えが足りなければ EXPIRED です。",
       p2: "結果に入る一致率は「いちばん多い答えの数 ÷ 有効な答えの数」だけです。それ以外の信頼度のような数字は作りません。",
     },
     chain: {
       title: "Solana に記録するもの、しないもの",
+      line: "残すのは結果と支払いの印だけです。写真や場所は置きません。",
       yes: "記録するもの",
       yesItems: [
         "依頼ごとの預かり口座と、そこに確保した報酬の額",
@@ -109,10 +116,12 @@ const COPY = {
       "These checks build circumstantial evidence that a photo was taken now, for this request, and delivered. They do not physically prove that a person stood there. Everything we check, and everything we cannot, is written here.",
     camera: {
       title: "Photos can only be taken with the camera inside the app",
+      line: "Nothing from the photo album. The clock starts with every shot.",
       lead: "Nothing can be picked from the phone's photo library. Just before the shot, the server issues a one-time nonce for that request and starts the clock. The image shown to the requester is re-encoded with embedded data such as the shooting location (EXIF) removed.",
     },
     checks: {
       title: "Each photo goes through the checks in order",
+      line: "Format, reuse, time, place, then content. The first failure stops it.",
       lead: "If one fails, the process stops there and the reason goes back to the worker. If the reason allows a retake, the worker can resubmit up to 3 times within the same request.",
       onFail: "On failure: ",
       items: [
@@ -150,6 +159,7 @@ const COPY = {
     },
     canCannot: {
       title: "What we can verify, and what we cannot",
+      line: "We write down both, including what we cannot do.",
       lead: "The weaknesses in the right-hand column are offset by asking several people per request and by keeping workers invite-only. We do not claim it cannot be forged.",
       can: "What we verify",
       cannot: "What we cannot verify",
@@ -175,11 +185,13 @@ const COPY = {
     },
     quorum: {
       title: "Several answers become final only when the agreed number line up",
+      line: "One person's word is not enough. The same answer has to come in enough times.",
       p1: "The requester sets how many people should check and how many answers must agree (the quorum). Only answers that passed every check count. The most common answer wins when it reaches the quorum and is not tied; the result is VERIFIED. A split is REJECTED; too few valid answers by the deadline is EXPIRED.",
       p2: "The only agreement figure in the result is the count of the most common answer divided by the count of valid answers. We invent no other confidence score.",
     },
     chain: {
       title: "What goes on Solana, and what does not",
+      line: "Only the result and the payment are kept there. Never photos or places.",
       yes: "Recorded",
       yesItems: [
         "An escrow account per request and the bounty locked in it",
@@ -204,85 +216,134 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HowItWorksPage() {
-  const c = COPY[await getLang()];
+  const lang = await getLang();
+  const c = COPY[lang];
   return (
     <>
       <PageHero eyebrow={c.eyebrow} title={c.title}>
-        <p>{c.intro1}</p>
+        <p>
+          <Plain>{c.intro1}</Plain>
+        </p>
         <p className="mt-3">{c.intro2}</p>
       </PageHero>
 
-      <Section title={c.camera.title} lead={c.camera.lead} />
+      <PictureSection
+        k="camera"
+        lang={lang}
+        title={c.camera.title}
+        line={c.camera.line}
+        more={<p className="max-w-3xl text-sm leading-relaxed text-slate-600">{c.camera.lead}</p>}
+      />
 
-      <Section title={c.checks.title} lead={c.checks.lead}>
-        <ol className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
-          {c.checks.items.map(([name, cond, fail], i) => (
-            <li key={name} className="grid gap-1 p-4 sm:grid-cols-[2rem_9rem_1fr_9rem] sm:gap-4">
-              <span className="text-sm font-bold text-teal-700">{i + 1}</span>
-              <span className="font-semibold">{name}</span>
-              <span className="text-sm leading-relaxed text-slate-600">{cond}</span>
-              <span className="text-sm text-slate-500">
-                {c.checks.onFail}
-                {fail}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </Section>
+      <PictureSection
+        k="checks"
+        lang={lang}
+        title={c.checks.title}
+        line={c.checks.line}
+        more={
+          <>
+            <p className="max-w-3xl text-sm leading-relaxed text-slate-600">{c.checks.lead}</p>
+            <ol className="mt-4 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white">
+              {c.checks.items.map(([name, cond, fail], i) => (
+                <li key={name} className="grid gap-1 p-4 sm:grid-cols-[2rem_9rem_1fr_9rem] sm:gap-4">
+                  <span className="text-sm font-bold text-teal-700">{i + 1}</span>
+                  <span className="font-semibold">{name}</span>
+                  <span className="text-sm leading-relaxed text-slate-600">{cond}</span>
+                  <span className="text-sm text-slate-500">
+                    {c.checks.onFail}
+                    {fail}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </>
+        }
+      />
 
-      <Section title={c.canCannot.title} lead={c.canCannot.lead}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl bg-emerald-50 p-5">
-            <h3 className="font-bold text-emerald-900">{c.canCannot.can}</h3>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-emerald-900">
-              {c.canCannot.items.map(([x]) => (
-                <li key={x}>{x}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl bg-amber-50 p-5">
-            <h3 className="font-bold text-amber-900">{c.canCannot.cannot}</h3>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-amber-900">
-              {c.canCannot.items.map(([, x]) => (
-                <li key={x}>{x}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </Section>
+      <PictureSection
+        k="limits"
+        lang={lang}
+        title={c.canCannot.title}
+        line={c.canCannot.line}
+        more={
+          <>
+            <p className="max-w-3xl text-sm leading-relaxed text-slate-600">{c.canCannot.lead}</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl bg-emerald-50 p-5">
+                <h3 className="font-bold text-emerald-900">{c.canCannot.can}</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-emerald-900">
+                  {c.canCannot.items.map(([x]) => (
+                    <li key={x}>{x}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-2xl bg-amber-50 p-5">
+                <h3 className="font-bold text-amber-900">{c.canCannot.cannot}</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-amber-900">
+                  {c.canCannot.items.map(([, x]) => (
+                    <li key={x}>{x}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </>
+        }
+      />
 
-      <Section title={c.quorum.title}>
-        <div className="max-w-3xl space-y-3 text-sm leading-relaxed text-slate-600">
-          <p>{c.quorum.p1}</p>
-          <p>{c.quorum.p2}</p>
-        </div>
-      </Section>
+      <PictureSection
+        k="agree"
+        lang={lang}
+        title={c.quorum.title}
+        line={c.quorum.line}
+        more={
+          <div className="max-w-3xl space-y-3 text-sm leading-relaxed text-slate-600">
+            <p>{c.quorum.p1}</p>
+            <p>{c.quorum.p2}</p>
+          </div>
+        }
+      />
 
-      <Section title={c.chain.title}>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <h3 className="font-bold">{c.chain.yes}</h3>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
-              {c.chain.yesItems.map((x) => (
-                <li key={x}>{x}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <h3 className="font-bold">{c.chain.no}</h3>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
-              {c.chain.noItems.map((x) => (
-                <li key={x}>{x}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        <div className="mt-6 max-w-3xl space-y-3 text-sm leading-relaxed text-slate-600">
-          <p>{c.chain.p1}</p>
-          <p>{c.chain.p2}</p>
-          <p>{c.chain.p3}</p>
-        </div>
-      </Section>
+      <PictureSection
+        k="ledger"
+        lang={lang}
+        title={c.chain.title}
+        line={c.chain.line}
+        more={
+          <>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <h3 className="font-bold">{c.chain.yes}</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
+                  {c.chain.yesItems.map((x) => (
+                    <li key={x}>
+                      <Plain>{x}</Plain>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <h3 className="font-bold">{c.chain.no}</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
+                  {c.chain.noItems.map((x) => (
+                    <li key={x}>
+                      <Plain>{x}</Plain>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-6 max-w-3xl space-y-3 text-sm leading-relaxed text-slate-600">
+              <p>
+                <Plain>{c.chain.p1}</Plain>
+              </p>
+              <p>
+                <Plain>{c.chain.p2}</Plain>
+              </p>
+              <p>{c.chain.p3}</p>
+            </div>
+          </>
+        }
+      />
     </>
   );
 }

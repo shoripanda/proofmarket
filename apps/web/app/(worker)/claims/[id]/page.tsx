@@ -6,7 +6,7 @@ import { Button, Card, Notice, remaining, Shell, useNow } from "@/components/ui"
 import { errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
 import { langHref, pick } from "@/lib/lang";
-import type { ClaimDetail } from "../../lib-claim";
+import { type ClaimDetail, useClaimCues } from "../../lib-claim";
 
 export default function ClaimPage() {
   const lang = useLang();
@@ -16,6 +16,7 @@ export default function ClaimPage() {
   const now = useNow(1000);
   const [c, setC] = useState<ClaimDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  useClaimCues(c);
 
   useEffect(() => {
     api<ClaimDetail>(`/v1/worker/claims/${id}`).then(setC, (e) => setErr(errorText(e, lang)));

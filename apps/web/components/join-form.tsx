@@ -2,6 +2,7 @@
 // S-04 /join form. Posts to /v1/public/participation-requests (04 §3.20).
 import { useState } from "react";
 import { useLang } from "@/lib/client/lang";
+import { Plain } from "@/lib/client/plain";
 import { pick } from "@/lib/lang";
 
 type Role = "worker" | "requester";
@@ -108,7 +109,9 @@ export function JoinForm({ initialRole }: { initialRole: Role }) {
                 className="sr-only"
               />
               <span className="block text-sm font-semibold">{label}</span>
-              <span className="block text-xs text-slate-500">{sub}</span>
+              <span className="block text-xs text-slate-500">
+                <Plain>{sub}</Plain>
+              </span>
             </label>
           ))}
         </div>

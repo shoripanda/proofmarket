@@ -4,10 +4,12 @@ import type { TaskType } from "@proofmarket/core";
 // 位置情報を使わない (01 §4.20)。開いている間は30秒ごとに取り直し、新着に印を付ける。
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PushOptIn } from "@/components/push-opt-in";
+import { Tour } from "@/components/tour";
 import { Button, Card, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
 import { taskTypeText } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
+import { rateNote } from "@/lib/client/rate";
 import { pick } from "@/lib/lang";
 
 const REFRESH_MS = 30_000;
@@ -134,6 +136,7 @@ export default function TasksPage() {
           : pick(lang, "近くのタスク", "Tasks nearby")
       }
     >
+      <Tour />
       <div
         className="grid grid-cols-2 gap-1 rounded-full bg-slate-100 p-1"
         role="tablist"
@@ -216,7 +219,7 @@ export default function TasksPage() {
           <Card>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold text-teal-700">
-                {yen(t.reward.amount)}
+                {yen(t.reward.amount, lang)}
                 {t.reward.max && t.reward.rises_until ? (
                   <span
                     className="ml-2 inline-flex items-center gap-1 align-middle text-sm font-semibold text-amber-600"
@@ -273,6 +276,8 @@ export default function TasksPage() {
         </Button>
         <p className="mt-2 text-center text-xs text-slate-400">
           {pick(lang, "開いている間は30秒ごとに自動で更新します", "Refreshes every 30 seconds while open")}
+          {pick(lang, "。", ". ")}
+          {rateNote(lang)}
         </p>
       </div>
     </Shell>

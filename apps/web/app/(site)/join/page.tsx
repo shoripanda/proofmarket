@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { JoinForm } from "@/components/join-form";
 import { PageHero, Section } from "@/components/site";
+import { Plain } from "@/lib/client/plain";
 import { pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -19,11 +20,13 @@ export default async function JoinPage({ searchParams }: { searchParams: Promise
         title={pick(lang, "試験運用に参加する", "Join the pilot")}
       >
         <p>
-          {pick(
-            lang,
-            "試験運用中は、申し込んだ方に運営者から招待コードか API キーを送ります。人数を絞って進めているため、順番にご案内します。",
-            "During the pilot, the operator sends an invite code or an API key to people who apply. Numbers are kept small, so applications are handled in turn.",
-          )}
+          <Plain>
+            {pick(
+              lang,
+              "試験運用中は、申し込んだ方に運営者から招待コードか API キーを送ります。人数を絞って進めているため、順番にご案内します。",
+              "During the pilot, the operator sends an invite code or an API key to people who apply. Numbers are kept small, so applications are handled in turn.",
+            )}
+          </Plain>
         </p>
       </PageHero>
       <Section title={pick(lang, "申し込みフォーム", "Application form")}>

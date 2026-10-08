@@ -1,7 +1,8 @@
-// Public site chrome (S-xx pages): header, footer and small building blocks. Server components only.
-// Every label exists in Japanese and English; the layout passes the request language.
+// Public site chrome (S-xx pages): header, footer and small building blocks. Server components only
+// (the plain-words switch is a client island). Every label exists in Japanese and English.
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { PlainProvider, PlainToggle } from "@/lib/client/plain";
 import { type Lang, langHref, pick } from "@/lib/lang";
 
 type NavItem = { href: string; label: string };
@@ -36,78 +37,85 @@ export const headerNav = (lang: Lang): NavItem[] => [
 export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode }) {
   const h = (href: string) => langHref(lang, href);
   return (
-    <div className="min-h-dvh bg-white">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
-          <Link href={h("/")} className="mr-auto text-lg font-bold tracking-tight text-slate-900 sm:mr-0">
-            ProofMarket
-          </Link>
-          <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-6 overflow-x-auto whitespace-nowrap px-4 text-base font-semibold text-slate-700 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0 sm:text-lg">
-            {headerNav(lang).map((n) => (
+    <PlainProvider>
+      <div className="min-h-dvh bg-white">
+        <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
+            <Link href={h("/")} className="mr-auto text-lg font-bold tracking-tight text-slate-900 sm:mr-0">
+              ProofMarket
+            </Link>
+            <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-6 overflow-x-auto whitespace-nowrap px-4 text-base font-semibold text-slate-700 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0 sm:text-lg">
+              {headerNav(lang).map((n) => (
+                <Link
+                  key={n.href}
+                  href={h(n.href)}
+                  className="py-1 underline-offset-8 hover:text-teal-700 hover:underline"
+                >
+                  {n.label}
+                </Link>
+              ))}
+            </nav>
+            <PlainToggle />
+            {lang === "ja" ? (
               <Link
-                key={n.href}
-                href={h(n.href)}
-                className="py-1 underline-offset-8 hover:text-teal-700 hover:underline"
+                href="/en"
+                className="text-base font-semibold text-slate-600 hover:text-teal-700"
+                lang="en"
               >
-                {n.label}
+                English
               </Link>
-            ))}
-          </nav>
-          {lang === "ja" ? (
-            <Link href="/en" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="en">
-              English
-            </Link>
-          ) : (
-            <Link href="/" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="ja">
-              日本語
-            </Link>
-          )}
-          <Link
-            href={h("/login")}
-            className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"
-          >
-            {pick(lang, "worker ログイン", "Worker login")}
-          </Link>
-        </div>
-      </header>
-      <main>{children}</main>
-      <footer className="mt-16 border-t border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
-          <nav className="flex flex-wrap gap-x-4 gap-y-1">
-            {siteNav(lang).map((n) => (
-              <Link
-                key={n.href}
-                href={h(n.href)}
-                className="underline-offset-8 hover:text-teal-700 hover:underline"
-              >
-                {n.label}
+            ) : (
+              <Link href="/" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="ja">
+                日本語
               </Link>
-            ))}
-          </nav>
-          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            <Link href={h("/legal/worker-terms")} className="hover:text-teal-700">
-              {pick(lang, "worker 参加規約", "Worker terms")}
-            </Link>
-            <Link href={h("/legal/requester-terms")} className="hover:text-teal-700">
-              {pick(lang, "依頼者規約", "Requester terms")}
-            </Link>
-            <Link href={h("/legal/privacy")} className="hover:text-teal-700">
-              {pick(lang, "プライバシーポリシー", "Privacy policy")}
-            </Link>
-            <Link href={h("/legal/operator")} className="hover:text-teal-700">
-              {pick(lang, "運営者情報", "Operator")}
-            </Link>
-          </nav>
-          <p>
-            {pick(
-              lang,
-              "東京で試験運用中です。決済は Solana Devnet のテスト資産で行い、実際のお金は動きません。",
-              "Pilot in Tokyo. Payments use test assets on Solana Devnet; no real money moves.",
             )}
-          </p>
-        </div>
-      </footer>
-    </div>
+            <Link
+              href={h("/login")}
+              className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"
+            >
+              {pick(lang, "worker ログイン", "Worker login")}
+            </Link>
+          </div>
+        </header>
+        <main>{children}</main>
+        <footer className="mt-16 border-t border-slate-200 bg-slate-50">
+          <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
+            <nav className="flex flex-wrap gap-x-4 gap-y-1">
+              {siteNav(lang).map((n) => (
+                <Link
+                  key={n.href}
+                  href={h(n.href)}
+                  className="underline-offset-8 hover:text-teal-700 hover:underline"
+                >
+                  {n.label}
+                </Link>
+              ))}
+            </nav>
+            <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              <Link href={h("/legal/worker-terms")} className="hover:text-teal-700">
+                {pick(lang, "worker 参加規約", "Worker terms")}
+              </Link>
+              <Link href={h("/legal/requester-terms")} className="hover:text-teal-700">
+                {pick(lang, "依頼者規約", "Requester terms")}
+              </Link>
+              <Link href={h("/legal/privacy")} className="hover:text-teal-700">
+                {pick(lang, "プライバシーポリシー", "Privacy policy")}
+              </Link>
+              <Link href={h("/legal/operator")} className="hover:text-teal-700">
+                {pick(lang, "運営者情報", "Operator")}
+              </Link>
+            </nav>
+            <p>
+              {pick(
+                lang,
+                "東京で試験運用中です。決済は Solana Devnet のテスト資産で行い、実際のお金は動きません。",
+                "Pilot in Tokyo. Payments use test assets on Solana Devnet; no real money moves.",
+              )}
+            </p>
+          </div>
+        </footer>
+      </div>
+    </PlainProvider>
   );
 }
 

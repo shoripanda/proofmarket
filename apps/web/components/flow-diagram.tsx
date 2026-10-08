@@ -3,6 +3,7 @@
 // Used by /try (driven by the demo's step) and by the home pages (looping on its own).
 import { useEffect, useState } from "react";
 import { useLang } from "@/lib/client/lang";
+import { splitTerms, usePlain } from "@/lib/client/plain";
 
 export const FLOW_STAGES = [
   { key: "ask", label: "依頼", sub: "エージェントが頼む" },
@@ -13,7 +14,7 @@ export const FLOW_STAGES = [
   { key: "result", label: "結果", sub: "証明つきの答え" },
 ] as const;
 
-const ICONS: Record<(typeof FLOW_STAGES)[number]["key"], string> = {
+export const FLOW_ICONS: Record<(typeof FLOW_STAGES)[number]["key"], string> = {
   // simple line icons (24x24 paths), stroke only
   ask: "M4 6h16v9H9l-5 4V6z",
   escrow: "M5 10h14v9H5zM8 10V7a4 4 0 0 1 8 0v3",
@@ -49,7 +50,8 @@ export function FlowDiagram({
   const labels = isEn
     ? ["Ask", "Escrow", "A person acts", "Checks + AI", "Record + pay", "Result"]
     : FLOW_STAGES.map((s) => s.label);
-  const subs = isEn
+  const plain = usePlain().on;
+  const rawSubs = isEn
     ? [
         "one tool call",
         "bounty on Solana",
@@ -59,6 +61,14 @@ export function FlowDiagram({
         "answer with proof",
       ]
     : FLOW_STAGES.map((s) => s.sub);
+  // SVG text cannot hold the dotted <Term> marks, so the plain words go in as text (13 §7)
+  const subs = plain
+    ? rawSubs.map((t) =>
+        splitTerms(t, isEn ? "en" : "ja")
+          .map((p) => (typeof p === "string" ? p : p.plain))
+          .join(""),
+      )
+    : rawSubs;
   const W = 960;
   const n = FLOW_STAGES.length;
   const gap = W / n;
@@ -109,7 +119,7 @@ export function FlowDiagram({
               </circle>
             ) : null}
             <path
-              d={ICONS[s.key]}
+              d={FLOW_ICONS[s.key]}
               transform={`translate(${cx - 12} ${y - 12})`}
               fill="none"
               stroke={on ? "#ffffff" : past ? "#0f766e" : "#64748b"}
