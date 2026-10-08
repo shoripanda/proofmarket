@@ -432,6 +432,15 @@
                         "enum": [
                           "solana-devnet"
                         ]
+                      },
+                      "max_amount": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                      },
+                      "ramp_minutes": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 1440
                       }
                     },
                     "required": [
@@ -1045,6 +1054,15 @@
                             "enum": [
                               "solana-devnet"
                             ]
+                          },
+                          "max_amount": {
+                            "type": "string",
+                            "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                          },
+                          "ramp_minutes": {
+                            "type": "integer",
+                            "minimum": 10,
+                            "maximum": 1440
                           }
                         },
                         "required": [
@@ -1698,6 +1716,15 @@
                         "enum": [
                           "solana-devnet"
                         ]
+                      },
+                      "max_amount": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                      },
+                      "ramp_minutes": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 1440
                       }
                     },
                     "required": [
@@ -2400,12 +2427,30 @@
                           "enum": [
                             "solana-devnet"
                           ]
+                        },
+                        "max_amount": {
+                          "nullable": true,
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        },
+                        "ramp_minutes": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "current_amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
                         }
                       },
                       "required": [
                         "asset",
                         "amount",
-                        "network"
+                        "network",
+                        "max_amount",
+                        "ramp_minutes",
+                        "current_amount"
                       ]
                     },
                     "witness_progress": {
@@ -3390,12 +3435,30 @@
                           "enum": [
                             "solana-devnet"
                           ]
+                        },
+                        "max_amount": {
+                          "nullable": true,
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        },
+                        "ramp_minutes": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "current_amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
                         }
                       },
                       "required": [
                         "asset",
                         "amount",
-                        "network"
+                        "network",
+                        "max_amount",
+                        "ramp_minutes",
+                        "current_amount"
                       ]
                     },
                     "witness_progress": {
@@ -4645,6 +4708,15 @@
                             "enum": [
                               "solana-devnet"
                             ]
+                          },
+                          "max_amount": {
+                            "type": "string",
+                            "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                          },
+                          "ramp_minutes": {
+                            "type": "integer",
+                            "minimum": 10,
+                            "maximum": 1440
                           }
                         },
                         "required": [
@@ -6427,11 +6499,29 @@
                               "amount": {
                                 "type": "string",
                                 "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                              },
+                              "current": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                              },
+                              "max": {
+                                "nullable": true,
+                                "type": "string",
+                                "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                              },
+                              "rises_until": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                               }
                             },
                             "required": [
                               "asset",
-                              "amount"
+                              "amount",
+                              "current",
+                              "max",
+                              "rises_until"
                             ]
                           },
                           "deadline": {
@@ -6906,11 +6996,29 @@
                         "amount": {
                           "type": "string",
                           "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        },
+                        "current": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        },
+                        "max": {
+                          "nullable": true,
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        },
+                        "rises_until": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                         }
                       },
                       "required": [
                         "asset",
-                        "amount"
+                        "amount",
+                        "current",
+                        "max",
+                        "rises_until"
                       ]
                     },
                     "deadline": {

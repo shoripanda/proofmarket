@@ -7,6 +7,7 @@ import {
   answerSchemaOf,
   type CheckStatus,
   consensusRatio,
+  currentBounty,
   fromMicro,
   openSlots,
   type TaskType,
@@ -20,6 +21,7 @@ import {
 import { type Db, schema } from "@proofmarket/db";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { proofLinks } from "../proof";
+import { bountyOf } from "./bounty";
 import { activeReport } from "./store-service";
 import type { TaskRow } from "./task-engine";
 import { taskLocation } from "./task-location";
@@ -213,7 +215,11 @@ async function acceptedTexts(db: Db, ids: readonly string[]): Promise<string[]> 
   return rows.map((r) => r.answer);
 }
 
-export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetVerificationResponse> {
+export async function buildVerificationView(
+  db: Db,
+  task: TaskRow,
+  now: Date = new Date(),
+): Promise<GetVerificationResponse> {
   const [valid] = await db
     .select({ n: count() })
     .from(schema.witnessSubmissions)
@@ -259,7 +265,14 @@ export async function buildVerificationView(db: Db, task: TaskRow): Promise<GetV
       quorum: task.quorum,
       level: levelOf({ required_witnesses: task.requiredWitnesses, quorum: task.quorum }),
     },
-    bounty: { asset: "USDC", amount: fromMicro(toMicro(task.bountyAmount)), network: "solana-devnet" },
+    bounty: {
+      asset: "USDC",
+      amount: fromMicro(toMicro(task.bountyAmount)),
+      network: "solana-devnet",
+      max_amount: task.bountyMaxAmount === null ? null : fromMicro(toMicro(task.bountyMaxAmount)),
+      ramp_minutes: task.bountyRampMinutes,
+      current_amount: currentBounty(bountyOf(task), now),
+    },
     witness_progress: {
       valid: validCount,
       active_claims: activeClaims,

@@ -4,7 +4,9 @@ import "server-only";
 import {
   ApiError,
   answerSchemaOf,
+  bountyRisesUntil,
   CLAIMABLE_STATUSES,
+  currentBounty,
   eligible,
   fromMicro,
   haversineM,
@@ -22,9 +24,10 @@ import { and, count, eq, gt, gte, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { LEGAL_VERSIONS } from "../legal";
 import { appendAudit } from "./audit";
+import { bountyOf, reservedMicro } from "./bounty";
 import { randomToken, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
-import { applyTaskEvent, lockTask, type TaskRow, taskCounts } from "./task-engine";
+import { applyTaskEvent, lockTask, microToDecimal, type TaskRow, taskCounts } from "./task-engine";
 import { taskLocation } from "./task-location";
 
 export const SAFETY_NOTES_VERSION = LEGAL_VERSIONS.safety_rules;
@@ -197,8 +200,11 @@ const taskGate = (t: TaskRow) => ({
 
 // ---------- tasks ----------
 
-function workerTaskView(t: TaskRow, distanceM: number | null, slots: number) {
+function workerTaskView(t: TaskRow, distanceM: number | null, slots: number, now: Date) {
   const location = taskLocation(t);
+  const bounty = bountyOf(t);
+  const current = currentBounty(bounty, now);
+  const risesUntil = bountyRisesUntil(bounty);
   return {
     verification_id: t.id,
     type: t.type,
@@ -212,7 +218,14 @@ function workerTaskView(t: TaskRow, distanceM: number | null, slots: number) {
     ),
     location,
     distance_m: distanceM === null ? null : Math.round(distanceM),
-    reward: { asset: "USDC" as const, amount: fromMicro(toMicro(t.bountyAmount)) },
+    // 13 §1: `amount` is what a claim now would earn; `max` and `rises_until` say whether waiting pays more.
+    reward: {
+      asset: "USDC" as const,
+      amount: current,
+      current,
+      max: t.bountyMaxAmount === null ? null : fromMicro(toMicro(t.bountyMaxAmount)),
+      rises_until: risesUntil && risesUntil > now ? risesUntil.toISOString() : null,
+    },
     deadline: t.deadline.toISOString(),
     freshness_max_age_seconds: t.freshnessMaxAgeS,
     open_slots: slots,
@@ -261,7 +274,7 @@ export async function listTasks(
     if (d !== null && d > q.radius_km * 1000) continue;
     const c = await taskCounts(app.db, t.id);
     const slots = openSlots({ requiredWitnesses: t.requiredWitnesses, ...c });
-    if (slots > 0) out.push(workerTaskView(t, d, slots));
+    if (slots > 0) out.push(workerTaskView(t, d, slots, now));
   }
   // Nearest first; work with no place keeps the soonest deadline on top.
   out.sort(
@@ -280,7 +293,7 @@ export async function taskDetail(app: AppContext, verificationId: string) {
   if (!t || !(CLAIMABLE_STATUSES as readonly string[]).includes(t.status))
     throw new ApiError("VERIFICATION_NOT_FOUND");
   const c = await taskCounts(app.db, t.id);
-  return workerTaskView(t, null, openSlots({ requiredWitnesses: t.requiredWitnesses, ...c }));
+  return workerTaskView(t, null, openSlots({ requiredWitnesses: t.requiredWitnesses, ...c }), app.now());
 }
 
 // ---------- claims / challenges ----------
@@ -325,14 +338,60 @@ export async function claimTask(app: AppContext, workerId: string, verificationI
       { actorType: "worker", actorRef: workerId, correlationId: task.id },
       "TASK_NOT_CLAIMABLE",
     );
+    const rewardAmount = await fixRisingBounty(tx, task, now);
     const claimId = newId("claim");
     const expiresAt = minDate(new Date(now.getTime() + LIMITS.claimTtlS * 1000), task.deadline);
-    await tx
-      .insert(schema.claims)
-      .values({ id: claimId, verificationId, workerId, state: "ACTIVE", acceptedAt: now, expiresAt });
+    await tx.insert(schema.claims).values({
+      id: claimId,
+      verificationId,
+      workerId,
+      state: "ACTIVE",
+      rewardAmount,
+      acceptedAt: now,
+      expiresAt,
+    });
     const challenge = await insertChallenge(tx, claimId, now, challengeExpiry(task, now, expiresAt));
     return { claim_id: claimId, status: "CLAIMED" as const, expires_at: expiresAt.toISOString(), challenge };
   });
+}
+
+/**
+ * 13 §1: the first claim fixes a rising bounty at its current amount for every witness, and the part of the
+ * reserved ceiling that will not be paid goes back to the requester's balance at once. The task row is locked.
+ * The ledger keeps one RESERVE row per task (requester_ledger_task_entry_uq; RELEASE is the one credit-back at
+ * the end), so the reservation is lowered in place rather than a second row added. Returns the claim's reward.
+ */
+async function fixRisingBounty(tx: Db, task: TaskRow, now: Date): Promise<string | null> {
+  if (task.bountyMaxAmount === null) return null;
+  if (task.bountyFinalAmount !== null) return task.bountyFinalAmount;
+  const final = currentBounty(bountyOf(task), now);
+  const before = reservedMicro(task);
+  task.bountyFinalAmount = final;
+  const after = reservedMicro(task);
+  await tx
+    .update(schema.verificationRequests)
+    .set({ bountyFinalAmount: final, updatedAt: now })
+    .where(eq(schema.verificationRequests.id, task.id));
+  await tx
+    .update(schema.requesterLedger)
+    .set({ amount: microToDecimal(-after) })
+    .where(
+      and(
+        eq(schema.requesterLedger.verificationId, task.id),
+        eq(schema.requesterLedger.entryType, "RESERVE"),
+      ),
+    );
+  await appendAudit(tx, {
+    verificationId: task.id,
+    actorType: "system",
+    actorRef: null,
+    eventType: "bounty_fixed",
+    beforeState: task.status,
+    afterState: task.status,
+    correlationId: task.id,
+    metadata: { amount: final, released: fromMicro(before - after) },
+  });
+  return final;
 }
 
 function challengeExpiry(task: TaskRow, now: Date, claimExpiresAt: Date): Date {

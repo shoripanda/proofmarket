@@ -16,6 +16,11 @@ const Common = {
     .string()
     .regex(/^(mailto:|https:)/)
     .optional(),
+  /** Rising bounty (13 §1). Off until program v1.1 is deployed; while off, `bounty.max_amount` is refused. */
+  RISING_BOUNTY_ENABLED: z
+    .enum(["true", "false", "1", "0"])
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
 };
 
 const FullSchema = z.object({

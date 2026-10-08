@@ -19,7 +19,8 @@ interface Task {
   type: string;
   question: string;
   distance_m: number | null;
-  reward: { amount: string };
+  /** 13 §1: `max` and `rises_until` are set while the reward is still rising. */
+  reward: { amount: string; max: string | null; rises_until: string | null };
   deadline: string;
   open_slots: number;
 }
@@ -216,6 +217,24 @@ export default function TasksPage() {
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold text-teal-700">
                 {yen(t.reward.amount)}
+                {t.reward.max && t.reward.rises_until ? (
+                  <span
+                    className="ml-2 inline-flex items-center gap-1 align-middle text-sm font-semibold text-amber-600"
+                    title={pick(lang, "引き受ける人が出るまで上がります", "Rises until someone takes it")}
+                  >
+                    <span aria-hidden="true">↑</span>
+                    <span className="sr-only">{pick(lang, "上がっています。最大 ", "rising, up to ")}</span>
+                    {t.reward.max}
+                    <span aria-hidden="true" className="h-1.5 w-10 overflow-hidden rounded-full bg-amber-100">
+                      <span
+                        className="block h-full rounded-full bg-amber-500"
+                        style={{
+                          width: `${Math.round((Number(t.reward.amount) / Number(t.reward.max)) * 100)}%`,
+                        }}
+                      />
+                    </span>
+                  </span>
+                ) : null}
                 {fresh.has(t.verification_id) ? (
                   <span className="ml-2 rounded-full bg-amber-400 px-2 py-0.5 align-middle text-xs font-bold text-white">
                     {pick(lang, "新着", "NEW")}

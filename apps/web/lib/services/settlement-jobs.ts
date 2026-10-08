@@ -3,12 +3,19 @@ import "server-only";
 // on-chain state; these jobs are idempotent against DB state. A job never claims success before the
 // adapter reports a finalized confirmation.
 
-import { fromMicro, newId, OUTBOX_RETRY, toMicro } from "@proofmarket/core";
+import {
+  fromMicro,
+  fundedPerWitnessMicro,
+  newId,
+  OUTBOX_RETRY,
+  settledPerWitnessMicro,
+} from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
 import type { ChainResult, OnChainOutcome } from "@proofmarket/solana";
 import { and, eq, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
+import { bountyOf, fundedMicro, reservedMicro } from "./bounty";
 import { sha256, witnessRef } from "./crypto";
 import { applyTaskEvent, lockTask, type TaskRow } from "./task-engine";
 import { handleDeadline } from "./verification-service";
@@ -79,8 +86,6 @@ async function paymentRecord(
   return row;
 }
 
-const totalMicro = (t: TaskRow) => toMicro(t.bountyAmount) * BigInt(t.requiredWitnesses);
-
 // ---------- FUND_TASK ----------
 
 export async function runFundTask(
@@ -90,14 +95,14 @@ export async function runFundTask(
 ): Promise<JobOutcome> {
   const task = await loadTask(app.db, verificationId);
   if (task?.status !== "CREATED") return { kind: "done" }; // already funded or cancelled (T14)
-  const pay = await paymentRecord(app.db, task, "FUND", totalMicro(task));
+  const pay = await paymentRecord(app.db, task, "FUND", fundedMicro(task));
   const adapter = app.settlement();
   const r = await adapter.fundTask(
     {
       verificationId,
       taskIdHash: task.taskIdHash,
       requesterRefHash: sha256(task.credentialId), // 06 §2.2: SHA-256(credential_id)
-      amountPerWitness: toMicro(task.bountyAmount),
+      amountPerWitness: fundedPerWitnessMicro(bountyOf(task)), // the ceiling for a rising bounty (13 §1)
       requiredWitnesses: task.requiredWitnesses,
       quorum: task.quorum,
       deadline: task.deadline,
@@ -160,7 +165,7 @@ export async function runFundTask(
           retryLimitReached: attempts >= OUTBOX_RETRY.maxAttempts,
           allBlockhashesExpired: true,
         },
-        creditBackMicro: totalMicro(t),
+        creditBackMicro: reservedMicro(t),
       });
       await tx
         .update(schema.paymentRecords)
@@ -212,7 +217,8 @@ export async function runFinalizeAndSettle(app: AppContext, verificationId: stri
     );
   if (valid.length === 0) return { kind: "dead", error: "no valid submissions; expected REFUND_TASK" };
 
-  const per = toMicro(task.bountyAmount);
+  // 13 §1: the amount fixed at the first claim; finalize lowers the escrowed ceiling to it on chain.
+  const per = settledPerWitnessMicro(bountyOf(task));
   const paid = per * BigInt(valid.length);
   const pay = await paymentRecord(app.db, task, "FINALIZE_AND_SETTLE", paid);
   const r = await app.settlement().finalizeAndSettle(
@@ -223,6 +229,7 @@ export async function runFinalizeAndSettle(app: AppContext, verificationId: stri
       evidenceRoot: result.evidenceRoot,
       resultHash: result.resultHash,
       recipients: valid.map((v) => v.pubkey),
+      ...(task.bountyMaxAmount !== null ? { amountPerWitness: per } : {}),
     },
     recordSignature(app, pay.id),
   );
@@ -260,7 +267,7 @@ export async function runFinalizeAndSettle(app: AppContext, verificationId: stri
       actorRef: null,
       correlationId: t.id,
       chain: { settleFinalized: true },
-      creditBackMicro: totalMicro(t) - paid,
+      creditBackMicro: reservedMicro(t) - paid,
       metadata: { onchain_outcome: OUTCOME[result.outcome] },
     });
   });
@@ -275,7 +282,7 @@ export async function runRefund(app: AppContext, verificationId: string): Promis
   const task = await loadTask(app.db, verificationId);
   if (!task || !["CANCELLED", "EXPIRED"].includes(task.status) || task.settlementStatus === "CONFIRMED")
     return { kind: "done" };
-  const pay = await paymentRecord(app.db, task, "REFUND", totalMicro(task));
+  const pay = await paymentRecord(app.db, task, "REFUND", fundedMicro(task));
   const r = await app.settlement().refund(
     {
       verificationId,
@@ -308,7 +315,7 @@ export async function runRefund(app: AppContext, verificationId: string): Promis
       actorRef: null,
       correlationId: t.id,
       chain: { refundFinalized: true },
-      creditBackMicro: totalMicro(t),
+      creditBackMicro: reservedMicro(t),
     });
   });
   return { kind: "done" };

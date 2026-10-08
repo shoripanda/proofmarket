@@ -207,11 +207,27 @@ export const CreateVerificationRequestSchema = z
       task_nonce: z.literal(true),
     }),
     assurance: AssuranceInputSchema,
-    bounty: z.object({
-      asset: z.literal("USDC"),
-      amount: Amount, // per witness (D-07)
-      network: z.literal("solana-devnet"),
-    }),
+    bounty: z
+      .object({
+        asset: z.literal("USDC"),
+        amount: Amount, // per witness (D-07)
+        network: z.literal("solana-devnet"),
+        /**
+         * Rising bounty (13 §1): the reward climbs in a straight line from `amount` to this ceiling until someone
+         * claims; the amount at the first claim is what every witness is paid. `max_amount × witnesses` is reserved.
+         */
+        max_amount: Amount.optional(),
+        /** Minutes the climb takes (10-1440). Defaults to the time until the deadline. Needs `max_amount`. */
+        ramp_minutes: z.number().int().min(10).max(1440).optional(),
+      })
+      .refine((b) => b.max_amount === undefined || Number(b.max_amount) >= Number(b.amount), {
+        path: ["max_amount"],
+        message: "max_amount must be >= amount",
+      })
+      .refine((b) => b.ramp_minutes === undefined || b.max_amount !== undefined, {
+        path: ["ramp_minutes"],
+        message: "ramp_minutes needs max_amount",
+      }),
     principal_ref: PrincipalRefSchema,
     /** Only workers at or above this tier may take the task (01 §4.11). */
     worker_requirements: z
@@ -384,7 +400,16 @@ export const GetVerificationResponseSchema = z.object({
     quorum: z.number().int(),
     level: z.enum(LEVEL_NAMES).nullable(),
   }),
-  bounty: CreateVerificationRequestSchema.shape.bounty,
+  bounty: z.object({
+    asset: z.literal("USDC"),
+    amount: Amount,
+    network: z.literal("solana-devnet"),
+    /** Rising bounty (13 §1); null when the reward is fixed. */
+    max_amount: Amount.nullable(),
+    ramp_minutes: z.number().int().nullable(),
+    /** The reward per witness now; once someone has claimed, the fixed amount everyone is paid. */
+    current_amount: Amount,
+  }),
   witness_progress: z.object({
     valid: z.number().int(),
     active_claims: z.number().int(),
@@ -580,7 +605,16 @@ export const WorkerTaskSchema = z.object({
   /** null: the work can be done anywhere. */
   location: LocationSchema.nullable(),
   distance_m: z.number().int().nullable(),
-  reward: z.object({ asset: z.literal("USDC"), amount: Amount }),
+  reward: z.object({
+    asset: z.literal("USDC"),
+    amount: Amount,
+    /** Rising bounty (13 §1): the amount now (equals `amount`, kept for clients that read it). */
+    current: Amount,
+    /** The ceiling, or null when the reward does not rise. */
+    max: Amount.nullable(),
+    /** When it reaches the ceiling; null when it does not rise (or was already fixed by a claim). */
+    rises_until: IsoDateTime.nullable(),
+  }),
   deadline: IsoDateTime,
   freshness_max_age_seconds: z.number().int(),
   open_slots: z.number().int(),

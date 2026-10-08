@@ -52,6 +52,8 @@ export interface AppConfig {
   workerRefSalt: string;
   /** Derives the key that encrypts per-endpoint webhook secrets (05 §5). */
   webhookPepper: string;
+  /** 13 §1: accept `bounty.max_amount` (needs program v1.1 on chain). */
+  risingBountyEnabled: boolean;
 }
 
 export const DEV_DATA_DIR = join(process.cwd(), ".data");
@@ -76,6 +78,7 @@ function buildContext(): AppContext {
     locationEncKey: Buffer.from(e.LOCATION_ENC_KEY, "base64"),
     workerRefSalt: e.WORKER_REF_SALT,
     webhookPepper: e.WEBHOOK_SIGNING_SECRET_PEPPER,
+    risingBountyEnabled: e.RISING_BOUNTY_ENABLED,
   };
   if (isDev(e)) {
     assertDevAllowed(e.APP_ENV);

@@ -86,6 +86,12 @@ export class FakeChain implements SettlementAdapter {
     const s = this.sig("settle");
     await onSigned(s);
     if (m === "retry") return { kind: "retry", signature: s, error: "rpc down" };
+    if (i.amountPerWitness !== undefined) {
+      // Program v1.1 (13 §1): finalize may only lower the per-witness amount.
+      if (i.amountPerWitness <= 0n || i.amountPerWitness > t.amountPerWitness)
+        return { kind: "halt", error: "AmountIncrease" };
+      t.amountPerWitness = i.amountPerWitness;
+    }
     t.status = "Settled";
     t.recipients = i.recipients;
     t.evidenceRoot = i.evidenceRoot;

@@ -479,6 +479,11 @@
       "code": 6014,
       "name": "NotExpired",
       "msg": "Task deadline has not passed"
+    },
+    {
+      "code": 6015,
+      "name": "AmountIncrease",
+      "msg": "Finalized amount_per_witness may not exceed the funded amount"
     }
   ],
   "types": [
@@ -558,6 +563,16 @@
             "name": "recipients",
             "type": {
               "vec": "pubkey"
+            }
+          },
+          {
+            "name": "amount_per_witness",
+            "docs": [
+              "v1.1 (13 §1): the settled per-witness amount for a rising bounty. Some(a) needs",
+              "0 < a <= task.amount_per_witness and lowers it before settle; None keeps it."
+            ],
+            "type": {
+              "option": "u64"
             }
           }
         ]

@@ -40,6 +40,11 @@ export interface FinalizeAndSettleInput {
   resultHash: Uint8Array;
   /** Payout pubkeys of workers with VALID submissions (<= required_witnesses, unique). */
   recipients: string[];
+  /**
+   * Program v1.1 (13 §1): the settled per-witness amount of a rising bounty, in base units. Must be
+   * <= the funded amount; settle pays it and returns the rest to the treasury. Omitted = funded amount.
+   */
+  amountPerWitness?: bigint;
 }
 
 export interface RefundInput {

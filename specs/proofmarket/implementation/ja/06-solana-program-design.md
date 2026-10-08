@@ -114,7 +114,7 @@ settle は Finalized からしか、refund は Funded からしか呼べず、Fi
 
 ### 3.3 finalize_verification
 
-引数: `outcome`、`evidence_root`、`result_hash`、`recipients: Vec<Pubkey>`
+引数: `outcome`、`evidence_root`、`result_hash`、`recipients: Vec<Pubkey>`、`amount_per_witness: Option<u64>`（v1.1。13 §1 の急ぐほど上がる報酬で確定した 1 人あたりの額。`Some(a)` なら `0 < a ≤ task.amount_per_witness` を確かめ（超えれば `AmountIncrease`、0 なら `InvalidAmount`）、`task.amount_per_witness = a` にする。settle はこの額で払い、余りは treasury へ戻る。`None` なら従来どおり）
 
 検査:
 

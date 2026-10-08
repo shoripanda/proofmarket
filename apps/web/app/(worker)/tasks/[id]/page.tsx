@@ -17,7 +17,8 @@ interface Task {
   answer_values: string[];
   answer_schema: AnswerSchemaView;
   location: { lat: number; lng: number; radius_m: number } | null;
-  reward: { amount: string };
+  /** 13 §1: `max` and `rises_until` are set while the reward is still rising. */
+  reward: { amount: string; max: string | null; rises_until: string | null };
   deadline: string;
   freshness_max_age_seconds: number;
   open_slots: number;
@@ -73,7 +74,28 @@ export default function TaskDetailPage() {
           <Card>
             <dl className="grid grid-cols-2 gap-y-3 text-sm">
               <dt className="text-slate-500">{pick(lang, "報酬", "Bounty")}</dt>
-              <dd className="text-right text-lg font-bold text-teal-700">{yen(t.reward.amount)}</dd>
+              {t.reward.max && t.reward.rises_until ? (
+                <dd className="text-right">
+                  <span className="text-lg font-bold text-teal-700">
+                    {pick(lang, "今 ", "Now ")}
+                    {t.reward.amount}
+                  </span>
+                  <span className="font-semibold text-amber-600">
+                    {" → "}
+                    {pick(lang, "最大 ", "up to ")}
+                    {yen(t.reward.max)}
+                  </span>
+                  <span className="block text-xs text-slate-500">
+                    {pick(
+                      lang,
+                      `あと ${remaining(t.reward.rises_until, now, lang)} で最大。引き受けた時の額に決まります`,
+                      `Max in ${remaining(t.reward.rises_until, now, lang)}. Fixed at the amount when someone takes it`,
+                    )}
+                  </span>
+                </dd>
+              ) : (
+                <dd className="text-right text-lg font-bold text-teal-700">{yen(t.reward.amount)}</dd>
+              )}
               <dt className="text-slate-500">{pick(lang, "締切まで", "Deadline in")}</dt>
               <dd className="text-right font-medium">{remaining(t.deadline, now, lang)}</dd>
               <dt className="text-slate-500">{pick(lang, "場所", "Place")}</dt>

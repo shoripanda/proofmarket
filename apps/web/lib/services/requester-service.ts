@@ -6,6 +6,7 @@ import {
   answerSchemaOf,
   evaluateQuestion,
   fromMicro,
+  fundedPerWitnessMicro,
   haversineM,
   inBBox,
   LIMITS,
@@ -13,6 +14,7 @@ import {
   newId,
   POLICY_RULE_VERSION,
   SPEND_LIMIT_TIMEZONE,
+  settledPerWitnessMicro,
   storedAnswerKind,
   storedAnswerSpec,
   taskIdHash,
@@ -31,6 +33,7 @@ import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
+import { bountyOf, reservedMicro } from "./bounty";
 import { sha256 } from "./crypto";
 import { requestHash } from "./idempotency";
 import {
@@ -224,6 +227,17 @@ export async function createVerification(
   if (n > app.config.maxWitnesses || quorum > n) {
     throw new ApiError("VALIDATION_FAILED", { field: "assurance", max_witnesses: app.config.maxWitnesses });
   }
+  // 13 §1: a rising bounty needs program v1.1 on chain; until then the flag keeps it off.
+  const maxAmount = body.bounty.max_amount ?? null;
+  if (maxAmount !== null && !app.config.risingBountyEnabled) {
+    throw new ApiError("VALIDATION_FAILED", { field: "bounty.max_amount", reason: "disabled" });
+  }
+  // Default ramp: until the deadline, within the 10-1440 minutes the column allows.
+  const rampMinutes =
+    maxAmount === null
+      ? null
+      : (body.bounty.ramp_minutes ??
+        Math.min(1440, Math.max(10, Math.floor((deadline.getTime() - now.getTime()) / 60_000))));
   const policy = evaluateQuestion(body.question);
   if (!policy.ok) throw new ApiError("TASK_POLICY_VIOLATION", { rule_id: policy.ruleId });
 
@@ -232,7 +246,8 @@ export async function createVerification(
 
   // 15-17 under a credential row lock so parallel creates cannot overdraw (02 §4.2, I-RACE-03).
   await lockCredential(tx, auth.credentialId);
-  const total = toMicro(body.bounty.amount) * BigInt(n);
+  // The ceiling is reserved and escrowed; the part not paid comes back at the first claim (13 §1).
+  const total = fundedPerWitnessMicro({ amount: body.bounty.amount, maxAmount }) * BigInt(n);
   if (total > toMicro(auth.limits.maxTaskAmount)) throw new ApiError("TASK_AMOUNT_LIMIT_EXCEEDED");
   const [today] = await tx
     .select({ s: sql<string>`coalesce(sum(-amount), 0)` })
@@ -277,6 +292,8 @@ export async function createVerification(
       bountyAsset: body.bounty.asset,
       bountyAmount: body.bounty.amount,
       bountyNetwork: body.bounty.network,
+      bountyMaxAmount: maxAmount,
+      bountyRampMinutes: rampMinutes,
       status: "CREATED",
       fundingStatus: "PENDING",
       taskIdHash: Buffer.from(taskIdHash(id)),
@@ -371,7 +388,7 @@ async function loadOwned(db: Db, auth: RequesterAuth, id: string): Promise<TaskR
 
 export async function getVerification(app: AppContext, auth: RequesterAuth, id: string) {
   const row = await loadOwned(app.db, auth, id);
-  return buildVerificationView(app.db, row);
+  return buildVerificationView(app.db, row, app.now());
 }
 
 /** T14 / T15. Idempotent: CANCELLED / REFUNDED return the current view. */
@@ -379,8 +396,9 @@ export async function cancelVerification(app: AppContext, auth: RequesterAuth, i
   await loadOwned(app.db, auth, id);
   return app.db.transaction(async (tx) => {
     const task = await lockTask(tx, id);
-    if (task.status === "CANCELLED" || task.status === "REFUNDED") return buildVerificationView(tx, task);
-    const total = toMicro(task.bountyAmount) * BigInt(task.requiredWitnesses);
+    if (task.status === "CANCELLED" || task.status === "REFUNDED")
+      return buildVerificationView(tx, task, app.now());
+    const total = reservedMicro(task);
     const [fund] = await tx
       .select()
       .from(schema.paymentRecords)
@@ -405,7 +423,7 @@ export async function cancelVerification(app: AppContext, auth: RequesterAuth, i
       },
       "TASK_NOT_CANCELLABLE",
     );
-    return buildVerificationView(tx, task);
+    return buildVerificationView(tx, task, app.now());
   });
 }
 
@@ -448,7 +466,8 @@ export async function disputeVerification(app: AppContext, auth: RequesterAuth, 
     assurance: r.data.assurance ?? { level: "standard" },
     bounty: {
       asset: orig.bountyAsset,
-      amount: fromMicro(toMicro(orig.bountyAmount)),
+      // A recheck pays what the original paid: its fixed amount when the bounty rose (13 §1).
+      amount: fromMicro(settledPerWitnessMicro(bountyOf(orig))),
       network: orig.bountyNetwork,
     },
     principal_ref: auth.principalId,

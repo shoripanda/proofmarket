@@ -134,8 +134,11 @@ export function devChain(): SettlementAdapter {
       if (!t) return { kind: "halt", error: "task missing" };
       if (t.status === "Settled") return ok(null, t.address, true);
       if (t.status === "Refunded") return { kind: "halt", error: "already refunded" };
+      if (i.amountPerWitness !== undefined && i.amountPerWitness > t.amountPerWitness)
+        return { kind: "halt", error: "AmountIncrease" };
       const s = sig();
       await onSigned(s);
+      if (i.amountPerWitness !== undefined) t.amountPerWitness = i.amountPerWitness;
       Object.assign(t, {
         status: "Settled",
         recipients: i.recipients,
