@@ -3,26 +3,17 @@
 // phone (right). Screens, wording, JSON shapes and the review rule mirror production; nothing here touches the
 // database, the balance or Solana. IDs, signatures and the photo are samples.
 import type { TaskType } from "@proofmarket/core";
-import Link from "next/link";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { RequestCard, ResultCard, StatusCard } from "@/components/try-cards";
-import { TASK_TYPE_JA } from "@/lib/answers";
-import { Button, Card, Notice, remaining, SAFETY_NOTES, useNow } from "./ui";
+import { taskTypeText } from "@/lib/answers";
+import { LLink, useLang } from "@/lib/client/lang";
+import { dateLocale, type Lang, pick } from "@/lib/lang";
+import { Button, Card, Notice, remaining, safetyNotes, useNow } from "./ui";
 
 // ---------- the scenario ----------
 
 const TYPE: TaskType = "SIGN_TRANSCRIPTION";
-const QUESTION = "入口に貼ってある営業時間の掲示を、書いてあるとおりに書き起こしてください。";
-const SIGN_LINES = [
-  "営業時間",
-  "平日 11:00〜20:00",
-  "土曜 11:00〜18:00",
-  "日曜・祝日 定休",
-  "ラストオーダー 19:30",
-];
-const EXACT = SIGN_LINES.join("\n");
-const SUMMARY = "平日は11時から20時まで。土曜は18時まで。日曜は休み。";
 const BOUNTY = "0.30";
 const PLACE = { lat: 35.6595, lng: 139.7005, radius_m: 80 };
 const IDS = {
@@ -32,6 +23,254 @@ const IDS = {
   settleTx: "5TrySettlePayout1111111111111111111111111111111111111111111111111111111111111111111111",
 };
 const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+
+/** Everything a reader sees, in both languages. The sign itself is translated too, so the English demo reads
+ *  as one piece; the shop is still in Shibuya. */
+const TEXT = {
+  ja: {
+    question: "入口に貼ってある営業時間の掲示を、書いてあるとおりに書き起こしてください。",
+    signLines: [
+      "営業時間",
+      "平日 11:00〜20:00",
+      "土曜 11:00〜18:00",
+      "日曜・祝日 定休",
+      "ラストオーダー 19:30",
+    ],
+    summary: "平日は11時から20時まで。土曜は18時まで。日曜は休み。",
+    stepLabels: [
+      "1. エージェントが依頼する",
+      "2. worker が引き受ける",
+      "3. 撮って答える・AI が確かめる",
+      "4. 確定して支払う",
+    ],
+    autoOn: "自動で再生中",
+    autoOff: "自分で操作中",
+    takeOver: "止めて自分で操作する",
+    resume: "続きを自動で再生",
+    restart: "最初から",
+    speed: "速さ",
+    agentSide: "AI エージェント（依頼する側）",
+    userAsk: "渋谷の「坂の上のパン屋」、今日は何時まで開いてる？ 正確な時間が知りたい。",
+    thinkingTitle: "エージェントの考え",
+    thinking:
+      "ウェブの営業時間は古いかもしれない。確実なのは、いま現地にいる人に入口の掲示を書き起こしてもらうこと。ProofMarket の request_reality_verification を、種類 SIGN_TRANSCRIPTION・場所はこの店・締め切り45分・報酬 0.30 USDC で呼ぶ。",
+    agentAsks: `ウェブの情報は古いかもしれません。ProofMarket で、いま近くにいる人に入口の掲示をそのまま書き写してもらいます。費用は ${BOUNTY} USDC、45分以内に返ってきます。頼んでいいですか？`,
+    requestBtn: "依頼を出す（request_reality_verification）",
+    agentSends: "現地の人に頼みます。",
+    place: "渋谷・指定地点から 80 m 以内",
+    accepting: "依頼を受け付けています",
+    funding: `報酬 ${BOUNTY} USDC を Solana のエスクローへ預けています`,
+    funded:
+      "報酬を預けました。依頼は worker の一覧に出ています。右のスマートフォン（画面が狭いときは下）で引き受けてください。",
+    rejectedNote:
+      "最初の提出は AI の確認で差し戻されました。結果はまだ出ていないので、エージェントはそのまま待ちます。",
+    reviewReason: "掲示の文字がそのまま書き起こされています。",
+    observed: "入口のガラス戸に貼られた営業時間の掲示",
+    settling: `結果のハッシュを Solana に記録し、worker に ${BOUNTY} USDC を払っています`,
+    finalIntro: "いま現地で確かめてもらいました。入口の掲示はこのとおりです。",
+    finalToday: ["今日は平日なので ", "20:00 まで", "（ラストオーダー 19:30）です。"],
+    badgeLeft: "人が確認",
+    badgeRight: "回答あり・",
+    seeProof: "確かめた記録を見る",
+    proofNote:
+      "答えと一緒に「人が確かめた証明」のリンクが利用者に届きます。本番ではリンク先が公開ページ（/r/…）になり、Solana の記録まで誰でも確かめられます。",
+    replay: "最初からもう一度",
+    goLive: "本番につないで試す",
+    phoneSide: "worker のスマートフォン",
+    nearby: "近くのタスク",
+    tabNear: "近くで",
+    tabHome: "家でできる",
+    noTasks: "いまは近くにタスクがありません。少し時間をおいて更新してください。",
+    autoRefresh: "開いている間は30秒ごとに自動で更新します",
+    newTask: "新しいタスクが 1 件届きました。",
+    newBadge: "新着",
+    deadlineIn: "締切まで",
+    needsPhoto: "写真と位置が必要",
+    tapToOpen: "タップして内容を見る",
+    taskDetail: "タスクの内容",
+    whatToCheck: "確かめること・",
+    answerText: "文章で答える（500字まで）",
+    bounty: "報酬",
+    placeLabel: "場所",
+    withinM: `指定地点から ${PLACE.radius_m} m 以内`,
+    captureWindow: "撮影の受付時間",
+    captureWindowValue: "「撮影を始める」から 5 分",
+    safetyTitle: "撮影の注意",
+    claim: "引き受ける",
+    quitAnytime: "引き受けた後でも、いつでもやめられます。",
+    heading: "現地へ向かう",
+    claimLeft: "引き受けの残り時間",
+    arriveHint: "お店の前に着いたら「現地に着いた」を押してください。そこから撮影の受付時間が始まります。",
+    arrive: "現地に着いた（撮影を始める）",
+    quit: "やめる",
+    captureTitle: "撮影と回答",
+    windowLabel: "撮影の受付時間: ",
+    attemptN: (n: number) => `・${n}回目の提出`,
+    photoAlt: "撮影した見本の写真",
+    cameraPlaceholder: ["カメラの映像", "（体験では見本の掲示が写ります）"],
+    noFaces: "人の顔が大きく写らないようにしてください。",
+    shoot: "撮影する",
+    located: "位置を取得しました（誤差 約12 m）",
+    pickTitle: "体験用：答え方を選べます",
+    pickSummary: "要約して送る（AI に差し戻される例）",
+    pickExact: "書いてあるとおりに書き起こす",
+    placeholder: "見たこと・書かれていたことを、そのまま書いてください",
+    chars: (n: number) => `${n} 字`,
+    submit: "この内容で送信する",
+    verdict: "判定",
+    checking: "内容を確認しています",
+    pass: "合格",
+    aiCheck: "写真と答えが依頼に合っているか（AI）",
+    checkingNow: "確認中…",
+    aiNote: "本番では、Claude が写真と答えを依頼文と突き合わせます。",
+    rejected: "確認できませんでした",
+    aiReview: "AI の確認: ",
+    rejectSummary:
+      "依頼は「書いてあるとおりに書き起こす」ことですが、送られた答えは要約になっています。掲示の文字をそのまま書いてください。",
+    rejectMismatch: "送られた答えが、写真の掲示の文字と一致しません。掲示の文字をそのまま書いてください。",
+    retriesLeft: (n: number) => `あと ${n} 回やり直せます。`,
+    retake: "撮り直す",
+    backToList: "一覧に戻る",
+    verified: "確認できました",
+    paidAfter: `報酬 ${BOUNTY} USDC は、依頼が確定したあとに送られます。`,
+    waitingPay: "支払いを待っています",
+    payouts: "支払い履歴",
+    received: "受け取り済み",
+    viewTx: "取引記録を見る（Solana Explorer）",
+    endNote:
+      "体験はここまでです。本番では、この取引が Solana Devnet に記録され、Explorer で誰でも見られます。",
+    checks: [
+      "この依頼のために撮られた写真か（合言葉）",
+      "いま撮られた写真か（受付時間）",
+      "写真の形式",
+      "指定された場所で撮られたか（位置）",
+      "過去の写真の使い回しでないか",
+      "ほかの人の写真と同じでないか",
+    ],
+  },
+  en: {
+    question: "Transcribe the opening-hours notice at the entrance exactly as written.",
+    signLines: [
+      "OPENING HOURS",
+      "Mon–Fri 11:00–20:00",
+      "Sat 11:00–18:00",
+      "Closed Sun & holidays",
+      "Last order 19:30",
+    ],
+    summary: "Open 11 to 8 on weekdays, until 6 on Saturdays, closed Sundays.",
+    stepLabels: [
+      "1. The agent asks",
+      "2. A worker claims it",
+      "3. Shoot, answer, AI reviews",
+      "4. Final and paid",
+    ],
+    autoOn: "Autoplay",
+    autoOff: "Manual",
+    takeOver: "Stop and take over",
+    resume: "Resume autoplay",
+    restart: "Restart",
+    speed: "Speed",
+    agentSide: "AI agent (the requester)",
+    userAsk: "The bakery “Sakanoue” in Shibuya — until what time is it open today? I need the exact hours.",
+    thinkingTitle: "Agent's reasoning",
+    thinking:
+      "Opening hours on the web may be stale. The sure way is to have someone on the spot transcribe the notice at the entrance. Call ProofMarket's request_reality_verification with type SIGN_TRANSCRIPTION, this shop as the place, a 45-minute deadline and a 0.30 USDC bounty.",
+    agentAsks: `The web listing may be out of date. Through ProofMarket I can have someone nearby copy the notice at the entrance word for word. It costs ${BOUNTY} USDC and comes back within 45 minutes. Shall I go ahead?`,
+    requestBtn: "Send the request (request_reality_verification)",
+    agentSends: "Asking someone on the spot.",
+    place: "Shibuya · within 80 m of the pin",
+    accepting: "Request being accepted",
+    funding: `Locking the ${BOUNTY} USDC bounty in escrow on Solana`,
+    funded:
+      "Bounty escrowed. The request is now listed for workers. Claim it on the phone on the right (below on a narrow screen).",
+    rejectedNote:
+      "The first submission was sent back by the AI review. There is no result yet, so the agent keeps waiting.",
+    reviewReason: "The text of the notice is transcribed exactly as written.",
+    observed: "An opening-hours notice taped to the glass door at the entrance",
+    settling: `Recording the result hash on Solana and paying the worker ${BOUNTY} USDC`,
+    finalIntro: "Someone just checked on the spot. The notice at the entrance reads:",
+    finalToday: ["Today is a weekday, so it's open ", "until 20:00", " (last order 19:30)."],
+    badgeLeft: "Human-verified",
+    badgeRight: "answered · ",
+    seeProof: "See the proof",
+    proofNote:
+      "The answer reaches the user together with a link to the human-verified proof. In production the link opens a public page (/r/…) where anyone can check right down to the Solana record.",
+    replay: "Play again",
+    goLive: "Try it against production",
+    phoneSide: "Worker's phone",
+    nearby: "Tasks nearby",
+    tabNear: "Nearby",
+    tabHome: "From home",
+    noTasks: "No tasks nearby right now. Check back in a little while.",
+    autoRefresh: "Refreshes every 30 seconds while open",
+    newTask: "1 new task arrived.",
+    newBadge: "NEW",
+    deadlineIn: "Deadline in",
+    needsPhoto: "photo and location required",
+    tapToOpen: "Tap to see the details",
+    taskDetail: "Task details",
+    whatToCheck: "What to check · ",
+    answerText: "Answer in text (up to 500 characters)",
+    bounty: "Bounty",
+    placeLabel: "Place",
+    withinM: `within ${PLACE.radius_m} m of the pin`,
+    captureWindow: "Capture window",
+    captureWindowValue: "5 min from “Start capture”",
+    safetyTitle: "Before you shoot",
+    claim: "Claim this task",
+    quitAnytime: "You can quit at any time, even after claiming.",
+    heading: "Heading there",
+    claimLeft: "Time left on your claim",
+    arriveHint: "When you reach the shop, tap “I'm here”. The capture window starts from that moment.",
+    arrive: "I'm here (start capture)",
+    quit: "Quit",
+    captureTitle: "Shoot and answer",
+    windowLabel: "Capture window: ",
+    attemptN: (n: number) => ` · attempt ${n}`,
+    photoAlt: "Sample photo taken in the demo",
+    cameraPlaceholder: ["Camera view", "(the demo shows a sample notice)"],
+    noFaces: " Keep people's faces out of the frame.",
+    shoot: "Take the photo",
+    located: "Location acquired (accuracy about 12 m)",
+    pickTitle: "Demo only: choose how to answer",
+    pickSummary: "Send a summary (the AI sends it back)",
+    pickExact: "Transcribe it exactly as written",
+    placeholder: "Write exactly what you saw or what was written",
+    chars: (n: number) => `${n} chars`,
+    submit: "Submit",
+    verdict: "Verdict",
+    checking: "Checking the submission",
+    pass: "pass",
+    aiCheck: "Do the photo and answer match the request? (AI)",
+    checkingNow: "reviewing…",
+    aiNote: "In production, Claude compares the photo and the answer with the request.",
+    rejected: "Not accepted",
+    aiReview: "AI review: ",
+    rejectSummary:
+      "The request asks for a transcription exactly as written, but the answer is a summary. Copy the text of the notice as it is.",
+    rejectMismatch:
+      "The answer does not match the text of the notice in the photo. Copy the text of the notice as it is.",
+    retriesLeft: (n: number) => `${n} ${n === 1 ? "attempt" : "attempts"} left.`,
+    retake: "Retake",
+    backToList: "Back to the list",
+    verified: "Accepted",
+    paidAfter: `The ${BOUNTY} USDC bounty is sent once the request becomes final.`,
+    waitingPay: "Waiting for the payout",
+    payouts: "Earnings",
+    received: "Received",
+    viewTx: "View the transaction (Solana Explorer)",
+    endNote:
+      "That is the end of the demo. In production this transaction is recorded on Solana Devnet, where anyone can see it in the Explorer.",
+    checks: [
+      "Taken for this request? (nonce)",
+      "Taken just now? (capture window)",
+      "Photo format",
+      "Taken at the requested place? (location)",
+      "Not a reused photo?",
+      "Not the same as someone else's photo?",
+    ],
+  },
+} satisfies Record<Lang, unknown>;
 
 type Step =
   | "intro"
@@ -46,20 +285,24 @@ type Step =
   | "verified"
   | "settled";
 
-const STEP_LABELS: [Step[], string][] = [
-  [["intro", "requesting", "funding"], "1. エージェントが依頼する"],
-  [["open", "detail", "claimed"], "2. worker が引き受ける"],
-  [["capture", "checking", "rejected"], "3. 撮って答える・AI が確かめる"],
-  [["verified", "settled"], "4. 確定して支払う"],
+const STEP_GROUPS: Step[][] = [
+  ["intro", "requesting", "funding"],
+  ["open", "detail", "claimed"],
+  ["capture", "checking", "rejected"],
+  ["verified", "settled"],
 ];
 
 // ---------- the sign "photo" (an SVG, so the page needs no image files) ----------
 
-function signPhoto(takenAt: string, tilt: number): string {
-  const lines = SIGN_LINES.map(
-    (l, i) =>
-      `<text x="300" y="${150 + i * 64}" text-anchor="middle" font-size="${i === 0 ? 40 : 30}" font-weight="${i === 0 ? 700 : 500}" fill="#1e293b" font-family="'Hiragino Sans','Noto Sans JP',sans-serif">${l}</text>`,
-  ).join("");
+function signPhoto(signLines: string[], takenAt: string, tilt: number): string {
+  // The sign text goes into SVG markup, so "&" (Sun & holidays) must be escaped or the image fails to load.
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const lines = signLines
+    .map(
+      (l, i) =>
+        `<text x="300" y="${150 + i * 64}" text-anchor="middle" font-size="${i === 0 ? 40 : 30}" font-weight="${i === 0 ? 700 : 500}" fill="#1e293b" font-family="'Hiragino Sans','Noto Sans JP',sans-serif">${esc(l)}</text>`,
+    )
+    .join("");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
 <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#94a3b8"/><stop offset="1" stop-color="#475569"/></linearGradient></defs>
 <rect width="600" height="800" fill="url(#g)"/>
@@ -125,12 +368,12 @@ function Bubble({ who, children }: { who: "user" | "agent"; children: ReactNode 
   );
 }
 
-function Phone({ title, children }: { title: string; children: ReactNode }) {
+function Phone({ title, earnings, children }: { title: string; earnings: string; children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-[22rem] overflow-hidden rounded-[2rem] border-8 border-slate-900 bg-white shadow-xl">
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
         <h3 className="text-base font-bold">{title}</h3>
-        <span className="text-sm font-medium text-teal-700">報酬</span>
+        <span className="text-sm font-medium text-teal-700">{earnings}</span>
       </div>
       <div key={title} className="fade-in-up h-[34rem] space-y-4 overflow-y-auto bg-slate-50 p-4">
         {children}
@@ -146,6 +389,14 @@ function Dots() {
 // ---------- the walkthrough ----------
 
 export function TryExperience() {
+  const lang = useLang();
+  const t = TEXT[lang];
+  const types = taskTypeText(lang);
+  const EXACT = t.signLines.join("\n");
+  const SUMMARY = t.summary;
+  // English speakers type more characters per idea, so the typewriter runs a little faster there.
+  const cps = lang === "en" ? 70 : 40;
+
   const [step, setStep] = useState<Step>("intro");
   const [attempt, setAttempt] = useState(1);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -171,26 +422,24 @@ export function TryExperience() {
   const expiresIso = claimedAt ? new Date(claimedAt + 30 * 60_000).toISOString() : null;
   const isSummary = answer.trim() === SUMMARY;
   const isExact = answer.replace(/\s+/g, "") === EXACT.replace(/\s+/g, "");
+  const nChecks = t.checks.length;
 
   // Timed transitions, so the page moves like the real system does.
   useEffect(() => {
-    const t: ReturnType<typeof setTimeout>[] = [];
-    if (step === "requesting") t.push(setTimeout(() => setStep("funding"), 1400));
-    if (step === "funding") t.push(setTimeout(() => setStep("open"), 1800));
+    const tm: ReturnType<typeof setTimeout>[] = [];
+    if (step === "requesting") tm.push(setTimeout(() => setStep("funding"), 1400));
+    if (step === "funding") tm.push(setTimeout(() => setStep("open"), 1800));
     if (step === "checking") {
-      for (let i = 1; i <= CHECKS.length; i++) t.push(setTimeout(() => setCheckIdx(i), 500 * i));
-      t.push(
-        setTimeout(
-          () => setStep(isSummary || !isExact ? "rejected" : "verified"),
-          500 * CHECKS.length + 1600,
-        ),
+      for (let i = 1; i <= nChecks; i++) tm.push(setTimeout(() => setCheckIdx(i), 500 * i));
+      tm.push(
+        setTimeout(() => setStep(isSummary || !isExact ? "rejected" : "verified"), 500 * nChecks + 1600),
       );
     }
-    if (step === "verified") t.push(setTimeout(() => setStep("settled"), 2200));
+    if (step === "verified") tm.push(setTimeout(() => setStep("settled"), 2200));
     return () => {
-      for (const x of t) clearTimeout(x);
+      for (const x of tm) clearTimeout(x);
     };
-  }, [step, isSummary, isExact]);
+  }, [step, isSummary, isExact, nChecks]);
 
   const reset = useCallback(() => {
     setStep("intro");
@@ -220,7 +469,7 @@ export function TryExperience() {
           setStep("capture");
           break;
         case "shoot":
-          setPhoto(signPhoto(new Date().toISOString().slice(0, 19), attempt === 1 ? -2 : 1.5));
+          setPhoto(signPhoto(t.signLines, new Date().toISOString().slice(0, 19), attempt === 1 ? -2 : 1.5));
           break;
         case "pickSummary":
           setAnswer(SUMMARY);
@@ -240,7 +489,7 @@ export function TryExperience() {
           break;
       }
     },
-    [attempt],
+    [attempt, t.signLines, SUMMARY, EXACT],
   );
 
   /** Show the finger on the control for a moment, then do it. */
@@ -271,10 +520,10 @@ export function TryExperience() {
     else if (step === "rejected") next = ["retry", 3800];
     if (!next) return;
     const [id, ms] = next;
-    const t = setTimeout(() => {
+    const tm = setTimeout(() => {
       if (autoRef.current) press(id);
     }, d(ms));
-    return () => clearTimeout(t);
+    return () => clearTimeout(tm);
   }, [auto, speed, step, photo, answer, attempt, press]);
 
   const takeOver = () => setAuto(false);
@@ -285,7 +534,7 @@ export function TryExperience() {
 
   const requestBody = {
     type: TYPE,
-    question: QUESTION,
+    question: t.question,
     answer_schema: { type: "text", max_chars: 500 },
     location: PLACE,
     deadline: deadlineIso,
@@ -295,8 +544,15 @@ export function TryExperience() {
     bounty: { asset: "USDC", amount: BOUNTY, network: "solana-devnet" },
   };
   const proofUrl = `https://proofmarket.example/r/${IDS.verification}`;
+  const shortTime = new Date(now).toLocaleString(dateLocale(lang), {
+    timeZone: "Asia/Tokyo",
+    month: lang === "en" ? "short" : "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-  const stepIndex = STEP_LABELS.findIndex(([steps]) => steps.includes(step));
+  const stepIndex = STEP_GROUPS.findIndex((steps) => steps.includes(step));
   const flowIndex = (
     {
       intro: 0,
@@ -317,7 +573,7 @@ export function TryExperience() {
     <div className="space-y-6">
       {/* controls */}
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-        <span className="font-semibold text-slate-700">{auto ? "自動で再生中" : "自分で操作中"}</span>
+        <span className="font-semibold text-slate-700">{auto ? t.autoOn : t.autoOff}</span>
         <span className="text-slate-400">·</span>
         {auto ? (
           <button
@@ -325,7 +581,7 @@ export function TryExperience() {
             onClick={takeOver}
             className="rounded-full px-3 py-1 font-semibold text-teal-700 ring-1 ring-teal-700"
           >
-            止めて自分で操作する
+            {t.takeOver}
           </button>
         ) : (
           <button
@@ -333,7 +589,7 @@ export function TryExperience() {
             onClick={() => setAuto(true)}
             className="rounded-full px-3 py-1 font-semibold text-teal-700 ring-1 ring-teal-700"
           >
-            続きを自動で再生
+            {t.resume}
           </button>
         )}
         <button
@@ -341,10 +597,10 @@ export function TryExperience() {
           onClick={replay}
           className="rounded-full px-3 py-1 font-semibold text-slate-600 ring-1 ring-slate-300"
         >
-          最初から
+          {t.restart}
         </button>
         <span className="ml-auto flex items-center gap-1 text-xs text-slate-500">
-          速さ
+          {t.speed}
           {([1, 2] as const).map((v) => (
             <button
               key={v}
@@ -362,7 +618,7 @@ export function TryExperience() {
       <div className="rounded-2xl border border-slate-200 bg-white px-2 py-3">
         <FlowDiagram active={flowIndex} compact />
       </div>
-      <p className="text-center text-sm font-semibold text-teal-800">{STEP_LABELS[stepIndex]?.[1]}</p>
+      <p className="text-center text-sm font-semibold text-teal-800">{t.stepLabels[stepIndex]}</p>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_24rem] lg:items-start">
         {/* ---------- left: the agent ---------- */}
@@ -370,43 +626,31 @@ export function TryExperience() {
           ref={log}
           className="max-h-[38rem] space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-4"
         >
-          <p className="text-xs font-semibold tracking-wide text-slate-500">AI エージェント（依頼する側）</p>
-          <Bubble who="user">
-            渋谷の「坂の上のパン屋」、今日は何時まで開いてる？ 正確な時間が知りたい。
-          </Bubble>
+          <p className="text-xs font-semibold tracking-wide text-slate-500">{t.agentSide}</p>
+          <Bubble who="user">{t.userAsk}</Bubble>
 
           {step === "intro" ? (
             <>
               <div className="fade-in-up rounded-xl border border-dashed border-slate-300 bg-white/60 px-3 py-2 text-xs leading-relaxed text-slate-600">
-                <p className="font-semibold text-slate-500">エージェントの考え</p>
-                <Typed
-                  on={auto}
-                  cps={60}
-                  text={
-                    "ウェブの営業時間は古いかもしれない。確実なのは、いま現地にいる人に入口の掲示を書き起こしてもらうこと。" +
-                    "ProofMarket の request_reality_verification を、種類 SIGN_TRANSCRIPTION・場所はこの店・締め切り45分・報酬 0.30 USDC で呼ぶ。"
-                  }
-                />
+                <p className="font-semibold text-slate-500">{t.thinkingTitle}</p>
+                <Typed on={auto} cps={cps * 1.5} text={t.thinking} />
               </div>
               <Bubble who="agent">
-                <Typed
-                  on={auto}
-                  text={`ウェブの情報は古いかもしれません。ProofMarket で、いま近くにいる人に入口の掲示をそのまま書き写してもらいます。費用は ${BOUNTY} USDC、45分以内に返ってきます。頼んでいいですか？`}
-                />
+                <Typed on={auto} cps={cps} text={t.agentAsks} />
               </Bubble>
               <Button onClick={() => press("request")} pressed={pressedId === "request"}>
-                依頼を出す（request_reality_verification）
+                {t.requestBtn}
               </Button>
             </>
           ) : null}
 
           {step !== "intro" ? (
             <>
-              <Bubble who="agent">現地の人に頼みます。</Bubble>
+              <Bubble who="agent">{t.agentSends}</Bubble>
               <RequestCard
-                typeName={TASK_TYPE_JA[TYPE].name}
-                question={QUESTION}
-                place="渋谷・指定地点から 80 m 以内"
+                typeName={types[TYPE].name}
+                question={t.question}
+                place={t.place}
                 deadlineMin={45}
                 bounty={BOUNTY}
                 witnesses={1}
@@ -417,7 +661,7 @@ export function TryExperience() {
 
           {step === "requesting" ? (
             <p className="text-sm text-slate-500">
-              依頼を受け付けています
+              {t.accepting}
               <Dots />
             </p>
           ) : null}
@@ -454,40 +698,26 @@ export function TryExperience() {
 
           {step === "funding" ? (
             <p className="text-sm text-slate-500">
-              報酬 {BOUNTY} USDC を Solana のエスクローへ預けています
+              {t.funding}
               <Dots />
             </p>
           ) : null}
 
           {["open", "detail", "claimed", "capture", "checking", "rejected"].includes(step) ? (
-            <Notice tone="ok">
-              報酬を預けました。依頼は worker
-              の一覧に出ています。右のスマートフォン（画面が狭いときは下）で引き受けてください。
-            </Notice>
+            <Notice tone="ok">{t.funded}</Notice>
           ) : null}
 
-          {step === "rejected" ? (
-            <p className="text-sm text-slate-600">
-              最初の提出は AI
-              の確認で差し戻されました。結果はまだ出ていないので、エージェントはそのまま待ちます。
-            </p>
-          ) : null}
+          {step === "rejected" ? <p className="text-sm text-slate-600">{t.rejectedNote}</p> : null}
 
           {step === "verified" || step === "settled" ? (
             <>
               <ResultCard
-                answerLines={SIGN_LINES}
+                answerLines={t.signLines}
                 settled={step === "settled"}
                 bounty={BOUNTY}
-                reviewReason="掲示の文字がそのまま書き起こされています。"
+                reviewReason={t.reviewReason}
                 proofUrl={proofUrl}
-                badgeTime={new Date(now).toLocaleString("ja-JP", {
-                  timeZone: "Asia/Tokyo",
-                  month: "numeric",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                badgeTime={shortTime}
                 raw={{
                   verification_id: IDS.verification,
                   status: step === "settled" ? "SETTLED" : "VERIFIED",
@@ -498,8 +728,8 @@ export function TryExperience() {
                     reviews: [
                       {
                         verdict: "pass",
-                        reason: "掲示の文字がそのまま書き起こされています。",
-                        observed: "入口のガラス戸に貼られた営業時間の掲示",
+                        reason: t.reviewReason,
+                        observed: t.observed,
                         model: "claude-opus-5-5",
                       },
                     ],
@@ -523,7 +753,7 @@ export function TryExperience() {
               />
               {step === "verified" ? (
                 <p className="text-sm text-slate-500">
-                  結果のハッシュを Solana に記録し、worker に {BOUNTY} USDC を払っています
+                  {t.settling}
                   <Dots />
                 </p>
               ) : null}
@@ -534,46 +764,39 @@ export function TryExperience() {
             <>
               <Bubble who="agent">
                 <p>
-                  いま現地で確かめてもらいました。入口の掲示はこのとおりです。
+                  {t.finalIntro}
                   <br />
                   <span className="mt-1 block whitespace-pre-wrap rounded-lg bg-slate-100 p-2 font-medium">
                     {EXACT}
                   </span>
                 </p>
                 <p className="mt-2">
-                  今日は平日なので <b>20:00 まで</b>（ラストオーダー 19:30）です。
+                  {t.finalToday[0]}
+                  <b>{t.finalToday[1]}</b>
+                  {t.finalToday[2]}
                 </p>
                 <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
                   <span className="inline-flex overflow-hidden rounded-md text-[11px] font-semibold text-white">
-                    <span className="bg-slate-700 px-2 py-0.5">人が確認</span>
+                    <span className="bg-slate-700 px-2 py-0.5">{t.badgeLeft}</span>
                     <span className="bg-teal-700 px-2 py-0.5">
-                      回答あり・
-                      {new Date(now).toLocaleString("ja-JP", {
-                        timeZone: "Asia/Tokyo",
-                        month: "numeric",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {t.badgeRight}
+                      {shortTime}
                     </span>
                   </span>
-                  <span className="underline">確かめた記録を見る</span>
+                  <span className="underline">{t.seeProof}</span>
                 </p>
               </Bubble>
-              <Notice tone="ok">
-                答えと一緒に「人が確かめた証明」のリンクが利用者に届きます。本番ではリンク先が公開ページ（/r/…）になり、Solana
-                の記録まで誰でも確かめられます。
-              </Notice>
+              <Notice tone="ok">{t.proofNote}</Notice>
               <div className="grid gap-2 sm:grid-cols-2">
                 <Button variant="secondary" onClick={replay}>
-                  最初からもう一度
+                  {t.replay}
                 </Button>
-                <Link
+                <LLink
                   href="/developers"
                   className="flex items-center justify-center rounded-2xl bg-teal-700 px-4 py-4 text-base font-bold text-white"
                 >
-                  本番につないで試す
-                </Link>
+                  {t.goLive}
+                </LLink>
               </div>
             </>
           ) : null}
@@ -581,32 +804,30 @@ export function TryExperience() {
 
         {/* ---------- right: the worker's phone ---------- */}
         <section className="space-y-2 lg:sticky lg:top-20">
-          <p className="text-center text-xs font-semibold tracking-wide text-slate-500">
-            worker のスマートフォン
-          </p>
+          <p className="text-center text-xs font-semibold tracking-wide text-slate-500">{t.phoneSide}</p>
 
           {["intro", "requesting", "funding"].includes(step) ? (
-            <Phone title="近くのタスク">
+            <Phone title={t.nearby} earnings={t.payouts}>
               <div className="grid grid-cols-2 gap-1 rounded-full bg-slate-100 p-1 text-sm font-semibold">
                 <span className="rounded-full bg-white px-3 py-2 text-center text-teal-700 shadow">
-                  近くで
+                  {t.tabNear}
                 </span>
-                <span className="px-3 py-2 text-center text-slate-500">家でできる</span>
+                <span className="px-3 py-2 text-center text-slate-500">{t.tabHome}</span>
               </div>
-              <Notice>いまは近くにタスクがありません。少し時間をおいて更新してください。</Notice>
-              <p className="text-center text-xs text-slate-400">開いている間は30秒ごとに自動で更新します</p>
+              <Notice>{t.noTasks}</Notice>
+              <p className="text-center text-xs text-slate-400">{t.autoRefresh}</p>
             </Phone>
           ) : null}
 
           {step === "open" ? (
-            <Phone title="近くのタスク">
+            <Phone title={t.nearby} earnings={t.payouts}>
               <div className="grid grid-cols-2 gap-1 rounded-full bg-slate-100 p-1 text-sm font-semibold">
                 <span className="rounded-full bg-white px-3 py-2 text-center text-teal-700 shadow">
-                  近くで
+                  {t.tabNear}
                 </span>
-                <span className="px-3 py-2 text-center text-slate-500">家でできる</span>
+                <span className="px-3 py-2 text-center text-slate-500">{t.tabHome}</span>
               </div>
-              <Notice tone="ok">新しいタスクが 1 件届きました。</Notice>
+              <Notice tone="ok">{t.newTask}</Notice>
               <button
                 type="button"
                 className={`card-link block w-full rounded-2xl text-left ${pressedId === "card" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
@@ -617,7 +838,7 @@ export function TryExperience() {
                     <span className="text-2xl font-bold text-teal-700">
                       {BOUNTY} USDC
                       <span className="ml-2 rounded-full bg-amber-400 px-2 py-0.5 align-middle text-xs font-bold text-white">
-                        新着
+                        {t.newBadge}
                       </span>
                     </span>
                     <span className="flex items-center gap-1 text-sm text-slate-500">
@@ -627,123 +848,127 @@ export function TryExperience() {
                       </span>
                     </span>
                   </div>
-                  <p className="mt-1 text-xs font-medium text-slate-500">{TASK_TYPE_JA[TYPE].name}</p>
-                  <p className="mt-1 line-clamp-3 font-medium">{QUESTION}</p>
+                  <p className="mt-1 text-xs font-medium text-slate-500">{types[TYPE].name}</p>
+                  <p className="mt-1 line-clamp-3 font-medium">{t.question}</p>
                   <p className="mt-2 text-sm text-slate-500">
-                    締切まで {remaining(deadlineIso, now)}・写真と位置が必要
+                    {t.deadlineIn} {remaining(deadlineIso, now, lang)}
+                    {pick(lang, "・", " · ")}
+                    {t.needsPhoto}
                   </p>
                 </Card>
               </button>
-              <p className="text-center text-xs text-slate-500">タップして内容を見る</p>
+              <p className="text-center text-xs text-slate-500">{t.tapToOpen}</p>
             </Phone>
           ) : null}
 
           {step === "detail" ? (
-            <Phone title="タスクの内容">
+            <Phone title={t.taskDetail} earnings={t.payouts}>
               <Card>
-                <p className="text-sm text-slate-500">確かめること・{TASK_TYPE_JA[TYPE].name}</p>
-                <p className="mt-1 text-xl font-bold leading-snug">{QUESTION}</p>
-                <p className="mt-3 text-sm text-slate-600">文章で答える（500字まで）</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{TASK_TYPE_JA[TYPE].howTo}</p>
+                <p className="text-sm text-slate-500">
+                  {t.whatToCheck}
+                  {types[TYPE].name}
+                </p>
+                <p className="mt-1 text-xl font-bold leading-snug">{t.question}</p>
+                <p className="mt-3 text-sm text-slate-600">{t.answerText}</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">{types[TYPE].howTo}</p>
               </Card>
               <Card>
                 <dl className="grid grid-cols-2 gap-y-3 text-sm">
-                  <dt className="text-slate-500">報酬</dt>
+                  <dt className="text-slate-500">{t.bounty}</dt>
                   <dd className="text-right text-lg font-bold text-teal-700">{BOUNTY} USDC</dd>
-                  <dt className="text-slate-500">締切まで</dt>
-                  <dd className="text-right font-medium">{remaining(deadlineIso, now)}</dd>
-                  <dt className="text-slate-500">場所</dt>
-                  <dd className="text-right font-medium">指定地点から {PLACE.radius_m} m 以内</dd>
-                  <dt className="text-slate-500">撮影の受付時間</dt>
-                  <dd className="text-right font-medium">「撮影を始める」から 5 分</dd>
+                  <dt className="text-slate-500">{t.deadlineIn}</dt>
+                  <dd className="text-right font-medium">{remaining(deadlineIso, now, lang)}</dd>
+                  <dt className="text-slate-500">{t.placeLabel}</dt>
+                  <dd className="text-right font-medium">{t.withinM}</dd>
+                  <dt className="text-slate-500">{t.captureWindow}</dt>
+                  <dd className="text-right font-medium">{t.captureWindowValue}</dd>
                 </dl>
               </Card>
               <Card>
-                <h4 className="mb-2 font-bold">撮影の注意</h4>
+                <h4 className="mb-2 font-bold">{t.safetyTitle}</h4>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-                  {SAFETY_NOTES.slice(0, 3).map((n) => (
-                    <li key={n}>{n}</li>
-                  ))}
+                  {safetyNotes(lang)
+                    .slice(0, 3)
+                    .map((n) => (
+                      <li key={n}>{n}</li>
+                    ))}
                 </ul>
               </Card>
               <Button onClick={() => press("claim")} pressed={pressedId === "claim"}>
-                引き受ける
+                {t.claim}
               </Button>
-              <p className="text-center text-xs text-slate-500">引き受けた後でも、いつでもやめられます。</p>
+              <p className="text-center text-xs text-slate-500">{t.quitAnytime}</p>
             </Phone>
           ) : null}
 
           {step === "claimed" && expiresIso ? (
-            <Phone title="現地へ向かう">
+            <Phone title={t.heading} earnings={t.payouts}>
               <Card>
-                <p className="text-sm text-slate-500">引き受けの残り時間</p>
-                <p className="mt-1 text-4xl font-bold tabular-nums">{remaining(expiresIso, now)}</p>
+                <p className="text-sm text-slate-500">{t.claimLeft}</p>
+                <p className="mt-1 text-4xl font-bold tabular-nums">{remaining(expiresIso, now, lang)}</p>
               </Card>
-              <Notice>
-                お店の前に着いたら「現地に着いた」を押してください。そこから撮影の受付時間が始まります。
-              </Notice>
+              <Notice>{t.arriveHint}</Notice>
               <Button onClick={() => press("arrive")} pressed={pressedId === "arrive"}>
-                現地に着いた（撮影を始める）
+                {t.arrive}
               </Button>
               <Button variant="danger" onClick={reset}>
-                やめる
+                {t.quit}
               </Button>
             </Phone>
           ) : null}
 
           {step === "capture" ? (
-            <Phone title="撮影と回答">
-              <p className="whitespace-pre-wrap rounded-2xl bg-slate-100 p-3 text-sm">{QUESTION}</p>
+            <Phone title={t.captureTitle} earnings={t.payouts}>
+              <p className="whitespace-pre-wrap rounded-2xl bg-slate-100 p-3 text-sm">{t.question}</p>
               <Notice>
-                撮影の受付時間:{" "}
+                {t.windowLabel}
                 <b className="tabular-nums">
-                  4分{String(59 - (Math.floor((now - startedAt) / 1000) % 60)).padStart(2, "0")}秒
+                  {pick(lang, "4分", "4m ")}
+                  {String(59 - (Math.floor((now - startedAt) / 1000) % 60)).padStart(2, "0")}
+                  {pick(lang, "秒", "s")}
                 </b>
-                {attempt > 1 ? `・${attempt}回目の提出` : ""}
+                {attempt > 1 ? t.attemptN(attempt) : ""}
               </Notice>
               {photo ? (
                 // biome-ignore lint/performance/noImgElement: inline sample image
-                <img
-                  src={photo}
-                  alt="撮影した見本の写真"
-                  className="aspect-[3/4] w-full rounded-2xl object-cover"
-                />
+                <img src={photo} alt={t.photoAlt} className="aspect-[3/4] w-full rounded-2xl object-cover" />
               ) : (
                 <div className="flex aspect-[3/4] w-full items-center justify-center rounded-2xl bg-black text-center text-sm text-slate-300">
-                  カメラの映像
+                  {t.cameraPlaceholder[0]}
                   <br />
-                  （体験では見本の掲示が写ります）
+                  {t.cameraPlaceholder[1]}
                 </div>
               )}
               <p className="text-xs text-slate-500">
-                {TASK_TYPE_JA[TYPE].howTo}人の顔が大きく写らないようにしてください。
+                {types[TYPE].howTo}
+                {t.noFaces}
               </p>
               {!photo ? (
                 <Button onClick={() => press("shoot")} pressed={pressedId === "shoot"}>
-                  撮影する
+                  {t.shoot}
                 </Button>
               ) : (
                 <>
-                  <p className="text-sm text-slate-600">位置を取得しました（誤差 約12 m）</p>
+                  <p className="text-sm text-slate-600">{t.located}</p>
                   <div className="grid gap-2">
-                    <p className="text-xs font-medium text-slate-500">体験用：答え方を選べます</p>
+                    <p className="text-xs font-medium text-slate-500">{t.pickTitle}</p>
                     <button
                       type="button"
                       onClick={() => press("pickSummary")}
                       className={`tap rounded-xl px-3 py-2 text-left text-sm ring-1 ${isSummary ? "bg-amber-50 ring-amber-400" : "bg-white ring-slate-300"} ${pressedId === "pickSummary" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
                     >
-                      要約して送る（AI に差し戻される例）
+                      {t.pickSummary}
                     </button>
                     <button
                       type="button"
                       onClick={() => press("pickExact")}
                       className={`tap rounded-xl px-3 py-2 text-left text-sm ring-1 ${isExact ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-300"} ${pressedId === "pickExact" ? "scale-[0.98] ring-4 ring-teal-300" : ""}`}
                     >
-                      書いてあるとおりに書き起こす
+                      {t.pickExact}
                     </button>
                   </div>
                   <label className="grid gap-1 text-sm font-medium text-slate-700">
-                    文章で答える（500字まで）
+                    {t.answerText}
                     <textarea
                       value={answer}
                       onChange={(e) => {
@@ -753,16 +978,16 @@ export function TryExperience() {
                       maxLength={500}
                       rows={6}
                       className="rounded-2xl border border-slate-300 px-4 py-3 text-base leading-relaxed"
-                      placeholder="見たこと・書かれていたことを、そのまま書いてください"
+                      placeholder={t.placeholder}
                     />
-                    <span className="text-right text-xs text-slate-400">{answer.length} 字</span>
+                    <span className="text-right text-xs text-slate-400">{t.chars(answer.length)}</span>
                   </label>
                   <Button
                     onClick={() => press("submit")}
                     disabled={!answer.trim()}
                     pressed={pressedId === "submit"}
                   >
-                    この内容で送信する
+                    {t.submit}
                   </Button>
                 </>
               )}
@@ -770,90 +995,81 @@ export function TryExperience() {
           ) : null}
 
           {step === "checking" ? (
-            <Phone title="判定">
+            <Phone title={t.verdict} earnings={t.payouts}>
               <Card>
-                <p className="text-xl font-bold text-sky-700">内容を確認しています</p>
+                <p className="text-xl font-bold text-sky-700">{t.checking}</p>
                 <ul className="mt-3 space-y-2 text-sm">
-                  {CHECKS.map((c, i) => (
+                  {t.checks.map((c, i) => (
                     <li key={c} className="flex items-center justify-between">
                       <span className="text-slate-700">{c}</span>
                       <span className={i < checkIdx ? "font-semibold text-emerald-700" : "text-slate-300"}>
-                        {i < checkIdx ? "合格" : "…"}
+                        {i < checkIdx ? t.pass : "…"}
                       </span>
                     </li>
                   ))}
                   <li className="flex items-center justify-between">
-                    <span className="text-slate-700">写真と答えが依頼に合っているか（AI）</span>
-                    <span className={checkIdx >= CHECKS.length ? "text-sky-700" : "text-slate-300"}>
-                      {checkIdx >= CHECKS.length ? "確認中…" : "…"}
+                    <span className="text-slate-700">{t.aiCheck}</span>
+                    <span className={checkIdx >= nChecks ? "text-sky-700" : "text-slate-300"}>
+                      {checkIdx >= nChecks ? t.checkingNow : "…"}
                     </span>
                   </li>
                 </ul>
               </Card>
-              <p className="text-center text-xs text-slate-500">
-                本番では、Claude が写真と答えを依頼文と突き合わせます。
-              </p>
+              <p className="text-center text-xs text-slate-500">{t.aiNote}</p>
             </Phone>
           ) : null}
 
           {step === "rejected" ? (
-            <Phone title="判定">
+            <Phone title={t.verdict} earnings={t.payouts}>
               <Card>
-                <p className="text-xl font-bold text-rose-700">確認できませんでした</p>
+                <p className="text-xl font-bold text-rose-700">{t.rejected}</p>
                 <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                  AI の確認:
-                  {isSummary
-                    ? "依頼は「書いてあるとおりに書き起こす」ことですが、送られた答えは要約になっています。掲示の文字をそのまま書いてください。"
-                    : "送られた答えが、写真の掲示の文字と一致しません。掲示の文字をそのまま書いてください。"}
+                  {t.aiReview}
+                  {isSummary ? t.rejectSummary : t.rejectMismatch}
                 </p>
-                <p className="mt-2 text-sm text-slate-500">あと {3 - attempt} 回やり直せます。</p>
+                <p className="mt-2 text-sm text-slate-500">{t.retriesLeft(3 - attempt)}</p>
               </Card>
               <Button onClick={() => press("retry")} pressed={pressedId === "retry"}>
-                撮り直す
+                {t.retake}
               </Button>
               <Button variant="secondary" onClick={reset}>
-                一覧に戻る
+                {t.backToList}
               </Button>
             </Phone>
           ) : null}
 
           {step === "verified" ? (
-            <Phone title="判定">
+            <Phone title={t.verdict} earnings={t.payouts}>
               <Card>
                 <div className="text-center">
                   <p className="text-5xl">✓</p>
-                  <p className="mt-2 text-xl font-bold text-emerald-700">確認できました</p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    報酬 {BOUNTY} USDC は、依頼が確定したあとに送られます。
-                  </p>
+                  <p className="mt-2 text-xl font-bold text-emerald-700">{t.verified}</p>
+                  <p className="mt-2 text-sm text-slate-600">{t.paidAfter}</p>
                 </div>
               </Card>
               <p className="text-center text-sm text-slate-500">
-                支払いを待っています
+                {t.waitingPay}
                 <Dots />
               </p>
             </Phone>
           ) : null}
 
           {step === "settled" ? (
-            <Phone title="支払い履歴">
+            <Phone title={t.payouts} earnings={t.payouts}>
               <Card>
                 <div className="flex items-baseline justify-between">
                   <span className="text-2xl font-bold text-teal-700">{BOUNTY} USDC</span>
                   <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
-                    受け取り済み
+                    {t.received}
                   </span>
                 </div>
-                <p className="mt-1 text-xs font-medium text-slate-500">{TASK_TYPE_JA[TYPE].name}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">{types[TYPE].name}</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  {new Date(now).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}
+                  {new Date(now).toLocaleString(dateLocale(lang), { timeZone: "Asia/Tokyo" })}
                 </p>
-                <p className="mt-2 text-sm text-teal-700 underline">取引記録を見る（Solana Explorer）</p>
+                <p className="mt-2 text-sm text-teal-700 underline">{t.viewTx}</p>
               </Card>
-              <Notice tone="ok">
-                体験はここまでです。本番では、この取引が Solana Devnet に記録され、Explorer
-                で誰でも見られます。
-              </Notice>
+              <Notice tone="ok">{t.endNote}</Notice>
             </Phone>
           ) : null}
         </section>
@@ -861,13 +1077,3 @@ export function TryExperience() {
     </div>
   );
 }
-
-/** Machine checks shown while a submission is examined, in the production order (minus the AI review). */
-const CHECKS = [
-  "この依頼のために撮られた写真か（合言葉）",
-  "いま撮られた写真か（受付時間）",
-  "写真の形式",
-  "指定された場所で撮られたか（位置）",
-  "過去の写真の使い回しでないか",
-  "ほかの人の写真と同じでないか",
-];

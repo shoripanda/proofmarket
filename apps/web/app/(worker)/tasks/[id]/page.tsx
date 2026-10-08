@@ -3,9 +3,11 @@ import type { TaskType } from "@proofmarket/core";
 // W-04 タスク詳細 — 質問、地図リンク、半径、報酬、締切、撮影の注意、「引き受ける」。
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button, Card, Notice, remaining, SAFETY_NOTES, Shell, useNow, yen } from "@/components/ui";
-import { type AnswerSchemaView, answerFormatJa, TASK_TYPE_JA } from "@/lib/answers";
+import { Button, Card, Notice, remaining, Shell, safetyNotes, useNow, yen } from "@/components/ui";
+import { type AnswerSchemaView, answerFormat, taskTypeText } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
+import { useLang } from "@/lib/client/lang";
+import { langHref, pick } from "@/lib/lang";
 
 interface Task {
   verification_id: string;
@@ -21,6 +23,8 @@ interface Task {
 }
 
 export default function TaskDetailPage() {
+  const lang = useLang();
+  const types = taskTypeText(lang);
   const { id } = useParams<{ id: string }>();
   const api = useApi();
   const router = useRouter();
@@ -30,49 +34,58 @@ export default function TaskDetailPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api<Task>(`/v1/worker/tasks/${id}`).then(setT, (e) => setErr(errorText(e)));
-  }, [api, id]);
+    api<Task>(`/v1/worker/tasks/${id}`).then(setT, (e) => setErr(errorText(e, lang)));
+  }, [api, id, lang]);
 
   async function claim() {
     setBusy(true);
     setErr(null);
     try {
       const c = await api<{ claim_id: string }>(`/v1/worker/tasks/${id}/claim`, { method: "POST" });
-      router.push(`/claims/${c.claim_id}`);
+      router.push(langHref(lang, `/claims/${c.claim_id}`));
     } catch (e) {
-      setErr(errorText(e));
+      setErr(errorText(e, lang));
       setBusy(false);
     }
   }
 
   return (
-    <Shell title="タスクの内容" back="/tasks">
+    <Shell title={pick(lang, "タスクの内容", "Task details")} back="/tasks">
       {err ? <Notice tone="error">{err}</Notice> : null}
       {t ? (
         <>
           <Card>
             <p className="text-sm text-slate-500">
-              確かめること・{TASK_TYPE_JA[t.type as TaskType]?.name ?? t.type}
+              {pick(lang, "確かめること・", "What to check · ")}
+              {types[t.type as TaskType]?.name ?? t.type}
             </p>
             <p className="mt-1 text-xl font-bold leading-snug">{t.question}</p>
-            <p className="mt-3 text-sm text-slate-600">{answerFormatJa(t.answer_schema)}</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              {TASK_TYPE_JA[t.type as TaskType]?.howTo}
-            </p>
+            <p className="mt-3 text-sm text-slate-600">{answerFormat(lang, t.answer_schema)}</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">{types[t.type as TaskType]?.howTo}</p>
           </Card>
           <Card>
             <dl className="grid grid-cols-2 gap-y-3 text-sm">
-              <dt className="text-slate-500">報酬</dt>
+              <dt className="text-slate-500">{pick(lang, "報酬", "Bounty")}</dt>
               <dd className="text-right text-lg font-bold text-teal-700">{yen(t.reward.amount)}</dd>
-              <dt className="text-slate-500">締切まで</dt>
-              <dd className="text-right font-medium">{remaining(t.deadline, now)}</dd>
-              <dt className="text-slate-500">場所</dt>
+              <dt className="text-slate-500">{pick(lang, "締切まで", "Deadline in")}</dt>
+              <dd className="text-right font-medium">{remaining(t.deadline, now, lang)}</dd>
+              <dt className="text-slate-500">{pick(lang, "場所", "Place")}</dt>
               <dd className="text-right font-medium">
-                {t.location ? `指定地点から ${t.location.radius_m} m 以内` : "どこでも"}
+                {t.location
+                  ? pick(
+                      lang,
+                      `指定地点から ${t.location.radius_m} m 以内`,
+                      `within ${t.location.radius_m} m of the pin`,
+                    )
+                  : pick(lang, "どこでも", "anywhere")}
               </dd>
-              <dt className="text-slate-500">撮影の受付時間</dt>
+              <dt className="text-slate-500">{pick(lang, "撮影の受付時間", "Capture window")}</dt>
               <dd className="text-right font-medium">
-                「撮影を始める」から {Math.round(t.freshness_max_age_seconds / 60)} 分
+                {pick(
+                  lang,
+                  `「撮影を始める」から ${Math.round(t.freshness_max_age_seconds / 60)} 分`,
+                  `${Math.round(t.freshness_max_age_seconds / 60)} min from “Start capture”`,
+                )}
               </dd>
             </dl>
             {t.location ? (
@@ -82,25 +95,33 @@ export default function TaskDetailPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                地図アプリで場所を開く
+                {pick(lang, "地図アプリで場所を開く", "Open the place in a map app")}
               </a>
             ) : null}
           </Card>
           <Card>
-            <h2 className="mb-2 font-bold">撮影の注意</h2>
+            <h2 className="mb-2 font-bold">{pick(lang, "撮影の注意", "Before you shoot")}</h2>
             <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-              {SAFETY_NOTES.map((n) => (
+              {safetyNotes(lang).map((n) => (
                 <li key={n}>{n}</li>
               ))}
             </ul>
           </Card>
           <Button onClick={claim} disabled={busy || t.open_slots <= 0}>
-            {busy ? "引き受けています…" : "引き受ける"}
+            {busy
+              ? pick(lang, "引き受けています…", "Claiming…")
+              : pick(lang, "引き受ける", "Claim this task")}
           </Button>
-          <p className="text-center text-xs text-slate-500">引き受けた後でも、いつでもやめられます。</p>
+          <p className="text-center text-xs text-slate-500">
+            {pick(
+              lang,
+              "引き受けた後でも、いつでもやめられます。",
+              "You can quit at any time, even after claiming.",
+            )}
+          </p>
         </>
       ) : !err ? (
-        <p className="text-center text-slate-400">読み込み中…</p>
+        <p className="text-center text-slate-400">{pick(lang, "読み込み中…", "Loading…")}</p>
       ) : null}
     </Shell>
   );

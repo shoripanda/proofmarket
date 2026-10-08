@@ -1,6 +1,8 @@
 import "server-only";
+import { type Lang, pick } from "./lang";
 
 // Consent page for MCP OAuth (05 §6.2). Plain HTML from the route handler: no client JS, no third-party origins.
+// The language follows the browser's Accept-Language (the route passes it), since there is no /en URL here.
 
 const esc = (s: string) =>
   s.replace(
@@ -30,37 +32,73 @@ button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:8px;backgr
 .host{background:#334155}.warn{background:#422006;border-color:#854d0e}.err{background:#450a0a;border-color:#7f1d1d;color:#fecaca}
 input[type=password]{background:#0f172a;color:#e2e8f0;border-color:#475569}button{background:#e2e8f0;color:#0f172a}}`;
 
-const page = (body: string) =>
-  `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ProofMarket に接続</title><style>${STYLE}</style></head><body><main>${body}</main></body></html>`;
+/** "en" when the browser prefers English over Japanese; Japanese otherwise. */
+export function langFromAccept(header: string | null): Lang {
+  const langs = (header ?? "")
+    .split(",")
+    .map((p) => p.trim().split(";")[0]?.toLowerCase() ?? "")
+    .filter(Boolean);
+  for (const l of langs) {
+    if (l.startsWith("ja")) return "ja";
+    if (l.startsWith("en")) return "en";
+  }
+  return "ja";
+}
+
+const page = (lang: Lang, title: string, body: string) =>
+  `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${STYLE}</style></head><body><main>${body}</main></body></html>`;
 
 export function consentPage(o: {
   clientName: string;
   redirectUri: string;
   params: URLSearchParams;
   error?: string;
+  lang?: Lang;
 }) {
+  const lang = o.lang ?? "ja";
   const hidden = [...o.params.entries()]
     .filter(([k]) => k !== "api_key")
     .map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`)
     .join("");
+  const title = pick(lang, "ProofMarket に接続", "Connect to ProofMarket");
+  const host = esc(new URL(o.redirectUri).host);
   const body = `
-<h1>ProofMarket に接続</h1>
-<p><b>${esc(o.clientName)}</b> が、あなたの API キーで ProofMarket に依頼を出せるようにします。</p>
-<p>接続が終わると <span class="host">${esc(new URL(o.redirectUri).host)}</span> に戻ります。</p>
-<p class="warn">自分で始めた接続でなければ、キーを入れずにこの画面を閉じてください。</p>
+<h1>${esc(title)}</h1>
+<p>${pick(
+    lang,
+    `<b>${esc(o.clientName)}</b> が、あなたの API キーで ProofMarket に依頼を出せるようにします。`,
+    `This lets <b>${esc(o.clientName)}</b> send requests to ProofMarket with your API key.`,
+  )}</p>
+<p>${pick(
+    lang,
+    `接続が終わると <span class="host">${host}</span> に戻ります。`,
+    `After connecting you will return to <span class="host">${host}</span>.`,
+  )}</p>
+<p class="warn">${pick(
+    lang,
+    "自分で始めた接続でなければ、キーを入れずにこの画面を閉じてください。",
+    "If you did not start this connection yourself, close this page without entering a key.",
+  )}</p>
 ${o.error ? `<p class="err">${esc(o.error)}</p>` : ""}
 <form method="post" action="/oauth/authorize">${hidden}
-<label for="k">API キー（pm_test_ で始まる文字列）</label>
+<label for="k">${pick(lang, "API キー（pm_test_ で始まる文字列）", "API key (starts with pm_test_)")}</label>
 <input id="k" name="api_key" type="password" autocomplete="off" required>
-<button type="submit">接続を許可する</button>
+<button type="submit">${pick(lang, "接続を許可する", "Allow the connection")}</button>
 </form>`;
-  return new Response(page(body), { status: o.error ? 401 : 200, headers: HEADERS });
+  return new Response(page(lang, title, body), { status: o.error ? 401 : 200, headers: HEADERS });
 }
 
-export function errorPage(message: string) {
+export function errorPage(message: string, lang: Lang = "ja") {
+  const title = pick(lang, "接続できません", "Cannot connect");
   return new Response(
     page(
-      `<h1>接続できません</h1><p class="err">${esc(message)}</p><p>接続を始めたアプリに戻って、やり直してください。</p>`,
+      lang,
+      title,
+      `<h1>${esc(title)}</h1><p class="err">${esc(message)}</p><p>${pick(
+        lang,
+        "接続を始めたアプリに戻って、やり直してください。",
+        "Go back to the app that started the connection and try again.",
+      )}</p>`,
     ),
     { status: 400, headers: HEADERS },
   );

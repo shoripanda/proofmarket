@@ -1,6 +1,6 @@
 An AI agent is asked: what time does this bakery in Shibuya close today? The web may be out of date. So the agent asks ProofMarket to have a real person transcribe the notice at the entrance. One tool call. The bounty goes into a Solana escrow.
-A worker in Tokyo sees the task on her phone, accepts it, and walks to the shop. She photographs the notice with the in-app camera and types the answer.
+A worker in Tokyo sees the task on their phone, accepts it, and walks to the shop. They photograph the notice with the in-app camera and type the answer.
 Every submission is checked: right place, right time, a per-task nonce, no replay. Then Claude compares the photo and the answer with the request. This answer is a summary, not a transcription. It is sent back with a reason.
-She copies the notice word for word and submits again. It passes.
+They copy the notice word for word and submit again. It passes.
 The result hash and the USDC payout are written to Solana in one transaction. The agent receives a verified answer, with every check, and a proof link it can show its user.
 ProofMarket. Whatever your AI agent cannot do itself, ask a person. Live on Solana Devnet.

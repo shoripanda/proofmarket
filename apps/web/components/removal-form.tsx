@@ -1,8 +1,11 @@
 "use client";
 // S-08 removal request form. Posts to /v1/public/removal-requests (04 §3.21).
 import { useState } from "react";
+import { useLang } from "@/lib/client/lang";
+import { pick } from "@/lib/lang";
 
 export function RemovalForm() {
+  const lang = useLang();
   const [email, setEmail] = useState("");
   const [vid, setVid] = useState("");
   const [place, setPlace] = useState("");
@@ -30,9 +33,13 @@ export function RemovalForm() {
   if (state === "done") {
     return (
       <div className="rounded-2xl bg-emerald-50 p-6 text-emerald-900 ring-1 ring-emerald-200">
-        <p className="font-bold">受け付けました。</p>
+        <p className="font-bold">{pick(lang, "受け付けました。", "Received.")}</p>
         <p className="mt-1 text-sm leading-relaxed">
-          運営者が内容を確かめ、1営業日を目安に対応して、入力したメールアドレスに結果をお知らせします。
+          {pick(
+            lang,
+            "運営者が内容を確かめ、1営業日を目安に対応して、入力したメールアドレスに結果をお知らせします。",
+            "The operator will review the request, aim to act within one business day, and let you know the outcome at the email address you entered.",
+          )}
         </p>
       </div>
     );
@@ -42,7 +49,7 @@ export function RemovalForm() {
     <form onSubmit={submit} className="max-w-xl space-y-5">
       <div>
         <label htmlFor="r-email" className="text-sm font-semibold">
-          連絡先のメールアドレス
+          {pick(lang, "連絡先のメールアドレス", "Contact email address")}
         </label>
         <input
           id="r-email"
@@ -55,7 +62,7 @@ export function RemovalForm() {
       </div>
       <div>
         <label htmlFor="r-vid" className="text-sm font-semibold">
-          結果ページの ID（分かれば）
+          {pick(lang, "結果ページの ID（分かれば）", "Result page ID (if known)")}
         </label>
         <input
           id="r-vid"
@@ -67,7 +74,7 @@ export function RemovalForm() {
       </div>
       <div>
         <label htmlFor="r-place" className="text-sm font-semibold">
-          店舗名や場所（任意）
+          {pick(lang, "店舗名や場所（任意）", "Shop name or place (optional)")}
         </label>
         <input
           id="r-place"
@@ -79,7 +86,7 @@ export function RemovalForm() {
       </div>
       <div>
         <label htmlFor="r-reason" className="text-sm font-semibold">
-          どうしてほしいか
+          {pick(lang, "どうしてほしいか", "What would you like us to do?")}
         </label>
         <textarea
           id="r-reason"
@@ -88,7 +95,11 @@ export function RemovalForm() {
           rows={4}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="例: 店内の客が写っているので、写真を消してほしい"
+          placeholder={pick(
+            lang,
+            "例: 店内の客が写っているので、写真を消してほしい",
+            "e.g. Customers inside the shop are visible; please delete the photo",
+          )}
           className={input}
         />
       </div>
@@ -103,11 +114,19 @@ export function RemovalForm() {
         />
       </div>
       <p className="text-xs leading-relaxed text-slate-500">
-        メールアドレスはこの依頼への連絡にだけ使い、暗号化して保存します。対応の記録として1年間残し、その後に消します。
+        {pick(
+          lang,
+          "メールアドレスはこの依頼への連絡にだけ使い、暗号化して保存します。対応の記録として1年間残し、その後に消します。",
+          "Your email address is used only to reply to this request and is stored encrypted. It is kept for one year as a record of the action taken, then deleted.",
+        )}
       </p>
       {state === "error" ? (
         <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800 ring-1 ring-rose-200">
-          送れませんでした。入力を確かめて、少し待ってからもう一度送ってください。
+          {pick(
+            lang,
+            "送れませんでした。入力を確かめて、少し待ってからもう一度送ってください。",
+            "Could not send. Please check your input, wait a moment and try again.",
+          )}
         </p>
       ) : null}
       <button
@@ -115,7 +134,9 @@ export function RemovalForm() {
         disabled={!email || !reason.trim() || state === "busy"}
         className="w-full rounded-2xl bg-teal-700 px-4 py-4 text-base font-bold text-white disabled:opacity-40"
       >
-        {state === "busy" ? "送っています…" : "削除を依頼する"}
+        {state === "busy"
+          ? pick(lang, "送っています…", "Sending…")
+          : pick(lang, "削除を依頼する", "Request removal")}
       </button>
     </form>
   );

@@ -6,8 +6,10 @@ import { LIMITS } from "@proofmarket/core/domain/limits";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Notice, remaining, Shell, useNow } from "@/components/ui";
-import { ANSWER_JA, TASK_TYPE_JA } from "@/lib/answers";
+import { ANSWER_JA, answerText, taskTypeText } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
+import { useLang } from "@/lib/client/lang";
+import { langHref, pick } from "@/lib/lang";
 import type { ClaimDetail } from "../../../lib-claim";
 
 interface Challenge {
@@ -29,6 +31,8 @@ const MAX_EDGE = 1920;
 const MAX_PHOTOS = LIMITS.media.maxPhotos;
 
 export default function CapturePage() {
+  const lang = useLang();
+  const types = taskTypeText(lang);
   const { id } = useParams<{ id: string }>();
   const api = useApi();
   const router = useRouter();
@@ -43,25 +47,25 @@ export default function CapturePage() {
   const [busy, setBusy] = useState(false);
   const schema = claim?.answer_schema;
   const needsLocation = claim?.location_required ?? true;
-  const answers = (schema?.type === "enum" ? schema.values : (claim?.answer_values ?? [])).map((v) => ({
-    value: v,
-    label: ANSWER_JA[v as AnswerValue]?.label ?? v,
-    tone: ANSWER_JA[v as AnswerValue]?.tone ?? "bg-slate-700",
-  }));
+  const answers = (schema?.type === "enum" ? schema.values : (claim?.answer_values ?? [])).map((v) =>
+    v in ANSWER_JA
+      ? { value: v, ...answerText(lang, v as AnswerValue) }
+      : { value: v, label: v, tone: "bg-slate-700" },
+  );
 
   const newChallenge = useCallback(async () => {
     setErr(null);
     try {
       setCh(await api<Challenge>(`/v1/worker/claims/${id}/challenge`, { method: "POST" }));
     } catch (e) {
-      setErr(errorText(e));
+      setErr(errorText(e, lang));
     }
-  }, [api, id]);
+  }, [api, id, lang]);
 
   useEffect(() => {
-    api<ClaimDetail>(`/v1/worker/claims/${id}`).then(setClaim, (e) => setErr(errorText(e)));
+    api<ClaimDetail>(`/v1/worker/claims/${id}`).then(setClaim, (e) => setErr(errorText(e, lang)));
     void newChallenge();
-  }, [api, id, newChallenge]);
+  }, [api, id, newChallenge, lang]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -74,11 +78,19 @@ export default function CapturePage() {
         stream = s;
         if (video.current) video.current.srcObject = s;
       })
-      .catch(() => setErr("カメラの利用を許可してください。撮影はアプリ内のカメラでのみ行えます。"));
+      .catch(() =>
+        setErr(
+          pick(
+            lang,
+            "カメラの利用を許可してください。撮影はアプリ内のカメラでのみ行えます。",
+            "Please allow camera access. Photos can only be taken with the in-app camera.",
+          ),
+        ),
+      );
     return () => {
       for (const t of stream?.getTracks() ?? []) t.stop();
     };
-  }, []);
+  }, [lang]);
 
   function locate() {
     navigator.geolocation.getCurrentPosition(
@@ -86,7 +98,13 @@ export default function CapturePage() {
         setFix({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: Math.round(p.coords.accuracy) }),
       () => {
         if (needsLocation)
-          setErr("位置情報の利用を許可してください。指定の場所の近くにいることの確認に使います。");
+          setErr(
+            pick(
+              lang,
+              "位置情報の利用を許可してください。指定の場所の近くにいることの確認に使います。",
+              "Please allow location access. It is used to confirm you are near the requested place.",
+            ),
+          );
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
     );
@@ -155,9 +173,9 @@ export default function CapturePage() {
           evidence: refs.map((object_ref) => ({ type: "photo", object_ref })),
         },
       });
-      router.replace(`/claims/${id}/result`);
+      router.replace(langHref(lang, `/claims/${id}/result`));
     } catch (e) {
-      setErr(errorText(e));
+      setErr(errorText(e, lang));
       setBusy(false);
     }
   }
@@ -165,14 +183,17 @@ export default function CapturePage() {
   const expired = ch ? new Date(ch.expires_at).getTime() <= now : false;
   const full = photos.length >= MAX_PHOTOS;
   return (
-    <Shell title="撮影と回答" back={`/claims/${id}`}>
+    <Shell title={pick(lang, "撮影と回答", "Shoot and answer")} back={`/claims/${id}`}>
       {claim ? (
         <p className="whitespace-pre-wrap rounded-2xl bg-slate-50 p-3 text-sm">{claim.question}</p>
       ) : null}
       {ch ? (
         <Notice tone={expired ? "error" : "info"}>
-          撮影の受付時間: <b className="tabular-nums">{remaining(ch.expires_at, now)}</b>
-          {expired ? "（もう一度「撮影を始める」を押してください）" : ""}
+          {pick(lang, "撮影の受付時間: ", "Capture window: ")}
+          <b className="tabular-nums">{remaining(ch.expires_at, now, lang)}</b>
+          {expired
+            ? pick(lang, "（もう一度「撮影を始める」を押してください）", " (tap “Start capture” again)")
+            : ""}
         </Notice>
       ) : null}
       {err ? <Notice tone="error">{err}</Notice> : null}
@@ -182,8 +203,13 @@ export default function CapturePage() {
         <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full object-cover" />
       </div>
       <p className="text-xs text-slate-500">
-        {TASK_TYPE_JA[claim?.type as TaskType]?.howTo ?? "確かめた物が分かる写真を撮ってください。"}
-        人の顔が大きく写らないようにしてください。写真は{MAX_PHOTOS}枚まで送れます。
+        {types[claim?.type as TaskType]?.howTo ??
+          pick(lang, "確かめた物が分かる写真を撮ってください。", "Take a photo that shows what you checked.")}
+        {pick(
+          lang,
+          `人の顔が大きく写らないようにしてください。写真は${MAX_PHOTOS}枚まで送れます。`,
+          ` Keep people's faces out of the frame. You can send up to ${MAX_PHOTOS} photos.`,
+        )}
       </p>
 
       {photos.length ? (
@@ -193,7 +219,7 @@ export default function CapturePage() {
               {/* biome-ignore lint/performance/noImgElement: local object URL preview */}
               <img
                 src={p.url}
-                alt={`撮影した写真 ${i + 1}枚目`}
+                alt={pick(lang, `撮影した写真 ${i + 1}枚目`, `Photo ${i + 1}`)}
                 className="aspect-[3/4] w-full rounded-xl object-cover"
               />
               <button
@@ -201,9 +227,9 @@ export default function CapturePage() {
                 onClick={() => removePhoto(i)}
                 disabled={busy}
                 className="absolute top-1 right-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-bold text-white"
-                aria-label={`${i + 1}枚目を消す`}
+                aria-label={pick(lang, `${i + 1}枚目を消す`, `Remove photo ${i + 1}`)}
               >
-                消す
+                {pick(lang, "消す", "Remove")}
               </button>
             </li>
           ))}
@@ -212,7 +238,11 @@ export default function CapturePage() {
 
       {full ? (
         <p className="text-sm text-slate-600">
-          {MAX_PHOTOS}枚撮りました。撮り直すときは「消す」を押してください。
+          {pick(
+            lang,
+            `${MAX_PHOTOS}枚撮りました。撮り直すときは「消す」を押してください。`,
+            `${MAX_PHOTOS} photos taken. Tap “Remove” to retake one.`,
+          )}
         </p>
       ) : (
         <Button
@@ -220,7 +250,13 @@ export default function CapturePage() {
           onClick={shoot}
           disabled={!ch || expired || busy}
         >
-          {photos.length ? `もう1枚撮る（${photos.length}/${MAX_PHOTOS}枚）` : "撮影する"}
+          {photos.length
+            ? pick(
+                lang,
+                `もう1枚撮る（${photos.length}/${MAX_PHOTOS}枚）`,
+                `Take another (${photos.length}/${MAX_PHOTOS})`,
+              )
+            : pick(lang, "撮影する", "Take the photo")}
         </Button>
       )}
 
@@ -228,35 +264,59 @@ export default function CapturePage() {
         <>
           {needsLocation ? (
             <p className="text-sm text-slate-600">
-              {fix ? `位置を取得しました（誤差 約${fix.accuracy} m）` : "位置を取得しています…"}
+              {fix
+                ? pick(
+                    lang,
+                    `位置を取得しました（誤差 約${fix.accuracy} m）`,
+                    `Location acquired (accuracy about ${fix.accuracy} m)`,
+                  )
+                : pick(lang, "位置を取得しています…", "Getting your location…")}
               {fix && fix.accuracy > 100
-                ? " — 精度が足りません。空の見える場所で少し待ってから撮り直してください。"
+                ? pick(
+                    lang,
+                    " — 精度が足りません。空の見える場所で少し待ってから撮り直してください。",
+                    " — not accurate enough. Wait a moment somewhere with open sky and retake.",
+                  )
                 : ""}
             </p>
           ) : null}
           {schema?.type === "number" ? (
             <label className="grid gap-1 text-sm font-medium text-slate-700">
-              数字で答える{schema.unit ? `（単位: ${schema.unit}）` : ""}
+              {pick(
+                lang,
+                `数字で答える${schema.unit ? `（単位: ${schema.unit}）` : ""}`,
+                `Answer with a number${schema.unit ? ` (unit: ${schema.unit})` : ""}`,
+              )}
               <input
                 inputMode="decimal"
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 className="rounded-2xl border border-slate-300 px-4 py-4 text-2xl font-bold tabular-nums"
-                placeholder="例: 1280"
+                placeholder={pick(lang, "例: 1280", "e.g. 1280")}
               />
             </label>
           ) : schema?.type === "text" ? (
             <label className="grid gap-1 text-sm font-medium text-slate-700">
-              文章で答える{schema.max_chars ? `（${schema.max_chars}字まで）` : ""}
+              {pick(
+                lang,
+                `文章で答える${schema.max_chars ? `（${schema.max_chars}字まで）` : ""}`,
+                `Answer in text${schema.max_chars ? ` (up to ${schema.max_chars} characters)` : ""}`,
+              )}
               <textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 maxLength={schema.max_chars ?? 4000}
                 rows={8}
                 className="rounded-2xl border border-slate-300 px-4 py-3 text-base leading-relaxed"
-                placeholder="見たこと・書かれていたこと・聞いたことを、そのまま書いてください"
+                placeholder={pick(
+                  lang,
+                  "見たこと・書かれていたこと・聞いたことを、そのまま書いてください",
+                  "Write exactly what you saw, read or were told",
+                )}
               />
-              <span className="text-right text-xs text-slate-400">{answer.length} 字</span>
+              <span className="text-right text-xs text-slate-400">
+                {pick(lang, `${answer.length} 字`, `${answer.length} chars`)}
+              </span>
             </label>
           ) : (
             <div className="grid gap-3">
@@ -273,13 +333,13 @@ export default function CapturePage() {
             </div>
           )}
           <Button onClick={submit} disabled={!answer.trim() || (needsLocation && !fix) || busy || expired}>
-            {busy ? "送信中…" : "この内容で送信する"}
+            {busy ? pick(lang, "送信中…", "Sending…") : pick(lang, "この内容で送信する", "Submit")}
           </Button>
         </>
       ) : null}
       {expired ? (
         <Button variant="secondary" onClick={newChallenge}>
-          撮影を始める（受付時間をやり直す）
+          {pick(lang, "撮影を始める（受付時間をやり直す）", "Start capture (new window)")}
         </Button>
       ) : null}
     </Shell>

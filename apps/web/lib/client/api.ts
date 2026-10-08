@@ -1,5 +1,6 @@
 "use client";
 import { useCallback } from "react";
+import { type Lang, pick } from "@/lib/lang";
 import { useSession } from "./auth";
 
 export class ApiErr extends Error {
@@ -63,7 +64,33 @@ export const ERROR_JA: Record<string, string> = {
   RATE_LIMITED: "少し待ってからもう一度お試しください。",
   FEATURE_DISABLED: "現在この操作は止められています。しばらくお待ちください。",
 };
-export const errorText = (e: unknown) =>
-  e instanceof ApiErr
-    ? (ERROR_JA[e.code] ?? `エラーが発生しました（${e.code}）`)
-    : "通信に失敗しました。電波の良い場所で再度お試しください。";
+
+const ERROR_EN: Record<string, string> = {
+  UNAUTHENTICATED: "Please sign in again.",
+  WORKER_NOT_ONBOARDED: "Please finish registration first.",
+  INVITE_INVALID: "The invite code is wrong or has expired.",
+  TASK_NOT_CLAIMABLE: "This task can no longer be claimed.",
+  NO_OPEN_SLOT: "Someone else claimed it first.",
+  ALREADY_CLAIMED: "You have already claimed this task.",
+  TASK_EXPIRED: "The deadline has passed.",
+  CLAIM_NOT_ACTIVE: "This claim has ended.",
+  NONCE_EXPIRED: "The capture window has closed. Tap “Start capture” again.",
+  NONCE_INVALID: "Please take the photo again.",
+  NONCE_USED: "This capture has already been submitted.",
+  MEDIA_TYPE_UNSUPPORTED: "That photo format is not supported. Please retake it.",
+  MEDIA_TOO_LARGE: "The photo is too large. Please retake it.",
+  RATE_LIMITED: "Please wait a moment and try again.",
+  FEATURE_DISABLED: "This action is paused right now. Please try again later.",
+};
+
+export const errorText = (e: unknown, lang: Lang = "ja") => {
+  if (e instanceof ApiErr) {
+    const known = (lang === "en" ? ERROR_EN : ERROR_JA)[e.code];
+    return known ?? pick(lang, `エラーが発生しました（${e.code}）`, `Something went wrong (${e.code}).`);
+  }
+  return pick(
+    lang,
+    "通信に失敗しました。電波の良い場所で再度お試しください。",
+    "The connection failed. Please try again where the signal is better.",
+  );
+};

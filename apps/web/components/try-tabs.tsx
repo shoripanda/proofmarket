@@ -1,20 +1,42 @@
 "use client";
 // /try: two stories, one request and ten at once. The tab is remembered only for this visit.
 import { useState } from "react";
+import { useLang } from "@/lib/client/lang";
+import { pick } from "@/lib/lang";
 import { TryExperience } from "./try-experience";
 import { TryScale } from "./try-scale";
 
-const TABS = [
-  ["one", "1件の依頼", "掲示を書き起こしてもらう。差し戻しから支払いまで"],
-  ["scale", "大勢で同時に", "都内10駅のエレベーターを一斉に確かめる"],
-] as const;
-
 export function TryTabs() {
+  const lang = useLang();
   const [tab, setTab] = useState<"one" | "scale">("one");
+  const tabs = [
+    [
+      "one",
+      pick(lang, "1件の依頼", "One request"),
+      pick(
+        lang,
+        "掲示を書き起こしてもらう。差し戻しから支払いまで",
+        "A sign transcribed: from a rejected attempt to the payout",
+      ),
+    ],
+    [
+      "scale",
+      pick(lang, "大勢で同時に", "Many at once"),
+      pick(
+        lang,
+        "都内10駅のエレベーターを一斉に確かめる",
+        "Ten station lifts across Tokyo, checked at the same time",
+      ),
+    ],
+  ] as const;
   return (
     <div className="space-y-5">
-      <div className="grid gap-2 sm:grid-cols-2" role="tablist" aria-label="体験の筋書き">
-        {TABS.map(([k, label, sub]) => (
+      <div
+        className="grid gap-2 sm:grid-cols-2"
+        role="tablist"
+        aria-label={pick(lang, "体験の筋書き", "Stories to play")}
+      >
+        {tabs.map(([k, label, sub]) => (
           <button
             key={k}
             type="button"

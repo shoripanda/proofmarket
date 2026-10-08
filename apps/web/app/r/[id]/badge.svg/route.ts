@@ -1,5 +1,6 @@
 // GET /r/{id}/badge.svg — one-line "a human checked this" badge an agent can embed next to its answer
-// (01 §4.21). Same public-safe facts as the page; a missing or unfinished result reads 確認中.
+// (01 §4.21). Same public-safe facts as the page; a missing or unfinished result reads 確認中 / pending.
+// ?lang=en gives the English wording (the badge is an image, so the page language cannot reach it).
 import { ApiError } from "@proofmarket/core";
 import { appContext } from "@/lib/context";
 import { type IdParams, route } from "@/lib/http";
@@ -17,13 +18,14 @@ const esc = (s: string) =>
 // Rough advance widths at 12px: full-width characters take the em, the rest about 7px.
 const width = (s: string) => [...s].reduce((n, c) => n + ((c.codePointAt(0) ?? 0) > 0xff ? 12 : 7), 0) + 16;
 
-export const GET = route<IdParams>(async (_req, { params }) => {
+export const GET = route<IdParams>(async (req, { params }) => {
   const { id } = await params;
+  const lang = new URL(req.url).searchParams.get("lang") === "en" ? "en" : "ja";
   const facts = await publicResult(appContext(), id).catch((e) => {
     if (e instanceof ApiError && e.code === "VERIFICATION_NOT_FOUND") return null;
     throw e;
   });
-  const { label, message, ok } = badgeMessage(facts);
+  const { label, message, ok } = badgeMessage(facts, lang);
   const short = [...message].length > 40 ? `${[...message].slice(0, 39).join("")}…` : message;
   const lw = width(label);
   const mw = width(short);

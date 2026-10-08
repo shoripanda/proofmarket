@@ -2,12 +2,14 @@
 // B-01 プッシュ通知の受け取り設定 (04 §3.22). The worker picks coarse areas; their location is never sent.
 import { useCallback, useEffect, useState } from "react";
 import { errorText, useApi } from "@/lib/client/api";
+import { useLang } from "@/lib/client/lang";
+import { pick } from "@/lib/lang";
 import { Button, Card, Notice } from "./ui";
 
 const AREAS = [
-  ["shibuya", "渋谷のあたり"],
-  ["shinjuku", "新宿のあたり"],
-  ["other", "それ以外の東京都心"],
+  ["shibuya", "渋谷のあたり", "Around Shibuya"],
+  ["shinjuku", "新宿のあたり", "Around Shinjuku"],
+  ["other", "それ以外の東京都心", "Elsewhere in central Tokyo"],
 ] as const;
 type Area = (typeof AREAS)[number][0];
 const STORE = "pm.push.areas";
@@ -36,6 +38,7 @@ function readAreas(): Area[] | null {
 }
 
 export function PushOptIn() {
+  const lang = useLang();
   const api = useApi();
   const [state, setState] = useState<State>("loading");
   const [areas, setAreas] = useState<Area[]>(["shibuya"]);
@@ -81,7 +84,11 @@ export function PushOptIn() {
           });
         } catch {
           setErr(
-            "このブラウザでは通知を登録できませんでした。Chrome か Safari（ホーム画面に追加したもの）で試してください。",
+            pick(
+              lang,
+              "このブラウザでは通知を登録できませんでした。Chrome か Safari（ホーム画面に追加したもの）で試してください。",
+              "Notifications could not be registered in this browser. Try Chrome, or Safari after adding the site to your home screen.",
+            ),
           );
           return;
         }
@@ -95,7 +102,7 @@ export function PushOptIn() {
       } catch {}
       setState("on");
     } catch (e) {
-      setErr(errorText(e));
+      setErr(errorText(e, lang));
     } finally {
       setBusy(false);
     }
@@ -113,7 +120,7 @@ export function PushOptIn() {
       }
       setState("off");
     } catch (e) {
-      setErr(errorText(e));
+      setErr(errorText(e, lang));
     } finally {
       setBusy(false);
     }
@@ -123,27 +130,42 @@ export function PushOptIn() {
   if (state === "install") {
     return (
       <Notice>
-        iPhone
-        で新しい依頼の通知を受け取るには、共有ボタンから「ホーム画面に追加」をして、ホーム画面のアイコンから開いてください。
+        {pick(
+          lang,
+          "iPhone で新しい依頼の通知を受け取るには、共有ボタンから「ホーム画面に追加」をして、ホーム画面のアイコンから開いてください。",
+          "To get notified of new requests on iPhone, use the share button to add this site to your home screen, then open it from that icon.",
+        )}
       </Notice>
     );
   }
   if (state === "denied") {
     return (
       <Notice>
-        通知がブロックされています。受け取るときは、ブラウザの設定でこのサイトの通知を許可してください。
+        {pick(
+          lang,
+          "通知がブロックされています。受け取るときは、ブラウザの設定でこのサイトの通知を許可してください。",
+          "Notifications are blocked. To receive them, allow notifications for this site in your browser settings.",
+        )}
       </Notice>
     );
   }
   const toggle = (a: Area) => setAreas((cur) => (cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a]));
   return (
     <Card>
-      <h2 className="font-bold">{state === "on" ? "新しい依頼を通知中" : "新しい依頼を通知で受け取る"}</h2>
+      <h2 className="font-bold">
+        {state === "on"
+          ? pick(lang, "新しい依頼を通知中", "Notifying you of new requests")
+          : pick(lang, "新しい依頼を通知で受け取る", "Get notified of new requests")}
+      </h2>
       <p className="mt-1 text-sm leading-relaxed text-slate-600">
-        選んだ地域で依頼が出たら、画面を閉じていても通知します。今いる場所は送りません。家でできる依頼は、地域に関係なく届きます。地域を1つも選ばなければ、家でできる依頼だけを通知します。
+        {pick(
+          lang,
+          "選んだ地域で依頼が出たら、画面を閉じていても通知します。今いる場所は送りません。家でできる依頼は、地域に関係なく届きます。地域を1つも選ばなければ、家でできる依頼だけを通知します。",
+          "When a request appears in an area you chose, you are notified even with the app closed. Your location is never sent. Work-from-home requests arrive regardless of area. Choose no area to be notified of work-from-home requests only.",
+        )}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {AREAS.map(([a, label]) => (
+        {AREAS.map(([a, ja, en]) => (
           <button
             key={a}
             type="button"
@@ -152,7 +174,7 @@ export function PushOptIn() {
             aria-pressed={areas.includes(a)}
             className={`rounded-full px-3 py-1.5 text-sm ring-1 ${areas.includes(a) ? "bg-teal-700 text-white ring-teal-700" : "text-slate-700 ring-slate-300"}`}
           >
-            {label}
+            {pick(lang, ja, en)}
           </button>
         ))}
       </div>
@@ -163,11 +185,13 @@ export function PushOptIn() {
       ) : null}
       <div className="mt-3 space-y-2">
         <Button onClick={enable} disabled={busy}>
-          {state === "on" ? "地域を保存する" : "通知を受け取る"}
+          {state === "on"
+            ? pick(lang, "地域を保存する", "Save areas")
+            : pick(lang, "通知を受け取る", "Turn on notifications")}
         </Button>
         {state === "on" ? (
           <Button variant="secondary" onClick={disable} disabled={busy}>
-            通知を止める
+            {pick(lang, "通知を止める", "Turn off notifications")}
           </Button>
         ) : null}
       </div>

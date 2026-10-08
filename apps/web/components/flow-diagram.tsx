@@ -2,6 +2,7 @@
 // One request as a picture: six stages, the active one lit, a pulse travelling along the line.
 // Used by /try (driven by the demo's step) and by the home pages (looping on its own).
 import { useEffect, useState } from "react";
+import { useLang } from "@/lib/client/lang";
 
 export const FLOW_STAGES = [
   { key: "ask", label: "依頼", sub: "エージェントが頼む" },
@@ -26,15 +27,18 @@ export function FlowDiagram({
   active,
   loop = false,
   compact = false,
-  en = false,
+  en,
 }: {
   /** Index of the lit stage; -1 lights nothing. Ignored while `loop` is on. */
   active?: number;
   /** Cycle through the stages by itself (home pages). */
   loop?: boolean;
   compact?: boolean;
+  /** Force English; by default the page language decides. */
   en?: boolean;
 }) {
+  const lang = useLang();
+  const isEn = en ?? lang === "en";
   const [i, setI] = useState(0);
   useEffect(() => {
     if (!loop) return;
@@ -42,10 +46,10 @@ export function FlowDiagram({
     return () => clearInterval(t);
   }, [loop]);
   const lit = loop ? i : (active ?? -1);
-  const labels = en
+  const labels = isEn
     ? ["Ask", "Escrow", "A person acts", "Checks + AI", "Record + pay", "Result"]
     : FLOW_STAGES.map((s) => s.label);
-  const subs = en
+  const subs = isEn
     ? [
         "one tool call",
         "bounty on Solana",

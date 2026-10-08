@@ -1,24 +1,26 @@
 "use client";
-import Link from "next/link";
 import { type ReactNode, useEffect, useState } from "react";
+import { LLink, useLang } from "@/lib/client/lang";
+import { type Lang, pick } from "@/lib/lang";
 
 export function Shell({ title, back, children }: { title: string; back?: string; children: ReactNode }) {
+  const lang = useLang();
   return (
     <div className="mx-auto min-h-dvh max-w-md bg-white shadow-sm">
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
         {back ? (
-          <Link
+          <LLink
             href={back}
             className="-ml-2 rounded-lg px-2 py-1 text-2xl leading-none text-slate-500"
-            aria-label="戻る"
+            aria-label={pick(lang, "戻る", "Back")}
           >
             ‹
-          </Link>
+          </LLink>
         ) : null}
         <h1 className="flex-1 text-lg font-bold">{title}</h1>
-        <Link href="/payouts" className="text-sm font-medium text-teal-700">
-          報酬
-        </Link>
+        <LLink href="/payouts" className="text-sm font-medium text-teal-700">
+          {pick(lang, "報酬", "Earnings")}
+        </LLink>
       </header>
       <main className="space-y-4 p-4 pb-28">{children}</main>
     </div>
@@ -81,14 +83,17 @@ export function useNow(intervalMs = 1000) {
   return now;
 }
 
-export function remaining(iso: string, now: number) {
+/** "12分34秒" / "12m 34s", or "終了" / "ended" once the moment has passed. */
+export function remaining(iso: string, now: number, lang: Lang = "ja") {
   const ms = new Date(iso).getTime() - now;
-  if (ms <= 0) return "終了";
+  if (ms <= 0) return pick(lang, "終了", "ended");
   const m = Math.floor(ms / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
+  if (lang === "en")
+    return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m ${String(s).padStart(2, "0")}s`;
   return m >= 60 ? `${Math.floor(m / 60)}時間${m % 60}分` : `${m}分${String(s).padStart(2, "0")}秒`;
 }
 
 export const yen = (usdc: string) => `${usdc} USDC`;
 
-export { SAFETY_NOTES } from "./safety";
+export { SAFETY_NOTES, safetyNotes } from "./safety";

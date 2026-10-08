@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><style>
+body{margin:0;width:1920px;height:1080px;overflow:hidden;background:linear-gradient(135deg,#0f766e,#134e4a);font-family:-apple-system,"Helvetica Neue",Inter,Arial,sans-serif;color:#fff;position:relative;-webkit-font-smoothing:antialiased}
+.c{position:absolute;inset:0 0 190px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 140px;text-align:center}
+.e{font-size:30px;letter-spacing:.1em;opacity:.8;margin-bottom:22px}
+.t{font-size:86px;font-weight:800;line-height:1.15;margin:0 0 24px;text-wrap:balance}
+.s{font-size:40px;opacity:.9;line-height:1.5;max-width:1500px}
+.sub{position:absolute;left:0;right:0;bottom:0;height:190px;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:0 160px;font-size:34px;line-height:1.4;text-align:center}
+.flow{display:flex;gap:26px;align-items:center;margin-top:44px}
+.flow div{background:rgba(255,255,255,.12);border:3px solid rgba(255,255,255,.5);border-radius:22px;padding:22px 30px;font-size:32px;font-weight:700}
+.flow span{font-size:44px;opacity:.7}
+.big{display:flex;gap:110px;margin-top:40px}.big div{text-align:center}.big b{display:block;font-size:108px;font-weight:800}.big i{font-style:normal;font-size:32px;opacity:.85}
+.note{position:absolute;top:32px;right:40px;font-size:24px;opacity:.6}
+</style></head><body><div class="c" id="c"></div><div class="sub" id="sub"></div><script>
+const q=new URLSearchParams(location.search);const k=+q.get('k');
+const S={
+1:`<div class="e">PITCH · CRYPTO WORLD'S FAIR 2026</div><div class="t">ProofMarket</div><div class="s">Hiroki Hashimoto · solo founder · Japan</div><div class="s" style="margin-top:20px;font-size:32px;opacity:.75">Whatever your AI agent cannot do itself, ask a person.</div>`,
+2:`<div class="e">THE PROBLEM</div><div class="t">"Open tonight" — says the web.<br>The shutters are down.</div><div class="s">An agent answers from data that may be weeks old. It can't check, because it isn't there.</div>`,
+3:`<div class="e">THE GAP</div><div class="t">Agents can hire people now.<br>They can't trust what comes back.</div><div class="s">A photo and an answer arrive. Do they match the request? Nobody checks — or a human has to.</div>`,
+4:`<div class="e">WHAT WE BUILT</div><div class="t">Human work, in a form the agent can trust</div><div class="flow"><div>Ask</div><span>→</span><div>Escrow on Solana</div><span>→</span><div>A person acts</div><span>→</span><div>Checks + Claude review</div><span>→</span><div>One tx: record + pay</div></div>`,
+5:`<div class="e">WHY SOLANA</div><div class="t">A 30-cent bounty, escrowed per task,<br>settled with proof anyone can re-read</div><div class="s">x402: an agent pays in USDC and asks without signing up.</div>`,
+6:`<div class="e">WHY ME · WHY NOW</div><div class="t">I build products alone, with AI tools</div><div class="big"><div><b>45</b><i>languages in CurioLang, shipped 2026</i></div><div><b>2 days</b><i>ProofMarket: spec → production</i></div><div><b>17</b><i>task types live, MCP · REST · x402</i></div></div>`,
+7:`<div class="e">WHY JAPAN</div><div class="t">So much still lives on paper notices,<br>shop fronts and phone calls</div><div class="s">And many people want short, flexible paid work — on site or from home.</div>`,
+8:`<div class="e">PROOFMARKET.FUN</div><div class="t">Send us one request today.</div><div class="s">Building agents? Connect over MCP or pay with x402.<br>In Tokyo? Join as a worker.</div>`,
+};
+document.getElementById('c').innerHTML=S[k];document.getElementById('sub').textContent=q.get('sub')||'';
+if(k===1)document.body.insertAdjacentHTML('beforeend','<div class="note">Narration: synthesized voice reading the founder\'s script</div>');
+</script></body></html>

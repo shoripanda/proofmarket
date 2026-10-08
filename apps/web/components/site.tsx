@@ -1,61 +1,72 @@
 // Public site chrome (S-xx pages): header, footer and small building blocks. Server components only.
+// Every label exists in Japanese and English; the layout passes the request language.
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { type Lang, langHref, pick } from "@/lib/lang";
 
-/** Pages listed in the header. Add a page here when it exists, never before. */
-export const SITE_NAV: { href: string; label: string }[] = [
-  { href: "/", label: "トップ" },
-  { href: "/how-it-works", label: "仕組み" },
-  { href: "/try", label: "体験" },
-  { href: "/demo", label: "結果の見本" },
-  { href: "/stats", label: "実績" },
-  { href: "/map", label: "地図" },
-  { href: "/data", label: "データ" },
-  { href: "/developers", label: "開発者向け" },
-  { href: "/pricing", label: "料金" },
-  { href: "/workers", label: "worker 向け" },
-  { href: "/rules", label: "決まり" },
-  { href: "/faq", label: "よくある質問" },
-  { href: "/join", label: "申し込み" },
-  { href: "/console", label: "依頼者の画面" },
+type NavItem = { href: string; label: string };
+
+/** Pages listed in the footer. Add a page here when it exists, never before. */
+export const siteNav = (lang: Lang): NavItem[] => [
+  { href: "/", label: pick(lang, "トップ", "Home") },
+  { href: "/how-it-works", label: pick(lang, "仕組み", "How it works") },
+  { href: "/try", label: pick(lang, "体験", "Try it") },
+  { href: "/demo", label: pick(lang, "結果の見本", "Sample results") },
+  { href: "/stats", label: pick(lang, "実績", "Numbers") },
+  { href: "/map", label: pick(lang, "地図", "Map") },
+  { href: "/data", label: pick(lang, "データ", "Data") },
+  { href: "/developers", label: pick(lang, "開発者向け", "Developers") },
+  { href: "/pricing", label: pick(lang, "料金", "Pricing") },
+  { href: "/workers", label: pick(lang, "worker 向け", "For workers") },
+  { href: "/rules", label: pick(lang, "決まり", "Rules") },
+  { href: "/faq", label: pick(lang, "よくある質問", "FAQ") },
+  { href: "/join", label: pick(lang, "申し込み", "Sign up") },
+  { href: "/console", label: pick(lang, "依頼者の画面", "Requester console") },
 ];
 
 /** The five the header shows, large. Everything else stays reachable from the footer. */
-export const HEADER_NAV: { href: string; label: string }[] = [
-  { href: "/try", label: "体験" },
-  { href: "/how-it-works", label: "仕組み" },
-  { href: "/stats", label: "実績" },
-  { href: "/developers", label: "開発者向け" },
-  { href: "/workers", label: "worker 向け" },
+export const headerNav = (lang: Lang): NavItem[] => [
+  { href: "/try", label: pick(lang, "体験", "Try it") },
+  { href: "/how-it-works", label: pick(lang, "仕組み", "How it works") },
+  { href: "/stats", label: pick(lang, "実績", "Numbers") },
+  { href: "/developers", label: pick(lang, "開発者向け", "Developers") },
+  { href: "/workers", label: pick(lang, "worker 向け", "For workers") },
 ];
 
-export function SiteShell({ children }: { children: ReactNode }) {
+export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode }) {
+  const h = (href: string) => langHref(lang, href);
   return (
     <div className="min-h-dvh bg-white">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
-          <Link href="/" className="mr-auto text-lg font-bold tracking-tight text-slate-900 sm:mr-0">
+          <Link href={h("/")} className="mr-auto text-lg font-bold tracking-tight text-slate-900 sm:mr-0">
             ProofMarket
           </Link>
           <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-6 overflow-x-auto whitespace-nowrap px-4 text-base font-semibold text-slate-700 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0 sm:text-lg">
-            {HEADER_NAV.map((n) => (
+            {headerNav(lang).map((n) => (
               <Link
                 key={n.href}
-                href={n.href}
+                href={h(n.href)}
                 className="py-1 underline-offset-8 hover:text-teal-700 hover:underline"
               >
                 {n.label}
               </Link>
             ))}
           </nav>
-          <Link href="/en" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="en">
-            English
-          </Link>
+          {lang === "ja" ? (
+            <Link href="/en" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="en">
+              English
+            </Link>
+          ) : (
+            <Link href="/" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="ja">
+              日本語
+            </Link>
+          )}
           <Link
-            href="/login"
+            href={h("/login")}
             className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"
           >
-            worker ログイン
+            {pick(lang, "worker ログイン", "Worker login")}
           </Link>
         </div>
       </header>
@@ -63,10 +74,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <footer className="mt-16 border-t border-slate-200 bg-slate-50">
         <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
           <nav className="flex flex-wrap gap-x-4 gap-y-1">
-            {SITE_NAV.map((n) => (
+            {siteNav(lang).map((n) => (
               <Link
                 key={n.href}
-                href={n.href}
+                href={h(n.href)}
                 className="underline-offset-8 hover:text-teal-700 hover:underline"
               >
                 {n.label}
@@ -74,20 +85,26 @@ export function SiteShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            <Link href="/legal/worker-terms" className="hover:text-teal-700">
-              worker 参加規約
+            <Link href={h("/legal/worker-terms")} className="hover:text-teal-700">
+              {pick(lang, "worker 参加規約", "Worker terms")}
             </Link>
-            <Link href="/legal/requester-terms" className="hover:text-teal-700">
-              依頼者規約
+            <Link href={h("/legal/requester-terms")} className="hover:text-teal-700">
+              {pick(lang, "依頼者規約", "Requester terms")}
             </Link>
-            <Link href="/legal/privacy" className="hover:text-teal-700">
-              プライバシーポリシー
+            <Link href={h("/legal/privacy")} className="hover:text-teal-700">
+              {pick(lang, "プライバシーポリシー", "Privacy policy")}
             </Link>
-            <Link href="/legal/operator" className="hover:text-teal-700">
-              運営者情報
+            <Link href={h("/legal/operator")} className="hover:text-teal-700">
+              {pick(lang, "運営者情報", "Operator")}
             </Link>
           </nav>
-          <p>東京で試験運用中です。決済は Solana Devnet のテスト資産で行い、実際のお金は動きません。</p>
+          <p>
+            {pick(
+              lang,
+              "東京で試験運用中です。決済は Solana Devnet のテスト資産で行い、実際のお金は動きません。",
+              "Pilot in Tokyo. Payments use test assets on Solana Devnet; no real money moves.",
+            )}
+          </p>
         </div>
       </footer>
     </div>

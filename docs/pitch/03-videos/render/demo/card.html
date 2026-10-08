@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><style>
+body{margin:0;width:1920px;height:1080px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f766e,#134e4a);font-family:-apple-system,"Helvetica Neue",Inter,Arial,sans-serif;color:#fff;-webkit-font-smoothing:antialiased;position:relative}
+.c{max-width:1500px;text-align:center;margin-bottom:120px}.e{font-size:32px;letter-spacing:.08em;opacity:.85}.t{font-size:92px;font-weight:800;line-height:1.15;margin:26px 0;text-wrap:balance}.s{font-size:40px;opacity:.9;line-height:1.5}.u{margin-top:40px;font-size:44px;font-weight:700}
+.note{position:absolute;top:32px;right:40px;font-size:24px;opacity:.6}
+.sub{position:absolute;left:0;right:0;bottom:0;height:190px;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:0 160px;font-size:34px;line-height:1.4;text-align:center}
+.sub:empty{display:none}
+</style></head><body><div class="c" id="c"></div><div class="sub" id="sub"></div><script>
+const q=new URLSearchParams(location.search);document.getElementById('c').innerHTML=q.get('k')==='end'
+?'<div class="e">PROOFMARKET</div><div class="t">Whatever your AI agent cannot do itself, ask a person.</div><div class="s">Verified by people. Reviewed by AI. Settled on Solana.</div><div class="u">proofmarket.fun</div>'
+:'<div class="e">TECHNICAL DEMO · CRYPTO WORLD\'S FAIR 2026</div><div class="t">ProofMarket</div><div class="s">Real-world verification for AI agents, settled on Solana</div><div class="note">Narration: synthesized voice</div>';
+document.getElementById('sub').textContent=q.get('sub')||'';
+</script></body></html>
