@@ -59,10 +59,26 @@ export async function handleCreateBatch(app: AppContext, req: Request): Promise<
   });
 }
 
+/** Below the route's maxDuration (60 s) with room for the reads themselves. */
+export const MAX_WAIT_S = 45;
+
+/** GET /v1/verifications/{id}?wait=<0-45>: with wait, long-polls until the state changes (01 §4.27). */
 export async function handleGet(app: AppContext, req: Request, rawId: string): Promise<Response> {
   const auth = await authenticateRequester(app, req);
   const rl = await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
-  const view = await getVerification(app, auth, verificationId(rawId));
+  const id = verificationId(rawId);
+  const waitS = Math.min(
+    MAX_WAIT_S,
+    Math.max(0, Number(new URL(req.url).searchParams.get("wait") ?? 0) || 0),
+  );
+  let view = await getVerification(app, auth, id);
+  const start = view.updated_at;
+  const until = Date.now() + waitS * 1000;
+  // One DB read every 2 s; counts once against the rate limit, however long it waits.
+  while (Date.now() < until && view.updated_at === start && view.result === null) {
+    await new Promise((r) => setTimeout(r, Math.min(2000, until - Date.now())));
+    view = await getVerification(app, auth, id);
+  }
   return Response.json(view, { headers: rateLimitHeaders(rl) });
 }
 

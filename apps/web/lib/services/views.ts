@@ -27,6 +27,7 @@ import { attestationOf } from "./attestation";
 import { bountyOf } from "./bounty";
 import { locationSalt } from "./crypto";
 import { activeReport } from "./store-service";
+import { summarize } from "./summary";
 import type { TaskRow } from "./task-engine";
 import { taskLocation } from "./task-location";
 import { resultRow } from "./verification-service";
@@ -290,6 +291,26 @@ export async function buildVerificationView(
         eq(schema.witnessSubmissions.state, "VALID"),
       ),
     );
+  const [checking] = await db
+    .select({ n: count() })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.verificationId, task.id),
+        eq(schema.witnessSubmissions.state, "CHECKING"),
+      ),
+    );
+  // Sent back by the AI review (01 §4.16): the worker can redo these, so they are progress, not failure.
+  const [returned] = await db
+    .select({ n: count() })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.verificationId, task.id),
+        eq(schema.witnessSubmissions.state, "INVALID"),
+        eq(schema.witnessSubmissions.reasonCode, "EVIDENCE_MISMATCH"),
+      ),
+    );
   const [active] = await db
     .select({ n: count() })
     .from(schema.claims)
@@ -302,7 +323,7 @@ export async function buildVerificationView(
   const activeClaims = Number(active?.n ?? 0);
   const fundSig = fund?.status === "CONFIRMED" ? (fund.lastSignature ?? null) : null;
 
-  return {
+  const view: Omit<GetVerificationResponse, "summary"> = {
     verification_id: task.id,
     type: task.type as TaskType,
     status: task.status as GetVerificationResponse["status"],
@@ -351,6 +372,8 @@ export async function buildVerificationView(
         activeClaimCount: activeClaims,
       }),
       required: task.requiredWitnesses,
+      checking: Number(checking?.n ?? 0),
+      returned: Number(returned?.n ?? 0),
     },
     funding: {
       status: task.fundingStatus as GetVerificationResponse["funding"]["status"],
@@ -362,4 +385,5 @@ export async function buildVerificationView(
     created_at: task.createdAt.toISOString(),
     updated_at: task.updatedAt.toISOString(),
   };
+  return { ...view, summary: summarize(view) };
 }

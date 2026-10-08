@@ -175,6 +175,8 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 
 `result` は outcome が決まるまで `null`。
 
+2026-10-09 追加（01 §4.27）: `witness_progress` に `checking`（AI が確かめている提出数）と `returned`（AI の照合で差し戻した提出数）が入る。`summary: { ja, en }` は人向けの 1 段落で、エージェントが利用者にそのまま伝えるためのもの。`?wait=0〜45` を付けると、状態（`updated_at`）が変わるか `result` が入るまで最大その秒数だけ待ってから返す。待っても変化が無ければ現在の状態をそのまま返し、完了を装わない。レート制限は待ち時間に関わらず 1 回分。
+
 ### 2.3 POST /v1/verifications/{id}/cancel
 
 03 章の T14・T15 の条件で受け付ける。本文は不要。成功すると 200 で現在の状態（`CANCELLED`）を返し、返金が済むと `REFUNDED` に進む。条件を満たさなければ 409 `TASK_NOT_CANCELLABLE`。既に CANCELLED / REFUNDED なら同じ内容を 200 で返す（何度呼んでも同じ結果になる）。
@@ -398,8 +400,8 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 
 | ツール | 対応 API | 入力 |
 |---|---|---|
-| `request_reality_verification` | POST /v1/verifications | 作成 API の本文。`principal_ref` は省略可（環境変数 `PROOFMARKET_PRINCIPAL_REF` で補う）。`idempotency_key` は省略可で、省略時は引数を正規化した JSON の SHA-256 を使う |
-| `get_reality_verification` | GET /v1/verifications/{id} | `verification_id`、`wait_seconds`（0〜20。指定すると状態が変わるまで最大その秒数だけ待ってから返す） |
+| `request_reality_verification` | POST /v1/verifications | 作成 API の本文。`principal_ref` は省略可（環境変数 `PROOFMARKET_PRINCIPAL_REF` で補う）。`idempotency_key` は省略可で、省略時は引数を正規化した JSON の SHA-256 を使う。`wait_seconds`（0〜45）を付けると、作った直後に状態が変わるまで待ち、`verification`（`summary` 入り）も返す（01 §4.27） |
+| `get_reality_verification` | GET /v1/verifications/{id} | `verification_id`、`wait_seconds`（0〜45。指定すると状態が変わるまで最大その秒数だけ待ってから返す）。応答の `summary` を利用者にそのまま伝えるよう、説明文と `note` で指示する（01 §4.27） |
 | `cancel_reality_verification` | POST /v1/verifications/{id}/cancel | `verification_id` |
 | `dispute_reality_verification` | POST /v1/verifications/{id}/dispute | `verification_id`, `reason`, `assurance`, `deadline_minutes` (01 §4.12) |
 
