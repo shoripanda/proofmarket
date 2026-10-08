@@ -41,7 +41,8 @@ export type ApiSettlementStatus = (typeof API_SETTLEMENT_STATUSES)[number];
 export const OUTCOMES = ["VERIFIED", "REJECTED", "EXPIRED"] as const;
 export type Outcome = (typeof OUTCOMES)[number];
 
-export const OUTCOME_REASONS = ["NO_CONSENSUS", "INSUFFICIENT_WITNESSES"] as const;
+/** CHALLENGED (13 §3): an optimistic answer that a recheck contradicted. */
+export const OUTCOME_REASONS = ["NO_CONSENSUS", "INSUFFICIENT_WITNESSES", "CHALLENGED"] as const;
 export type OutcomeReason = (typeof OUTCOME_REASONS)[number];
 
 /** Sub-states (03 §3). */
@@ -238,6 +239,10 @@ export const WEBHOOK_EVENTS = [
   "verification.settled",
   "verification.expired",
   "verification.cancelled",
+  /** 13 §3: an optimistic task has its provisional answer; the challenge window starts. */
+  "verification.provisional",
+  /** 13 §3: someone challenged the provisional answer; a recheck was created. */
+  "verification.challenged",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 

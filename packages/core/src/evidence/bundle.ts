@@ -96,6 +96,9 @@ export const RESULT_HASH_EXCLUDED_FIELDS = [
   "answers",
   /** AI review texts (01 §4.16). The pass/warning status itself is in `checks.vision_consistency`. */
   "reviews",
+  /** 13 §3: whether the answer is still provisional, and the challenge window. They change; the answer does not. */
+  "provisional",
+  "challenge",
 ] as const;
 
 /** result_hash = SHA-256(JCS(result without RESULT_HASH_EXCLUDED_FIELDS)). */

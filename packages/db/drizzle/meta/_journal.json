@@ -169,6 +169,13 @@
       "when": 1791500000000,
       "tag": "0023_edge_features",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791600000000,
+      "tag": "0024_challenged_reason",
+      "breakpoints": true
     }
   ]
 }

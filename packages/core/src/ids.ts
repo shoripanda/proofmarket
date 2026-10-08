@@ -30,6 +30,9 @@ export const ID_PREFIXES = {
   placeOwnerToken: "pot",
   placeStatusReport: "psr",
   consoleSession: "cse",
+  /** 13 §3: a challenge of an optimistic answer (`challenge` is the photo nonce). */
+  objection: "obj",
+  payoutAdjustment: "pad",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

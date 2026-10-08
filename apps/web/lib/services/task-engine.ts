@@ -74,6 +74,8 @@ export interface ApplyOptions {
   funding?: TransitionContext["funding"];
   /** Amount (base units, positive) for RELEASE / REFUND ledger effects. Required when the rule has one. */
   creditBackMicro?: bigint;
+  /** 13 §3: the challenge service rejecting an overturned optimistic answer (T19). */
+  challengeOverturned?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -92,6 +94,7 @@ const AUDIT_FOR: Record<TaskEvent, AuditEventType> = {
   CANCEL_REQUESTED: "task_cancelled",
   FUNDING_FAILED: "task_cancelled",
   REFUND_CONFIRMED: "refund_confirmed",
+  CHALLENGE_OVERTURNED: "quorum_reached",
 };
 
 /**
@@ -119,6 +122,7 @@ export async function applyTaskEvent(
     flags: { claimsEnabled: await flag(tx, "claims_enabled") },
     chain: opts.chain ?? {},
     funding: opts.funding ?? { txSent: false, retryLimitReached: false, allBlockhashesExpired: false },
+    challengeOverturned: opts.challengeOverturned ?? false,
   };
   const result = transition(task.status as TaskStatus, event, ctx);
   if (!result.ok) throw new ApiError(errorCode, { status: task.status, event, reason: result.reason });
@@ -163,8 +167,19 @@ export async function applyTaskEvent(
         if (amt === undefined)
           throw new Error(`${rule.id}: creditBackMicro is required for ledger ${e.entry}`);
         if (amt > 0n) {
+          // Money goes back to whoever reserved it: the requester, or the challenger whose bond funded a
+          // recheck (13 §3). Tasks with no RESERVE row (x402) fall back to the owner.
+          const [reserve] = await tx
+            .select({ credentialId: schema.requesterLedger.credentialId })
+            .from(schema.requesterLedger)
+            .where(
+              and(
+                eq(schema.requesterLedger.verificationId, task.id),
+                eq(schema.requesterLedger.entryType, "RESERVE"),
+              ),
+            );
           await tx.insert(schema.requesterLedger).values({
-            credentialId: task.credentialId,
+            credentialId: reserve?.credentialId ?? task.credentialId,
             verificationId: task.id,
             entryType: e.entry,
             amount: microToDecimal(amt),

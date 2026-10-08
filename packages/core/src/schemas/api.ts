@@ -162,8 +162,13 @@ export const ASSURANCE_LEVELS = {
 export type AssuranceLevel = keyof typeof ASSURANCE_LEVELS;
 const LEVEL_NAMES = Object.keys(ASSURANCE_LEVELS) as [AssuranceLevel, ...AssuranceLevel[]];
 
-/** The level whose counts equal these, or null. */
-export function levelOf(a: { required_witnesses: number; quorum: number }): AssuranceLevel | null {
+/** The level whose counts equal these, or null. A challenge window means optimistic (13 §3). */
+export function levelOf(a: {
+  required_witnesses: number;
+  quorum: number;
+  challenge_minutes?: number | null;
+}): AssuranceLevel | "optimistic" | null {
+  if (a.challenge_minutes != null) return "optimistic";
   return (
     LEVEL_NAMES.find(
       (l) =>
@@ -182,7 +187,7 @@ const AssuranceCountsSchema = z
   .refine((a) => a.quorum <= a.required_witnesses, "quorum must be <= required_witnesses");
 
 /** Either explicit counts or `{ level }`; always normalized to counts. */
-export const AssuranceInputSchema = z
+export const AssuranceCountsOrLevelSchema = z
   .union([
     AssuranceCountsSchema,
     z
@@ -192,6 +197,26 @@ export const AssuranceInputSchema = z
       .strict(),
   ])
   .transform((a) => ("level" in a ? { ...ASSURANCE_LEVELS[a.level] } : a));
+
+/**
+ * Optimistic (13 §3): one person answers, the answer is provisional for `challenge_minutes`, and anyone with an
+ * API key may challenge it for a bond of twice the bounty. Not for text answers (a recheck cannot match one).
+ */
+const OptimisticAssuranceSchema = z
+  .object({
+    level: z.literal("optimistic"),
+    challenge_minutes: z
+      .number()
+      .int()
+      .min(LIMITS.challenge.minMinutes)
+      .max(LIMITS.challenge.maxMinutes)
+      .default(LIMITS.challenge.defaultMinutes),
+  })
+  .strict()
+  .transform((a) => ({ required_witnesses: 1, quorum: 1, challenge_minutes: a.challenge_minutes }));
+
+/** Counts, a named level, or optimistic. Normalized to counts; `challenge_minutes` only for optimistic. */
+export const AssuranceInputSchema = z.union([AssuranceCountsOrLevelSchema, OptimisticAssuranceSchema]);
 
 /**
  * Attestation (13 §5): the agent asks a person to confirm something the agent itself did (delivered, installed,
@@ -363,6 +388,22 @@ export const VerificationResultSchema = z.object({
    * a badge image, and Markdown that embeds the badge. Only on the requester's own result; not in result_hash.
    */
   proof: z.object({ url: z.url(), badge_url: z.url(), markdown: z.string() }).optional(),
+  /**
+   * 13 §3: true while an optimistic answer waits out its challenge window. The answer and hashes are already the
+   * ones it will be finalized with unless a recheck overturns it. Not in result_hash.
+   */
+  provisional: z.literal(true).optional(),
+  /**
+   * 13 §3: the challenge window of an optimistic task. open: still running. closed: passed with no challenge.
+   * challenged: a recheck is running. upheld / overturned: the recheck agreed / disagreed. Not in result_hash.
+   */
+  challenge: z
+    .object({
+      minutes: z.number().int(),
+      until: IsoDateTime,
+      state: z.enum(["open", "closed", "challenged", "upheld", "overturned"]),
+    })
+    .optional(),
   witnesses: z.object({ valid: z.number().int(), required: z.number().int(), quorum: z.number().int() }),
   /**
    * Sense index (13 §4): per number or scale field of a form, over 3 or more accepted answers. The median of an
@@ -440,7 +481,9 @@ export const GetVerificationResponseSchema = z.object({
   assurance: z.object({
     required_witnesses: z.number().int(),
     quorum: z.number().int(),
-    level: z.enum(LEVEL_NAMES).nullable(),
+    level: z.enum([...LEVEL_NAMES, "optimistic"]).nullable(),
+    /** 13 §3: the challenge window of an optimistic task; null otherwise. */
+    challenge_minutes: z.number().int().nullable(),
   }),
   bounty: z.object({
     asset: z.literal("USDC"),
@@ -899,11 +942,21 @@ export const ScheduleListResponseSchema = z.object({ schedules: z.array(Schedule
 export const DisputeRequestSchema = z
   .object({
     reason: z.string().trim().max(500).optional(),
-    assurance: AssuranceInputSchema.optional(),
+    assurance: AssuranceCountsOrLevelSchema.optional(),
     deadline_minutes: z.number().int().min(10).max(1440).optional(),
   })
   .strict();
 export const DisputeResponseSchema = z.object({
   verification_id: VerificationIdSchema,
   recheck_verification_id: VerificationIdSchema,
+});
+
+// ---------- challenges of an optimistic answer (13 §3). "Objection" here: `challenge` is the photo nonce ----------
+export const ObjectionRequestSchema = z.object({ reason: z.string().trim().max(500).optional() }).strict();
+export const ObjectionResponseSchema = z.object({
+  verification_id: VerificationIdSchema,
+  recheck_verification_id: VerificationIdSchema,
+  /** Twice the bounty, reserved from the caller's balance. Returned in full if the recheck disagrees. */
+  bond: z.object({ asset: z.literal("USDC"), amount: Amount }),
+  state: z.literal("challenged"),
 });

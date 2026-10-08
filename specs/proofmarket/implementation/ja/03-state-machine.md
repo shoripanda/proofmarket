@@ -70,6 +70,9 @@ open_slots = required_witnesses − (valid な提出数) − (ACTIVE なクレ�
 | T16 | CREATED | `FUNDING_FAILED` | 再試行の上限に達した、または deadline を過ぎた。かつ Task PDA がオンチェーンに無く、送った全署名の blockhash が失効済み（もう着地しえない） | CANCELLED | 残高の引き当てを戻す、理由 `FUNDING_FAILED`、Webhook `verification.cancelled` |
 | T17 | CANCELLED / EXPIRED | `REFUND_CONFIRMED` | refund が finalized | REFUNDED | 残高を戻す、settlement_status = CONFIRMED |
 | T18 | REJECTED / EXPIRED | `SETTLEMENT_CONFIRMED` | settle が finalized（valid が 1 件以上） | （変わらない） | 残額を戻す、settlement_status = CONFIRMED。`verification.settled` は送らない（成功と誤読させないため） |
+| T19 | VERIFYING | `CHALLENGE_OVERTURNED` | 楽観的な確認の再確認が仮の答えと食い違った（13 §3） | REJECTED | T10 と同じ。結果の理由は `CHALLENGED` |
+
+**仮確定（2026-10-08 追加、13 §3）**: 楽観的な確認（`assurance.level: "optimistic"`）では、最初の valid な提出で `provisional_at` を記録する。このとき `QUORUM_READY` は発火しない。タスクは SUBMITTED のまま異議期間を待ち、状態は増やさない。仮確定かどうかは `provisional_at` で見分ける。期間が過ぎたら、または再確認が仮の答えと一致したら、`QUORUM_READY` → T07 → T09 でふつうに確定する。再確認が食い違ったら `QUORUM_READY` → T07 → T19 で REJECTED にする。仮確定のタスクは deadline を過ぎても T08 / T11 で処理しない（異議期間の終わりを待つ）。
 
 T16 の条件を確かめる途中で Task PDA が見つかった場合は、資金拘束は成功していたので T01 に進む。deadline を過ぎていれば続けて T12 で返金する。こうして「CANCELLED にしたのにオンチェーンでは資金が拘束されたまま」という状態を作らない。
 

@@ -204,6 +204,11 @@ export async function createVerification(
   if (body.publish && storedAnswerKind(body.answer_schema) === "text") {
     throw new ApiError("VALIDATION_FAILED", { field: "publish", reason: "not_for_text_answers" });
   }
+  // 13 §3: a recheck decides a challenge by comparing answers, which free text never matches word for word.
+  const challengeMinutes = "challenge_minutes" in body.assurance ? body.assurance.challenge_minutes : null;
+  if (challengeMinutes !== null && !["enum", "number"].includes(storedAnswerKind(body.answer_schema))) {
+    throw new ApiError("VALIDATION_FAILED", { field: "assurance.level", reason: "optimistic_not_for_text" });
+  }
   const deadline = new Date(body.deadline);
   const minMs = LIMITS.deadlineFromNow.minMinutes * 60_000;
   // Work with no place may wait up to a week (01 §4.25); work at a place stays within a day.
@@ -295,6 +300,7 @@ export async function createVerification(
       bountyNetwork: body.bounty.network,
       bountyMaxAmount: maxAmount,
       bountyRampMinutes: rampMinutes,
+      challengeMinutes,
       status: "CREATED",
       fundingStatus: "PENDING",
       taskIdHash: Buffer.from(taskIdHash(id)),
@@ -389,7 +395,7 @@ async function loadOwned(db: Db, auth: RequesterAuth, id: string): Promise<TaskR
 
 export async function getVerification(app: AppContext, auth: RequesterAuth, id: string) {
   const row = await loadOwned(app.db, auth, id);
-  return buildVerificationView(app.db, row, app.now());
+  return buildVerificationView(app.db, row, app.now(), app.config.workerRefSalt);
 }
 
 /** T14 / T15. Idempotent: CANCELLED / REFUNDED return the current view. */

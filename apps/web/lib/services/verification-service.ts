@@ -10,6 +10,7 @@ import {
   EVIDENCE_BUNDLE_SCHEMA,
   type EvidenceBundle,
   evidenceRoot,
+  type OutcomeReason,
   questionHash,
   resultHash,
   type TaskType,
@@ -47,18 +48,44 @@ const worst = (s: CheckStatus[]): CheckStatus => {
   return "not_run";
 };
 
+export interface ResultOutcome {
+  status: "VERIFIED" | "REJECTED" | "EXPIRED";
+  reason: OutcomeReason | null;
+  answer: string | null;
+}
+
+/**
+ * When the result counts as decided. An optimistic answer that stands (13 §3) keeps the time it became
+ * provisional, so the provisional result and the final one carry the same hashes.
+ */
+export function finalizedAtFor(task: TaskRow, outcome: ResultOutcome, now: Date): Date {
+  const at = task.provisionalAt && outcome.status === "VERIFIED" ? task.provisionalAt : now;
+  return new Date(Math.floor(at.getTime() / 1000) * 1000);
+}
+
 /** Build bundle + hashes and insert verification_results. finalized_at is decided here once (07 §5.2). */
 export async function saveResult(
   tx: Db,
   app: AppContext,
   task: TaskRow,
-  outcome: {
-    status: "VERIFIED" | "REJECTED" | "EXPIRED";
-    reason: "NO_CONSENSUS" | "INSUFFICIENT_WITNESSES" | null;
-    answer: string | null;
-  },
+  outcome: ResultOutcome,
 ): Promise<void> {
-  const finalizedAt = new Date(Math.floor(app.now().getTime() / 1000) * 1000);
+  await tx
+    .insert(schema.verificationResults)
+    .values(
+      await resultRow(tx, app.config.workerRefSalt, task, outcome, finalizedAtFor(task, outcome, app.now())),
+    );
+  await flagRecheckMismatch(tx, task, outcome);
+}
+
+/** The verification_results row for this outcome, from the VALID submissions (also the provisional view, 13 §3). */
+export async function resultRow(
+  tx: Db,
+  workerRefSalt: string,
+  task: TaskRow,
+  outcome: ResultOutcome,
+  finalizedAt: Date,
+): Promise<typeof schema.verificationResults.$inferSelect> {
   const valid = await tx
     .select()
     .from(schema.witnessSubmissions)
@@ -105,7 +132,7 @@ export async function saveResult(
     answer_values: [...task.answerValues],
     assurance: { required_witnesses: task.requiredWitnesses, quorum: task.quorum },
     submissions: valid.map((v) => ({
-      witness_ref: witnessRef(app.config.workerRefSalt, v.workerId, task.id),
+      witness_ref: witnessRef(workerRefSalt, v.workerId, task.id),
       answer: publicAnswer(v.answer),
       evidence_sha256: evidence.filter((e) => e.submissionId === v.id).map((e) => toSha256Hex(e.sha256)),
       server_received_at: new Date(Math.floor(v.serverReceivedAt.getTime() / 1000) * 1000)
@@ -145,7 +172,7 @@ export async function saveResult(
     ),
     evidence_root: toSha256Hex(root),
   };
-  await tx.insert(schema.verificationResults).values({
+  return {
     verificationId: task.id,
     outcome: outcome.status,
     outcomeReason: outcome.reason,
@@ -160,7 +187,10 @@ export async function saveResult(
     evidenceRoot: Buffer.from(root),
     resultHash: Buffer.from(resultHash(hashInput)),
     finalizedAt,
-  });
+  };
+}
+
+async function flagRecheckMismatch(tx: Db, task: TaskRow, outcome: ResultOutcome): Promise<void> {
   // 01 §4.12: a recheck that disagrees with the disputed result is flagged for operator review.
   if (task.recheckOf && outcome.status === "VERIFIED") {
     const [orig] = await tx

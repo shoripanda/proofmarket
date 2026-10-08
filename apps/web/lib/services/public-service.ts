@@ -33,7 +33,7 @@ export async function publicResult(app: AppContext, rawId: string) {
     .from(schema.verificationRequests)
     .where(eq(schema.verificationRequests.id, id));
   if (!task) throw new ApiError("VERIFICATION_NOT_FOUND");
-  const result = await buildResult(app.db, task);
+  const result = await buildResult(app.db, task, { now: app.now() });
   if (!result) throw new ApiError("VERIFICATION_NOT_FOUND", { reason: "no_result_yet" });
   // A form's numbers come from its text answers, which stay with the requester (01 §4.15, 13 §4).
   const { rejected_submissions: _r, answers: _a, reviews: _v, proof: _p, aggregate: _g, ...pub } = result;
@@ -118,7 +118,7 @@ export async function featuredResults(app: AppContext, limit = 6) {
     .limit(limit);
   const out = [];
   for (const task of tasks) {
-    const r = await buildResult(app.db, task);
+    const r = await buildResult(app.db, task, { now: app.now() });
     if (!r) continue;
     out.push({
       verification_id: r.verification_id,

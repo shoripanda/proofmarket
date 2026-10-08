@@ -32,7 +32,7 @@ import type { SubmissionReviewer } from "../ports";
 import { appendAudit } from "./audit";
 import { encryptBytes, encryptLocation, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
-import { applyTaskEvent, lockTask, type TaskRow, taskCounts } from "./task-engine";
+import { applyTaskEvent, enqueueJob, lockTask, type TaskRow, taskCounts } from "./task-engine";
 import { taskLocation } from "./task-location";
 import { evaluateConsensus } from "./verification-service";
 import { lockOwnClaim } from "./worker-service";
@@ -464,7 +464,10 @@ async function finishSubmission(
 
   if (valid) {
     const counts = await taskCounts(tx, task.id);
-    if (counts.validCount === task.requiredWitnesses) {
+    if (counts.validCount === task.requiredWitnesses && task.challengeMinutes !== null) {
+      // 13 §3: the answer is provisional; the task stays SUBMITTED until the challenge window closes.
+      if (!task.provisionalAt) await markProvisional(tx, task, now);
+    } else if (counts.validCount === task.requiredWitnesses) {
       await applyTaskEvent(tx, app, task, "QUORUM_READY", {
         actorType: "system",
         actorRef: null,
@@ -652,4 +655,30 @@ export async function applyReview(app: AppContext, submissionId: string, v: Revi
     });
     return { submission_id: sub.id, state: r.state, applied: true };
   });
+}
+
+/** 13 §3: record when an optimistic answer became provisional, and tell the requester. */
+async function markProvisional(tx: Db, task: TaskRow, now: Date): Promise<void> {
+  await tx
+    .update(schema.verificationRequests)
+    .set({ provisionalAt: now, updatedAt: now })
+    .where(eq(schema.verificationRequests.id, task.id));
+  task.provisionalAt = now;
+  await appendAudit(tx, {
+    verificationId: task.id,
+    actorType: "system",
+    actorRef: null,
+    eventType: "operator_action",
+    beforeState: null,
+    afterState: null,
+    correlationId: task.id,
+    metadata: { action: "provisional", challenge_minutes: task.challengeMinutes },
+  });
+  if (task.callbackEndpointId) {
+    await enqueueJob(tx, "DELIVER_WEBHOOK", `verification.provisional:${task.id}`, {
+      verification_id: task.id,
+      endpoint_id: task.callbackEndpointId,
+      event: "verification.provisional",
+    });
+  }
 }

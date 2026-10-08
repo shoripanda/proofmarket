@@ -5,6 +5,7 @@ import { ApiError, parseId } from "@proofmarket/core";
 import { authenticateRequester } from "../auth/requester";
 import type { AppContext } from "../context";
 import { readJson } from "../http";
+import { challengeVerification } from "../services/challenge-service";
 import { withIdempotency } from "../services/idempotency";
 import { evidenceUrls, publicOnchain, publicResult } from "../services/public-service";
 import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
@@ -119,4 +120,26 @@ export async function handleDispute(app: AppContext, req: Request, rawId: string
     await readJson(req).catch(() => ({})),
   );
   return Response.json(out, { status: 201, headers: rateLimitHeaders(rl) });
+}
+
+/** 13 §3: challenge an optimistic answer within its window. Any API key; the bond comes from its balance. */
+export async function handleChallenge(app: AppContext, req: Request, rawId: string): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  const rl = await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
+  const key = req.headers.get("idempotency-key");
+  if (!key) throw new ApiError("VALIDATION_FAILED", { header: "Idempotency-Key is required" });
+  const id = verificationId(rawId);
+  const raw = await readJson(req).catch(() => ({}));
+  const out = await withIdempotency(
+    app,
+    auth.credentialId,
+    `POST /v1/verifications/${id}/challenge`,
+    key,
+    raw,
+    (tx) => challengeVerification(app, tx, auth, id, raw),
+  );
+  return Response.json(out.body, {
+    status: out.status,
+    headers: { ...rateLimitHeaders(rl), ...(out.replayed ? { "Idempotent-Replayed": "true" } : {}) },
+  });
 }

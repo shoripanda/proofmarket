@@ -8,6 +8,7 @@ import {
   type CheckStatus,
   consensusRatio,
   currentBounty,
+  decide,
   fromMicro,
   openSlots,
   type TaskType,
@@ -27,6 +28,7 @@ import { bountyOf } from "./bounty";
 import { activeReport } from "./store-service";
 import type { TaskRow } from "./task-engine";
 import { taskLocation } from "./task-location";
+import { resultRow } from "./verification-service";
 
 const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
 const hex = (b: Buffer) => `sha256:${b.toString("hex")}` as const;
@@ -53,11 +55,62 @@ function aggregate(statuses: CheckStatus[]): CheckStatus {
   return "not_run";
 }
 
-export async function buildResult(db: Db, task: TaskRow): Promise<VerificationResult | null> {
-  const [res] = await db
+/** 13 §3: the challenge window of an optimistic task, as of `now`. Absent on other tasks. */
+async function challengeOf(db: Db, task: TaskRow, now: Date): Promise<Pick<VerificationResult, "challenge">> {
+  if (task.challengeMinutes === null || !task.provisionalAt) return {};
+  const until = new Date(task.provisionalAt.getTime() + task.challengeMinutes * 60_000);
+  const [c] = await db
+    .select({ state: schema.verificationChallenges.state })
+    .from(schema.verificationChallenges)
+    .where(eq(schema.verificationChallenges.verificationId, task.id));
+  const state = c
+    ? c.state === "OPEN"
+      ? "challenged"
+      : c.state === "UPHELD"
+        ? "upheld"
+        : "overturned"
+    : now < until
+      ? "open"
+      : "closed";
+  return { challenge: { minutes: task.challengeMinutes, until: until.toISOString(), state } };
+}
+
+/**
+ * 13 §3: an optimistic task between its first valid answer and the end of the challenge window. The row is what
+ * saveResult would store if the answer stands (same finalized_at), so the hashes do not change later.
+ */
+async function provisionalRow(db: Db, task: TaskRow, workerRefSalt: string) {
+  if (!task.provisionalAt || task.challengeMinutes === null) return null;
+  const valid = await db
+    .select({ answer: schema.witnessSubmissions.answer })
+    .from(schema.witnessSubmissions)
+    .where(
+      and(
+        eq(schema.witnessSubmissions.verificationId, task.id),
+        eq(schema.witnessSubmissions.state, "VALID"),
+      ),
+    )
+    .orderBy(asc(schema.witnessSubmissions.serverReceivedAt));
+  const d = decide(valid, task.quorum);
+  if (d.kind !== "VERIFIED") return null;
+  const at = new Date(Math.floor(task.provisionalAt.getTime() / 1000) * 1000);
+  return resultRow(db, workerRefSalt, task, { status: "VERIFIED", reason: null, answer: d.answer }, at);
+}
+
+/**
+ * The result, or null while there is none. With `workerRefSalt`, an optimistic task in its challenge window
+ * returns its provisional result (13 §3); the requester's GET passes it, public pages do not.
+ */
+export async function buildResult(
+  db: Db,
+  task: TaskRow,
+  opts: { workerRefSalt?: string; now?: Date } = {},
+): Promise<VerificationResult | null> {
+  const [saved] = await db
     .select()
     .from(schema.verificationResults)
     .where(eq(schema.verificationResults.verificationId, task.id));
+  const res = saved ?? (opts.workerRefSalt ? await provisionalRow(db, task, opts.workerRefSalt) : null);
   if (!res) return null;
 
   const accepted = res.acceptedSubmissionIds;
@@ -102,6 +155,8 @@ export async function buildResult(db: Db, task: TaskRow): Promise<VerificationRe
 
   return {
     verification_id: task.id,
+    ...(saved ? {} : { provisional: true as const }),
+    ...(await challengeOf(db, task, opts.now ?? new Date())),
     status: res.outcome as VerificationResult["status"],
     reason: (res.outcomeReason as VerificationResult["reason"]) ?? null,
     // Text: `answer` is the SHA-256 commitment in the result hash; the texts themselves are in `answers`.
@@ -223,6 +278,8 @@ export async function buildVerificationView(
   db: Db,
   task: TaskRow,
   now: Date = new Date(),
+  /** Needed to show an optimistic task's provisional result (13 §3). */
+  workerRefSalt?: string,
 ): Promise<GetVerificationResponse> {
   const [valid] = await db
     .select({ n: count() })
@@ -268,7 +325,12 @@ export async function buildVerificationView(
     assurance: {
       required_witnesses: task.requiredWitnesses,
       quorum: task.quorum,
-      level: levelOf({ required_witnesses: task.requiredWitnesses, quorum: task.quorum }),
+      level: levelOf({
+        required_witnesses: task.requiredWitnesses,
+        quorum: task.quorum,
+        challenge_minutes: task.challengeMinutes,
+      }),
+      challenge_minutes: task.challengeMinutes,
     },
     bounty: {
       asset: "USDC",
@@ -293,7 +355,7 @@ export async function buildVerificationView(
       signature: fundSig,
       explorer_url: fundSig ? explorer(fundSig) : null,
     },
-    result: await withProof(buildResult(db, task)),
+    result: await withProof(buildResult(db, task, { workerRefSalt, now })),
     created_at: task.createdAt.toISOString(),
     updated_at: task.updatedAt.toISOString(),
   };

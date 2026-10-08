@@ -4,9 +4,9 @@ import { TASK_STATUSES } from "../src/domain/enums.ts";
 import { GUARDS, TASK_EVENTS, TRANSITIONS } from "../src/task/transitions.ts";
 
 describe("transition table (03 §2.2)", () => {
-  it("has rules T01..T18 exactly once each", () => {
+  it("has rules T01..T19 exactly once each (T19: 13 §3)", () => {
     const ids = TRANSITIONS.map((r) => r.id);
-    expect(ids).toEqual(Array.from({ length: 18 }, (_, i) => `T${String(i + 1).padStart(2, "0")}`));
+    expect(ids).toEqual(Array.from({ length: 19 }, (_, i) => `T${String(i + 1).padStart(2, "0")}`));
   });
 
   it("only references known statuses, events and guards", () => {

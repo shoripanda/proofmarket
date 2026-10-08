@@ -4,9 +4,10 @@ import "server-only";
 
 import { LIMITS, OUTBOX_RETRY, type OutboxJobKind, type WebhookEvent } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, eq, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
+import { runOptimistic } from "./challenge-service";
 import { releaseStaleReviews } from "./evidence-service";
 import { runNotifyWorkers } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
@@ -141,7 +142,10 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
   const now = app.now();
   // 0. Submissions the outside reviewer never answered pass with a warning (01 §4.17), so they still count below.
   await releaseStaleReviews(app);
-  // 1. Task deadlines (T08 / T11 / T12), one transaction per task.
+  // 1. Optimistic answers (13 §3): close windows that passed, settle challenges whose recheck is final.
+  await runOptimistic(app);
+  // 2. Task deadlines (T08 / T11 / T12), one transaction per task. A provisional answer waits for its
+  // challenge window instead (runOptimistic finalizes it).
   const due = await app.db
     .select({ id: schema.verificationRequests.id })
     .from(schema.verificationRequests)
@@ -149,6 +153,7 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
       and(
         inArray(schema.verificationRequests.status, DEADLINE_STATUSES),
         lte(schema.verificationRequests.deadline, now),
+        isNull(schema.verificationRequests.provisionalAt),
       ),
     );
   for (const { id } of due) {
@@ -156,10 +161,11 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
     if (now.getTime() - (await pendingReviewSince(app.db, id)) < REVIEW_GRACE_MS) continue;
     await app.db.transaction(async (tx) => {
       const t = await lockTask(tx, id);
-      if (DEADLINE_STATUSES.includes(t.status) && t.deadline <= now) await handleDeadline(tx, app, t);
+      if (DEADLINE_STATUSES.includes(t.status) && t.deadline <= now && !t.provisionalAt)
+        await handleDeadline(tx, app, t);
     });
   }
-  // 2. Claims past their TTL, challenges past expiry, uploads never finalized.
+  // 3. Claims past their TTL, challenges past expiry, uploads never finalized.
   await app.db
     .update(schema.claims)
     .set({ state: "EXPIRED", closedAt: now, closeReason: "CLAIM_TTL" })
@@ -189,15 +195,15 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
     "evidence-raw",
     stale.map((u) => u.key),
   ); // 03 §3.4: DISCARDED also deletes the object
-  // 3. Daily purge job (dedupe per JST-agnostic UTC day).
+  // 4. Daily purge job (dedupe per JST-agnostic UTC day).
   const day = now.toISOString().slice(0, 10);
   await app.db
     .insert(schema.outboxJobs)
     .values({ kind: "PURGE_EVIDENCE", dedupeKey: `PURGE_EVIDENCE:${day}`, payload: {}, state: "PENDING" })
     .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey });
-  // 4. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
+  // 5. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
   await runDueSchedules(app);
-  // 5. Drain jobs.
+  // 6. Drain jobs.
   const runner = `tick:${crypto.randomUUID()}`;
   let jobsRun = 0;
   for (; jobsRun < maxJobs; jobsRun++) {
