@@ -106,6 +106,30 @@ export function resultHash(result: Record<string, unknown>): Uint8Array {
   return sha256(jcs(input));
 }
 
+/**
+ * The fields the server hashes (verification-service's hashInput). An API response carries more than these
+ * (`proof`, and on the public result `type`, `answer_kind`, `published`), so recomputing from a response
+ * picks these rather than dropping RESULT_HASH_EXCLUDED_FIELDS (13 §2). Keep in step with hashInput.
+ */
+export const RESULT_HASH_FIELDS = [
+  "verification_id",
+  "status",
+  "reason",
+  "answer",
+  "witnesses",
+  "answer_counts",
+  "checks",
+  "rejected_submissions",
+  "evidence_root",
+] as const;
+
+/** The result_hash input taken from an API result: RESULT_HASH_FIELDS that are present, nothing else. */
+export function resultHashInput(result: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(result).filter(([k]) => (RESULT_HASH_FIELDS as readonly string[]).includes(k)),
+  );
+}
+
 export function toSha256Hex(bytes: Uint8Array): Sha256Hex {
   if (bytes.length !== 32) throw new Error("sha256 digest must be 32 bytes");
   return `sha256:${Buffer.from(bytes).toString("hex")}`;

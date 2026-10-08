@@ -1,0 +1,41 @@
+{
+  "source": "Solana Devnet getAccountInfo and GET https://proofmarket.fun/v1/public/verifications/{id}, 2026-10-08",
+  "verification_id": "ver_01M43J9C0R5H04CE9XCW83D7HA",
+  "task_account": "6iDgk5nVXuPxmyzoyyUqYMwZM19qf6kXPT8EexDhQe4",
+  "owner": "A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s",
+  "account_data_base64": "TyLlN1haN1QB//5LbziNfxvloNq4SSK2rB5nLMYoUYLqdDkIKigSQGRh5T/XMBLfKSmZBd3210y4/s/t2mDUDB+uISfd4FPzrGSjkCW/+sS/qTxbr9AUlEoUHepO8RnvD9MU7au4S21n8Tc7RCyzkSFX8TqTPQE0KC0DK1/+zQGi2/G3eQYI3wAup6CGAQAAAAAAAQFSgcJqAAAAAAMAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOlfCagAAAAAAAAAAAAAAAGiBwmoAAAAA",
+  "public_result": {
+    "verification_id": "ver_01M43J9C0R5H04CE9XCW83D7HA",
+    "status": "EXPIRED",
+    "reason": "INSUFFICIENT_WITNESSES",
+    "answer": null,
+    "witnesses": {
+      "valid": 0,
+      "required": 1,
+      "quorum": 1
+    },
+    "answer_counts": {},
+    "consensus_ratio": null,
+    "checks": {
+      "geofence": "not_run",
+      "freshness": "not_run",
+      "task_nonce": "not_run",
+      "replay": "not_run",
+      "media_schema": "not_run",
+      "duplicate": "not_run",
+      "vision_consistency": "not_run"
+    },
+    "evidence_root": "sha256:3296d91f4873b2fee85febd2bb094f9c44b0af54eed24debe683509161670fab",
+    "result_hash": "sha256:7021dfab4f628f4f973acf3e60b41127220a04fe5ba06340a4773dda3cac4370",
+    "attestation": null,
+    "settlement": {
+      "status": "REFUNDED",
+      "signature": "3uvvx3a89P5xSP9Lazui2hxjhEDZQbQiduTHV3uoSued8X8wUPecZ8Wn3o57fdKGjVYfBnq4HfdZ5JufvB9kAgZq",
+      "paid": []
+    },
+    "verified_at": "2026-10-04T16:40:03.000Z",
+    "type": "DOCUMENT_TRANSCRIPTION",
+    "answer_kind": "text",
+    "published": null
+  }
+}

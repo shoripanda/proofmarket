@@ -6,7 +6,7 @@ import { authenticateRequester } from "../auth/requester";
 import type { AppContext } from "../context";
 import { readJson } from "../http";
 import { withIdempotency } from "../services/idempotency";
-import { evidenceUrls, publicResult } from "../services/public-service";
+import { evidenceUrls, publicOnchain, publicResult } from "../services/public-service";
 import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
 import {
   cancelVerification,
@@ -80,6 +80,13 @@ export async function handleEvidenceUrls(app: AppContext, req: Request, rawId: s
 export async function handlePublicResult(app: AppContext, _req: Request, rawId: string): Promise<Response> {
   return Response.json(await publicResult(app, rawId), {
     headers: { "Cache-Control": "public, max-age=10" },
+  });
+}
+
+/** 13 §2: the Task account and how a program reads it. No auth. */
+export async function handlePublicOnchain(app: AppContext, _req: Request, rawId: string): Promise<Response> {
+  return Response.json(await publicOnchain(app, rawId), {
+    headers: { "Cache-Control": "public, max-age=60" },
   });
 }
 

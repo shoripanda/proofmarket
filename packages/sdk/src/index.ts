@@ -1,5 +1,7 @@
 // Requester SDK (05 §1-2). Thin, typed wrapper over the REST API; no business logic.
 
+export * from "./onchain.ts";
+
 import type { ApiErrorBody } from "@proofmarket/core";
 import type {
   CreateScheduleRequest,
