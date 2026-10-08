@@ -29,6 +29,7 @@
 | PUT | `/v1/worker/payout-preference` | worker | P2 | 追加（2026-10-04）。`{"yen_interest": true}` で円での受け取りを希望（01 §4.10）。`/v1/worker/me` が `yen_payout_interest` を返す |
 | GET / PUT / DELETE | `/v1/worker/push-subscription` | worker | P2 | 追加（2026-10-04）。GET は通知が使えるか、PUT は宛先と地域の登録（地域は 0 個でもよく、その場合は場所を問わない依頼だけが届く。01 §4.20）、DELETE は解除。VAPID の鍵が無い環境では GET が `available: false` を返す |
 | POST | `/v1/verifications/{id}/dispute` | requester | P2 | 追加（2026-10-04）。確定から 24 時間以内に 1 回。再確認の依頼を作る（01 §4.12）。失敗は 409 `DISPUTE_NOT_ALLOWED` |
+| POST | `/v1/verifications/{id}/challenge` | requester（どの鍵でも） | Stretch | 追加（2026-10-08）。楽観的な確認の仮の答えに異議を出す（13 §3、本章 2.3a）。Idempotency-Key 必須。失敗は 409 `CHALLENGE_NOT_ALLOWED` |
 | POST | `/v1/console/session`・`/v1/console/logout`・`/v1/console/schedules/{id}/stop` | API キー / 画面のセッション | P2 | 追加（2026-10-04）。requester 用画面のログイン・ログアウト・定期確認の停止（01 §4.14）。Origin が同じときだけ。ログインは IP ごとに 1 分 10 回まで |
 | POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23）。2026-10-05: `every_minutes`・`max_runs`・`stop_when` で見守り依頼にも使う（01 §4.23） |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
@@ -178,6 +179,25 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 
 03 章の T14・T15 の条件で受け付ける。本文は不要。成功すると 200 で現在の状態（`CANCELLED`）を返し、返金が済むと `REFUNDED` に進む。条件を満たさなければ 409 `TASK_NOT_CANCELLABLE`。既に CANCELLED / REFUNDED なら同じ内容を 200 で返す（何度呼んでも同じ結果になる）。
 
+### 2.3a POST /v1/verifications/{id}/challenge（2026-10-08 追加）
+
+楽観的な確認（13 §3）の仮の答えに、異議期間のうちに 1 回だけ異議を出せる。呼べるのは API キーを持つ誰でもで、元の依頼者でなくてよい。本文は `{ "reason"?: string(500字まで) }`。
+
+- 受け付ける条件: `assurance.level` が optimistic、仮の答えが出ている（`provisional_at` がある）、`provisional_at + challenge_minutes` より前、タスクが SUBMITTED、まだ異議が無い。どれかを満たさなければ 409 `CHALLENGE_NOT_ALLOWED`
+- 保証金は報酬の 2 倍（2 人分の再確認の費用）で、呼んだ鍵の残高から引き当てる。残高・1 依頼の上限・1 日の上限も、呼んだ鍵のものを使う
+- 01 §4.12 と同じ形の再確認（2 人一致・同じ場所・同じ質問・締切 60 分）を作る。再確認の持ち主は元の依頼者で、異議を出した側からは質問文も場所も見えない
+- 応答は 201 `{ verification_id, recheck_verification_id, bond: { asset, amount }, state: "challenged" }`。元の依頼者に Webhook `verification.challenged` を送る
+
+決着は定期処理（tick）が付ける。再確認が VERIFIED で答えが仮の答えと違えば OVERTURNED、それ以外（一致・期限切れ・2 人の答えが割れた）は UPHELD。台帳の動きは次のとおり。
+
+| 場面 | 異議を出した鍵 | 元の依頼者 |
+|---|---|---|
+| 異議を出したとき | 再確認の RESERVE（−報酬×2、`verification_id` は再確認）＝保証金 | 動かない |
+| UPHELD | 保証金は再確認の支払いに使う。再確認で払わなかった分（期限切れなど）は RELEASE / REFUND で戻る | 動かない。保証金の残り（いまの値では常に 0）は元の worker への `payout_adjustments` |
+| OVERTURNED | REFUND（＋報酬×2、`verification_id` は空） | RESERVE（−報酬×2、`verification_id` は空） |
+
+異議を出した鍵と元の依頼者が同じなら、OVERTURNED の 2 行は書かない（差し引き 0 のため）。`verification_id` を空にするのは、1 つの依頼に RESERVE と払い戻しを 1 行ずつしか置けない一意制約があるため。どの異議の行かは `verification_challenges` と監査ログでたどる。
+
 ### 2.4 VerificationResult
 
 `api-contract.md` 7 節の形に、追加の項目を足す。
@@ -228,6 +248,7 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 - MVP では finalize と settle を 1 つの取引にまとめるので、`attestation.signature` と `settlement.signature` は同じ値になる（06 章 4 節）
 - 信頼度のパーセント表示は持たない（`acceptance-criteria.md` A4）
 - `witness_ref` はタスク内の連番。worker の ID や公開鍵は返さない
+- 楽観的な確認（13 §3）では、仮の答えの間も `result` を返す。`provisional: true` と `challenge: { minutes, until, state }` が付く。`state` は open（受付中）・closed（異議なしで終わった）・challenged（再確認中）・upheld・overturned。仮の結果の `finalized_at` は仮確定の時刻で、異議なしや UPHELD で確定してもそのまま使う。だから `evidence_root` と `result_hash` は仮の段階から変わらない。`provisional` と `challenge` は `result_hash` に含めない
 
 ### 2.5 GET /v1/verifications/{id}/evidence（P1）
 
@@ -358,7 +379,7 @@ nonce の有効期間はここでは見ない。時間切れは次の判定 `fre
 ## 5. Webhook（P1）
 
 - 送信先は運営者が事前に登録する（`scripts/register-webhook.ts`）。https のみ、IP アドレスの直書き不可、DNS で引いた先がプライベート・ループバック・リンクローカルなら送らない、リダイレクトを追わない、タイムアウト 5 秒
-- イベントは `api-contract.md` 11 節の 7 種類に、`verification.cancelled`（資金拘束の失敗を含むキャンセル）を足した 8 種類
+- イベントは `api-contract.md` 11 節の 7 種類に、`verification.cancelled`（資金拘束の失敗を含むキャンセル）を足した 8 種類。2026-10-08 に、楽観的な確認の `verification.provisional`（仮の答えが出た）と `verification.challenged`（異議が出た）を足した（13 §3）
 - 署名ヘッダー: `ProofMarket-Signature: t=<unix秒>,v1=<hex(HMAC-SHA256(secret, t + "." + body))>`。受信側は 5 分以上ずれたものを捨てる
 - 重複排除用に `ProofMarket-Event-Id: evt_...` を付ける。再送は同じ ID
 - 再送は最大 6 回（30 秒、2 分、10 分、30 分、1 時間、2 時間）。Webhook の失敗は決済を一切動かさない
@@ -478,6 +499,7 @@ Claude や ChatGPT のアプリは、MCP の認可仕様（OAuth 2.1）に沿っ
 | `TASK_NOT_CLAIMABLE` | 409 | false | クレーム |
 | `NO_OPEN_SLOT` | 409 | true | クレーム |
 | `DISPUTE_NOT_ALLOWED` | 409 | false | 異議（結果が無い、24 時間を過ぎた、すでに異議を出した。01 §4.12） |
+| `CHALLENGE_NOT_ALLOWED` | 409 | false | 楽観的な確認への異議（楽観的な依頼でない、仮の答えがまだ無い、異議期間が過ぎた、すでに異議が出ている。13 §3） |
 | `WORKER_NOT_ELIGIBLE` | 403 | false | クレーム（信頼度が依頼の条件に届かない。01 §4.11） |
 | `ALREADY_CLAIMED` | 409 | false | クレーム |
 | `TASK_EXPIRED` | 410 | false | worker |

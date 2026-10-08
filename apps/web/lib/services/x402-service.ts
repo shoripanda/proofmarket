@@ -47,6 +47,10 @@ export function parseX402Body(raw: unknown): CreateVerificationRequest {
   if (r.data.bounty.max_amount !== undefined) {
     throw new ApiError("VALIDATION_FAILED", { field: "bounty.max_amount", reason: "not_for_x402" });
   }
+  // 13 §3: a challenge can charge the requester for the recheck, which a throwaway credential cannot pay.
+  if ("challenge_minutes" in r.data.assurance) {
+    throw new ApiError("VALIDATION_FAILED", { field: "assurance.level", reason: "not_for_x402" });
+  }
   return { ...r.data, principal_ref: "" };
 }
 

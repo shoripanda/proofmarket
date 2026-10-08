@@ -11,6 +11,8 @@ export const LIMITS = {
   acceptanceCriteria: { maxChars: 500 },
   /** 13 §5: what the agent says it did, shown to the worker and on the proof page. */
   attestation: { maxDescriptionChars: 200 },
+  /** 13 §3: how long anyone may challenge a provisional answer, and the bond as a multiple of the bounty. */
+  challenge: { minMinutes: 10, maxMinutes: 120, defaultMinutes: 30, bondMultiple: 2 },
   /** 01 §4.25: one request body sent to many places or with many questions. */
   batch: { maxItems: 50 },
   radiusM: { min: 25, max: 500 },

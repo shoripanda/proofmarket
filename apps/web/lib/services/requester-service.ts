@@ -204,6 +204,11 @@ export async function createVerification(
   if (body.publish && storedAnswerKind(body.answer_schema) === "text") {
     throw new ApiError("VALIDATION_FAILED", { field: "publish", reason: "not_for_text_answers" });
   }
+  // 13 §3: a recheck decides a challenge by comparing answers, which free text never matches word for word.
+  const challengeMinutes = "challenge_minutes" in body.assurance ? body.assurance.challenge_minutes : null;
+  if (challengeMinutes !== null && !["enum", "number"].includes(storedAnswerKind(body.answer_schema))) {
+    throw new ApiError("VALIDATION_FAILED", { field: "assurance.level", reason: "optimistic_not_for_text" });
+  }
   if (body.location_privacy === "coarse" && !loc)
     throw new ApiError("VALIDATION_FAILED", { field: "location_privacy", reason: "needs_location" });
   const deadline = new Date(body.deadline);
@@ -297,6 +302,7 @@ export async function createVerification(
       bountyNetwork: body.bounty.network,
       bountyMaxAmount: maxAmount,
       bountyRampMinutes: rampMinutes,
+      challengeMinutes,
       status: "CREATED",
       fundingStatus: "PENDING",
       taskIdHash: Buffer.from(taskIdHash(id)),

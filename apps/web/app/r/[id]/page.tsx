@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
 import { ApproxPlace } from "@/components/approx-place";
+import { HourglassPicture } from "@/components/hourglass-picture";
 import { LedgerPicture } from "@/components/ledger-picture";
 import { OnchainCheck } from "@/components/onchain-check";
 import { LangProvider } from "@/lib/client/lang";
@@ -14,7 +15,14 @@ import { appContext } from "@/lib/context";
 import { env, isDev } from "@/lib/env";
 import { type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
-import { ago, proofAnswer, proofHeadline, proofTimeLong, proofTypeName } from "@/lib/proof-text";
+import {
+  ago,
+  proofAnswer,
+  proofChallengeLine,
+  proofHeadline,
+  proofTimeLong,
+  proofTypeName,
+} from "@/lib/proof-text";
 import { publicOnchain, publicResult } from "@/lib/services/public-service";
 
 export const dynamic = "force-dynamic";
@@ -147,6 +155,12 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
                   </dd>
                 </div>
               </dl>
+              {proofChallengeLine(r, lang) ? (
+                <div className="mt-4 flex items-center gap-3 rounded-xl bg-white/70 p-3">
+                  <HourglassPicture done={r.challenge?.state !== "open"} className="h-14 w-10 shrink-0" />
+                  <p className="text-sm leading-relaxed text-slate-700">{proofChallengeLine(r, lang)}</p>
+                </div>
+              ) : null}
               {r.published ? (
                 <p className="mt-4 text-sm">
                   <a

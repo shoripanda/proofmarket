@@ -87,6 +87,12 @@ export const ERROR_CATALOG = {
     retryable: false,
     message: "This result cannot be disputed (no result yet, more than 24 hours old, or already disputed).",
   },
+  CHALLENGE_NOT_ALLOWED: {
+    http: 409,
+    retryable: false,
+    message:
+      "This answer cannot be challenged (not an optimistic task, no provisional answer yet, window closed, or already challenged).",
+  },
   WORKER_NOT_ELIGIBLE: {
     http: 403,
     retryable: false,

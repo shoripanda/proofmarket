@@ -459,24 +459,46 @@
                   "assurance": {
                     "anyOf": [
                       {
-                        "type": "object",
-                        "properties": {
-                          "required_witnesses": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 5
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "required_witnesses": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                              },
+                              "quorum": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                              }
+                            },
+                            "required": [
+                              "required_witnesses",
+                              "quorum"
+                            ],
+                            "additionalProperties": false
                           },
-                          "quorum": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 5
+                          {
+                            "type": "object",
+                            "properties": {
+                              "level": {
+                                "type": "string",
+                                "enum": [
+                                  "fast",
+                                  "standard",
+                                  "high"
+                                ],
+                                "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                              }
+                            },
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false
                           }
-                        },
-                        "required": [
-                          "required_witnesses",
-                          "quorum"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "object",
@@ -484,11 +506,14 @@
                           "level": {
                             "type": "string",
                             "enum": [
-                              "fast",
-                              "standard",
-                              "high"
-                            ],
-                            "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                              "optimistic"
+                            ]
+                          },
+                          "challenge_minutes": {
+                            "default": 30,
+                            "type": "integer",
+                            "minimum": 10,
+                            "maximum": 120
                           }
                         },
                         "required": [
@@ -693,6 +718,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -1172,24 +1198,46 @@
                       "assurance": {
                         "anyOf": [
                           {
-                            "type": "object",
-                            "properties": {
-                              "required_witnesses": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 5
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "required_witnesses": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 5
+                                  },
+                                  "quorum": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 5
+                                  }
+                                },
+                                "required": [
+                                  "required_witnesses",
+                                  "quorum"
+                                ],
+                                "additionalProperties": false
                               },
-                              "quorum": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 5
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "level": {
+                                    "type": "string",
+                                    "enum": [
+                                      "fast",
+                                      "standard",
+                                      "high"
+                                    ],
+                                    "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                                  }
+                                },
+                                "required": [
+                                  "level"
+                                ],
+                                "additionalProperties": false
                               }
-                            },
-                            "required": [
-                              "required_witnesses",
-                              "quorum"
-                            ],
-                            "additionalProperties": false
+                            ]
                           },
                           {
                             "type": "object",
@@ -1197,11 +1245,14 @@
                               "level": {
                                 "type": "string",
                                 "enum": [
-                                  "fast",
-                                  "standard",
-                                  "high"
-                                ],
-                                "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                                  "optimistic"
+                                ]
+                              },
+                              "challenge_minutes": {
+                                "default": 30,
+                                "type": "integer",
+                                "minimum": 10,
+                                "maximum": 120
                               }
                             },
                             "required": [
@@ -1464,6 +1515,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -1925,24 +1977,46 @@
                   "assurance": {
                     "anyOf": [
                       {
-                        "type": "object",
-                        "properties": {
-                          "required_witnesses": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 5
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "required_witnesses": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                              },
+                              "quorum": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                              }
+                            },
+                            "required": [
+                              "required_witnesses",
+                              "quorum"
+                            ],
+                            "additionalProperties": false
                           },
-                          "quorum": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 5
+                          {
+                            "type": "object",
+                            "properties": {
+                              "level": {
+                                "type": "string",
+                                "enum": [
+                                  "fast",
+                                  "standard",
+                                  "high"
+                                ],
+                                "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                              }
+                            },
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false
                           }
-                        },
-                        "required": [
-                          "required_witnesses",
-                          "quorum"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "object",
@@ -1950,11 +2024,14 @@
                           "level": {
                             "type": "string",
                             "enum": [
-                              "fast",
-                              "standard",
-                              "high"
-                            ],
-                            "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                              "optimistic"
+                            ]
+                          },
+                          "challenge_minutes": {
+                            "default": 30,
+                            "type": "integer",
+                            "minimum": 10,
+                            "maximum": 120
                           }
                         },
                         "required": [
@@ -2189,6 +2266,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -2768,14 +2846,22 @@
                           "enum": [
                             "fast",
                             "standard",
-                            "high"
+                            "high",
+                            "optimistic"
                           ]
+                        },
+                        "challenge_minutes": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "required_witnesses",
                         "quorum",
-                        "level"
+                        "level",
+                        "challenge_minutes"
                       ]
                     },
                     "bounty": {
@@ -2905,7 +2991,8 @@
                           "type": "string",
                           "enum": [
                             "NO_CONSENSUS",
-                            "INSUFFICIENT_WITNESSES"
+                            "INSUFFICIENT_WITNESSES",
+                            "CHALLENGED"
                           ]
                         },
                         "answer": {
@@ -2973,6 +3060,42 @@
                             "url",
                             "badge_url",
                             "markdown"
+                          ]
+                        },
+                        "provisional": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "challenge": {
+                          "type": "object",
+                          "properties": {
+                            "minutes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "until": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "open",
+                                "closed",
+                                "challenged",
+                                "upheld",
+                                "overturned"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "minutes",
+                            "until",
+                            "state"
                           ]
                         },
                         "witnesses": {
@@ -3324,6 +3447,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -3903,14 +4027,22 @@
                           "enum": [
                             "fast",
                             "standard",
-                            "high"
+                            "high",
+                            "optimistic"
                           ]
+                        },
+                        "challenge_minutes": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "required_witnesses",
                         "quorum",
-                        "level"
+                        "level",
+                        "challenge_minutes"
                       ]
                     },
                     "bounty": {
@@ -4040,7 +4172,8 @@
                           "type": "string",
                           "enum": [
                             "NO_CONSENSUS",
-                            "INSUFFICIENT_WITNESSES"
+                            "INSUFFICIENT_WITNESSES",
+                            "CHALLENGED"
                           ]
                         },
                         "answer": {
@@ -4108,6 +4241,42 @@
                             "url",
                             "badge_url",
                             "markdown"
+                          ]
+                        },
+                        "provisional": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "challenge": {
+                          "type": "object",
+                          "properties": {
+                            "minutes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "until": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "open",
+                                "closed",
+                                "challenged",
+                                "upheld",
+                                "overturned"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "minutes",
+                            "until",
+                            "state"
                           ]
                         },
                         "witnesses": {
@@ -4459,6 +4628,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -4605,6 +4775,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -4799,6 +4970,192 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verifications/{id}/challenge": {
+      "post": {
+        "summary": "Challenge an optimistic answer within its window (13 §3). Any API key; the bond (twice the bounty) pays a 2-person recheck and comes back in full if the recheck disagrees",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verification_id": {
+                      "type": "string",
+                      "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                    },
+                    "recheck_verification_id": {
+                      "type": "string",
+                      "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                    },
+                    "bond": {
+                      "type": "object",
+                      "properties": {
+                        "asset": {
+                          "type": "string",
+                          "enum": [
+                            "USDC"
+                          ]
+                        },
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        }
+                      },
+                      "required": [
+                        "asset",
+                        "amount"
+                      ]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "challenged"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "verification_id",
+                    "recheck_verification_id",
+                    "bond",
+                    "state"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5262,24 +5619,46 @@
                       "assurance": {
                         "anyOf": [
                           {
-                            "type": "object",
-                            "properties": {
-                              "required_witnesses": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 5
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "required_witnesses": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 5
+                                  },
+                                  "quorum": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 5
+                                  }
+                                },
+                                "required": [
+                                  "required_witnesses",
+                                  "quorum"
+                                ],
+                                "additionalProperties": false
                               },
-                              "quorum": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 5
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "level": {
+                                    "type": "string",
+                                    "enum": [
+                                      "fast",
+                                      "standard",
+                                      "high"
+                                    ],
+                                    "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                                  }
+                                },
+                                "required": [
+                                  "level"
+                                ],
+                                "additionalProperties": false
                               }
-                            },
-                            "required": [
-                              "required_witnesses",
-                              "quorum"
-                            ],
-                            "additionalProperties": false
+                            ]
                           },
                           {
                             "type": "object",
@@ -5287,11 +5666,14 @@
                               "level": {
                                 "type": "string",
                                 "enum": [
-                                  "fast",
-                                  "standard",
-                                  "high"
-                                ],
-                                "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                                  "optimistic"
+                                ]
+                              },
+                              "challenge_minutes": {
+                                "default": 30,
+                                "type": "integer",
+                                "minimum": 10,
+                                "maximum": 120
                               }
                             },
                             "required": [
@@ -5717,6 +6099,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -5996,6 +6379,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -6275,6 +6659,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -6469,6 +6854,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -6704,6 +7090,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -7324,6 +7711,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -7901,6 +8289,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -8063,6 +8452,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -8199,6 +8589,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -8374,6 +8765,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -8667,6 +9059,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -9258,6 +9651,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -9849,6 +10243,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -10012,6 +10407,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -10098,7 +10494,8 @@
                       "type": "string",
                       "enum": [
                         "NO_CONSENSUS",
-                        "INSUFFICIENT_WITNESSES"
+                        "INSUFFICIENT_WITNESSES",
+                        "CHALLENGED"
                       ]
                     },
                     "answer": {
@@ -10106,6 +10503,42 @@
                       "type": "string",
                       "minLength": 1,
                       "maxLength": 4000
+                    },
+                    "provisional": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "challenge": {
+                      "type": "object",
+                      "properties": {
+                        "minutes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "until": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "closed",
+                            "challenged",
+                            "upheld",
+                            "overturned"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "minutes",
+                        "until",
+                        "state"
+                      ]
                     },
                     "witnesses": {
                       "type": "object",
@@ -10468,6 +10901,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -10657,6 +11091,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -10987,6 +11422,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -11212,6 +11648,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -11485,6 +11922,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -11615,6 +12053,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -11724,6 +12163,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -11833,6 +12273,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -11942,6 +12383,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -12051,6 +12493,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -12160,6 +12603,7 @@
                             "NO_OPEN_SLOT",
                             "ALREADY_CLAIMED",
                             "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
                             "WORKER_NOT_ELIGIBLE",
                             "TASK_EXPIRED",
                             "CLAIM_NOT_ACTIVE",
@@ -12224,7 +12668,9 @@
           "verification.rejected",
           "verification.settled",
           "verification.expired",
-          "verification.cancelled"
+          "verification.cancelled",
+          "verification.provisional",
+          "verification.challenged"
         ]
       },
       "created_at": {

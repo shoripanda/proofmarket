@@ -16,6 +16,8 @@ export const TASK_EVENTS = [
   "CANCEL_REQUESTED",
   "FUNDING_FAILED",
   "REFUND_CONFIRMED",
+  /** 13 §3: the recheck of a challenged optimistic answer disagreed with it. */
+  "CHALLENGE_OVERTURNED",
 ] as const;
 export type TaskEvent = (typeof TASK_EVENTS)[number];
 
@@ -38,6 +40,7 @@ export const GUARDS = {
   fundingUnrecoverable:
     "(retry limit reached or deadline passed) and Task PDA absent on-chain and every sent signature's blockhash expired",
   refundFinalized: "refund is finalized on-chain",
+  challengeOverturned: "the recheck of a challenged optimistic answer disagreed with it (13 §3)",
 } as const;
 export type GuardName = keyof typeof GUARDS;
 
@@ -259,6 +262,20 @@ export const TRANSITIONS: readonly TransitionRule[] = [
       { kind: "setSettlementStatus", value: "CONFIRMED" },
     ],
   },
+  {
+    // 13 §3: same effects as T10; the reason saved with the result is CHALLENGED instead of NO_CONSENSUS.
+    id: "T19",
+    from: ["VERIFYING"],
+    event: "CHALLENGE_OVERTURNED",
+    guard: "challengeOverturned",
+    to: "REJECTED",
+    effects: [
+      { kind: "saveResult", outcome: "REJECTED" },
+      { kind: "setSettlementStatus", value: "PENDING" },
+      { kind: "enqueue", job: "FINALIZE_AND_SETTLE" },
+      { kind: "webhook", event: "verification.rejected" },
+    ],
+  },
 ];
 
 /** Facts the guards need. Loaded under `SELECT ... FOR UPDATE` on the task row (02 §4.2). */
@@ -278,6 +295,8 @@ export interface TransitionContext {
     taskPdaExists?: boolean;
   };
   funding: { txSent: boolean; retryLimitReached: boolean; allBlockhashesExpired: boolean };
+  /** 13 §3: set only by the challenge service when it rejects an overturned optimistic answer. */
+  challengeOverturned?: boolean;
 }
 
 export type TransitionResult =

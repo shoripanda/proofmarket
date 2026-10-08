@@ -6,13 +6,15 @@ import { dateLocale, type Lang, pick } from "./lang";
 
 export interface ProofFacts {
   status: "VERIFIED" | "REJECTED" | "EXPIRED";
-  reason: "NO_CONSENSUS" | "INSUFFICIENT_WITNESSES" | null;
+  reason: "NO_CONSENSUS" | "INSUFFICIENT_WITNESSES" | "CHALLENGED" | null;
   type: TaskType;
   answer_kind: AnswerKind;
   answer: string | null;
   verified_at: string;
   /** 13 §5: what the agent asked a person to confirm it did; the headline names it. */
   agent_attestation?: { description: string } | null;
+  /** 13 §3: the challenge window of an optimistic answer. */
+  challenge?: { minutes: number; state: "open" | "closed" | "challenged" | "upheld" | "overturned" };
 }
 
 const jst = (iso: string, lang: Lang, opts: Intl.DateTimeFormatOptions) =>
@@ -68,9 +70,46 @@ export function proofHeadline(
   if (f.status === "VERIFIED") return pick(lang, "人が確かめました", "Verified by a person");
   if (f.status === "EXPIRED")
     return pick(lang, "期限までに確かめられませんでした", "Not verified before the deadline");
+  if (f.reason === "CHALLENGED")
+    return pick(
+      lang,
+      "異議が出て確かめ直したところ、答えが違いました",
+      "Challenged, and the recheck found a different answer",
+    );
   return f.reason === "NO_CONSENSUS"
     ? pick(lang, "答えが分かれ、確かめられませんでした", "Answers disagreed; not verified")
     : pick(lang, "確かめられませんでした", "Not verified");
+}
+
+/** 13 §3: one line on how an optimistic answer was checked; null on other results. */
+export function proofChallengeLine(f: Pick<ProofFacts, "challenge">, lang: Lang = "ja"): string | null {
+  const c = f.challenge;
+  if (!c) return null;
+  const head = pick(
+    lang,
+    `1 人が確かめました。${c.minutes} 分のあいだ、だれでも異議を出せました`,
+    `One person checked. For ${c.minutes} minutes, anyone could challenge the answer`,
+  );
+  const tail = {
+    open: pick(lang, "（いまも受け付けています）", " (still open)."),
+    closed: pick(lang, "（出ませんでした）", " (no one did)."),
+    challenged: pick(
+      lang,
+      "（異議が出て、2 人が確かめ直しています）",
+      " (it was challenged; 2 people are rechecking).",
+    ),
+    upheld: pick(
+      lang,
+      "（異議が出て、2 人が確かめ直し、同じ答えでした）",
+      " (it was challenged; 2 people rechecked and found the same answer).",
+    ),
+    overturned: pick(
+      lang,
+      "（異議が出て、2 人が確かめ直し、違う答えでした）",
+      " (it was challenged; 2 people rechecked and found a different answer).",
+    ),
+  }[c.state];
+  return `${head}${tail}`;
 }
 
 /** Right half of the badge: what was found and when, in one short line. */

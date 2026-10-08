@@ -121,7 +121,12 @@ describe("MCP tools", () => {
       name: "get_reality_verification",
       arguments: { verification_id: r.structuredContent.verification_id },
     })) as unknown as { structuredContent: { assurance: unknown } };
-    expect(g.structuredContent.assurance).toEqual({ required_witnesses: 3, quorum: 2, level: "high" });
+    expect(g.structuredContent.assurance).toEqual({
+      required_witnesses: 3,
+      quorum: 2,
+      level: "high",
+      challenge_minutes: null,
+    });
   });
 
   it("request -> identical retry creates no second task -> get -> cancel", async () => {

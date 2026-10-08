@@ -51,7 +51,12 @@ describe("POST /v1/verifications", () => {
     const view = (await (
       await call((r) => handleGet(t.app, r, id), jsonReq("GET", `/v1/verifications/${id}`, { key: t.apiKey }))
     ).json()) as { assurance: unknown };
-    expect(view.assurance).toEqual({ required_witnesses: 2, quorum: 2, level: "standard" });
+    expect(view.assurance).toEqual({
+      required_witnesses: 2,
+      quorum: 2,
+      level: "standard",
+      challenge_minutes: null,
+    });
     const ledger = await t.db
       .select()
       .from(schema.requesterLedger)

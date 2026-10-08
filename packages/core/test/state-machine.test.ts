@@ -44,6 +44,7 @@ const CTX_FOR: Record<GuardName, TransitionContext> = {
     funding: { txSent: true, retryLimitReached: true, allBlockhashesExpired: true },
   }),
   refundFinalized: base({ chain: { refundFinalized: true } }),
+  challengeOverturned: base({ challengeOverturned: true }),
 };
 
 describe("task state machine", () => {

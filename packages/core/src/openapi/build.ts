@@ -86,6 +86,17 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "post",
+    path: "/v1/verifications/{id}/challenge",
+    auth: "requester",
+    priority: "Stretch",
+    summary:
+      "Challenge an optimistic answer within its window (13 §3). Any API key; the bond (twice the bounty) pays a 2-person recheck and comes back in full if the recheck disagrees",
+    idempotent: true,
+    body: S.ObjectionRequestSchema,
+    ok: { status: 201, schema: S.ObjectionResponseSchema },
+  },
+  {
+    method: "post",
     path: "/v1/schedules",
     auth: "requester",
     priority: "Stretch",

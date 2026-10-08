@@ -37,6 +37,7 @@ const GUARD_FNS: Record<GuardName, (c: TransitionContext) => boolean> = {
     c.chain.taskPdaExists === false &&
     c.funding.allBlockhashesExpired,
   refundFinalized: (c) => c.chain.refundFinalized === true,
+  challengeOverturned: (c) => c.challengeOverturned === true,
 };
 
 /** Find the rule for (status, event) whose guard holds. Never throws; callers map failures to API errors. */
