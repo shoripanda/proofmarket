@@ -1,6 +1,6 @@
 # 提出用の動画を作る手順（2026-10-08）
 
-技術デモ（約 65 秒）とピッチ（約 110 秒）の 2 本を、どちらも 1920×1080・H.264 で作る。語りは Kokoro（無料で手元で動く音声合成）の英語音声で、台本を読ませている。収録に人は要らない。
+技術デモ（約 72 秒）とピッチ（約 116 秒、`pitch2/`）の 2 本を、どちらも 1920×1080・H.264 で作る。語りは Kokoro（無料で手元で動く音声合成）の英語音声で、台本を読ませている。収録に人は要らない。
 
 ## 準備（最初の 1 回だけ）
 
@@ -36,6 +36,23 @@ node ../pitch/build.mjs ../pitch/voice ~/Desktop/ProofMarket-pitch-en.mp4
 ```
 
 スライドを Playwright で撮り、1 枚ごとに `ffmpeg -loop 1`（CRF 17・30fps・末尾 0.7 秒の無音）で動画にして concat する。ピッチは 2 分以内という提出条件があるので、`build.mjs` が出す合計秒数を見る。
+
+## ピッチ v2（2026-10-08 午後、提出版）
+
+上のスライド式は差し替え、`pitch2/` の動く版を提出した。Apple の製品動画を手本に、明るい背景と大きな文字、本番の画面（worker の電話画面、エージェント側のカード、開発者ページ、地図）を動かす 13 場面、115 秒。
+
+```bash
+cd docs/pitch/03-videos/render/pitch2
+node shots.mjs                      # 本番から画面を assets/ に撮る（終わりに表示される crop と logo のコピーも行う）
+mkdir -p voice && i=0; while IFS= read -r l; do i=$((i+1)); ../tts/.venv/bin/python ../tts/say.py af_heart voice/cue$i.wav "$l" 0.95; done < narration.txt
+curl -L -o music.mp3 "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Inspired.mp3"
+node render.mjs --preview preview.mp4           # 2fps の下見。配置の確認に使う
+node render.mjs ~/Desktop/ProofMarket-pitch-v2.mp4 music.mp3
+```
+
+仕組み: `scene.html` は場面ごとの要素を Web Animations API で作り、全部を一時停止したまま `seek(t)` で時刻を指す。`render.mjs` が 1/30 秒ずつ `seek` して PNG を撮り、パイプで ffmpeg に流す（コマ落ちがなく、字もにじまない。M2 で 1 コマ 0.08 秒ほど）。語りの長さから場面の開始時刻を決めるので、声を差し替えても `render.mjs` を回し直すだけでよい。音楽は Kevin MacLeod「Inspired」（CC BY 4.0）。YouTube の説明文にクレジットを書く。
+
+はまりどころ: 退場のアニメーションに `fill: both` を使うと、開始前にも最初のキーフレーム（不透明）が効いて、入場より優先される。退場は `fill: forwards` にする。
 
 ## 置き場所と公開
 

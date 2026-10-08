@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #f5f5f7; }
+  body { font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Inter, Arial, sans-serif; color: #1d1d1f;
+         -webkit-font-smoothing: antialiased; letter-spacing: -0.02em; }
+  .scene { position: absolute; inset: 0; opacity: 0; overflow: hidden; }
+  .light { background: #f5f5f7; } .white { background: #fff; } .dark { background: #0b0f14; color: #f5f5f7; }
+  .teal { background: radial-gradient(1200px 800px at 30% 20%, #14897f 0%, #0f766e 45%, #0b4f4a 100%); color: #fff; }
+  .navy { background: radial-gradient(1400px 900px at 70% 80%, #16213a 0%, #0b1220 60%, #070b14 100%); color: #f5f5f7; }
+  .h1 { font-weight: 700; font-size: 96px; line-height: 1.08; }
+  .h2 { font-weight: 700; font-size: 72px; line-height: 1.1; }
+  .sub { font-weight: 500; font-size: 36px; line-height: 1.35; color: #6e6e73; }
+  .dark .sub, .navy .sub { color: #a1a1a6; } .teal .sub { color: rgba(255,255,255,.82); }
+  .abs { position: absolute; }
+  .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .pill { display: inline-flex; align-items: center; gap: 14px; padding: 16px 30px; border-radius: 999px; font-weight: 600; font-size: 32px;
+          background: #fff; color: #1d1d1f; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+  .pill.teal-p { background: #0f766e; color: #fff; }
+  .pill.red-p { background: #fdeaea; color: #c0262c; } .pill.green-p { background: #e6f6ef; color: #0f6e4b; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: currentColor; opacity: .7; }
+  .card { background: #fff; border-radius: 28px; box-shadow: 0 30px 80px rgba(0,0,0,.12); }
+  .phone { position: absolute; width: 440px; height: 762px; }
+  .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 40px; }
+  .phone::after { content: ""; position: absolute; inset: 0; border-radius: 40px; box-shadow: 0 50px 100px rgba(0,0,0,.28); pointer-events: none; z-index: -1; }
+  .browser { position: absolute; background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,.22); }
+  .browser .bar { height: 46px; background: #ececef; display: flex; align-items: center; gap: 10px; padding-left: 20px; }
+  .browser .bar i { width: 14px; height: 14px; border-radius: 50%; display: block; background: #d1d1d6; }
+  .browser .bar i:nth-child(1) { background: #ff5f57; } .browser .bar i:nth-child(2) { background: #febc2e; } .browser .bar i:nth-child(3) { background: #28c840; }
+  .browser img { display: block; width: 100%; }
+  .bubble { max-width: 760px; padding: 26px 36px; border-radius: 34px; font-size: 40px; font-weight: 500; line-height: 1.25; }
+  .me { background: #0a84ff; color: #fff; border-bottom-right-radius: 10px; align-self: flex-end; }
+  .bot { background: #e9e9eb; color: #1d1d1f; border-bottom-left-radius: 10px; align-self: flex-start; }
+  .caption { font-size: 26px; color: #8e8e93; font-weight: 500; }
+  .check { display: flex; align-items: center; gap: 22px; font-size: 38px; font-weight: 600; }
+  .check .mark { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; font-weight: 800; }
+  .ok .mark { background: #e6f6ef; color: #0f6e4b; } .bad .mark { background: #fdeaea; color: #c0262c; }
+  .stat { text-align: center; } .stat b { display: block; font-size: 150px; font-weight: 800; line-height: 1; letter-spacing: -0.04em; color: #0f766e; }
+  .stat span { display: block; margin-top: 18px; font-size: 34px; color: #6e6e73; font-weight: 500; }
+  .strike { position: relative; display: inline-block; }
+  .strike::after { content: ""; position: absolute; left: -2%; right: -2%; top: 52%; height: 8px; background: #c0262c; border-radius: 4px; transform: scaleX(var(--s, 0)); transform-origin: left; }
+  .tx { font-family: ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 32px; padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .row span:first-child { color: #a1a1a6; font-weight: 500; } .row span:last-child { font-weight: 600; }
+  .small { position: absolute; font-size: 22px; color: rgba(255,255,255,.6); font-weight: 500; letter-spacing: 0; }
+</style>
+</head>
+<body>
+<script>
+const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const anims = []; const seekers = [];
+function el(tag, cls, html, style) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; if (style) e.style.cssText = style; return e; }
+// Animate with absolute times (seconds). Keyframes get fill:both and the animation is paused for seeking.
+function tween(node, keyframes, at, dur, easing = EASE, fill = "both") {
+  const a = node.animate(keyframes, { delay: at * 1000, duration: Math.max(dur, 0.001) * 1000, fill, easing });
+  a.pause(); anims.push(a); return a;
+}
+// Enter at `at`, stay, leave at `out` (if given).
+function show(node, at, { from = "translateY(40px)", dur = 0.8, out, outDur = 0.5, outTo = "translateY(-30px)", scale } = {}) {
+  node.style.opacity = "0";
+  tween(node, [{ opacity: 0, transform: from }, { opacity: 1, transform: scale ? `scale(${scale})` : "none" }], at, dur);
+  if (out != null) tween(node, [{ opacity: 1, transform: "none" }, { opacity: 0, transform: outTo }], out, outDur, "ease-in", "forwards");
+}
+function scene(cls, s, fadeIn = 0.45, fadeOut = 0.45) {
+  const d = el("div", `scene ${cls}`);
+  document.body.append(d);
+  tween(d, [{ opacity: 0 }, { opacity: 1 }], s.start, fadeIn, "ease-out");
+  if (fadeOut > 0) tween(d, [{ opacity: 1 }, { opacity: 0 }], s.next - fadeOut, fadeOut, "ease-in", "forwards");
+  d.style.zIndex = String(10 + Math.round(s.start)); // later scenes on top during crossfade
+  return d;
+}
+function phone(parent, frames, x, y, swaps) {
+  // frames: [[src, atSeconds], ...] crossfaded by seek
+  const p = el("div", "phone", "", `left:${x}px; top:${y}px`);
+  const imgs = frames.map(([src]) => { const i = el("img"); i.src = src; i.style.opacity = "0"; p.append(i); return i; });
+  parent.append(p);
+  seekers.push((t) => {
+    for (let k = 0; k < frames.length; k++) {
+      const at = frames[k][1]; const nextAt = frames[k + 1]?.[1] ?? Infinity;
+      let o = 0;
+      if (t >= at && t < nextAt) o = Math.min(1, (t - at) / 0.35);
+      else if (t >= nextAt && t < nextAt + 0.35) o = 1 - (t - nextAt) / 0.35;
+      if (k === frames.length - 1 && t >= at) o = Math.min(1, (t - at) / 0.35);
+      imgs[k].style.opacity = String(Math.max(0, o));
+    }
+  });
+  return p;
+}
+function browser(parent, src, x, y, w, h, style = "") {
+  const b = el("div", "browser", `<div class="bar"><i></i><i></i><i></i></div>`, `left:${x}px; top:${y}px; width:${w}px; height:${h}px; ${style}`);
+  const i = el("img"); i.src = src; b.append(i); parent.append(b); return b;
+}
+function counter(node, from, to, at, dur, fmt = (v) => String(v)) {
+  seekers.push((t) => { const k = Math.max(0, Math.min(1, (t - at) / dur)); const e = 1 - (1 - k) ** 3; node.textContent = fmt(Math.round(from + (to - from) * e)); });
+}
+
+window.setup = (tl) => {
+  const S = tl.scenes; const A = "assets/";
+
+  // 0 — read the web / can't walk
+  { const s = S[0]; const d = scene("light", s);
+    const c = el("div", "center"); d.append(c);
+    const h = el("div", "h1", "Your AI agent can<br>read the whole web.", "max-width:1500px");
+    c.append(h); show(h, s.voice, { out: s.voice + 2.6, outTo: "translateY(-60px) scale(.96)" });
+    const list = el("div", "", "", "position:absolute; left:0; right:0; top:300px; display:flex; flex-direction:column; align-items:center; gap:34px");
+    d.append(list);
+    const lead = el("div", "sub", "But it can't", "font-size:44px"); list.append(lead); show(lead, s.voice + 3.0);
+    [["walk to a shop", 3.4], ["read a paper notice", 4.4], ["make a call", 5.5]].forEach(([txt, at]) => {
+      const line = el("div", "h2", `<span class="strike">${txt}</span>`); list.append(line);
+      show(line, s.voice + at, { from: "translateY(30px)" });
+      const st = line.firstChild;
+      seekers.push((t) => { const k = Math.max(0, Math.min(1, (t - (s.voice + at + 0.55)) / 0.4)); st.style.setProperty("--s", String(k)); });
+    });
+  }
+  // 1 — chat, then shutters
+  { const s = S[1]; const d = scene("light", s);
+    const chat = el("div", "", "", "position:absolute; left:460px; top:330px; width:1000px; display:flex; flex-direction:column; gap:30px");
+    d.append(chat);
+    const q = el("div", "bubble me", "Is this café open tonight?"); chat.append(q); show(q, s.voice + 0.4, { from: "translateY(30px) scale(.96)" });
+    const a = el("div", "bubble bot", "Yes — open until 20:00."); chat.append(a); show(a, s.voice + 2.2, { from: "translateY(30px) scale(.96)" });
+    const cap = el("div", "caption", "Source: a web listing · last updated 3 weeks ago", "align-self:flex-start; margin-left:36px"); chat.append(cap); show(cap, s.voice + 3.4);
+    const dark = el("div", "abs", "", "inset:0; background:#0b0f14; opacity:0"); d.append(dark);
+    tween(dark, [{ opacity: 0 }, { opacity: 1 }], s.voice + 5.2, 0.8, "ease-in-out");
+    const h = el("div", "h1", "The shutters are down.", "position:absolute; left:0; right:0; top:470px; text-align:center; color:#f5f5f7");
+    d.append(h); show(h, s.voice + 5.6, { from: "translateY(30px)", dur: 0.9 });
+  }
+  // 2 — agents can hire people / is the work real
+  { const s = S[2]; const d = scene("white", s);
+    const h = el("div", "h2", "Agents can already hire people.", "position:absolute; left:140px; top:150px; width:900px");
+    d.append(h); show(h, s.voice + 0.2);
+    const card = el("div", "card", "", "position:absolute; left:1120px; top:170px; width:620px; padding:30px; display:flex; flex-direction:column; gap:22px");
+    card.innerHTML = `<div style="height:420px; border-radius:20px; background:linear-gradient(135deg,#cfd4dc,#9aa3b2); display:grid; place-items:center; color:#fff; font-weight:600; font-size:30px; filter:blur(0.5px)">photo_0231.jpg</div>
+      <div style="font-size:34px; font-weight:600">Answer: <span style="color:#0f6e4b">Open</span></div>`;
+    d.append(card); show(card, s.voice + 1.6, { from: "translateY(40px) scale(.97)" });
+    const qs = el("div", "", "", "position:absolute; left:140px; top:420px; display:flex; flex-direction:column; gap:22px"); d.append(qs);
+    [["Is it the right place?", 3.6], ["Was it taken just now?", 4.3], ["Does the answer match the request?", 5.0]].forEach(([t, at]) => {
+      const p = el("div", "pill", `<span class="dot" style="background:#c0262c"></span>${t}`); qs.append(p); show(p, s.voice + at, { from: "translateX(-30px)" });
+    });
+    const h2 = el("div", "h2", "The agent can't tell.", "position:absolute; left:140px; top:760px; color:#c0262c"); d.append(h2); show(h2, s.voice + 5.6);
+  }
+  // 3 — brand
+  { const s = S[3]; const d = scene("teal", s, 0.6);
+    const c = el("div", "center"); d.append(c);
+    const logo = el("img", "", "", "width:180px; height:180px; border-radius:40px; box-shadow:0 30px 80px rgba(0,0,0,.3)"); logo.src = A + "logo.png";
+    c.append(logo); show(logo, s.start + 0.1, { from: "scale(.6)", dur: 1.0 });
+    const n = el("div", "h1", "ProofMarket", "margin-top:40px; font-size:128px; letter-spacing:-0.03em"); c.append(n); show(n, s.voice + 0.1, { from: "translateY(30px)", dur: 0.9 });
+    const tg = el("div", "sub", "Ask a person. Get proof on Solana.", "margin-top:26px; font-size:46px; color:#fff; font-weight:600"); c.append(tg); show(tg, s.voice + 1.5);
+    const note = el("div", "small", "Narration: synthesized voice reading the founder's script", "left:0; right:0; bottom:40px; text-align:center"); d.append(note); show(note, s.start + 0.8, { from: "none" });
+  }
+  // 4 — one request, escrowed (real agent card)
+  { const s = S[4]; const d = scene("light", s);
+    const h = el("div", "h2", "One request.<br>Escrowed on Solana.", "position:absolute; left:140px; top:200px; width:820px"); d.append(h); show(h, s.voice + 0.2);
+    const pills = el("div", "", "", "position:absolute; left:140px; top:470px; display:flex; gap:18px"); d.append(pills);
+    ["MCP", "REST", "x402"].forEach((t, i) => { const p = el("div", "pill teal-p", t); pills.append(p); show(p, s.voice + 2.6 + i * 0.25, { from: "translateY(20px)" }); });
+    const sub = el("div", "sub", "The bounty is locked in the escrow program<br>before anyone starts working.", "position:absolute; left:140px; top:620px; width:800px"); d.append(sub); show(sub, s.voice + 5.2);
+    const card = el("div", "card", "", "position:absolute; left:1040px; top:90px; width:720px; height:812px; overflow:hidden; border-radius:30px");
+    const img = el("img", "", "", "width:720px; display:block"); img.src = A + "agent-request.png"; card.append(img); d.append(card);
+    show(card, s.voice + 0.8, { from: "translateY(60px)", dur: 1.0 });
+    tween(img, [{ transform: "translateY(0)" }, { transform: "translateY(-120px)" }], s.voice + 4.8, 2.0);
+    const lock = el("div", "pill green-p", "<span class=\"dot\"></span>Escrow funded · 0.30 USDC", "position:absolute; left:1070px; top:830px; font-size:30px"); d.append(lock); show(lock, s.voice + 5.6, { from: "translateY(20px) scale(.95)" });
+  }
+  // 5 — worker phone
+  { const s = S[5]; const d = scene("white", s);
+    const h = el("div", "h2", "A worker nearby<br>takes it on their phone.", "position:absolute; left:140px; top:220px; width:820px"); d.append(h); show(h, s.voice + 0.2);
+    const tags = el("div", "", "", "position:absolute; left:140px; top:520px; display:flex; flex-direction:column; gap:20px; align-items:flex-start"); d.append(tags);
+    [["New task · 0.30 USDC · 120 m away", 0.8], ["Shoot the notice", 2.4], ["Type the answer", 3.4]].forEach(([t, at]) => { const p = el("div", "pill", t); tags.append(p); show(p, s.voice + at, { from: "translateX(-30px)" }); });
+    phone(d, [[A + "phone-04.png", s.start], [A + "phone-06.png", s.voice + 1.5], [A + "phone-10.png", s.voice + 2.6]], 1240, 160);
+    const ph = d.querySelector(".phone"); show(ph, s.start + 0.1, { from: "translateY(80px)", dur: 1.0 });
+  }
+  // 6 — checks + Claude review
+  { const s = S[6]; const d = scene("light", s);
+    const h = el("div", "h2", "Checked. Then reviewed.", "position:absolute; left:140px; top:120px"); d.append(h); show(h, s.voice + 0.1);
+    const list = el("div", "", "", "position:absolute; left:140px; top:270px; display:flex; flex-direction:column; gap:26px"); d.append(list);
+    [["Taken at the requested place", 0.9], ["Taken just now", 1.5], ["Not a reused photo", 2.1]].forEach(([t, at]) => {
+      const c = el("div", "check ok", `<span class="mark">✓</span>${t}`); list.append(c); show(c, s.voice + at, { from: "translateX(-30px)" });
+    });
+    const rv = el("div", "card", "", "position:absolute; left:140px; top:560px; width:860px; padding:30px 34px; display:flex; flex-direction:column; gap:14px");
+    rv.innerHTML = `<div style="font-size:26px; color:#6e6e73; font-weight:600">Claude review</div>
+      <div style="font-size:32px; font-weight:600; line-height:1.3">The answer is a summary, but the request asks for the exact text.</div>
+      <div class="pill red-p" style="align-self:flex-start; font-size:28px; padding:12px 24px">Sent back · 2 attempts left</div>`;
+    d.append(rv); show(rv, s.voice + 3.6, { from: "translateY(40px)" });
+    const ok = el("div", "pill green-p", "<span class=\"dot\"></span>Attempt 2 · matches the request", "position:absolute; left:140px; top:860px; font-size:30px"); d.append(ok); show(ok, s.voice + 7.0, { from: "translateY(20px)" });
+    phone(d, [[A + "phone-22.png", s.start], [A + "phone-14.png", s.voice + 3.6], [A + "phone-18.png", s.voice + 6.0], [A + "phone-22.png", s.voice + 7.0]], 1240, 160);
+    const ph = d.querySelector(".phone"); show(ph, s.start + 0.1, { from: "translateY(80px)", dur: 1.0 });
+  }
+  // 7 — one transaction
+  { const s = S[7]; const d = scene("navy", s);
+    const h = el("div", "h2", "One transaction.<br>Proof anyone can re-read.", "position:absolute; left:140px; top:120px; width:900px"); d.append(h); show(h, s.voice + 0.1);
+    const tx = el("div", "", "", "position:absolute; left:140px; top:400px; width:820px; padding:10px 0"); d.append(tx);
+    [["Program", "ProofMarket escrow · Solana"], ["Result hash", "<span class=tx>7f3a 9c21 … e4b0</span>"], ["Evidence root", "<span class=tx>c0de 51aa … 18f7</span>"], ["Payout", "0.30 USDC → worker"], ["Witnesses", "1 of 1 agreed"]].forEach(([k, v], i) => {
+      const r = el("div", "row", `<span>${k}</span><span>${v}</span>`); tx.append(r); show(r, s.voice + 0.8 + i * 0.35, { from: "translateX(-20px)" });
+    });
+    const conf = el("div", "pill green-p", "<span class=\"dot\"></span>Confirmed · recorded and paid", "position:absolute; left:140px; top:800px; font-size:30px"); d.append(conf); show(conf, s.voice + 3.2, { from: "translateY(20px)" });
+    phone(d, [[A + "phone-29.png", s.start]], 1340, 160);
+    const ph = d.querySelector(".phone"); show(ph, s.voice + 2.6, { from: "translateY(80px)", dur: 1.0, out: s.voice + 6.1, outTo: "translateX(80px)" });
+    const card = el("div", "card", "", "position:absolute; left:1040px; top:120px; width:720px; height:840px; overflow:hidden; border-radius:30px");
+    const img = el("img", "", "", "width:720px; display:block"); img.src = A + "agent-result.png"; card.append(img); d.append(card);
+    show(card, s.voice + 6.8, { from: "translateY(60px)", dur: 0.9 });
+    const lbl = el("div", "pill", "Structured JSON + public proof page", "position:absolute; left:1070px; top:880px; font-size:28px"); d.append(lbl); show(lbl, s.voice + 7.6, { from: "translateY(20px)" });
+  }
+  // 8 — why Solana
+  { const s = S[8]; const d = scene("white", s);
+    const h = el("div", "h2", "Why Solana", "position:absolute; left:0; right:0; top:130px; text-align:center"); d.append(h); show(h, s.voice + 0.1);
+    const grid = el("div", "", "", "position:absolute; left:0; right:0; top:360px; display:flex; justify-content:center; gap:150px"); d.append(grid);
+    const s1 = el("div", "stat", `<b>0¢</b><span>bounty, escrowed per task</span>`); grid.append(s1); show(s1, s.voice + 1.0, { from: "translateY(30px)" });
+    counter(s1.querySelector("b"), 0, 30, s.voice + 1.0, 1.4, (v) => `${v}¢`);
+    const s2 = el("div", "stat", `<b>1 tx</b><span>to record the result and pay</span>`); grid.append(s2); show(s2, s.voice + 2.6, { from: "translateY(30px)" });
+    const s3 = el("div", "stat", `<b>x402</b><span>pay per request · no account</span>`); grid.append(s3); show(s3, s.voice + 5.6, { from: "translateY(30px)" });
+    const foot = el("div", "sub", "Settled in seconds, on Devnet today.", "position:absolute; left:0; right:0; top:820px; text-align:center"); d.append(foot); show(foot, s.voice + 8.2);
+  }
+  // 9 — live today: product screens
+  { const s = S[9]; const d = scene("light", s);
+    const h = el("div", "h2", "Live today.", "position:absolute; left:140px; top:110px"); d.append(h); show(h, s.voice + 0.1);
+    const pills = el("div", "", "", "position:absolute; left:140px; top:230px; display:flex; gap:16px; flex-wrap:wrap; width:1000px"); d.append(pills);
+    ["17 task types", "MCP", "REST", "x402", "Public map", "Proof pages"].forEach((t, i) => { const p = el("div", "pill", t, "font-size:28px; padding:12px 24px"); pills.append(p); show(p, s.voice + 1.2 + i * 0.2, { from: "translateY(16px)" }); });
+    const b1 = browser(d, A + "home.png", 760, 330, 1200, 750); show(b1, s.voice + 0.6, { from: "translateY(80px)", dur: 1.0 });
+    tween(b1.querySelector("img"), [{ transform: "translateY(0)" }, { transform: "translateY(-160px)" }], s.voice + 1.5, 4.0);
+    const b2 = browser(d, A + "dev-mcp.png", 980, 420, 1200, 750); show(b2, s.voice + 4.2, { from: "translateY(80px) translateX(60px)", dur: 1.0 });
+    const b3 = browser(d, A + "agent-10.png", 620, 520, 1200, 750); show(b3, s.voice + 6.6, { from: "translateY(80px)", dur: 1.0 });
+    const t3 = el("div", "pill teal-p", "proofmarket.fun/try · 3 minutes, both sides", "position:absolute; left:140px; top:880px; font-size:30px"); d.append(t3); show(t3, s.voice + 7.2, { from: "translateY(20px)" });
+  }
+  // 10 — founder
+  { const s = S[10]; const d = scene("white", s);
+    const n = el("div", "h2", "Hiroki Hashimoto", "position:absolute; left:140px; top:200px"); d.append(n); show(n, s.voice + 0.2);
+    const r = el("div", "sub", "Solo founder · Japan · builds with AI tools", "position:absolute; left:140px; top:310px"); d.append(r); show(r, s.voice + 1.0);
+    const cards = el("div", "", "", "position:absolute; left:140px; top:470px; display:flex; gap:40px"); d.append(cards);
+    [["CurioLang", "Language learning in 45 languages.<br>Shipped 2026.", 3.6], ["ProofMarket", "Spec Oct 2 → production Oct 4.<br>214 automated tests.", 6.4]].forEach(([t, b, at]) => {
+      const c = el("div", "card", `<div style="font-size:26px; color:#0f766e; font-weight:700; letter-spacing:0">${t}</div><div style="font-size:38px; font-weight:600; line-height:1.3; margin-top:14px">${b}</div>`, "width:720px; padding:40px 44px");
+      cards.append(c); show(c, s.voice + at, { from: "translateY(40px)" });
+    });
+  }
+  // 11 — Japan
+  { const s = S[11]; const d = scene("light", s);
+    const bg = el("img", "", "", "position:absolute; left:860px; top:0; width:1200px; height:1080px; object-fit:cover; opacity:.0; filter:saturate(.9)"); bg.src = A + "map-only.png"; d.append(bg);
+    tween(bg, [{ opacity: 0, transform: "scale(1.06)" }, { opacity: 1, transform: "scale(1)" }], s.start, 2.0);
+    const fade = el("div", "abs", "", "inset:0; background:linear-gradient(90deg, #f5f5f7 0%, #f5f5f7 48%, rgba(245,245,247,0) 75%)"); d.append(fade);
+    const h = el("div", "h2", "Japan is the right<br>place to start.", "position:absolute; left:140px; top:180px; width:800px"); d.append(h); show(h, s.voice + 0.1);
+    const list = el("div", "", "", "position:absolute; left:140px; top:470px; display:flex; flex-direction:column; gap:20px; align-items:flex-start"); d.append(list);
+    [["Paper notices", 2.4], ["Shop fronts", 3.1], ["Phone calls", 3.7]].forEach(([t, at]) => { const p = el("div", "pill", t); list.append(p); show(p, s.voice + at, { from: "translateX(-30px)" }); });
+    const w = el("div", "sub", "And many people want short,<br>flexible, paid work.", "position:absolute; left:140px; top:770px; width:800px"); d.append(w); show(w, s.voice + 5.6);
+  }
+  // 12 — CTA
+  { const s = S[12]; const d = scene("teal", s, 0.6, 0);
+    const c = el("div", "center"); d.append(c);
+    const h = el("div", "h1", "Send us one request today.", "max-width:1500px"); c.append(h); show(h, s.voice + 0.1);
+    const w = el("div", "sub", "In Tokyo? Join as a worker.", "margin-top:26px; font-size:42px; color:rgba(255,255,255,.85)"); c.append(w); show(w, s.voice + 2.6);
+    const url = el("div", "h2", "proofmarket.fun", "margin-top:70px; font-size:84px"); c.append(url); show(url, s.voice + 4.4, { from: "translateY(20px) scale(.98)" });
+    const gh = el("div", "sub", "github.com/shoripanda/proofmarket", "margin-top:14px; font-size:32px; color:rgba(255,255,255,.75); letter-spacing:0"); c.append(gh); show(gh, s.voice + 5.0);
+    const logo = el("img", "", "", "position:absolute; left:50%; top:110px; width:120px; height:120px; margin-left:-60px; border-radius:28px; box-shadow:0 20px 60px rgba(0,0,0,.3)"); logo.src = A + "logo.png"; d.append(logo); show(logo, s.start + 0.2, { from: "scale(.7)" });
+  }
+};
+window.seek = (t) => { for (const a of anims) a.currentTime = t * 1000; for (const f of seekers) f(t); };
+</script>
+</body>
+</html>

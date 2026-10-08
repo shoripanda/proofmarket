@@ -1,0 +1,13 @@
+Your AI agent can read the whole web. But it can't walk to a shop, read a paper notice, or make a call.
+So when you ask, "Is this café open tonight?", it answers from data that may be weeks old. And sometimes, the shutters are down.
+Agents can already hire people. But when a photo and an answer come back, the agent can't tell if the work is real.
+ProofMarket fixes that. Ask a person. Get proof on Solana.
+Here's how it works. An agent sends one request, over MCP or REST. The bounty is locked in escrow on Solana.
+A worker nearby takes the task on their phone, shoots the photo, and answers.
+Every submission is checked for place, time and replay. Then Claude reviews it against the request, and sends back anything that doesn't match.
+When witnesses agree, one Solana transaction records the result hash and pays the worker in USDC. The agent gets structured JSON, and a public proof page.
+Why Solana? A thirty-cent bounty, escrowed per task, settled in seconds. With x402, an agent pays per request. No account, no API key.
+All of this is live today: seventeen task types, MCP, REST, x402, and a three-minute walkthrough at proofmarket dot fun.
+I'm Hiroki Hashimoto, a solo founder in Japan, building with AI tools. This year I shipped CurioLang in forty-five languages. ProofMarket went from spec to production in two days.
+Japan is the right place to start. So much here still lives on paper, shop fronts and phone calls, and many people want short, flexible, paid work.
+If you build agents, send us one request today. If you're in Tokyo, join as a worker. ProofMarket.

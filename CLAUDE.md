@@ -58,3 +58,4 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-08 [音声合成 / kokoro-onnx] pip の `espeakng-loader` 同梱 espeak が macOS でデータパスを読めず `Error processing file '/Users/runner/…/phontab'` で落ちる（`ESPEAK_DATA_PATH` や `set_data_path` でも直らない）→ `brew install espeak-ng` を入れ、`EspeakConfig(lib_path=/opt/homebrew/lib/libespeak-ng.dylib, data_path=/opt/homebrew/share/espeak-ng-data)` を渡す
 - 2026-10-08 [YouTube 投稿 / yt-upload.mjs] 説明文ファイルを相対パスで渡す → `!` から実行すると cwd が違い ENOENT でファイル選択の直後に落ち、Studio に無題の下書きが残る → 引数はすべて絶対パスにする。zsh では `rm -f dir/Singleton*` のように一致しないグロブがあるとコマンド列全体が止まるので、ファイル名を列挙する
 - 2026-10-08 [/try の見本写真 / SVG] 掲示の文に `&` を含めたまま SVG 文字列に埋め込む → data URL の XML が壊れて画像が出ず alt 文字だけ表示される → `signPhoto` で `& < >` をエスケープする
+- 2026-10-08 [YouTube 投稿 / yt-upload.mjs] 「作成」メニューから開いた投稿ダイアログで、2 秒待っただけでファイルを選ぶ → 「ファイルを選択」がまだ無効（初期化中）でファイルが無視され、詳細画面を 60 秒待って失敗。Studio には何も残らない → ボタンの disabled / aria-disabled が外れるまで待ってから選び、詳細画面が出なければ選び直す（3 回まで）
