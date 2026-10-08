@@ -3,6 +3,7 @@ import { LIMITS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";
+import { Plain, Term } from "@/lib/client/plain";
 import { type Lang, langHref } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -143,17 +144,21 @@ export default async function PricingPage() {
   return (
     <>
       <PageHero eyebrow={c.eyebrow} title={c.title}>
-        <p>{c.intro}</p>
+        <p>
+          <Plain>{c.intro}</Plain>
+        </p>
       </PageHero>
 
-      <Section title={c.levels.title} lead={c.levels.lead}>
+      <Section title={c.levels.title} lead={<Plain>{c.levels.lead}</Plain>}>
         <div className="grid gap-4 sm:grid-cols-3">
           {c.levels.items.map((l) => (
             <div key={l.name} className="rounded-2xl border border-slate-200 p-5">
               <h3 className="font-bold">{l.name}</h3>
               <p className="mt-2 text-3xl font-bold">
                 {(EXAMPLE_BOUNTY * l.n).toFixed(1)}
-                <span className="ml-1 text-sm font-medium text-slate-500">USDC</span>
+                <span className="ml-1 text-sm font-medium text-slate-500">
+                  <Term k="usdc" />
+                </span>
               </p>
               <p className="mt-1 font-mono text-xs text-slate-500">
                 assurance: {"{"} "level": "{l.level}" {"}"}
@@ -165,26 +170,32 @@ export default async function PricingPage() {
         <p className="mt-4 text-sm leading-relaxed text-slate-600">{c.levels.note}</p>
       </Section>
 
-      <Section title={c.money.title} lead={c.money.lead}>
+      <Section title={c.money.title} lead={<Plain>{c.money.lead}</Plain>}>
         <dl className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
           {c.money.cases.map(([k, v]) => (
             <div key={k} className="grid gap-1 p-4 sm:grid-cols-[16rem_1fr]">
               <dt className="text-sm font-semibold">{k}</dt>
-              <dd className="text-sm leading-relaxed text-slate-600">{v}</dd>
+              <dd className="text-sm leading-relaxed text-slate-600">
+                <Plain>{v}</Plain>
+              </dd>
             </div>
           ))}
         </dl>
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">{c.money.note}</p>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
+          <Plain>{c.money.note}</Plain>
+        </p>
       </Section>
 
       <Section title={c.pilot.title}>
-        <p className="max-w-3xl text-sm leading-relaxed text-slate-600">{c.pilot.body}</p>
+        <p className="max-w-3xl text-sm leading-relaxed text-slate-600">
+          <Plain>{c.pilot.body}</Plain>
+        </p>
         <p className="mt-4 text-sm">
           <Link
             href={langHref(lang, "/join?role=requester")}
             className="font-semibold text-teal-700 underline"
           >
-            {c.pilot.cta}
+            <Plain>{c.pilot.cta}</Plain>
           </Link>
         </p>
       </Section>
