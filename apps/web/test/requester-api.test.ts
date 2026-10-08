@@ -316,12 +316,8 @@ describe("01 §4.25: the requester decides the shape of the work", () => {
     await witness(t, alice, id, { answer: "OPEN", claimId: claim_id });
     const pub = await publicResult(t.app, id);
     expect(pub.agent_attestation).toEqual(want);
-    expect(proofHeadline(pub, "ja")).toBe(
-      "Delivered the parcel to room 302 が行われたことを、人が確かめました",
-    );
-    expect(proofHeadline(pub, "en")).toBe(
-      "A person confirmed that Delivered the parcel to room 302 was done",
-    );
+    expect(proofHeadline(pub, "ja")).toBe("『Delivered the parcel to room 302』が本当だと、人が確かめました");
+    expect(proofHeadline(pub, "en")).toBe("A person confirmed: “Delivered the parcel to room 302”");
     expect(proofHeadline({ ...pub, agent_attestation: null }, "ja")).toBe("人が確かめました");
 
     for (const bad of [

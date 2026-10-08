@@ -64,7 +64,7 @@ export function proofHeadline(
 ): string {
   const did = f.agent_attestation?.description;
   if (f.status === "VERIFIED" && did)
-    return pick(lang, `${did} が行われたことを、人が確かめました`, `A person confirmed that ${did} was done`);
+    return pick(lang, `『${did}』が本当だと、人が確かめました`, `A person confirmed: “${did}”`);
   if (f.status === "VERIFIED") return pick(lang, "人が確かめました", "Verified by a person");
   if (f.status === "EXPIRED")
     return pick(lang, "期限までに確かめられませんでした", "Not verified before the deadline");

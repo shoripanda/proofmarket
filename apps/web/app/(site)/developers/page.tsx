@@ -211,7 +211,7 @@ const COPY = {
           ],
           [
             "attestation",
-            `エージェント自身がしたことを、人に確かめてもらう（任意）。{ "subject": "agent_action", "description": "302号室に荷物を届けた" } のように書く（description は${LIMITS.attestation.maxDescriptionChars}字まで）。worker には「AI エージェントが『…』と言っています」と出て、証明ページの見出しは「…が行われたことを、人が確かめました」になる。検査と判定はふつうの依頼と同じ`,
+            `エージェント自身がしたことを、人に確かめてもらう（任意）。{ "subject": "agent_action", "description": "302号室に荷物を届けた" } のように書く（description は${LIMITS.attestation.maxDescriptionChars}字まで）。worker には「AI エージェントが『…』と言っています」と出て、証明ページの見出しは「『…』が本当だと、人が確かめました」になる。検査と判定はふつうの依頼と同じ`,
           ],
           [
             "location",
@@ -505,7 +505,7 @@ const COPY = {
           ],
           [
             "attestation",
-            `Have a person confirm something the agent itself did (optional): { "subject": "agent_action", "description": "Delivered the parcel to room 302" } (description up to ${LIMITS.attestation.maxDescriptionChars} characters). The worker sees "An AI agent says '…'", and the proof page headline reads "A person confirmed that … was done". Checks and judgement are the same as any request`,
+            `Have a person confirm something the agent itself did (optional): { "subject": "agent_action", "description": "Delivered the parcel to room 302" } (description up to ${LIMITS.attestation.maxDescriptionChars} characters). The worker sees "An AI agent says '…'", and the proof page headline reads "A person confirmed: “…”". Checks and judgement are the same as any request`,
           ],
           [
             "location",
