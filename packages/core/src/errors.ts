@@ -126,6 +126,11 @@ export const ERROR_CATALOG = {
     retryable: true,
     message: "This feature is temporarily disabled by the operator.",
   },
+  EMAIL_NOT_SENT: {
+    http: 502,
+    retryable: true,
+    message: "The email could not be sent. Nothing was issued; please try again.",
+  },
   NOT_IMPLEMENTED: { http: 501, retryable: false, message: "Not implemented yet." },
   INTERNAL_ERROR: { http: 500, retryable: true, message: "An internal error occurred." },
 } as const satisfies Record<string, ErrorDef>;

@@ -23,8 +23,8 @@ export default async function JoinPage({ searchParams }: { searchParams: Promise
           <Plain>
             {pick(
               lang,
-              "試験運用中は、申し込んだ方に運営者から招待コードか API キーを送ります。人数を絞って進めているため、順番にご案内します。",
-              "During the pilot, the operator sends an invite code or an API key to people who apply. Numbers are kept small, so applications are handled in turn.",
+              "API キーは、申し込むとすぐに入力したメールアドレスへ届きます。worker の招待コードは、人数を絞って進めているため、運営者から順番にお送りします。",
+              "An API key arrives at the email address you enter as soon as you apply. Worker invite codes are sent by the operator in turn, as numbers are kept small.",
             )}
           </Plain>
         </p>

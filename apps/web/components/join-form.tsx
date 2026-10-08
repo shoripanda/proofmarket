@@ -16,6 +16,7 @@ export function JoinForm({ initialRole }: { initialRole: Role }) {
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const [delivery, setDelivery] = useState<"email" | "operator">("operator");
   const [msg, setMsg] = useState("");
 
   async function submit(e: React.FormEvent) {
@@ -31,31 +32,40 @@ export function JoinForm({ initialRole }: { initialRole: Role }) {
         note: note.trim() || undefined,
         consent,
         website: website || undefined,
+        lang,
       }),
     }).catch(() => null);
     if (res?.ok) {
+      const body = (await res.json().catch(() => null)) as { delivery?: string } | null;
+      setDelivery(body?.delivery === "email" ? "email" : "operator");
       setState("done");
       return;
     }
     const code = res ? ((await res.json().catch(() => null)) as { error?: { code?: string } } | null) : null;
     setMsg(
-      code?.error?.code === "RATE_LIMITED"
+      code?.error?.code === "EMAIL_NOT_SENT"
         ? pick(
             lang,
-            "短い時間に何度も送られています。1分ほど待ってから送ってください。",
-            "Too many submissions in a short time. Please wait a minute and try again.",
+            "メールを送れませんでした。キーは発行していないので、少し待ってからもう一度送ってください。",
+            "We could not send the email. No key was issued, so please wait a moment and try again.",
           )
-        : code?.error?.code === "VALIDATION_FAILED"
+        : code?.error?.code === "RATE_LIMITED"
           ? pick(
               lang,
-              "入力を確かめてください。メールアドレスの形と、同意のチェックが必要です。",
-              "Please check your input: a valid email address and the consent box are required.",
+              "短い時間に何度も送られています。1分ほど待ってから送ってください。",
+              "Too many submissions in a short time. Please wait a minute and try again.",
             )
-          : pick(
-              lang,
-              "送れませんでした。通信の状態を確かめて、もう一度送ってください。",
-              "Could not send. Please check your connection and try again.",
-            ),
+          : code?.error?.code === "VALIDATION_FAILED"
+            ? pick(
+                lang,
+                "入力を確かめてください。メールアドレスの形と、同意のチェックが必要です。",
+                "Please check your input: a valid email address and the consent box are required.",
+              )
+            : pick(
+                lang,
+                "送れませんでした。通信の状態を確かめて、もう一度送ってください。",
+                "Could not send. Please check your connection and try again.",
+              ),
     );
     setState("error");
   }
@@ -63,13 +73,23 @@ export function JoinForm({ initialRole }: { initialRole: Role }) {
   if (state === "done") {
     return (
       <div className="rounded-2xl bg-emerald-50 p-6 text-emerald-900 ring-1 ring-emerald-200">
-        <p className="font-bold">{pick(lang, "受け付けました。", "Received.")}</p>
+        <p className="font-bold">
+          {delivery === "email"
+            ? pick(lang, "API キーをメールで送りました。", "We have emailed your API key.")
+            : pick(lang, "受け付けました。", "Received.")}
+        </p>
         <p className="mt-1 text-sm leading-relaxed">
-          {pick(
-            lang,
-            "運営者が内容を確かめて、入力したメールアドレスに連絡します。試験運用中のため、すぐにはお返事できないことがあります。",
-            "The operator will review your application and write to the email address you entered. During the pilot, a reply may take a little while.",
-          )}
+          {delivery === "email"
+            ? pick(
+                lang,
+                "入力したメールアドレスを確かめてください。数分たっても届かないときは、迷惑メールのフォルダも見てください。キーはそのメールにしか載っていません。",
+                "Please check the address you entered. If nothing arrives within a few minutes, look in your spam folder. The key appears only in that email.",
+              )
+            : pick(
+                lang,
+                "運営者が内容を確かめて、入力したメールアドレスに連絡します。試験運用中のため、すぐにはお返事できないことがあります。",
+                "The operator will review your application and write to the email address you entered. During the pilot, a reply may take a little while.",
+              )}
         </p>
       </div>
     );

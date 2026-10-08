@@ -1,6 +1,7 @@
 import type {
   EvidenceStorage,
   IdentityProvider,
+  Mailer,
   PushSender,
   ReviewInput,
   ReviewOutput,
@@ -63,6 +64,16 @@ export class FakePush implements PushSender {
   async send(sub: { endpoint: string }, payload: string) {
     if (this.gone.has(sub.endpoint)) return { ok: false as const, gone: true };
     this.sent.push({ endpoint: sub.endpoint, payload });
+    return { ok: true as const };
+  }
+}
+
+export class FakeMailer implements Mailer {
+  sent: { to: string; subject: string; text: string }[] = [];
+  fail = false;
+  async send(m: { to: string; subject: string; text: string }) {
+    if (this.fail) return { ok: false as const, reason: "fake mailer down" };
+    this.sent.push(m);
     return { ok: true as const };
   }
 }

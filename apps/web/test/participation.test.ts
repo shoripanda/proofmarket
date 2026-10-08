@@ -1,6 +1,9 @@
 // Sign-ups from /join (04 §3.20): encrypted contact, validation, rate limit, 90-day deletion.
 import { schema } from "@proofmarket/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
+import { createResendMailer } from "../lib/adapters/resend-mailer";
+import { authenticateApiKey } from "../lib/auth/requester";
 import {
   createParticipationRequest,
   listParticipationRequests,
@@ -9,6 +12,7 @@ import {
 import { createRemovalRequest, listRemovalRequests, setRemovalStatus } from "../lib/services/removal-service";
 import { purgeExpiredEvidence } from "../lib/services/retention";
 import { createTestApp } from "./support/app";
+import { FakeMailer } from "./support/fakes";
 
 let t: Awaited<ReturnType<typeof createTestApp>>;
 beforeEach(async () => {
@@ -67,6 +71,117 @@ describe("participation requests", () => {
     t.advance(2 * 86_400_000);
     expect((await purgeExpiredEvidence(t.app)).participation).toBe(1);
     expect(await t.db.select().from(schema.participationRequests)).toEqual([]);
+  });
+});
+
+describe("requester sign-up -> API key by email (01 §4.28)", () => {
+  const req = { role: "requester", email: "Agent@Example.com", consent: true, lang: "en" };
+  let mail: FakeMailer;
+  beforeEach(() => {
+    mail = new FakeMailer();
+    t.app.mailer = mail;
+  });
+  const keyIn = (text: string) => text.match(/pm_test_[0-9a-f]{8}_\S+/)?.[0] ?? "";
+  const credentials = async () => (await t.db.select().from(schema.requesterCredentials)).length;
+
+  it("issues a working key with a starting balance and emails it once", async () => {
+    const before = await credentials();
+    expect(await createParticipationRequest(t.app, req, "ip")).toEqual({ ok: true, delivery: "email" });
+    expect(mail.sent).toHaveLength(1);
+    expect(mail.sent[0]?.to).toBe("agent@example.com");
+    const key = keyIn(mail.sent[0]?.text ?? "");
+    const auth = await authenticateApiKey(t.app, key);
+    const ledger = await t.db
+      .select()
+      .from(schema.requesterLedger)
+      .where(eq(schema.requesterLedger.credentialId, auth.credentialId));
+    expect(ledger).toMatchObject([{ entryType: "TOPUP", amount: "20.000000" }]);
+    expect(await credentials()).toBe(before + 1);
+    const [row] = await t.db.select().from(schema.participationRequests);
+    expect(row).toMatchObject({ status: "contacted", credentialId: auth.credentialId });
+    // Not left in the operator's queue, and the key itself is stored nowhere.
+    expect(await listParticipationRequests(t.db, t.app.config.locationEncKey)).toEqual([]);
+    expect(JSON.stringify(await t.db.select().from(schema.requesterCredentials))).not.toContain(
+      key.slice(-20),
+    );
+  });
+
+  it("writes in Japanese by default", async () => {
+    await createParticipationRequest(t.app, { ...req, lang: undefined }, "ip");
+    expect(mail.sent[0]?.subject).toBe("ProofMarket の API キーをお送りします");
+    expect(keyIn(mail.sent[0]?.text ?? "")).not.toBe("");
+  });
+
+  it("rolls everything back when the email cannot be sent", async () => {
+    const before = await credentials();
+    mail.fail = true;
+    expect(await err(createParticipationRequest(t.app, req, "ip"))).toBe("EMAIL_NOT_SENT");
+    expect(await credentials()).toBe(before);
+    expect(await t.db.select().from(schema.participationRequests)).toEqual([]);
+    mail.fail = false;
+    expect(await createParticipationRequest(t.app, req, "ip")).toEqual({ ok: true, delivery: "email" });
+    expect(await credentials()).toBe(before + 1);
+  });
+
+  it("one key per address; a repeat gets a notice at most once a day, with the same response", async () => {
+    await createParticipationRequest(t.app, req, "ip");
+    const before = await credentials();
+    t.advance(25 * 3_600_000);
+    expect(await createParticipationRequest(t.app, { ...req, email: "agent@EXAMPLE.com" }, "ip")).toEqual({
+      ok: true,
+      delivery: "email",
+    });
+    expect(await createParticipationRequest(t.app, req, "ip")).toEqual({ ok: true, delivery: "email" });
+    expect(await credentials()).toBe(before);
+    expect(mail.sent.map((m) => keyIn(m.text) !== "")).toEqual([true, false]);
+    expect(mail.sent[1]?.subject).toBe("Your ProofMarket API key was already sent");
+  });
+
+  it("a second sign-up within a day sends nothing at all", async () => {
+    await createParticipationRequest(t.app, req, "ip");
+    await createParticipationRequest(t.app, req, "ip");
+    expect(mail.sent).toHaveLength(1);
+  });
+
+  it("workers still wait for the operator, and without a mailer requesters do too", async () => {
+    expect(await createParticipationRequest(t.app, ok, "ip")).toEqual({ ok: true, delivery: "operator" });
+    t.app.mailer = null;
+    const before = await credentials();
+    expect(await createParticipationRequest(t.app, req, "ip")).toEqual({ ok: true, delivery: "operator" });
+    expect(mail.sent).toEqual([]);
+    expect(await credentials()).toBe(before);
+    expect(await listParticipationRequests(t.db, t.app.config.locationEncKey)).toHaveLength(2);
+  });
+});
+
+describe("Resend adapter", () => {
+  it("posts from/to/subject/text with the bearer key and reports refusals without the body", async () => {
+    const calls: { url: string; init: RequestInit }[] = [];
+    let status = 200;
+    const m = createResendMailer({
+      apiKey: "re_test",
+      from: "ProofMarket <keys@proofmarket.fun>",
+      fetch: (async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return new Response(JSON.stringify({ name: "validation_error" }), { status });
+      }) as unknown as typeof fetch,
+    });
+    expect(await m.send({ to: "a@example.com", subject: "s", text: "t" })).toEqual({ ok: true });
+    expect(calls[0]?.url).toBe("https://api.resend.com/emails");
+    expect((calls[0]?.init.headers as Record<string, string> | undefined)?.authorization).toBe(
+      "Bearer re_test",
+    );
+    expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+      from: "ProofMarket <keys@proofmarket.fun>",
+      to: ["a@example.com"],
+      subject: "s",
+      text: "t",
+    });
+    status = 403;
+    expect(await m.send({ to: "a@example.com", subject: "s", text: "t" })).toEqual({
+      ok: false,
+      reason: "resend 403 validation_error",
+    });
   });
 });
 

@@ -732,6 +732,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -1529,6 +1530,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -2280,6 +2282,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -3489,6 +3492,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -4698,6 +4702,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -4845,6 +4850,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -5040,6 +5046,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -5225,6 +5232,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -6169,6 +6177,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -6449,6 +6458,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -6729,6 +6739,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -6924,6 +6935,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -7160,6 +7172,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -7781,6 +7794,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -8359,6 +8373,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -8522,6 +8537,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -8659,6 +8675,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -8835,6 +8852,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -9129,6 +9147,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -9721,6 +9740,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -10313,6 +10333,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -10477,6 +10498,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -10971,6 +10993,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -11161,6 +11184,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -11492,6 +11516,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -11718,6 +11743,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -11992,6 +12018,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -12123,6 +12150,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -12233,6 +12261,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -12343,6 +12372,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -12453,6 +12483,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -12563,6 +12594,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]
@@ -12673,6 +12705,7 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "FEATURE_DISABLED",
+                            "EMAIL_NOT_SENT",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
                           ]

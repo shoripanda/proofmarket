@@ -44,7 +44,7 @@ const COPY = {
       "返ってくるのは答えだけではありません。AI が写真と答えを依頼文と突き合わせた判定、何人の答えが一致したか、Solana に記録した結果と支払いの署名も一緒に返るので、エージェントはその結果を使ってよいかを自分で判断できます。",
     ways: {
       title: "つなぎ方は3通りあります",
-      lead: "どれを選んでも、使えるキーと上限は同じです。試験運用中は API キー（pm_test_ で始まる）を運営者が発行します。",
+      lead: "どれを選んでも、使えるキーと上限は同じです。API キー（pm_test_ で始まる）は、申し込むとその場でメールで届きます。",
       applyKey: "API キーを申し込む",
       console: "依頼者の画面（履歴・残高）",
       remote: "claude.ai などのリモート MCP",
@@ -357,7 +357,7 @@ const COPY = {
       "You get more than an answer: the AI's verdict on whether the photo and answer match the request, how many people agreed, and the Solana signature of the recorded result and payout, so the agent can decide for itself whether to rely on the result.",
     ways: {
       title: "Three ways in",
-      lead: "Whichever you choose, the keys and the limits are the same. During the pilot, API keys (starting with pm_test_) are issued by the operator.",
+      lead: "Whichever you choose, the keys and the limits are the same. An API key (starting with pm_test_) arrives by email as soon as you apply.",
       applyKey: "Request an API key",
       console: "Requester console (history, balance)",
       remote: "Remote MCP from claude.ai and similar",
