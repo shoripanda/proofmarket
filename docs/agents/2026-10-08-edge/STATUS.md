@@ -11,4 +11,4 @@
 | D worker 側の助け | 未着手 | | |
 | E 初心者の導線 | 未着手 | | |
 | F 楽観的な確認 | 作業中 | | worktree ~/proofmarket-f・ブランチ feat/optimistic |
-| G 位置の丸め | 作業中（本体・~/proofmarket-g） | | 21:30 着手。他の画面は G を起動しないでください |
+| G 位置の丸め | 完了 | #9 | salt は指示書の `task_id_hash`（公開値）をやめ `HMAC(WORKER_REF_SALT, "location:"+id)` に。公開値だと約 1 km の区画を総当たりして正確な位置が割れる。依頼者は GET の `location_salt` で受け取る。<br>coarse では店名も出さない。指示書の geohash の例 `xn76ur` は東京駅で、35.6595,139.7005 は `xn76fg`。<br>残り: 地図の薄い円はブラウザで未確認 |
