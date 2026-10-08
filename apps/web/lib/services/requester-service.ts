@@ -209,6 +209,8 @@ export async function createVerification(
   if (challengeMinutes !== null && !["enum", "number"].includes(storedAnswerKind(body.answer_schema))) {
     throw new ApiError("VALIDATION_FAILED", { field: "assurance.level", reason: "optimistic_not_for_text" });
   }
+  if (body.location_privacy === "coarse" && !loc)
+    throw new ApiError("VALIDATION_FAILED", { field: "location_privacy", reason: "needs_location" });
   const deadline = new Date(body.deadline);
   const minMs = LIMITS.deadlineFromNow.minMinutes * 60_000;
   // Work with no place may wait up to a week (01 §4.25); work at a place stays within a day.
@@ -310,6 +312,7 @@ export async function createVerification(
       callbackEndpointId: await activeEndpoint(tx, auth.credentialId),
       allowReuse: body.allow_reuse ?? false,
       publishResult: body.publish ?? false,
+      locationPrivacy: body.location_privacy ?? "exact",
       minWorkerTier: body.worker_requirements?.min_tier ?? null,
       createdAt: now,
       updatedAt: now,
@@ -404,7 +407,7 @@ export async function cancelVerification(app: AppContext, auth: RequesterAuth, i
   return app.db.transaction(async (tx) => {
     const task = await lockTask(tx, id);
     if (task.status === "CANCELLED" || task.status === "REFUNDED")
-      return buildVerificationView(tx, task, app.now());
+      return buildVerificationView(tx, task, app.now(), app.config.workerRefSalt);
     const total = reservedMicro(task);
     const [fund] = await tx
       .select()
@@ -430,7 +433,7 @@ export async function cancelVerification(app: AppContext, auth: RequesterAuth, i
       },
       "TASK_NOT_CANCELLABLE",
     );
-    return buildVerificationView(tx, task, app.now());
+    return buildVerificationView(tx, task, app.now(), app.config.workerRefSalt);
   });
 }
 
@@ -465,7 +468,10 @@ export async function disputeVerification(app: AppContext, auth: RequesterAuth, 
       orig.answerSpec as Record<string, unknown> | null,
     ),
     ...(orig.targetLat !== null && orig.targetLng !== null && orig.radiusM !== null
-      ? { location: { lat: orig.targetLat, lng: orig.targetLng, radius_m: orig.radiusM } }
+      ? {
+          location: { lat: orig.targetLat, lng: orig.targetLng, radius_m: orig.radiusM },
+          location_privacy: orig.locationPrivacy as "exact" | "coarse",
+        }
       : {}),
     deadline: new Date(now.getTime() + (r.data.deadline_minutes ?? 60) * 60_000).toISOString(),
     freshness: { max_age_seconds: orig.freshnessMaxAgeS },

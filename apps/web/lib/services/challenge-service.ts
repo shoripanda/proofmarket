@@ -80,7 +80,10 @@ export async function challengeVerification(
       orig.answerSpec as Record<string, unknown> | null,
     ),
     ...(orig.targetLat !== null && orig.targetLng !== null && orig.radiusM !== null
-      ? { location: { lat: orig.targetLat, lng: orig.targetLng, radius_m: orig.radiusM } }
+      ? {
+          location: { lat: orig.targetLat, lng: orig.targetLng, radius_m: orig.radiusM },
+          location_privacy: orig.locationPrivacy as "exact" | "coarse",
+        }
       : {}),
     deadline: new Date(now.getTime() + 60 * 60_000).toISOString(),
     freshness: { max_age_seconds: orig.freshnessMaxAgeS },

@@ -6,6 +6,7 @@ import type { CheckStatus, Outcome, TaskType } from "../domain/enums.ts";
 
 export const EVIDENCE_BUNDLE_SCHEMA = "proofmarket.evidence-bundle.v1" as const;
 export const TASK_ID_HASH_DOMAIN = "proofmarket:task:v1:" as const;
+export const LOCATION_COMMITMENT_DOMAIN = "proofmarket:location:v1:" as const;
 
 /** `sha256:<lowercase hex>` in JSON; raw 32 bytes on-chain. */
 export type Sha256Hex = `sha256:${string}`;
@@ -42,6 +43,12 @@ export interface EvidenceBundle {
   type: TaskType;
   question_hash: Sha256Hex;
   answer_values: string[];
+  /**
+   * SHA-256("proofmarket:location:v1:" + lat.toFixed(6) + "," + lng.toFixed(6) + ":" + salt) for a task with a
+   * place (13 §9 PR 7). The salt is secret until the requester reveals it, so the commitment does not give the
+   * place away. Absent on work with no place, and on bundles made before it existed.
+   */
+  location_commitment?: Sha256Hex;
   assurance: { required_witnesses: number; quorum: number };
   submissions: BundleSubmission[];
   outcome: Outcome;
@@ -66,6 +73,11 @@ export function taskIdHash(verificationId: string): Uint8Array {
 
 export function questionHash(question: string): Sha256Hex {
   return toSha256Hex(sha256(question));
+}
+
+/** The bundle's location_commitment. Anyone given lat, lng and the salt can recompute it. */
+export function locationCommitment(lat: number, lng: number, salt: string): Sha256Hex {
+  return toSha256Hex(sha256(`${LOCATION_COMMITMENT_DOMAIN}${lat.toFixed(6)},${lng.toFixed(6)}:${salt}`));
 }
 
 /** Sort submissions and answer_values as 07 §5.1 requires, without mutating the input. */

@@ -25,6 +25,7 @@ import { proofLinks } from "../proof";
 import { aggregateOf } from "./aggregate";
 import { attestationOf } from "./attestation";
 import { bountyOf } from "./bounty";
+import { locationSalt } from "./crypto";
 import { activeReport } from "./store-service";
 import type { TaskRow } from "./task-engine";
 import { taskLocation } from "./task-location";
@@ -277,9 +278,8 @@ async function acceptedTexts(db: Db, ids: readonly string[]): Promise<string[]> 
 export async function buildVerificationView(
   db: Db,
   task: TaskRow,
-  now: Date = new Date(),
-  /** Needed to show an optimistic task's provisional result (13 §3). */
-  workerRefSalt?: string,
+  now: Date,
+  refSalt: string,
 ): Promise<GetVerificationResponse> {
   const [valid] = await db
     .select({ n: count() })
@@ -315,6 +315,8 @@ export async function buildVerificationView(
       task.answerSpec as Record<string, unknown> | null,
     ),
     location: taskLocation(task),
+    location_privacy: task.locationPrivacy as GetVerificationResponse["location_privacy"],
+    location_salt: task.targetLat !== null ? locationSalt(refSalt, task.id) : null,
     deadline: task.deadline.toISOString(),
     recheck_of: (task.recheckOf as GetVerificationResponse["recheck_of"]) ?? null,
     recheck: await recheckView(db, task),
@@ -355,7 +357,8 @@ export async function buildVerificationView(
       signature: fundSig,
       explorer_url: fundSig ? explorer(fundSig) : null,
     },
-    result: await withProof(buildResult(db, task, { workerRefSalt, now })),
+    // the requester's own view, so an optimistic task shows its provisional result (13 §3)
+    result: await withProof(buildResult(db, task, { workerRefSalt: refSalt, now })),
     created_at: task.createdAt.toISOString(),
     updated_at: task.updatedAt.toISOString(),
   };
