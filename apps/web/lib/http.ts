@@ -19,6 +19,8 @@ export function route<C>(handler: Handler<C>): Handler<C> {
           request_id: requestId,
           path: new URL(req.url).pathname,
           error: String(e),
+          // drizzle wraps the driver's error ("Failed query: ..."); the reason is in the cause chain
+          cause: causeChain(e),
         });
       }
       return Response.json(err.toBody(), { status: err.http, headers: { "X-Request-Id": requestId } });
@@ -44,3 +46,14 @@ export async function readJson(req: Request): Promise<unknown> {
 }
 
 export type IdParams = { params: Promise<{ id: string }> };
+
+/** The messages of e.cause, e.cause.cause, ... (at most 4), so a wrapped error still says why. */
+function causeChain(e: unknown): string[] {
+  const out: string[] = [];
+  let cur: unknown = (e as { cause?: unknown })?.cause;
+  for (let i = 0; i < 4 && cur; i++) {
+    out.push(cur instanceof Error ? `${cur.name}: ${cur.message}` : String(cur));
+    cur = (cur as { cause?: unknown })?.cause;
+  }
+  return out;
+}

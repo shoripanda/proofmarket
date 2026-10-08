@@ -138,14 +138,61 @@ async function pendingReviewSince(db: Db, verificationId: string): Promise<numbe
 }
 
 /** /api/internal/tick: expire what is due, then drain up to maxJobs jobs. */
-export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: number; jobsRun: number }> {
+/**
+ * One step of the tick. A step that throws is logged and skipped, so a broken query in one step never stops the
+ * deadlines, the claim expiry or the job drain (settlement!) that come after it. The names come back in `failed`.
+ */
+async function step(failed: string[], name: string, fn: () => Promise<unknown>): Promise<void> {
+  try {
+    await fn();
+  } catch (e) {
+    failed.push(name);
+    log("error", "tick_step_failed", { step: name, error: String(e) });
+  }
+}
+
+export async function tick(
+  app: AppContext,
+  maxJobs = 20,
+): Promise<{ deadlines: number; jobsRun: number; failed: string[] }> {
   const now = app.now();
+  const failed: string[] = [];
   // 0. Submissions the outside reviewer never answered pass with a warning (01 §4.17), so they still count below.
-  await releaseStaleReviews(app);
+  await step(failed, "stale_reviews", () => releaseStaleReviews(app));
   // 1. Optimistic answers (13 §3): close windows that passed, settle challenges whose recheck is final.
-  await runOptimistic(app);
+  await step(failed, "optimistic", () => runOptimistic(app));
   // 2. Task deadlines (T08 / T11 / T12), one transaction per task. A provisional answer waits for its
   // challenge window instead (runOptimistic finalizes it).
+  const deadlines = await runDeadlines(app, now, failed);
+  // 3. Claims past their TTL, challenges past expiry, uploads never finalized.
+  await step(failed, "expiry", () => runExpiry(app, now));
+  // 4. Daily purge job (dedupe per JST-agnostic UTC day).
+  await step(failed, "purge_job", () =>
+    app.db
+      .insert(schema.outboxJobs)
+      .values({
+        kind: "PURGE_EVIDENCE",
+        dedupeKey: `PURGE_EVIDENCE:${now.toISOString().slice(0, 10)}`,
+        payload: {},
+        state: "PENDING",
+      })
+      .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey }),
+  );
+  // 5. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
+  await step(failed, "schedules", () => runDueSchedules(app));
+  // 6. Drain jobs.
+  const runner = `tick:${crypto.randomUUID()}`;
+  let jobsRun = 0;
+  for (; jobsRun < maxJobs; jobsRun++) {
+    const job = await leaseNextJob(app, runner);
+    if (!job) break;
+    await runLeased(app, job, runner);
+  }
+  return { deadlines, jobsRun, failed };
+}
+
+async function runDeadlines(app: AppContext, now: Date, failed: string[]): Promise<number> {
+  let deadlines = 0;
   const due = await app.db
     .select({ id: schema.verificationRequests.id })
     .from(schema.verificationRequests)
@@ -157,15 +204,23 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
       ),
     );
   for (const { id } of due) {
-    // 01 §4.17: a submission waiting for the outside AI review holds the deadline for up to REVIEW_GRACE_MS.
-    if (now.getTime() - (await pendingReviewSince(app.db, id)) < REVIEW_GRACE_MS) continue;
-    await app.db.transaction(async (tx) => {
-      const t = await lockTask(tx, id);
-      if (DEADLINE_STATUSES.includes(t.status) && t.deadline <= now && !t.provisionalAt)
-        await handleDeadline(tx, app, t);
+    // One task at a time: a task that cannot be expired must not hold the others (or the jobs) back.
+    await step(failed, `deadline:${id}`, async () => {
+      // 01 §4.17: a submission waiting for the outside AI review holds the deadline for up to REVIEW_GRACE_MS.
+      if (now.getTime() - (await pendingReviewSince(app.db, id)) < REVIEW_GRACE_MS) return;
+      await app.db.transaction(async (tx) => {
+        const t = await lockTask(tx, id);
+        if (DEADLINE_STATUSES.includes(t.status) && t.deadline <= now && !t.provisionalAt)
+          await handleDeadline(tx, app, t);
+      });
+      deadlines++;
     });
   }
-  // 3. Claims past their TTL, challenges past expiry, uploads never finalized.
+  return deadlines;
+}
+
+/** Claims past their TTL, challenges past expiry, uploads never finalized (03 §3.4). */
+async function runExpiry(app: AppContext, now: Date): Promise<void> {
   await app.db
     .update(schema.claims)
     .set({ state: "EXPIRED", closedAt: now, closeReason: "CLAIM_TTL" })
@@ -195,21 +250,4 @@ export async function tick(app: AppContext, maxJobs = 20): Promise<{ deadlines: 
     "evidence-raw",
     stale.map((u) => u.key),
   ); // 03 §3.4: DISCARDED also deletes the object
-  // 4. Daily purge job (dedupe per JST-agnostic UTC day).
-  const day = now.toISOString().slice(0, 10);
-  await app.db
-    .insert(schema.outboxJobs)
-    .values({ kind: "PURGE_EVIDENCE", dedupeKey: `PURGE_EVIDENCE:${day}`, payload: {}, state: "PENDING" })
-    .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey });
-  // 5. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
-  await runDueSchedules(app);
-  // 6. Drain jobs.
-  const runner = `tick:${crypto.randomUUID()}`;
-  let jobsRun = 0;
-  for (; jobsRun < maxJobs; jobsRun++) {
-    const job = await leaseNextJob(app, runner);
-    if (!job) break;
-    await runLeased(app, job, runner);
-  }
-  return { deadlines: due.length, jobsRun };
 }

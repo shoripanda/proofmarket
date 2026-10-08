@@ -180,7 +180,8 @@ export async function runOptimistic(app: AppContext): Promise<{ finalized: numbe
       and(
         eq(schema.verificationRequests.status, "SUBMITTED"),
         isNotNull(schema.verificationRequests.provisionalAt),
-        sql`${schema.verificationRequests.provisionalAt} + ${schema.verificationRequests.challengeMinutes} * interval '1 minute' <= ${now}`,
+        // Raw SQL binds a Date as its toString() with postgres-js (not with PGlite), so pass ISO text (jobs.ts does the same).
+        sql`${schema.verificationRequests.provisionalAt} + ${schema.verificationRequests.challengeMinutes} * interval '1 minute' <= ${now.toISOString()}::timestamptz`,
         sql`not exists (select 1 from verification_challenges vc where vc.verification_id = ${schema.verificationRequests.id})`,
       ),
     );
