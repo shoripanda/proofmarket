@@ -74,8 +74,13 @@ node render.mjs ~/Desktop/ProofMarket-pitch-v2.mp4 music.mp3
 ```bash
 cd docs/pitch/03-videos/render/tts
 uv pip install --python .venv/bin/python "misaki[ja]"   # 日本語だけ。pyopenjtalk をソースからビルドするので数分〜数十分
+# 2026-10-09 から本番の語りは neural 音声（edge-tts）。Kokoro の日本語は機械的だと指摘されたため
+uv venv tts-venv && uv pip install --python tts-venv/bin/python edge-tts
+tts-venv/bin/python ../explainer/make_edge.py ja ja-JP-NanamiNeural   # 29.5 秒
+tts-venv/bin/python ../explainer/make_edge.py en en-US-AvaNeural      # 22.7 秒
+# Kokoro で作る旧手順（鍵も網も要らない）
 ../tts/.venv/bin/python ../explainer/make.py en af_heart 0.95
 ../tts/.venv/bin/python ../explainer/make.py ja jf_alpha
 ```
 
-日本語は misaki の `JAG2P(version="pyopenjtalk")` で読みを発音記号にしてから Kokoro に渡す。既定の cutlet 版は 770MB の unidic 辞書を要求するので使わない。pyopenjtalk 版の戻り値は「発音記号＋同じ長さの高低記号」がつながった文字列なので、前半だけを渡す。「AI」は「エーアイ」と読ませ、字幕は AI のまま。`jf_nezumi` は 30 秒を超えたので `jf_alpha` にした。
+edge-tts は Microsoft Edge の読み上げを網経由で使う非公式のパッケージで、鍵は要らないが利用規約は正式な API 契約ではない。問題になれば VOICEVOX（無料・商用可・クレジット表記）に替える。日本語の Kokoro は misaki の `JAG2P(version="pyopenjtalk")` で読みを発音記号にしてから Kokoro に渡す。既定の cutlet 版は 770MB の unidic 辞書を要求するので使わない。pyopenjtalk 版の戻り値は「発音記号＋同じ長さの高低記号」がつながった文字列なので、前半だけを渡す。「AI」は「エーアイ」と読ませ、字幕は AI のまま。`jf_nezumi` は 30 秒を超えたので `jf_alpha` にした。

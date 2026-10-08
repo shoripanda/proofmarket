@@ -95,7 +95,7 @@ export function PushOptIn() {
       }
       await api("/v1/worker/push-subscription", {
         method: "PUT",
-        body: { subscription: sub.toJSON(), areas },
+        body: { subscription: sub.toJSON(), areas, lang },
       });
       try {
         localStorage.setItem(STORE, JSON.stringify(areas));
