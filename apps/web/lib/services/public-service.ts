@@ -11,9 +11,11 @@ import {
   type TaskType,
 } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
+import { explorerAccountUrl, PROOFMARKET_PROGRAM_ID, taskPda } from "@proofmarket/sdk/onchain";
 import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
+import { howToRead, ONCHAIN_OUTCOME } from "../onchain-facts";
 import { attestationOf } from "./attestation";
 import { bountyOf } from "./bounty";
 import { witnessRef } from "./crypto";
@@ -41,6 +43,48 @@ export async function publicResult(app: AppContext, rawId: string) {
     answer_kind: task.answerKind as AnswerKind,
     agent_attestation: attestationOf(task),
     published: await publishedView(app, task),
+  };
+}
+
+/**
+ * Where a result sits on Solana and how a program reads it (13 §2). The hashes are the ones the settle job wrote;
+ * they are null until that transaction is confirmed (a refunded task is never finalized on chain).
+ */
+export async function publicOnchain(app: AppContext, rawId: string) {
+  const id = parseId("verification", rawId);
+  if (!id) throw new ApiError("VERIFICATION_NOT_FOUND");
+  const [res] = await app.db
+    .select()
+    .from(schema.verificationResults)
+    .where(eq(schema.verificationResults.verificationId, id));
+  if (!res) throw new ApiError("VERIFICATION_NOT_FOUND", { reason: "no_result_yet" });
+  const [settle] = await app.db
+    .select()
+    .from(schema.paymentRecords)
+    .where(
+      and(
+        eq(schema.paymentRecords.verificationId, id),
+        eq(schema.paymentRecords.kind, "FINALIZE_AND_SETTLE"),
+        eq(schema.paymentRecords.status, "CONFIRMED"),
+      ),
+    );
+  const programId = app.config.programId ?? PROOFMARKET_PROGRAM_ID;
+  const taskAccount =
+    (settle?.recipients as SettleRecipients | null)?.task_account || taskPda(id, programId).toBase58();
+  const recorded = Boolean(settle);
+  const hex = (b: Buffer) => `sha256:${b.toString("hex")}`;
+  return {
+    verification_id: id,
+    network: "solana-devnet" as const,
+    program_id: programId,
+    task_account: taskAccount,
+    recorded,
+    outcome: recorded ? ONCHAIN_OUTCOME[res.outcome as keyof typeof ONCHAIN_OUTCOME] : null,
+    result_hash: recorded ? hex(res.resultHash) : null,
+    evidence_root: recorded ? hex(res.evidenceRoot) : null,
+    finalized_at: recorded ? res.finalizedAt.toISOString() : null,
+    explorer_url: explorerAccountUrl(taskAccount),
+    how_to_read: howToRead(id, programId),
   };
 }
 

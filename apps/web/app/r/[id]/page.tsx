@@ -1,9 +1,12 @@
 // Public result page — 02 §5, REQ-X-R-101, 01 §4.21. Written for the person an agent answers: was this checked
 // by a human, what was found, when, by how many people, and how to verify it. Never photos, coordinates,
 // question text, text answers or workers.
+
+import { RESULT_HASH_FIELDS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
+import { LedgerPicture } from "@/components/ledger-picture";
 import { OnchainCheck } from "@/components/onchain-check";
 import { LangProvider } from "@/lib/client/lang";
 import { appContext } from "@/lib/context";
@@ -11,7 +14,7 @@ import { env, isDev } from "@/lib/env";
 import { type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 import { ago, proofAnswer, proofHeadline, proofTimeLong, proofTypeName } from "@/lib/proof-text";
-import { publicResult } from "@/lib/services/public-service";
+import { publicOnchain, publicResult } from "@/lib/services/public-service";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +39,7 @@ const STATUS_TEXT: Record<Lang, Record<string, string>> = {
 
 // One read per request: the metadata and the page both need it.
 const load = cache((id: string) => publicResult(appContext(), id).catch(() => null));
+const loadOnchain = (id: string) => publicOnchain(appContext(), id).catch(() => null);
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const lang = await getLang();
@@ -56,6 +60,7 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
   const lang = await getLang();
   const { id } = await params;
   const r = await load(id);
+  const facts = r ? await loadOnchain(id) : null;
   const e = env();
   const programId = isDev(e) ? null : e.PROGRAM_ID;
   const ok = r?.status === "VERIFIED";
@@ -244,6 +249,101 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
                 <p className="font-mono">settlement: {r.settlement.status}</p>
               </details>
             </section>
+
+            {facts?.recorded ? (
+              <section className="space-y-3 rounded-2xl border border-slate-200 p-5 text-sm">
+                <h2 className="font-bold">{pick(lang, "プログラムから読む", "Read it from a program")}</h2>
+                <div className="flex items-center gap-4">
+                  <LedgerPicture className="h-16 w-28 shrink-0" />
+                  <p className="text-base leading-relaxed text-slate-700">
+                    {pick(
+                      lang,
+                      "この答えは、だれにも書き換えられない台帳に 1 行で残っています。",
+                      "This answer is kept as one line in a ledger no one can rewrite.",
+                    )}
+                  </p>
+                </div>
+                <p className="leading-relaxed text-slate-600">
+                  {pick(
+                    lang,
+                    "保険や予約のプログラムは、この行を直接読み、答えに合わせて動けます。",
+                    "An insurance or booking program can read this line directly and act on the answer.",
+                  )}
+                </p>
+                <details className="text-xs text-slate-600">
+                  <summary className="cursor-pointer text-sm text-slate-700">
+                    {pick(lang, "読み方（開発者向け）", "How to read it (for developers)")}
+                  </summary>
+                  <dl className="mt-3 space-y-3">
+                    <div>
+                      <dt className="font-semibold">
+                        {pick(lang, "台帳の行（Task 口座の PDA）", "The line (Task account PDA)")}
+                      </dt>
+                      <dd className="mt-1 break-all font-mono">
+                        <a
+                          className="text-teal-700 underline"
+                          href={facts.explorer_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {facts.task_account}
+                        </a>
+                      </dd>
+                      <dd className="mt-1 break-all font-mono text-slate-500">
+                        seeds = ["task", sha256("proofmarket:task:v1:" + verification_id)]
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold">
+                        {pick(lang, "result_hash の作り方", "How result_hash is made")}
+                      </dt>
+                      <dd className="mt-1 leading-relaxed">
+                        {pick(
+                          lang,
+                          "結果のうち次の項目だけを JCS（RFC 8785）で並べ、SHA-256 をとります。proof・type・answer_kind・published などの付け足しの項目は入れません。公開の結果には rejected_submissions が無いので、空の {} として計算します（落ちた提出があった依頼と、数値の集計 aggregate がある依頼では、依頼者の結果でしか一致しません）。",
+                          "Take only these fields of the result, canonicalise them with JCS (RFC 8785) and hash with SHA-256. Added fields such as proof, type, answer_kind and published are left out. The public result has no rejected_submissions, so it counts as {} (a request with rejected submissions, or with a numeric aggregate, only matches from the requester's result).",
+                        )}
+                      </dd>
+                      <dd className="mt-1 break-all font-mono">{RESULT_HASH_FIELDS.join(", ")}</dd>
+                      <dd className="mt-1 break-all font-mono">result_hash: {facts.result_hash}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold">
+                        {pick(lang, "Rust（Anchor のプログラムの中で）", "Rust (inside an Anchor program)")}
+                      </dt>
+                      <dd>
+                        <pre className="mt-1 overflow-x-auto rounded-lg bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
+                          {facts.how_to_read.rust}
+                        </pre>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold">
+                        {pick(
+                          lang,
+                          "TypeScript（@solana/web3.js だけで）",
+                          "TypeScript (@solana/web3.js only)",
+                        )}
+                      </dt>
+                      <dd>
+                        <pre className="mt-1 overflow-x-auto rounded-lg bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
+                          {facts.how_to_read.typescript}
+                        </pre>
+                      </dd>
+                    </div>
+                    <p className="leading-relaxed">
+                      {pick(lang, "同じ内容を機械向けに返す API: ", "The same, for machines: ")}
+                      <a
+                        className="break-all font-mono text-teal-700 underline"
+                        href={`/v1/public/verifications/${id}/onchain`}
+                      >
+                        GET /v1/public/verifications/{id}/onchain
+                      </a>
+                    </p>
+                  </dl>
+                </details>
+              </section>
+            ) : null}
 
             <p className="text-xs leading-relaxed text-slate-500">
               {pick(

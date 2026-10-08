@@ -125,6 +125,7 @@ export async function saveResult(
   };
   const root = evidenceRoot(bundle);
   // Same field set the API returns minus RESULT_HASH_EXCLUDED_FIELDS, so anyone can recompute it (U-JCS-02).
+  // RESULT_HASH_FIELDS in core lists these keys for verifyOnChain (13 §2); change both together.
   const hashInput = {
     verification_id: task.id,
     status: outcome.status,

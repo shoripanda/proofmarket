@@ -497,6 +497,31 @@ export const PublicVerificationResultSchema = VerificationResultSchema.omit({
     .nullable(),
 });
 
+/**
+ * Where a result sits on Solana and how another program reads it (13 §2). The hashes and outcome are null until
+ * the settle transaction is confirmed; a refunded task is never finalized on chain.
+ */
+export const PublicOnchainSchema = z.object({
+  verification_id: VerificationIdSchema,
+  network: z.literal("solana-devnet"),
+  program_id: z.string(),
+  /** PDA ["task", sha256("proofmarket:task:v1:" + verification_id)]. */
+  task_account: z.string(),
+  /** True once finalize + settle is confirmed on chain. */
+  recorded: z.boolean(),
+  /** The Outcome the program stores: VERIFIED, NO_CONSENSUS (REJECTED) or INSUFFICIENT_WITNESSES (EXPIRED). */
+  outcome: z.enum(["VERIFIED", "NO_CONSENSUS", "INSUFFICIENT_WITNESSES"]).nullable(),
+  /** SHA-256(JCS(the result's hashed fields)); see RESULT_HASH_FIELDS. */
+  result_hash: Sha256Hex.nullable(),
+  evidence_root: Sha256Hex.nullable(),
+  /** When ProofMarket finalized the result. The account's own finalized_at is the program clock, seconds later. */
+  finalized_at: IsoDateTime.nullable(),
+  /** Solana Explorer page of the Task account. */
+  explorer_url: z.string(),
+  how_to_read: z.object({ rust: z.string(), typescript: z.string() }),
+});
+export type PublicOnchain = z.infer<typeof PublicOnchainSchema>;
+
 /** Public map (01 §4.22): results their requesters chose to publish, newest first. Never photos or workers. */
 export const PublicMapSchema = z.object({
   generated_at: IsoDateTime,

@@ -1,6 +1,6 @@
 // 13 §4 — sense index: three witnesses answer a form with scale and number fields; the result carries the
 // median, min and max per field, and result_hash covers it.
-import { RESULT_HASH_EXCLUDED_FIELDS, resultHash, toSha256Hex } from "@proofmarket/core";
+import { resultHash, resultHashInput, toSha256Hex } from "@proofmarket/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleGet } from "../lib/handlers/requester";
 import { publicResult } from "../lib/services/public-service";
@@ -60,12 +60,7 @@ describe("sense index (13 §4)", () => {
       seats: { median: 2, min: 0, max: 6, n: 3 },
     });
     // part of result_hash: recomputing it from the returned fields matches
-    const input = Object.fromEntries(
-      Object.entries(result ?? {}).filter(
-        ([k]) => !(RESULT_HASH_EXCLUDED_FIELDS as readonly string[]).includes(k) && k !== "proof",
-      ),
-    );
-    expect(toSha256Hex(resultHash(input))).toBe(result?.result_hash);
+    expect(toSha256Hex(resultHash(resultHashInput(result ?? {})))).toBe(result?.result_hash);
     // the numbers come from text answers, which the public result leaves out
     expect(await publicResult(t.app, id)).not.toHaveProperty("aggregate");
   });

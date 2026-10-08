@@ -7,6 +7,7 @@ import {
   fromSha256Hex,
   jcs,
   resultHash,
+  resultHashInput,
   taskIdHash,
   toSha256Hex,
 } from "../src/evidence/bundle.ts";
@@ -78,6 +79,31 @@ describe("canonicalization", () => {
     };
     expect(resultHash(full)).toEqual(resultHash(core));
     expect(Buffer.from(resultHash(core)).toString("hex")).toBe(sha(jcs(core)));
+  });
+
+  it("resultHashInput keeps only the hashed fields, so an API response recomputes to the stored hash", () => {
+    const hashed = {
+      verification_id: "ver_x",
+      status: "VERIFIED",
+      reason: null,
+      answer: "OPEN",
+      witnesses: { valid: 1, required: 1, quorum: 1 },
+      answer_counts: { OPEN: 1 },
+      checks: { geofence: "pass" },
+      rejected_submissions: {},
+      evidence_root: "sha256:00",
+    };
+    const response = {
+      ...hashed,
+      consensus_ratio: 1,
+      result_hash: "sha256:...",
+      proof: { url: "https://proofmarket.fun/r/ver_x" },
+      type: "DOCUMENT_TRANSCRIPTION",
+      answer_kind: "enum",
+      published: null,
+    };
+    expect(resultHashInput(response)).toEqual(hashed);
+    expect(resultHash(resultHashInput(response))).toEqual(resultHash(hashed));
   });
 
   it("taskIdHash = sha256('proofmarket:task:v1:' + id); hex round-trips", () => {

@@ -1,0 +1,51 @@
+{
+  "source": "Solana Devnet getAccountInfo and GET https://proofmarket.fun/v1/public/verifications/{id}, 2026-10-08",
+  "verification_id": "ver_01M42M6WXZ93MFR3YDQZ7JXEHG",
+  "task_account": "F2SBmkzsyFf5HvA8BVqAQzv26JsVhfqM9eVRfSKmWQcz",
+  "owner": "A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s",
+  "account_data_base64": "TyLlN1haN1QB//zR+bO+WtcLfZruksHcoiIsYv67yyi7e8gSm7/qDBGWaj/XMBLfKSmZBd3210y4/s/t2mDUDB+uISfd4FPzrGSjU0k0xc9LDT+AZZ+/f06XfhjGH6DwFVS0icr7L1Y32ow7RCyzkSFX8TqTPQE0KC0DK1/+zQGi2/G3eQYI3wAupyChBwAAAAAAAQEwBsJqAAAAAAIBALMvm9aiH0+0IlgD7jZr0cYyfm4cg/I8SOhK4k3SI2wvktTfqJdfcAT4Gc3sIUoldgBe2fK0pokHqB7u3HxffJkBPD0T89kjMuixaO6+8OEzF8eJ6QLFkRuCfG/uCoNyTQ0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACChBwAAAAAACNzBagAAAADx3cFqAAAAAPHdwWoAAAAA",
+  "public_result": {
+    "verification_id": "ver_01M42M6WXZ93MFR3YDQZ7JXEHG",
+    "status": "VERIFIED",
+    "reason": null,
+    "answer": "sha256:5611a6908a8b1c651d1f863fa0ad8b86b7348969691e3d396cf5186e325fb75a",
+    "witnesses": {
+      "valid": 1,
+      "required": 1,
+      "quorum": 1
+    },
+    "answer_counts": {},
+    "consensus_ratio": null,
+    "checks": {
+      "geofence": "not_run",
+      "freshness": "pass",
+      "task_nonce": "pass",
+      "replay": "pass",
+      "media_schema": "pass",
+      "duplicate": "pass",
+      "vision_consistency": "not_run"
+    },
+    "evidence_root": "sha256:b32f9bd6a21f4fb4225803ee366bd1c6327e6e1c83f23c48e84ae24dd2236c2f",
+    "result_hash": "sha256:92d4dfa8975f7004f819cdec214a2576005ed9f2b4a68907a81eeedc7c5f7c99",
+    "attestation": {
+      "network": "solana-devnet",
+      "signature": "34sEPAZgPuad9ZGfmeuGJQE9miKmfW1MWrYyQ1jUadYL8GAU6jYbPYCwVDA1i8np99LoWBdrpE3ggckURrFUHcbt",
+      "task_account": "F2SBmkzsyFf5HvA8BVqAQzv26JsVhfqM9eVRfSKmWQcz",
+      "explorer_url": "https://explorer.solana.com/tx/34sEPAZgPuad9ZGfmeuGJQE9miKmfW1MWrYyQ1jUadYL8GAU6jYbPYCwVDA1i8np99LoWBdrpE3ggckURrFUHcbt?cluster=devnet"
+    },
+    "settlement": {
+      "status": "SETTLED",
+      "signature": "34sEPAZgPuad9ZGfmeuGJQE9miKmfW1MWrYyQ1jUadYL8GAU6jYbPYCwVDA1i8np99LoWBdrpE3ggckURrFUHcbt",
+      "paid": [
+        {
+          "witness_ref": "hmac:f251dc024474bbf694923b5063fd752f9bd01e58d0f35a9ab1121d92d65ab06f",
+          "amount": "0.5"
+        }
+      ]
+    },
+    "verified_at": "2026-10-04T05:02:34.000Z",
+    "type": "DOCUMENT_TRANSCRIPTION",
+    "answer_kind": "text",
+    "published": null
+  }
+}

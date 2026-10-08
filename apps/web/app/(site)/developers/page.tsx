@@ -187,6 +187,13 @@ const COPY = {
       ] as [string, string][],
       note: "人が現地まで行くので、結果が出るまでふつう10〜60分かかります。状態が VERIFIED・REJECTED・EXPIRED のどれかになるまで、エージェントに答えを推測させないでください。",
     },
+    onchain: {
+      title: "プログラムから読める事実（On-chain facts）",
+      lead: "結果は Solana の Task 口座に 1 行で残ります。保険や予約のプログラムは、それを直接読んで動けます。",
+      p1: "口座の場所（PDA）と読み方は ",
+      p2: " が返します。TypeScript なら packages/sdk の verifyOnChain が、結果から result_hash を計算し直して口座の値と比べます。Rust は Anchor の AccountDeserialize で Task を読みます。保険の自動支払いと予約の切り替えの例は ",
+      p3: " にあります。",
+    },
     fields: {
       title: "依頼の中身",
       lead: "request.json の例です。principal_ref は API キーと一緒に渡される ID です。",
@@ -480,6 +487,13 @@ const COPY = {
         ["stop_reality_verification_watch", "Stop a watch or schedule. Requests already created keep going"],
       ] as [string, string][],
       note: "A person has to go there, so a result usually takes 10 to 60 minutes. Do not let the agent guess an answer before the status is VERIFIED, REJECTED or EXPIRED.",
+    },
+    onchain: {
+      title: "On-chain facts",
+      lead: "Each result is one line in a Task account on Solana. An insurance or booking program can read it directly and act on it.",
+      p1: "The account address (PDA) and how to read it come from ",
+      p2: ". In TypeScript, verifyOnChain in packages/sdk recomputes result_hash from a result and compares it with the account. In Rust, read the Task with Anchor's AccountDeserialize. Worked examples for automatic insurance payouts and booking switches are in ",
+      p3: ".",
     },
     fields: {
       title: "Inside a request",
@@ -802,6 +816,23 @@ ${c.x402.samples.map((s) => `$A ${s}`).join("\n")}`}</Code>
           ))}
         </dl>
         <p className="mt-4 text-sm leading-relaxed text-slate-600">{c.tools.note}</p>
+      </Section>
+
+      <Section title={c.onchain.title} lead={c.onchain.lead}>
+        <p className="max-w-3xl text-sm leading-relaxed text-slate-600">
+          {c.onchain.p1}
+          <code className="font-mono">GET /v1/public/verifications/{"{id}"}/onchain</code>
+          {c.onchain.p2}
+          <a
+            className="text-teal-700 underline"
+            href="https://github.com/shoripanda/proofmarket/blob/main/docs/onchain-facts.md"
+            target="_blank"
+            rel="noreferrer"
+          >
+            docs/onchain-facts.md
+          </a>
+          {c.onchain.p3}
+        </p>
       </Section>
 
       <Section title={c.fields.title} lead={c.fields.lead}>
