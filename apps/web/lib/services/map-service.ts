@@ -2,7 +2,7 @@ import "server-only";
 // Public map (01 §4.22): VERIFIED results whose requester asked for them to be published, for 72 hours.
 // Reads the question, the requested place and the answer; never photos, workers or where a worker stood.
 
-import { LIMITS, type TaskType } from "@proofmarket/core";
+import { LIMITS, publicLocation, type TaskType } from "@proofmarket/core";
 import type { PublicDataset, PublicMap } from "@proofmarket/core/schemas/api";
 import { schema } from "@proofmarket/db";
 import { and, desc, eq, gt } from "drizzle-orm";
@@ -46,8 +46,9 @@ export async function publicMap(app: AppContext): Promise<PublicMap> {
       answer: r.finalAnswer,
       answer_kind: task.answerKind,
       unit: (task.answerSpec as { unit?: string } | null)?.unit ?? null,
-      location: { lat: task.targetLat, lng: task.targetLng },
-      place_name: placeName ?? null,
+      // Coarse tasks (13 §9 PR 7): the ~1 km cell's centre, and no shop name.
+      ...publicLocation(task.targetLat, task.targetLng, task.locationPrivacy),
+      place_name: task.locationPrivacy === "coarse" ? null : (placeName ?? null),
       witnesses: r.validWitnessCount,
       verified_at: r.finalizedAt.toISOString(),
       result_url: `/r/${task.id}`,
@@ -88,8 +89,9 @@ export async function publicDataset(app: AppContext, limit = 1000): Promise<Publ
       answer: r.finalAnswer,
       answer_kind: task.answerKind,
       unit: (task.answerSpec as { unit?: string } | null)?.unit ?? null,
-      location: { lat: task.targetLat, lng: task.targetLng },
-      place_name: placeName ?? null,
+      // Coarse tasks (13 §9 PR 7): the ~1 km cell's centre, and no shop name.
+      ...publicLocation(task.targetLat, task.targetLng, task.locationPrivacy),
+      place_name: task.locationPrivacy === "coarse" ? null : (placeName ?? null),
       witnesses: r.validWitnessCount,
       verified_at: r.finalizedAt.toISOString(),
       evidence_root: hex(r.evidenceRoot),

@@ -10,6 +10,7 @@ import {
   EVIDENCE_BUNDLE_SCHEMA,
   type EvidenceBundle,
   evidenceRoot,
+  locationCommitment,
   questionHash,
   resultHash,
   type TaskType,
@@ -20,7 +21,7 @@ import { and, asc, count, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { aggregateOf } from "./aggregate";
 import { appendAudit } from "./audit";
-import { witnessRef } from "./crypto";
+import { locationSalt, witnessRef } from "./crypto";
 import { applyTaskEvent, type TaskRow } from "./task-engine";
 
 const BUNDLE_CHECKS = [
@@ -103,6 +104,15 @@ export async function saveResult(
     type: task.type as TaskType,
     question_hash: questionHash(task.question),
     answer_values: [...task.answerValues],
+    ...(task.targetLat !== null && task.targetLng !== null
+      ? {
+          location_commitment: locationCommitment(
+            task.targetLat,
+            task.targetLng,
+            locationSalt(app.config.workerRefSalt, task.id),
+          ),
+        }
+      : {}),
     assurance: { required_witnesses: task.requiredWitnesses, quorum: task.quorum },
     submissions: valid.map((v) => ({
       witness_ref: witnessRef(app.config.workerRefSalt, v.workerId, task.id),

@@ -1,6 +1,10 @@
 // Public map (01 §4.22): only results their requester published, for 72 hours, with no photo or worker data.
+
+import { coarseLocation, locationCommitment } from "@proofmarket/core";
+import { schema } from "@proofmarket/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { handleCreate } from "../lib/handlers/requester";
+import { handleCreate, handleGet } from "../lib/handlers/requester";
 import { revokeEvidenceAccess } from "../lib/services/admin-service";
 import { publicDataset, publicMap } from "../lib/services/map-service";
 import { publicResult } from "../lib/services/public-service";
@@ -71,6 +75,7 @@ describe("public map", () => {
     expect((await publicResult(t.app, shared)).published).toEqual({
       question: "Is this shop open right now?",
       location: SHOP,
+      location_precision_m: null,
       place_name: "test shop",
     });
   });
@@ -107,5 +112,50 @@ describe("public map", () => {
     expect(d.rows[0]?.evidence_root).toMatch(/^[0-9a-f]{64}$/);
     expect(d.rows[0]?.result_hash).toMatch(/^[0-9a-f]{64}$/);
     expect(JSON.stringify(d)).not.toMatch(/wkr_|Walletalice|storage\.test/);
+  });
+
+  it("13 §9 PR 7: a coarse place is rounded to ~1 km on every public surface, exact for the requester", async () => {
+    expect(
+      await details(
+        await create({
+          type: "CUSTOM_CHOICE",
+          answer_schema: { type: "enum", values: ["YES", "NO"] },
+          location: undefined,
+          location_privacy: "coarse",
+        }),
+      ),
+    ).toMatchObject({ field: "location_privacy", reason: "needs_location" });
+
+    const id = await openTask(t, { publish: true, location_privacy: "coarse" });
+    await witness(t, alice, id, { answer: "OPEN" });
+    const { precision_m, ...centre } = coarseLocation(SHOP.lat, SHOP.lng);
+    expect(centre).not.toEqual(SHOP);
+    const rounded = { location: centre, location_precision_m: precision_m, place_name: null };
+
+    expect((await publicResult(t.app, id)).published).toEqual({
+      question: "Is this shop open right now?",
+      ...rounded,
+    });
+    expect((await publicMap(t.app)).items[0]).toMatchObject({ verification_id: id, ...rounded });
+    expect((await publicDataset(t.app)).rows[0]).toMatchObject({ verification_id: id, ...rounded });
+    for (const body of [await publicResult(t.app, id), await publicMap(t.app), await publicDataset(t.app)]) {
+      const text = JSON.stringify(body);
+      expect(text).not.toContain(String(SHOP.lat));
+      expect(text).not.toContain("test shop");
+    }
+
+    // The requester's GET stays exact and carries the salt that opens the bundle's location commitment.
+    const view = (await (
+      await call((r) => handleGet(t.app, r, id), jsonReq("GET", `/v1/verifications/${id}`, { key: t.apiKey }))
+    ).json()) as { location: { lat: number; lng: number }; location_privacy: string; location_salt: string };
+    expect(view).toMatchObject({ location: SHOP, location_privacy: "coarse" });
+    expect(view.location_salt).toMatch(/^[0-9a-f]{64}$/);
+    const [row] = await t.db
+      .select({ bundle: schema.verificationResults.evidenceBundle })
+      .from(schema.verificationResults)
+      .where(eq(schema.verificationResults.verificationId, id));
+    expect((row?.bundle as { location_commitment?: string } | undefined)?.location_commitment).toBe(
+      locationCommitment(SHOP.lat, SHOP.lng, view.location_salt),
+    );
   });
 });

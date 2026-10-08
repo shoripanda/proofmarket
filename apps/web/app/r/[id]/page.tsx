@@ -6,6 +6,7 @@ import { RESULT_HASH_FIELDS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
+import { ApproxPlace } from "@/components/approx-place";
 import { LedgerPicture } from "@/components/ledger-picture";
 import { OnchainCheck } from "@/components/onchain-check";
 import { LangProvider } from "@/lib/client/lang";
@@ -97,6 +98,11 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
                     <dd className="mt-1 break-words text-slate-700">
                       {r.published.place_name ? `${r.published.place_name}${pick(lang, "｜", " | ")}` : ""}
                       {r.published.question}
+                    </dd>
+                  ) : null}
+                  {r.published?.location_precision_m ? (
+                    <dd className="mt-1">
+                      <ApproxPlace precisionM={r.published.location_precision_m} lang={lang} />
                     </dd>
                   ) : null}
                 </div>

@@ -7,6 +7,7 @@ import {
   fromMicro,
   LIMITS,
   parseId,
+  publicLocation,
   settledPerWitnessMicro,
   type TaskType,
 } from "@proofmarket/core";
@@ -98,10 +99,12 @@ async function publishedView(app: AppContext, task: typeof schema.verificationRe
         .from(schema.places)
         .where(eq(schema.places.id, task.placeId))
     : [];
+  // A coarse task (13 §9 PR 7) shows its ~1 km cell and no shop name, which would give the exact place away.
+  const coarse = task.locationPrivacy === "coarse";
   return {
     question: task.question,
-    location: { lat: task.targetLat, lng: task.targetLng },
-    place_name: place?.name ?? null,
+    ...publicLocation(task.targetLat, task.targetLng, task.locationPrivacy),
+    place_name: coarse ? null : (place?.name ?? null),
   };
 }
 

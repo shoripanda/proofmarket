@@ -58,6 +58,15 @@ export function decryptLocation(key: Buffer, blob: Buffer): { lat: number; lng: 
   return { lat, lng };
 }
 
+/**
+ * Salt of the evidence bundle's location_commitment (13 §9 PR 7): HMAC-SHA256(WORKER_REF_SALT, "location:" +
+ * verification_id). Derived, so nothing is stored; secret, so the commitment cannot be brute-forced from the coarse
+ * cell (a geohash-6 cell holds only ~6e7 points at 6 decimals). The requester reads it on GET.
+ */
+export function locationSalt(secret: string, verificationId: string): string {
+  return createHmac("sha256", secret).update(`location:${verificationId}`).digest("hex");
+}
+
 /** HMAC-SHA256(WORKER_REF_SALT, worker_id + ":" + verification_id) — per-task witness_ref (07 §5.1). */
 export function witnessRef(salt: string, workerId: string, verificationId: string): `hmac:${string}` {
   return `hmac:${createHmac("sha256", salt).update(`${workerId}:${verificationId}`).digest("hex")}`;
