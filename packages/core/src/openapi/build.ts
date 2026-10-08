@@ -212,6 +212,14 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "get",
+    path: "/v1/public/verifications/{id}/onchain",
+    auth: "none",
+    priority: "Stretch",
+    summary: "The result's Task account on Solana and how another program reads it (13 §2)",
+    ok: { status: 200, schema: S.PublicOnchainSchema },
+  },
+  {
+    method: "get",
     path: "/v1/public/stats",
     auth: "none",
     priority: "P1",

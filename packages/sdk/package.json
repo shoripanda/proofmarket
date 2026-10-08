@@ -5,13 +5,18 @@
   "type": "module",
   "description": "Typed REST client for requesters (used by packages/mcp and scripts/demo-agent.ts).",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./onchain": "./src/onchain.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "echo 'sdk tests: PR-13'"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@proofmarket/core": "workspace:*"
+    "@proofmarket/core": "workspace:*",
+    "@solana/web3.js": "^1.99.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.3"
   }
 }
