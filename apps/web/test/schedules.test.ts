@@ -158,7 +158,7 @@ describe("recurring checks", () => {
         times_jst: ["12:30", "13:00", "13:30"],
       }),
     );
-    await t.db.update(schema.requesterCredentials).set({ maxTaskAmount: "1" });
+    await t.db.delete(schema.requesterLedger); // nothing left to pay with
     for (let i = 0; i < 3; i++) {
       t.advance(30 * 60_000);
       expect(await runDueSchedules(t.app)).toEqual([]);
@@ -167,7 +167,7 @@ describe("recurring checks", () => {
     expect(row).toMatchObject({
       active: false,
       consecutiveFailures: 3,
-      lastError: "TASK_AMOUNT_LIMIT_EXCEEDED",
+      lastError: "INSUFFICIENT_BALANCE",
     });
   });
 

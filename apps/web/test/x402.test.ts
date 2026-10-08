@@ -86,10 +86,10 @@ describe("POST /v1/x402/verifications", () => {
     const res = await post(body({ deadline: "2026-10-09T03:01:00Z" }));
     expect(res.status).toBe(400);
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe("DEADLINE_OUT_OF_RANGE");
-    const tooMuch = await post(body({ bounty: { asset: "USDC", amount: "6", network: "solana-devnet" } }));
-    expect(((await tooMuch.json()) as { error: { code: string } }).error.code).toBe(
-      "TASK_AMOUNT_LIMIT_EXCEEDED",
-    );
+    // no cap on the bounty: a large one is simply priced
+    const large = await post(body({ bounty: { asset: "USDC", amount: "600", network: "solana-devnet" } }));
+    expect(large.status).toBe(402);
+    expect(((await large.json()) as { accepts: { amount: string }[] }).accepts[0]?.amount).toBe("600000000");
   });
 
   it("a valid payment settles, creates the task through TOPUP + RESERVE, and returns a working API key", async () => {
