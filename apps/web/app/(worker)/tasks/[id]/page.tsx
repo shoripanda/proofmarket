@@ -3,7 +3,17 @@ import type { TaskType } from "@proofmarket/core";
 // W-04 タスク詳細 — 質問、地図リンク、半径、報酬、締切、撮影の注意、「引き受ける」。
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button, Card, Notice, remaining, Shell, safetyNotes, useNow, yen } from "@/components/ui";
+import {
+  Button,
+  Card,
+  ListenButton,
+  Notice,
+  remaining,
+  Shell,
+  safetyNotes,
+  useNow,
+  yen,
+} from "@/components/ui";
 import { type AnswerSchemaView, answerFormat, taskTypeText } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
@@ -64,7 +74,17 @@ export default function TaskDetailPage() {
               {types[t.type as TaskType]?.name ?? t.type}
             </p>
             <AttestationBand lang={lang} attestation={t.attestation} className="mt-2" />
-            <p className="mt-1 text-xl font-bold leading-snug">{t.question}</p>
+            <div className="mt-1 flex items-start gap-2">
+              <p className="flex-1 text-xl font-bold leading-snug">{t.question}</p>
+              <ListenButton
+                text={[
+                  t.question,
+                  t.acceptance_criteria
+                    ? `${pick(lang, "受け取りの条件。", "Accepted when: ")}${t.acceptance_criteria}`
+                    : "",
+                ].join("\n")}
+              />
+            </div>
             {t.acceptance_criteria ? (
               <p className="mt-3 whitespace-pre-wrap rounded-xl bg-amber-50 p-3 text-sm leading-relaxed text-amber-900">
                 <span className="font-bold">{pick(lang, "受け取りの条件: ", "Accepted when: ")}</span>
