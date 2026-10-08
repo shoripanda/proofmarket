@@ -2,6 +2,7 @@
 // (the plain-words switch is a client island). Every label exists in Japanese and English.
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { LangSwitch } from "@/components/lang-switch";
 import { PlainProvider, PlainToggle } from "@/lib/client/plain";
 import { type Lang, langHref, pick } from "@/lib/lang";
 
@@ -56,19 +57,7 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
               ))}
             </nav>
             <PlainToggle />
-            {lang === "ja" ? (
-              <Link
-                href="/en"
-                className="text-base font-semibold text-slate-600 hover:text-teal-700"
-                lang="en"
-              >
-                English
-              </Link>
-            ) : (
-              <Link href="/" className="text-base font-semibold text-slate-600 hover:text-teal-700" lang="ja">
-                日本語
-              </Link>
-            )}
+            <LangSwitch />
             <Link
               href={h("/login")}
               className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"

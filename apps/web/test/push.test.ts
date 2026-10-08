@@ -60,6 +60,20 @@ describe("push notifications", () => {
     expect(JSON.stringify(payload)).not.toMatch(/Is this shop open/);
   });
 
+  it("writes the notification in the language the worker's app is shown in (13 §7)", async () => {
+    await savePushSubscription(t.app, alice, { subscription: sub("a"), areas: ["shibuya"], lang: "en" });
+    await savePushSubscription(t.app, bob, { subscription: sub("b"), areas: ["shibuya"] });
+    const id = await openTask(t);
+    expect(await runNotifyWorkers(t.app, id)).toEqual({ sent: 2 });
+    const byEndpoint = Object.fromEntries(t.push.sent.map((s) => [s.endpoint, JSON.parse(s.payload)]));
+    expect(byEndpoint[sub("a").endpoint]).toMatchObject({
+      title: "New request nearby",
+      url: `/en/tasks/${id}`,
+    });
+    expect(byEndpoint[sub("a").endpoint].body).toMatch(/around Shibuya/);
+    expect(byEndpoint[sub("b").endpoint]).toMatchObject({ title: "近くで新しい依頼", url: `/tasks/${id}` });
+  });
+
   it("01 §4.20: a worker with no area only hears about work that needs no place", async () => {
     await savePushSubscription(t.app, alice, { subscription: sub("a"), areas: [] });
     await savePushSubscription(t.app, bob, { subscription: sub("b"), areas: ["shibuya"] });

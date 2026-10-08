@@ -15,7 +15,15 @@ import { schema } from "@proofmarket/db";
 import { and, arrayContains, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { AppContext } from "../context";
+import { isLang, type Lang, langHref } from "../lang";
 import { decryptBytes, encryptBytes, sha256 } from "./crypto";
+
+/** English names for the coarse areas (the Japanese ones are AREA_LABELS in core). */
+const AREA_LABELS_EN: Record<ParticipationArea, string> = {
+  shibuya: "around Shibuya",
+  shinjuku: "around Shinjuku",
+  other: "elsewhere in central Tokyo",
+};
 
 /** Hosts of the push services that Chrome/Android, Safari/iOS, Firefox and Edge hand out. */
 const PUSH_HOSTS = [
@@ -46,6 +54,8 @@ const PutSchema = z
       .array(z.enum(PARTICIPATION_AREAS))
       .max(PARTICIPATION_AREAS.length)
       .refine((a) => new Set(a).size === a.length, "duplicate areas"),
+    // The language the app is shown in; the notification is written in it (13 §7).
+    lang: z.enum(["ja", "en"]).default("ja"),
   })
   .strict();
 
@@ -76,11 +86,12 @@ export async function savePushSubscription(app: AppContext, workerId: string, ra
       endpointHash: sha256(endpoint),
       endpointEnc: enc,
       areas: r.data.areas,
+      lang: r.data.lang,
       createdAt: app.now(),
     })
     .onConflictDoUpdate({
       target: schema.pushSubscriptions.endpointHash,
-      set: { workerId, endpointEnc: enc, areas: r.data.areas, failures: 0 },
+      set: { workerId, endpointEnc: enc, areas: r.data.areas, lang: r.data.lang, failures: 0 },
     });
   return { ok: true as const, areas: r.data.areas };
 }
@@ -124,16 +135,26 @@ export async function runNotifyWorkers(app: AppContext, verificationId: string):
         ? and(eq(schema.workers.status, "active"), arrayContains(schema.pushSubscriptions.areas, [area]))
         : eq(schema.workers.status, "active"),
     );
-  const payload = JSON.stringify({
-    title: area ? "近くで新しい依頼" : "新しい依頼（場所を問わない作業）",
-    body: `${area ? AREA_LABELS[area] : "どこでも"}・1人 ${Number(task.bountyAmount)} USDC・${jst(task.deadline)} まで`,
-    url: `/tasks/${task.id}`,
-    tag: task.id,
-  });
+  // One text per language; each subscription gets the one its app is shown in (13 §7).
+  const amount = Number(task.bountyAmount);
+  const payloads: Record<Lang, string> = {
+    ja: JSON.stringify({
+      title: area ? "近くで新しい依頼" : "新しい依頼（場所を問わない作業）",
+      body: `${area ? AREA_LABELS[area] : "どこでも"}・1人 ${amount} USDC・${jst(task.deadline)} まで`,
+      url: `/tasks/${task.id}`,
+      tag: task.id,
+    }),
+    en: JSON.stringify({
+      title: area ? "New request nearby" : "New request (no particular place)",
+      body: `${area ? AREA_LABELS_EN[area] : "Anywhere"} · ${amount} USDC per person · until ${jst(task.deadline)} JST`,
+      url: langHref("en", `/tasks/${task.id}`),
+      tag: task.id,
+    }),
+  };
   let sent = 0;
   for (const { s } of subs) {
     const sub = JSON.parse(decryptBytes(app.config.locationEncKey, s.endpointEnc).toString("utf8"));
-    const res = await app.push.send(sub, payload);
+    const res = await app.push.send(sub, payloads[isLang(s.lang) ? s.lang : "ja"]);
     if (res.ok) {
       sent++;
       await app.db

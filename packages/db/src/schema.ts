@@ -729,6 +729,8 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   endpointHash: bytea("endpoint_hash").notNull().unique(),
   endpointEnc: bytea("endpoint_enc").notNull(),
   areas: text("areas").array().notNull(),
+  /** "ja" | "en": the language the worker reads the app in, so the notification text matches (13 §7). */
+  lang: text("lang").notNull().default("ja"),
   failures: integer("failures").notNull().default(0),
   createdAt: tsz("created_at").notNull().defaultNow(),
   lastSentAt: tsz("last_sent_at"),

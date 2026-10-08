@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { TapFeedback } from "@/components/tap-feedback";
 import { getLang } from "@/lib/lang-server";
 import "./globals.css";
 
@@ -14,7 +15,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const lang = await getLang();
   return (
     <html lang={lang}>
-      <body>{children}</body>
+      <body>
+        <TapFeedback />
+        {children}
+      </body>
     </html>
   );
 }

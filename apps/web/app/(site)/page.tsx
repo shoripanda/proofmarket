@@ -1,17 +1,65 @@
-// S-01 トップ — what ProofMarket is, what sets it apart, the track record, and where each reader goes next.
+// S-01 トップ — picture first (13 §7, 2026-10-09): every section is an icon, a heading and at most one line.
+// Everything that used to be a paragraph is folded under 「くわしく」 so the page reads with the pictures alone.
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Explainer } from "@/components/explainer";
 import { FeaturedResults } from "@/components/featured-results";
-import { FlowDiagram } from "@/components/flow-diagram";
+import { FLOW_ICONS } from "@/components/flow-diagram";
 import { PageHero, Section } from "@/components/site";
 import { StatsHighlights } from "@/components/stats";
 import { Plain } from "@/lib/client/plain";
-import { type Lang, langHref } from "@/lib/lang";
+import { type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
 // Featured results and the track record are read from the DB per request.
 export const dynamic = "force-dynamic";
+
+/** Line icons (24×24, stroke only) so the page survives with every letter hidden. */
+const ICONS = {
+  camera: "M4 8h3l2-3h6l2 3h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",
+  clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v4l3 2",
+  grid: "M4 5h6v6H4zM14 5h6v6h-6zM4 13h6v6H4zM14 13h6v6h-6z",
+  check: FLOW_ICONS.check,
+  agree:
+    "M8 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM16 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM2 20a6 6 0 0 1 12 0M10 20a6 6 0 0 1 12 0",
+  chain: FLOW_ICONS.chain,
+  terminal: "M4 5h16v14H4zM8 10l3 2-3 2M13 14h4",
+  phone: "M8 3h8v18H8zM11 18h2",
+  pin: "M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10zM12 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z",
+  key: "M15 7a4 4 0 1 1-2.8 6.8L7 19H4v-3l5.2-5.2A4 4 0 0 1 15 7z",
+  coin: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9 12h6M12 8v8",
+} as const;
+type IconKey = keyof typeof ICONS;
+
+function Icon({ k, className = "h-9 w-9" }: { k: IconKey; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="#0f766e"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={ICONS[k]} />
+    </svg>
+  );
+}
+
+/** The folded text under a picture section. */
+function More({ lang, children }: { lang: Lang; children: ReactNode }) {
+  return (
+    <details className="group mt-4 rounded-2xl border border-slate-200 p-4 open:bg-slate-50/50">
+      <summary className="cursor-pointer select-none text-sm font-semibold text-teal-700">
+        {pick(lang, "くわしく", "In detail")}
+      </summary>
+      <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-600">{children}</div>
+    </details>
+  );
+}
 
 const COPY = {
   ja: {
@@ -22,121 +70,71 @@ const COPY = {
     },
     eyebrow: "ProofMarket・東京で試験運用中",
     title: "AI エージェントにできないことを、人に頼める",
-    intro:
-      "店の前まで歩く。紙の掲示を読む。窓口で聞く。荷物を受け取って開ける。街じゅうの駅を同じ日に見て回る。ウェブを調べても AI エージェントには片づけられない仕事があります。ProofMarket はそれを人に頼み、届いた写真と答えを AI が依頼文と突き合わせてから、エージェントに返します。結果と支払いは Solana に残り、あとから誰でも確かめられます。",
-    ctaTry: "3分で通して体験する",
-    ctaDev: "Claude・ChatGPT・自作のエージェントをつなぐ",
+    intro: "人が見に行き、写真つきで答えます。答えは AI が確かめ、Solana に記録します。",
+    ctaTry: "3 分で体験",
+    ctaDev: "エージェントをつなぐ",
     sizes: {
-      title: "3分の確認から、街ぐるみの調査まで",
-      lead: "頼めるのは「店が開いているか」だけではありません。手と足と目が要る仕事なら、大きさを問いません。",
+      title: "小さな確認から、街ぐるみの調査まで",
       items: [
-        {
-          size: "小",
-          title: "その場で分かること",
-          time: "数分〜1時間",
-          body: "店が開いているか、行列の長さ、棚の在庫、値札、入口の掲示の書き起こし。1人が見に行って、写真と答えを送ります。",
-        },
-        {
-          size: "中",
-          title: "半日かかる用事",
-          time: "〜24時間",
-          body: "窓口で書類を受け取る、届いた荷物を開けて中身を確かめる、現物を採寸する、取引先に電話して聞き取る、イベント会場を下見する。文章と写真で報告します。",
-        },
-        {
-          size: "大",
-          title: "大勢で同時に",
-          time: "何件でも、繰り返しも",
-          body: "都内の駅のエレベーターを同じ日に全部見る、50店舗の掲示を一斉に書き起こす、復旧するまで毎朝確かめる。依頼を分けて同時に出し、最大5人の一致で確定します。",
-        },
-      ],
-      limits:
-        "試験運用中の上限：1件の締め切りは24時間まで、確かめる人数は5人まで、報酬は1件 5 USDC まで。大きな仕事は依頼を分けて出します。",
-    },
-    flow: {
-      title: "依頼が答えになるまで",
-      lead: "エージェントの一言から、人が確かめ、Solana で払われるまで。点が流れる順に進みます。",
-    },
-    live: {
-      title: "いま動いているもの",
-      lead: "このページにあるものは、すべて本番で動いています（決済は Solana Devnet のテスト用 USDC）。",
-      items: [
-        "リモート MCP（OAuth 2.1）。Claude Code・claude.ai・ChatGPT のコネクタからつながる",
-        "MCP の道具は7つ。依頼・読み取り・取消・異議に加え、望む答えが出るまで確かめ続ける見守り",
-        "x402。Solana のウォレットを持つエージェントは、登録も API キーもなしに USDC を払って頼める",
-        "提出ごとの AI による内容の確認（Claude）。判定と理由は結果と一緒に依頼者へ返る",
-        "結果ごとの証明のページとバッジ。依頼者が許した事実は、みんなの地図で誰でも見られる",
-        "worker アプリ。アプリ内カメラ・位置と合言葉の検査・通知・家からできる仕事",
+        { icon: "camera", title: "その場で分かること", time: "数分〜1 時間" },
+        { icon: "clock", title: "半日かかる用事", time: "〜24 時間" },
+        { icon: "grid", title: "大勢で同時に", time: "何件でも" },
+      ] as { icon: IconKey; title: string; time: string }[],
+      more: [
+        "小: 店が開いているか、行列の長さ、棚の在庫、値札、入口の掲示の書き起こし。1 人が見に行って、写真と答えを送ります。",
+        "中: 窓口で書類を受け取る、届いた荷物を開けて中身を確かめる、現物を採寸する、取引先に電話して聞き取る。文章と写真で報告します。",
+        "大: 都内の駅のエレベーターを同じ日に全部見る、50 店舗の掲示を一斉に書き起こす、復旧するまで毎朝確かめる。依頼を分けて同時に出し、最大 5 人の一致で確定します。",
+        "試験運用中の上限: 1 件の締め切りは 24 時間まで、確かめる人数は 5 人まで、報酬は 1 件 5 USDC まで。",
       ],
     },
     trust: {
-      title: "依頼した AI が、届いた結果を信用できる理由",
-      points: [
-        {
-          title: "提出ごとに、AI が中身まで確かめる",
-          body: "書き起こしを頼んだのに要約になっている、写真と答えが食い違う、といった提出は差し戻して worker にやり直してもらいます。確認の判定と理由は結果と一緒に返ります。",
-        },
-        {
-          title: "複数人の答えがそろって、はじめて確定する",
-          body: "何人に頼み、何人の答えがそろえば確定するかを依頼する側が決めます。1人の答えをそのまま信じる必要はありません。",
-        },
-        {
-          title: "結果と支払いが Solana に残る",
-          body: "報酬は依頼のときにエスクローへ預け、結果が確定したら worker に払います。結果のハッシュと支払いは Solana に記録されるので、運営者を信じなくても確かめられます。",
-        },
-      ],
-    },
-    steps: {
-      title: "依頼から結果まで、4つの段階で進みます",
-      lead: "エージェントは人を探したり、やりとりしたりしません。依頼を出せば、確かめ済みの答えが返ってきます。",
+      title: "届いた答えを信じられる理由",
       items: [
-        {
-          title: "依頼する",
-          body: "AI エージェントが API か MCP で質問を出します。場所、期限、何人に確かめてもらうか、報酬を一緒に指定します。",
-        },
-        {
-          title: "人が作業する",
-          body: "worker が依頼を引き受け、写真を撮って答えます。店の前の確認のほか、紙の資料を読む、電話で聞くといった場所を問わない作業もあります。",
-        },
-        {
-          title: "確かめる",
-          body: "撮った場所と時刻、写真の使い回しを機械で確かめたうえで、Claude が写真と答えを依頼文と突き合わせます。複数人に頼んだときは、答えが一致したかも見ます。",
-        },
-        {
-          title: "結果と支払い",
-          body: "確かめた結果が JSON でエージェントに返り、worker に報酬が支払われます。結果のハッシュと支払いは Solana に記録します。",
-        },
+        { icon: "check", title: "AI が中身まで確かめる" },
+        { icon: "agree", title: "複数人の答えがそろって確定" },
+        { icon: "chain", title: "結果と支払いが Solana に残る" },
+      ] as { icon: IconKey; title: string }[],
+      more: [
+        "書き起こしを頼んだのに要約になっている、写真と答えが食い違う、といった提出は差し戻して worker にやり直してもらいます。判定と理由は結果と一緒に返ります。",
+        "何人に頼み、何人の答えがそろえば確定するかを依頼する側が決めます。1 人の答えをそのまま信じる必要はありません。",
+        "報酬は依頼のときにエスクローへ預け、結果が確定したら worker に払います。結果のハッシュと支払いは Solana に記録されるので、運営者を信じなくても確かめられます。",
       ],
     },
     roles: {
-      title: "使い方は立場で分かれます",
-      dev: {
-        title: "エージェントを作っている方",
-        body: "MCP か REST API でつなぐ方法、依頼の中身、結果の読み方をまとめています。",
-        link: "開発者向けの説明へ",
-      },
-      worker: {
-        title: "依頼に応える方（worker）",
-        body: "仕事の流れ、報酬、安全の決まり、写真と位置の扱いをまとめています。外に出なくても、家からできる依頼があります。",
-        link: "worker 向けの説明へ",
-      },
+      title: "あなたはどちらですか",
+      dev: { icon: "terminal" as IconKey, title: "エージェントを作っている", link: "開発者向け" },
+      worker: { icon: "phone" as IconKey, title: "スマホで依頼に応える", link: "worker 向け" },
     },
     example: {
-      title: "返ってくる結果の例",
-      strong: "答えと一緒に、その答えを信じてよい理由が返ります。",
-      p1: "何人が確かめ、何人の答えが一致したか、AI による内容の確認を含めてどの確認に合格したかが入っているので、エージェントは次の行動をそのまま決められます。",
-      p2: "正確な位置はエージェントにもブロックチェーンにも渡しません。写真は依頼した本人だけが、撮影位置などの埋め込み情報を外した形で見られます。Solana に記録するのは、証拠のハッシュと判定結果、支払いの状態だけです。",
-      link: "どう確かめているかの詳しい説明",
+      title: "返ってくる結果",
+      strong: "答えと一緒に、信じてよい理由が返ります。",
+      more: [
+        "何人が確かめ、何人の答えが一致したか、AI による内容の確認を含めてどの確認に合格したかが入っているので、エージェントは次の行動をそのまま決められます。",
+        "正確な位置はエージェントにもブロックチェーンにも渡しません。写真は依頼した本人だけが、撮影位置などの埋め込み情報を外した形で見られます。Solana に記録するのは、証拠のハッシュと判定結果、支払いの状態だけです。",
+      ],
+      link: "どう確かめているか",
     },
     pilot: {
-      title: "試験運用中の範囲",
+      title: "試験運用中",
       items: [
-        "現地での確認は地図上のどこでも頼めます。本・電話・実物の確認など、場所を問わない作業も頼めます。",
-        "参加できる worker は、招待コードを受け取った人だけです。",
-        "報酬は Solana Devnet のテスト用 USDC で払います。実際のお金は動きません。",
-      ],
+        { icon: "pin", text: "現地の確認は地図上のどこでも。場所を問わない作業も" },
+        { icon: "key", text: "worker は招待コードを受け取った人だけ" },
+        { icon: "coin", text: "報酬はテスト用の USDC。本物のお金は動きません" },
+      ] as { icon: IconKey; text: string }[],
       loginBefore: "招待を受けた worker の方は、",
       login: "こちらからログイン",
-      loginAfter: "してください。",
+      loginAfter: "。",
+    },
+    live: {
+      title: "いま動いているもの",
+      items: [
+        "リモート MCP（OAuth 2.1）。Claude Code・claude.ai・ChatGPT のコネクタからつながる",
+        "MCP の道具は 8 つ。依頼・一括依頼・読み取り・取消・異議・見守り",
+        "x402。Solana のウォレットを持つエージェントは、登録も API キーもなしに USDC を払って頼める",
+        "提出ごとの AI による内容の確認（Claude）。判定と理由は結果と一緒に依頼者へ返る",
+        "結果ごとの証明のページとバッジ。依頼者が許した事実は、みんなの地図で誰でも見られる",
+        "worker アプリ。アプリ内カメラ・位置と合言葉の検査・通知・読み上げ・声で入力・家からできる仕事",
+      ],
     },
   },
   en: {
@@ -147,121 +145,71 @@ const COPY = {
     },
     eyebrow: "ProofMarket · pilot in Tokyo",
     title: "Whatever your AI agent cannot do itself, ask a person",
-    intro:
-      "Walk to the shop. Read the paper notice. Ask at the counter. Receive a parcel and open it. Visit every station in the city on the same day. Some jobs stay out of reach of an AI agent no matter how much of the web it reads. ProofMarket hands them to a person, has AI compare the photo and the answer with the request, and returns the result to the agent. The result and the payout stay on Solana, where anyone can check them later.",
-    ctaTry: "Play through a request in 3 minutes",
-    ctaDev: "Connect Claude, ChatGPT or your own agent",
+    intro: "A person goes and answers with a photo. AI checks the answer; Solana records it.",
+    ctaTry: "Try it in 3 minutes",
+    ctaDev: "Connect your agent",
     sizes: {
-      title: "From a 3-minute check to a city-wide survey",
-      lead: "It is not only “is the shop open”. Any job that needs hands, feet and eyes fits, whatever its size.",
+      title: "From a small check to a city-wide survey",
       items: [
-        {
-          size: "S",
-          title: "Seen on the spot",
-          time: "minutes to an hour",
-          body: "Is the shop open, how long is the queue, is the item on the shelf, what is the price, what does the notice at the entrance say. One person goes, looks, and sends a photo and an answer.",
-        },
-        {
-          size: "M",
-          title: "A half-day errand",
-          time: "up to 24 hours",
-          body: "Collect a document at a counter, open a delivered parcel and check the contents, measure a physical item, phone a supplier and take notes, scout an event venue. Reported in text and photos.",
-        },
-        {
-          size: "L",
-          title: "Many people at once",
-          time: "any number, repeated",
-          body: "Check every station lift in the city on the same day, transcribe the notices at 50 shops at once, check every morning until something is fixed. Split into parallel requests, each confirmed by up to 5 people.",
-        },
-      ],
-      limits:
-        "Pilot limits: a deadline of up to 24 hours per request, up to 5 witnesses, and a bounty of up to 5 USDC per request. Larger jobs are split into several requests.",
-    },
-    flow: {
-      title: "From request to answer",
-      lead: "From one line by the agent, through a person checking, to the payout on Solana. The dot travels in that order.",
-    },
-    live: {
-      title: "What is running today",
-      lead: "Everything on this page runs in production (payments in test USDC on Solana Devnet).",
-      items: [
-        "Remote MCP server with OAuth 2.1. Connects from Claude Code, claude.ai and ChatGPT connectors",
-        "Seven MCP tools: request, read, cancel and dispute, plus a watch that keeps checking until the answer you want appears",
-        "x402: an agent with a Solana wallet pays in USDC and asks without signing up or holding an API key",
-        "AI review of every submission (Claude). The verdict and its reason come back with the result",
-        "A proof page and a badge for every result. Facts the requester publishes appear on the public map",
-        "A worker app: in-app camera, location and nonce checks, push notifications, work-from-home tasks",
+        { icon: "camera", title: "Seen on the spot", time: "minutes to an hour" },
+        { icon: "clock", title: "A half-day errand", time: "up to 24 hours" },
+        { icon: "grid", title: "Many people at once", time: "any number" },
+      ] as { icon: IconKey; title: string; time: string }[],
+      more: [
+        "S: is the shop open, how long is the queue, is the item on the shelf, what is the price, what does the notice say. One person goes, looks, and sends a photo and an answer.",
+        "M: collect a document at a counter, open a delivered parcel and check the contents, measure a physical item, phone a supplier and take notes. Reported in text and photos.",
+        "L: check every station lift in the city on the same day, transcribe the notices at 50 shops at once, check every morning until something is fixed. Split into parallel requests, each confirmed by up to 5 people.",
+        "Pilot limits: a deadline of up to 24 hours per request, up to 5 witnesses, and a bounty of up to 5 USDC per request.",
       ],
     },
     trust: {
-      title: "Why the agent can trust what comes back",
-      points: [
-        {
-          title: "AI checks the content of every submission",
-          body: "A summary where a transcription was asked for, or a photo that contradicts the answer, is sent back and the worker redoes it. The verdict and its reason are returned with the result.",
-        },
-        {
-          title: "Nothing is final until enough answers agree",
-          body: "The requester decides how many people to ask and how many must agree. No single person's word has to be taken on trust.",
-        },
-        {
-          title: "The result and the payout stay on Solana",
-          body: "The bounty goes into escrow when the request is made and is paid to the worker once the result is final. The result hash and the payout are recorded on Solana, so no one has to trust the operator.",
-        },
-      ],
-    },
-    steps: {
-      title: "Four stages from request to result",
-      lead: "The agent never looks for people or talks to them. It sends a request and gets back a verified answer.",
+      title: "Why the answer can be trusted",
       items: [
-        {
-          title: "Ask",
-          body: "The AI agent sends a question over the API or MCP, together with the place, the deadline, how many people should check, and the bounty.",
-        },
-        {
-          title: "A person does the work",
-          body: "A worker claims the request, takes a photo and answers. Besides checks at a shop front, there are tasks that need no particular place: reading a paper document, making a phone call.",
-        },
-        {
-          title: "Checks",
-          body: "The place and time of the photo and any reuse are checked by machine, then Claude compares the photo and the answer with the request. When several people were asked, their answers must agree.",
-        },
-        {
-          title: "Result and payout",
-          body: "The verified result goes back to the agent as JSON and the worker is paid. The result hash and the payout are recorded on Solana.",
-        },
+        { icon: "check", title: "AI checks the content" },
+        { icon: "agree", title: "Final only when answers agree" },
+        { icon: "chain", title: "Result and payout stay on Solana" },
+      ] as { icon: IconKey; title: string }[],
+      more: [
+        "A summary where a transcription was asked for, or a photo that contradicts the answer, is sent back and the worker redoes it. The verdict and its reason are returned with the result.",
+        "The requester decides how many people to ask and how many must agree. No single person's word has to be taken on trust.",
+        "The bounty goes into escrow when the request is made and is paid to the worker once the result is final. The result hash and the payout are recorded on Solana, so no one has to trust the operator.",
       ],
     },
     roles: {
-      title: "Two ways in, depending on who you are",
-      dev: {
-        title: "Building an agent",
-        body: "How to connect over MCP or the REST API, what goes into a request, and how to read the result.",
-        link: "Developer guide",
-      },
-      worker: {
-        title: "Answering requests (workers)",
-        body: "How the work goes, the pay, the safety rules, and how photos and location are handled. Some requests can be done from home.",
-        link: "Worker guide",
-      },
+      title: "Which one are you?",
+      dev: { icon: "terminal" as IconKey, title: "Building an agent", link: "For developers" },
+      worker: { icon: "phone" as IconKey, title: "Answering requests on your phone", link: "For workers" },
     },
     example: {
-      title: "What a result looks like",
+      title: "What comes back",
       strong: "The answer comes with the reasons to believe it.",
-      p1: "How many people checked, how many agreed, and which checks passed, including the AI review of the content, so the agent can decide its next step right away.",
-      p2: "The exact location is never passed to the agent or to the blockchain. Only the requester can see the photos, with embedded data such as the shooting location stripped. Solana holds the evidence hash, the verdict and the payout state, nothing more.",
-      link: "How the checks work, in detail",
+      more: [
+        "How many people checked, how many agreed, and which checks passed, including the AI review of the content, so the agent can decide its next step right away.",
+        "The exact location is never passed to the agent or to the blockchain. Only the requester can see the photos, with embedded data such as the shooting location stripped. Solana holds the evidence hash, the verdict and the payout state, nothing more.",
+      ],
+      link: "How the checks work",
     },
     pilot: {
-      title: "Scope of the pilot",
+      title: "The pilot",
       items: [
-        "On-site checks can be requested anywhere on the map. Tasks that need no particular place, such as books, phone calls and physical items, are open too.",
-        "Only people with an invite code can work as workers.",
-        "Bounties are paid in test USDC on Solana Devnet. No real money moves.",
-      ],
+        { icon: "pin", text: "On-site checks anywhere on the map; tasks with no particular place too" },
+        { icon: "key", text: "Workers join with an invite code" },
+        { icon: "coin", text: "Rewards are test USDC. No real money moves" },
+      ] as { icon: IconKey; text: string }[],
       loginBefore: "Have an invite? ",
       login: "Sign in here",
       loginAfter: " as a worker.",
+    },
+    live: {
+      title: "What is running today",
+      items: [
+        "Remote MCP server with OAuth 2.1. Connects from Claude Code, claude.ai and ChatGPT connectors",
+        "Eight MCP tools: request, batch, read, cancel, dispute, and a watch that keeps checking",
+        "x402: an agent with a Solana wallet pays in USDC and asks without signing up or holding an API key",
+        "AI review of every submission (Claude). The verdict and its reason come back with the result",
+        "A proof page and a badge for every result. Facts the requester publishes appear on the public map",
+        "A worker app: in-app camera, location and nonce checks, push, read-aloud, voice input, work-from-home tasks",
+      ],
     },
   },
 } satisfies Record<Lang, unknown>;
@@ -277,20 +225,24 @@ export default async function Home() {
   return (
     <>
       <PageHero eyebrow={c.eyebrow} title={c.title}>
-        <p>
+        <p className="text-lg">
           <Plain>{c.intro}</Plain>
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap">
           <Link
             href={h("/try")}
-            className="rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-800"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-6 py-4 text-base font-bold text-white hover:bg-teal-800"
           >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+              <path d="M8 5l11 7-11 7z" />
+            </svg>
             {c.ctaTry}
           </Link>
           <Link
             href={h("/developers")}
-            className="rounded-full px-5 py-2.5 text-sm font-semibold text-teal-700 ring-1 ring-teal-700 hover:bg-teal-50"
+            className="flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-teal-700 ring-1 ring-teal-700 hover:bg-teal-50"
           >
+            <Icon k="terminal" className="h-5 w-5" />
             {c.ctaDev}
           </Link>
         </div>
@@ -298,111 +250,87 @@ export default async function Home() {
 
       <Explainer />
 
-      <Section title={c.sizes.title} lead={c.sizes.lead}>
-        <div className="grid gap-4 lg:grid-cols-3">
+      <Section title={c.sizes.title}>
+        <div className="grid grid-cols-3 gap-3">
           {c.sizes.items.map((t) => (
-            <div key={t.size} className="rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-700 text-lg font-bold text-white">
-                  {t.size}
-                </span>
-                <div>
-                  <h3 className="font-bold">{t.title}</h3>
-                  <p className="text-xs text-slate-500">{t.time}</p>
-                </div>
+            <div key={t.title} className="rounded-2xl border border-slate-200 p-3 text-center sm:p-5">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-50">
+                <Icon k={t.icon} />
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">{t.body}</p>
+              <h3 className="mt-3 text-sm font-bold leading-snug sm:text-base">{t.title}</h3>
+              <p className="mt-1 text-xs text-slate-500">{t.time}</p>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-xs text-slate-500">
-          <Plain>{c.sizes.limits}</Plain>
-        </p>
-      </Section>
-
-      <Section title={c.flow.title} lead={<Plain>{c.flow.lead}</Plain>}>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <FlowDiagram loop />
-        </div>
-      </Section>
-
-      <Section title={c.live.title} lead={c.live.lead}>
-        <ul className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
-          {c.live.items.map((t) => (
-            <li key={t} className="rounded-2xl bg-slate-50 p-4">
+        <More lang={lang}>
+          {c.sizes.more.map((t) => (
+            <p key={t}>
               <Plain>{t}</Plain>
-            </li>
+            </p>
           ))}
-        </ul>
-      </Section>
-
-      <Section title={c.trust.title}>
-        <ul className="grid gap-4 lg:grid-cols-3">
-          {c.trust.points.map((p) => (
-            <li key={p.title} className="rounded-2xl bg-teal-50 p-5">
-              <h3 className="font-bold text-teal-900">
-                <Plain>{p.title}</Plain>
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                <Plain>{p.body}</Plain>
-              </p>
-            </li>
-          ))}
-        </ul>
+        </More>
       </Section>
 
       <StatsHighlights lang={lang} />
 
-      <Section title={c.steps.title} lead={c.steps.lead}>
-        <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {c.steps.items.map((s, i) => (
-            <li key={s.title} className="rounded-2xl border border-slate-200 p-5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-700 text-sm font-bold text-white">
-                {i + 1}
-              </span>
-              <h3 className="mt-3 font-bold">{s.title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                <Plain>{s.body}</Plain>
-              </p>
+      <Section title={c.trust.title}>
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {c.trust.items.map((p) => (
+            <li
+              key={p.title}
+              className="flex items-center gap-4 rounded-2xl bg-teal-50 p-4 sm:flex-col sm:text-center"
+            >
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white">
+                <Icon k={p.icon} />
+              </div>
+              <h3 className="font-bold text-teal-900">
+                <Plain>{p.title}</Plain>
+              </h3>
             </li>
           ))}
-        </ol>
+        </ul>
+        <More lang={lang}>
+          {c.trust.more.map((t) => (
+            <p key={t}>
+              <Plain>{t}</Plain>
+            </p>
+          ))}
+        </More>
       </Section>
 
       <Section title={c.roles.title}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Link href={h("/developers")} className="card-link rounded-2xl border border-slate-200 p-5">
-            <h3 className="font-bold">{c.roles.dev.title}</h3>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">
-              <Plain>{c.roles.dev.body}</Plain>
-            </p>
-            <p className="mt-3 text-sm font-semibold text-teal-700">
-              {c.roles.dev.link} <span className="arrow">→</span>
-            </p>
-          </Link>
-          <Link href={h("/workers")} className="card-link rounded-2xl border border-slate-200 p-5">
-            <h3 className="font-bold">{c.roles.worker.title}</h3>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">{c.roles.worker.body}</p>
-            <p className="mt-3 text-sm font-semibold text-teal-700">
-              {c.roles.worker.link} <span className="arrow">→</span>
-            </p>
-          </Link>
+          {[
+            { ...c.roles.dev, href: "/developers" },
+            { ...c.roles.worker, href: "/workers" },
+          ].map((r) => (
+            <Link
+              key={r.href}
+              href={h(r.href)}
+              className="card-link flex items-center gap-4 rounded-2xl border border-slate-200 p-5"
+            >
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-teal-50">
+                <Icon k={r.icon} className="h-10 w-10" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold leading-snug">{r.title}</h3>
+                <p className="mt-1 text-sm font-semibold text-teal-700">
+                  {r.link} <span className="arrow">→</span>
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
       </Section>
 
       <FeaturedResults lang={lang} />
 
-      <Section title={c.example.title}>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <pre className="overflow-x-auto rounded-2xl bg-slate-900 p-5 text-sm leading-relaxed text-slate-100">
-            {`{
+      <Section title={c.example.title} lead={<strong className="text-slate-900">{c.example.strong}</strong>}>
+        <pre className="overflow-x-auto rounded-2xl bg-slate-900 p-5 text-sm leading-relaxed text-slate-100">
+          {`{
   "status": "VERIFIED",
   "answer": "OPEN",
-  "witnesses": {
-    "valid": 2,
-    "required": 2,
-    "quorum": 2
-  },
+  "witnesses": { "valid": 2, "required": 2, "quorum": 2 },
   "checks": {
     "geofence": "pass",
     "freshness": "pass",
@@ -411,39 +339,52 @@ export default async function Home() {
   },
   "settlement": { "status": "SETTLED" }
 }`}
-          </pre>
-          <div className="space-y-3 leading-relaxed text-slate-600">
-            <p>
-              <strong className="text-slate-900">{c.example.strong}</strong>
-              {c.example.p1}
+        </pre>
+        <More lang={lang}>
+          {c.example.more.map((t) => (
+            <p key={t}>
+              <Plain>{t}</Plain>
             </p>
-            <p>
-              <Plain>{c.example.p2}</Plain>
-            </p>
-            <p>
-              <Link href={h("/how-it-works")} className="font-semibold text-teal-700 underline">
-                {c.example.link}
-              </Link>
-            </p>
-          </div>
-        </div>
+          ))}
+          <p>
+            <Link href={h("/how-it-works")} className="font-semibold text-teal-700 underline">
+              {c.example.link}
+            </Link>
+          </p>
+        </More>
       </Section>
 
       <Section title={c.pilot.title}>
-        <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-3">
           {c.pilot.items.map((t) => (
-            <li key={t} className="rounded-2xl bg-slate-50 p-4">
-              <Plain>{t}</Plain>
+            <li
+              key={t.text}
+              className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700"
+            >
+              <Icon k={t.icon} className="h-8 w-8 shrink-0" />
+              <Plain>{t.text}</Plain>
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-sm text-slate-600">
+        <p className="mt-5 text-sm text-slate-600">
           {c.pilot.loginBefore}
           <Link href={h("/login")} className="font-semibold text-teal-700 underline">
             {c.pilot.login}
           </Link>
           {c.pilot.loginAfter}
         </p>
+        <details className="group mt-4 rounded-2xl border border-slate-200 p-4 open:bg-slate-50/50">
+          <summary className="cursor-pointer select-none text-sm font-semibold text-teal-700">
+            {c.live.title}
+          </summary>
+          <ul className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+            {c.live.items.map((t) => (
+              <li key={t} className="rounded-xl bg-white p-3 ring-1 ring-slate-100">
+                <Plain>{t}</Plain>
+              </li>
+            ))}
+          </ul>
+        </details>
       </Section>
     </>
   );
