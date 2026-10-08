@@ -512,7 +512,17 @@ export const GetVerificationResponseSchema = z.object({
     active_claims: z.number().int(),
     open_slots: z.number().int(),
     required: z.number().int(),
+    /** Submissions the AI review is still looking at (01 §4.27). */
+    checking: z.number().int(),
+    /** Submissions the AI review sent back to the worker as not matching the request; the worker may fix them. */
+    returned: z.number().int(),
   }),
+  /**
+   * One paragraph a person can read, in Japanese and English, saying where the request stands: who is on it,
+   * what the AI review found, the final answer and why it is (or is not) final (01 §4.27). The agent that asked
+   * is expected to repeat it to its user as soon as it changes, so the verdict reaches them unasked.
+   */
+  summary: z.object({ ja: z.string(), en: z.string() }),
   funding: z.object({
     status: z.enum(FUNDING_STATUSES),
     signature: SolanaSignature.nullable(),

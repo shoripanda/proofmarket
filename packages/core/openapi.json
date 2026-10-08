@@ -2930,13 +2930,40 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "checking": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "returned": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "valid",
                         "active_claims",
                         "open_slots",
-                        "required"
+                        "required",
+                        "checking",
+                        "returned"
+                      ]
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "ja": {
+                          "type": "string"
+                        },
+                        "en": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "ja",
+                        "en"
                       ]
                     },
                     "funding": {
@@ -3398,6 +3425,7 @@
                     "assurance",
                     "bounty",
                     "witness_progress",
+                    "summary",
                     "funding",
                     "result",
                     "created_at",
@@ -4111,13 +4139,40 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "checking": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "returned": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "valid",
                         "active_claims",
                         "open_slots",
-                        "required"
+                        "required",
+                        "checking",
+                        "returned"
+                      ]
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "ja": {
+                          "type": "string"
+                        },
+                        "en": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "ja",
+                        "en"
                       ]
                     },
                     "funding": {
@@ -4579,6 +4634,7 @@
                     "assurance",
                     "bounty",
                     "witness_progress",
+                    "summary",
                     "funding",
                     "result",
                     "created_at",

@@ -152,6 +152,16 @@ const COPY = {
       ],
       badgeAlt: "人が確認",
     },
+    relay: {
+      title: "判定を、聞かれる前に利用者へ届ける",
+      lead: "worker の提出を AI が確かめ、答えが確定しても、エージェントが読みに来なければ利用者は知りません。GET の summary を、そのまま利用者に伝えてください。",
+      items: [
+        "summary は人向けの 1 段落（ja / en）。引き受け手を待っている、向かっている、AI が確かめ中 n 件、差し戻し n 件、仮の答え、確定した答えと AI の照合の結果、却下の理由、支払いの状態、証明のリンクが入ります",
+        "witness_progress.checking は AI が確かめている提出の数、returned は依頼と合わず差し戻した数です（worker はその場で直せます）",
+        "GET /v1/verifications/{id}?wait=45 は、状態が変わるか結果が出るまで最大 45 秒待ってから返します。利用者が待っている間はこれを繰り返し、summary が変わるたびに伝えます。MCP では get_reality_verification の wait_seconds=45",
+        "結果が出たら、答えと result.reviews（AI の照合の判定と理由）と result.proof.url を、聞かれる前に返事に含めてください。MCP のツールの説明と応答の note にも同じ指示が書いてあります",
+      ],
+    },
     map: {
       title: "結果をみんなの地図に載せる",
       lead: "公共の場所についての事実は、依頼した本人のほかにも役に立ちます。",
@@ -164,12 +174,18 @@ const COPY = {
     tools: {
       title: "MCP のツール（8つ）",
       items: [
-        ["request_reality_verification", "質問を出す。verification_id がすぐ返り、結果は後から読む"],
+        [
+          "request_reality_verification",
+          "質問を出す。verification_id がすぐ返り、結果は後から読む。wait_seconds で直後の変化を待てる",
+        ],
         [
           "request_reality_verifications_batch",
           "同じ依頼を多くの場所へ、または違う質問を一度に。最大50件。全件できるか、1件も作らないか",
         ],
-        ["get_reality_verification", "状態と結果を読む。wait_seconds（最大20秒）で変化を待てる"],
+        [
+          "get_reality_verification",
+          "状態と結果を読む。wait_seconds（最大45秒）で変化を待てる。summary は利用者にそのまま伝える文",
+        ],
         ["cancel_reality_verification", "まだ誰も向かっていない依頼を取り消す。拘束した額は残高に戻る"],
         [
           "dispute_reality_verification",
@@ -450,6 +466,16 @@ const COPY = {
       ],
       badgeAlt: "Human-verified",
     },
+    relay: {
+      title: "Deliver the verdict before your user asks",
+      lead: "A worker's submission is reviewed by AI and the answer becomes final — but your user learns nothing unless the agent reads it. Pass GET's summary straight on to them.",
+      items: [
+        "summary is one paragraph for a person (ja / en): waiting for someone to take it, on the way, n submissions under AI review, n sent back, a provisional answer, the final answer with the AI review's verdict, why it was rejected, the payout state, the proof link",
+        "witness_progress.checking is how many submissions the AI review is looking at; returned is how many it sent back as not matching the request (the worker can fix them on the spot)",
+        "GET /v1/verifications/{id}?wait=45 waits up to 45 seconds for the state to change or a result to land. While your user waits, call it in a loop and repeat summary whenever it changes. In MCP: get_reality_verification with wait_seconds=45",
+        "When the result is in, put the answer, result.reviews (the AI review's verdict and reason) and result.proof.url in your reply without being asked. The MCP tool descriptions and the note in every response say the same",
+      ],
+    },
     map: {
       title: "Put a result on the public map",
       lead: "A fact about a public place helps more people than the one who asked.",
@@ -467,7 +493,10 @@ const COPY = {
           "request_reality_verifications_batch",
           "The same request at many places, or many questions at once. Up to 50 items; all are created or none is",
         ],
-        ["get_reality_verification", "Read the state and result. wait_seconds (up to 20) waits for a change"],
+        [
+          "get_reality_verification",
+          "Read the state and result. wait_seconds (up to 45) waits for a change. summary is text to pass on to your user",
+        ],
         [
           "cancel_reality_verification",
           "Cancel a request nobody has set off for. The reserved amount returns to the balance",
@@ -804,6 +833,27 @@ ${c.x402.samples.map((s) => `$A ${s}`).join("\n")}`}</Code>
           <code className="font-mono">GET /v1/public/map</code>
           {c.map.p4}
         </p>
+      </Section>
+
+      <Section title={c.relay.title} lead={c.relay.lead}>
+        <ul className="grid gap-3 text-sm leading-relaxed text-slate-700 sm:grid-cols-2">
+          {c.relay.items.map((t) => (
+            <li key={t} className="rounded-2xl bg-teal-50 p-4">
+              {t}
+            </li>
+          ))}
+        </ul>
+        <Code>{`GET /v1/verifications/ver_01J9Z4K8...?wait=45
+
+{
+  "status": "SUBMITTED",
+  "witness_progress": { "valid": 1, "required": 2, "checking": 1, "returned": 0, "active_claims": 1, "open_slots": 0 },
+  "summary": {
+    "ja": "人の答えが届き始めました。有効な答え 1 / 2 人、AI が写真と答えを確かめている提出が 1 件。2 人の答えがそろうと確定します。",
+    "en": "Answers are coming in: 1 of 2 valid; 1 submission under AI review. Final once 2 agree."
+  },
+  "result": null
+}`}</Code>
       </Section>
 
       <Section title={c.tools.title}>

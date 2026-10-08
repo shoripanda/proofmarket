@@ -33,7 +33,12 @@ export const REQUEST_TOOL = {
     "paper document, answer a question from a printed source, inspect a physical product, phone someone and report, " +
     "measure an object, or any other hands-on task. " +
     "This is asynchronous: a person must do the work, so results typically take 10–60 minutes. " +
-    "This tool returns a verification_id immediately; call get_reality_verification to read the result. " +
+    "This tool returns a verification_id immediately (or, with wait_seconds, the state after waiting that long). " +
+    "KEEP THE PERSON INFORMED WITHOUT BEING ASKED: right after this call, tell them what was requested and that a " +
+    "human is on it; then call get_reality_verification with wait_seconds=45 again and again while they wait, and " +
+    "each time `summary` changes, repeat it to them (summary.ja or summary.en, whichever language they use). When " +
+    "the result arrives, give them the answer, the AI review verdict and its reason (result.reviews), and the proof " +
+    "link, in your reply — do not wait for them to ask how it went. " +
     "Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED. " +
     `Types and answer_schema: ${TYPE_GUIDE}. ` +
     "Text types also take a form: { type: 'form', fields: [{ key, label, type: enum|number|text|scale, ... }] } (1-8 fields) " +
@@ -73,6 +78,16 @@ export const REQUEST_TOOL = {
       .describe(
         "Defaults to SHA-256 of the canonicalized arguments, so an identical retry never creates a second task",
       ),
+    wait_seconds: z
+      .number()
+      .int()
+      .min(0)
+      .max(45)
+      .default(0)
+      .describe(
+        "After creating the request, wait up to this long for someone to take it or a result to land, and return the " +
+          "state (with summary) as it stands. Most tasks take longer than 45 s: keep calling get_reality_verification.",
+      ),
   },
 } as const;
 
@@ -110,12 +125,16 @@ export const GET_TOOL = {
   description:
     "Read the current state and, when available, the machine-readable result of a verification. " +
     "If wait_seconds is set, waits up to that long for a state change, then returns the latest state as-is. " +
+    "While the person you work for is waiting, call this with wait_seconds=45 in a loop and tell them what changed. " +
+    "`summary` is one paragraph written for a person (ja and en): who is on it, how many submissions the AI review " +
+    "is checking or sent back, the final answer and why it is final — repeat it to them as it changes, unasked. " +
     "A status other than VERIFIED, REJECTED or EXPIRED means the human check is still in progress. " +
+    "When the result is in, also pass on result.reviews (the AI review's verdict and reason for each submission). " +
     "Once there is a result, result.proof.url is a public page showing that a human checked this, when, by how many " +
     "people, and the Solana record: give that link (or result.proof.markdown, a badge) to the person you are answering.",
   inputSchema: {
     verification_id: VerificationIdSchema,
-    wait_seconds: z.number().int().min(0).max(20).default(0),
+    wait_seconds: z.number().int().min(0).max(45).default(0),
   },
 } as const;
 

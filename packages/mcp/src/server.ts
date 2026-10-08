@@ -57,17 +57,43 @@ export function createServer(
   const { name: lName, ...lDef } = LIST_WATCHES_TOOL;
   const { name: sName, ...sDef } = STOP_WATCH_TOOL;
 
+  /** GET, then re-read every 3 s until the state changes, a result lands, or `seconds` pass (01 §4.27). */
+  async function awaitChange(verification_id: string, seconds: number) {
+    let v = await client.getVerification(verification_id);
+    const until = Date.now() + seconds * 1000;
+    const start = v.updated_at;
+    // At most one poll per 3 s (stays far below the 30/min rate limit even if the clock misbehaves).
+    for (let polls = 0; polls < Math.ceil(seconds / 3); polls++) {
+      if (Date.now() >= until || v.updated_at !== start || v.result !== null) break;
+      await sleep(Math.min(3000, until - Date.now()));
+      v = await client.getVerification(verification_id);
+    }
+    return v;
+  }
+
+  const RELAY =
+    "Tell the person now what was asked and that a human is on it. Then call get_reality_verification with " +
+    "wait_seconds=45 while they wait and repeat `summary` to them whenever it changes; when the result lands, give " +
+    "them the answer, the AI review's verdict and reason, and the proof link without being asked.";
+
   server.registerTool(rName, rDef, async (args) => {
     try {
-      const { idempotency_key, principal_ref, ...rest } = args;
+      const { idempotency_key, principal_ref, wait_seconds, ...rest } = args;
       const body = { ...rest, principal_ref: principal_ref ?? opts.principalRef };
       const r = await client.createVerification(body, idempotency_key ?? defaultIdempotencyKey(body));
+      if (r.reused) {
+        return ok({
+          ...r,
+          note:
+            "A recent shared result for this place was reused; it is final and nobody was sent. " +
+            "This verification belongs to another requester, so read it here (or via the public result) rather than get_reality_verification.",
+        });
+      }
+      const verification = wait_seconds ? await awaitChange(r.verification_id, wait_seconds) : null;
       return ok({
         ...r,
-        note: r.reused
-          ? "A recent shared result for this place was reused; it is final and nobody was sent. " +
-            "This verification belongs to another requester, so read it here (or via the public result) rather than get_reality_verification."
-          : "A human witness must travel to the place. Poll get_reality_verification for the result.",
+        ...(verification ? { verification } : {}),
+        note: `A human must do the work; this usually takes 10–60 minutes. ${RELAY}`,
       });
     } catch (e) {
       return err(e);
@@ -91,16 +117,14 @@ export function createServer(
 
   server.registerTool(gName, gDef, async ({ verification_id, wait_seconds }) => {
     try {
-      let v = await client.getVerification(verification_id);
-      const until = Date.now() + (wait_seconds ?? 0) * 1000;
-      const start = v.updated_at;
-      // At most one poll per 2 s (stays far below the 30/min rate limit even if the clock misbehaves).
-      for (let polls = 0; polls < Math.ceil((wait_seconds ?? 0) / 2); polls++) {
-        if (Date.now() >= until || v.updated_at !== start || v.result !== null) break;
-        await sleep(Math.min(2000, until - Date.now()));
-        v = await client.getVerification(verification_id);
-      }
-      return ok(v);
+      const v = await awaitChange(verification_id, wait_seconds ?? 0);
+      const decided = v.result !== null && !v.result.provisional;
+      return ok({
+        ...v,
+        note: decided
+          ? "Final. Repeat `summary` (and result.reviews, the proof link) to the person you work for now."
+          : "Still in progress. Repeat `summary` to the person if it changed, then call again with wait_seconds=45.",
+      });
     } catch (e) {
       return err(e);
     }
