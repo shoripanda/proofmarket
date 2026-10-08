@@ -43,9 +43,25 @@ export default function CapturePage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [fix, setFix] = useState<Fix | null>(null);
   const [answer, setAnswer] = useState("");
+  // Form answers (01 §4.25): one value per field, sent as a single JSON object.
+  const [fields, setFields] = useState<Record<string, string>>({});
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const schema = claim?.answer_schema;
+  const formFields = schema?.type === "form" ? schema.fields : [];
+  const formComplete = formFields.every((f) => f.required === false || (fields[f.key] ?? "").trim() !== "");
+  const answerReady = schema?.type === "form" ? formComplete : answer.trim() !== "";
+  const payload = () =>
+    schema?.type === "form"
+      ? JSON.stringify(
+          Object.fromEntries(
+            formFields.flatMap((f) => {
+              const v = (fields[f.key] ?? "").trim();
+              return v ? [[f.key, f.type === "number" ? Number(v.replaceAll(",", "")) : v]] : [];
+            }),
+          ),
+        )
+      : answer;
   const needsLocation = claim?.location_required ?? true;
   const answers = (schema?.type === "enum" ? schema.values : (claim?.answer_values ?? [])).map((v) =>
     v in ANSWER_JA
@@ -140,7 +156,7 @@ export default function CapturePage() {
 
   async function submit() {
     const [first] = photos;
-    if (!ch || !first || (needsLocation && !fix) || !answer.trim() || !claim) return;
+    if (!ch || !first || (needsLocation && !fix) || !answerReady || !claim) return;
     setBusy(true);
     setErr(null);
     try {
@@ -164,7 +180,7 @@ export default function CapturePage() {
         idem: `ev-${refs[0]}`,
         body: {
           claim_id: id,
-          answer,
+          answer: payload(),
           capture: {
             client_timestamp: first.takenAt,
             ...(fix ? { lat: fix.lat, lng: fix.lng, accuracy_m: fix.accuracy } : {}),
@@ -186,6 +202,12 @@ export default function CapturePage() {
     <Shell title={pick(lang, "撮影と回答", "Shoot and answer")} back={`/claims/${id}`}>
       {claim ? (
         <p className="whitespace-pre-wrap rounded-2xl bg-slate-50 p-3 text-sm">{claim.question}</p>
+      ) : null}
+      {claim?.acceptance_criteria ? (
+        <p className="whitespace-pre-wrap rounded-2xl bg-amber-50 p-3 text-sm leading-relaxed text-amber-900">
+          <span className="font-bold">{pick(lang, "受け取りの条件: ", "Accepted when: ")}</span>
+          {claim.acceptance_criteria}
+        </p>
       ) : null}
       {ch ? (
         <Notice tone={expired ? "error" : "info"}>
@@ -280,7 +302,62 @@ export default function CapturePage() {
                 : ""}
             </p>
           ) : null}
-          {schema?.type === "number" ? (
+          {schema?.type === "form" ? (
+            <div className="grid gap-4">
+              <p className="text-sm font-medium text-slate-700">
+                {pick(
+                  lang,
+                  `${formFields.length} 項目に答えてください`,
+                  `Fill in ${formFields.length} fields`,
+                )}
+              </p>
+              {formFields.map((f) => (
+                <div key={f.key} className="grid gap-1 text-sm font-medium text-slate-700">
+                  <span>
+                    {f.label}
+                    {f.required === false ? (
+                      <span className="ml-1 font-normal text-slate-400">
+                        {pick(lang, "（任意）", " (optional)")}
+                      </span>
+                    ) : null}
+                    {f.type === "number" && f.unit ? (
+                      <span className="ml-1 font-normal text-slate-500">({f.unit})</span>
+                    ) : null}
+                  </span>
+                  {f.type === "enum" ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {f.values.map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setFields((s) => ({ ...s, [f.key]: s[f.key] === v ? "" : v }))}
+                          className={`rounded-xl px-3 py-3 text-base font-bold transition ${fields[f.key] === v ? "bg-teal-600 text-white ring-4 ring-teal-200" : "bg-slate-100 text-slate-800"}`}
+                        >
+                          {v in ANSWER_JA ? answerText(lang, v as AnswerValue).label : v}
+                        </button>
+                      ))}
+                    </div>
+                  ) : f.type === "number" ? (
+                    <input
+                      inputMode="decimal"
+                      value={fields[f.key] ?? ""}
+                      onChange={(e) => setFields((s) => ({ ...s, [f.key]: e.target.value }))}
+                      className="rounded-2xl border border-slate-300 px-4 py-3 text-xl font-bold tabular-nums"
+                      placeholder={pick(lang, "例: 1280", "e.g. 1280")}
+                    />
+                  ) : (
+                    <textarea
+                      value={fields[f.key] ?? ""}
+                      onChange={(e) => setFields((s) => ({ ...s, [f.key]: e.target.value }))}
+                      maxLength={f.max_chars ?? 4000}
+                      rows={3}
+                      className="rounded-2xl border border-slate-300 px-4 py-3 text-base leading-relaxed"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : schema?.type === "number" ? (
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               {pick(
                 lang,
@@ -332,7 +409,7 @@ export default function CapturePage() {
               ))}
             </div>
           )}
-          <Button onClick={submit} disabled={!answer.trim() || (needsLocation && !fix) || busy || expired}>
+          <Button onClick={submit} disabled={!answerReady || (needsLocation && !fix) || busy || expired}>
             {busy ? pick(lang, "送信中…", "Sending…") : pick(lang, "この内容で送信する", "Submit")}
           </Button>
         </>

@@ -11,6 +11,7 @@
 | メソッド | パス | 利用者 | 優先度 | 備考 |
 |---|---|---|---|---|
 | POST | `/v1/verifications` | requester | P0 | Idempotency-Key 必須 |
+| POST | `/v1/verifications/batch` | requester | P2 | 追加（2026-10-08）。1 つの本文で最大 50 件。全件成功か 0 件か（01 §4.25）。Idempotency-Key 必須 |
 | GET | `/v1/verifications/{id}` | requester | P0 | |
 | POST | `/v1/verifications/{id}/cancel` | requester | P0 | |
 | GET | `/v1/verifications/{id}/evidence` | requester | P1 | 追加。派生画像の署名 URL |
@@ -111,8 +112,8 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 | 4 | JSON スキーマ（型・必須・余分な項目なし） | 400 `VALIDATION_FAILED` |
 | 5 | `type` が API キーの許可種別に含まれる | 400 `UNSUPPORTED_TASK_TYPE` |
 | 6 | `principal_ref` が API キーの principal と一致 | 403 `PRINCIPAL_MISMATCH` |
-| 7 | `answer_schema.values` が `type` ごとの回答（01 §4.8）の部分集合で、2 個以上 | 400 `VALIDATION_FAILED`（`details.allowed` 付き） |
-| 8 | `deadline` が今から 10 分以上 24 時間以内 | 400 `DEADLINE_OUT_OF_RANGE` |
+| 7 | `answer_schema.values` が `type` ごとの回答（01 §4.8）の部分集合で、2 個以上。文章の種類は `{ "type": "form", "fields": [...] }` も可（01 §4.25） | 400 `VALIDATION_FAILED`（`details.allowed` 付き） |
+| 8 | `deadline` が今から 10 分以上 24 時間以内。場所を省いた依頼は 7 日（168 時間）以内（01 §4.25） | 400 `DEADLINE_OUT_OF_RANGE` |
 | 9 | `radius_m` が 25〜500、`freshness.max_age_seconds` が 60〜900 | 400 `VALIDATION_FAILED` |
 | 10 | 位置が対象地域（API キーの矩形、なければ `PILOT_BBOX`）の中 | 400 `LOCATION_OUT_OF_PILOT_AREA` |
 | 10a | 位置が `places` の active な地点から 30 m 以内 | 400 `LOCATION_NOT_ALLOWLISTED` |
@@ -137,6 +138,10 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
   "funding": { "status": "PENDING" }
 }
 ```
+
+### 2.1a POST /v1/verifications/batch（2026-10-08 追加）
+
+本文は `{ "template": {...}, "items": [{ "location": {...}, "question": "..." }, ...] }`。`template` は 2.1 の本文から `question` と `location` を省いたもの（どちらも書いてよい。件ごとの値が上書きする）。`items` は 1〜50 件。件ごとに template と重ねて 2.1 の検査を順に行い、1 件でも落ちれば全体を 400 等で返して何も作らない（`details.index` に何件目かを入れる）。冪等キーは 1 つ受け取り、件ごとに `<key>#<番号>` を内部の冪等キーにする。応答は 201 で `{ "verifications": [2.1 の応答, ...] }`（`items` の順）。
 
 ### 2.2 GET /v1/verifications/{id}
 

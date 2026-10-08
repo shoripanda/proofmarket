@@ -162,9 +162,13 @@ const COPY = {
       p4: " でも読めるので、ほかのエージェントが依頼を出す前に調べる使い方もできます。",
     },
     tools: {
-      title: "MCP のツール（7つ）",
+      title: "MCP のツール（8つ）",
       items: [
         ["request_reality_verification", "質問を出す。verification_id がすぐ返り、結果は後から読む"],
+        [
+          "request_reality_verifications_batch",
+          "同じ依頼を多くの場所へ、または違う質問を一度に。最大50件。全件できるか、1件も作らないか",
+        ],
         ["get_reality_verification", "状態と結果を読む。wait_seconds（最大20秒）で変化を待てる"],
         ["cancel_reality_verification", "まだ誰も向かっていない依頼を取り消す。拘束した額は残高に戻る"],
         [
@@ -199,7 +203,11 @@ const COPY = {
           ],
           [
             "answer_schema",
-            `答えの形。type ごとに決まっている。選択式は { "type": "enum", "values": [...] }（${answerChoices("・")} から2個以上。CUSTOM_CHOICE は自分で${LIMITS.answer.maxChoices}個まで決める）。数値は { "type": "number", "unit": "円" }（PRICE_CHECK・MEASUREMENT）。文章は { "type": "text", "max_chars": 2000 }（ほかの種類）。文章の答えは結果の answers に全員分が入り、answer にはその SHA-256 が入る`,
+            `答えの形。type ごとに決まっている。選択式は { "type": "enum", "values": [...] }（${answerChoices("・")} から2個以上。CUSTOM_CHOICE は自分で${LIMITS.answer.maxChoices}個まで決める）。数値は { "type": "number", "unit": "円" }（PRICE_CHECK・MEASUREMENT）。文章は { "type": "text", "max_chars": 2000 }（ほかの種類）。文章の種類では、複数の項目をまとめて受け取る { "type": "form", "fields": [{ "key": "price", "label": "値段", "type": "number", "unit": "円" }, ...] } も使える（${LIMITS.answer.maxFormFields}項目まで。答えは項目ごとの値を持つ JSON が 1 人 1 つ）。文章と form の答えは結果の answers に全員分が入り、answer にはその SHA-256 が入る`,
+          ],
+          [
+            "acceptance_criteria",
+            `受け取りの条件（任意、${LIMITS.acceptanceCriteria.maxChars}字まで）。「値札の数字が読める写真であること」「店名が写っていること」のように書く。worker には質問文の下に出て、AI の照合にも質問文と一緒に渡る`,
           ],
           [
             "location",
@@ -207,7 +215,7 @@ const COPY = {
           ],
           [
             "deadline",
-            `締め切り。今から${LIMITS.deadlineFromNow.minMinutes}分後〜${LIMITS.deadlineFromNow.maxHours}時間後`,
+            `締め切り。今から${LIMITS.deadlineFromNow.minMinutes}分後〜${LIMITS.deadlineFromNow.maxHours}時間後。場所を省いた依頼は${LIMITS.deadlineFromNow.maxHoursAnywhere / 24}日後まで`,
           ],
           [
             "freshness.max_age_seconds",
@@ -251,6 +259,19 @@ const COPY = {
       code: `"reuse": { "max_age_seconds": 600 },   // 10分以内の結果があれば使う
 "allow_reuse": true                     // 自分の結果をほかの依頼者に使わせてよい`,
       p: "使われるのは、元の依頼者が allow_reuse を付けた結果だけです。店・種類・答えの選択肢が同じで、VERIFIED のものに限ります。見つかれば 200 で reused: true と結果そのものが返り、新しい依頼は作られません。NOTICE_POSTED は質問ごとに見る掲示が違うので対象外です。",
+    },
+    batch: {
+      title: "同じ依頼を、多くの場所へ一度に",
+      lead: "棚の確認を50店舗へ、同じ値段の質問を街じゅうへ、1つの場所に違う質問をいくつも。1回の呼び出しで最大50件の依頼を作れます。",
+      code: `POST /v1/verifications/batch      // Idempotency-Key は1つ
+{
+  "template": { ...request.json から question と location を除いたもの },
+  "items": [
+    { "location": { "lat": 35.6595, "lng": 139.7005, "radius_m": 80 }, "question": "A店に○○はあるか" },
+    { "location": { "lat": 35.6600, "lng": 139.7000, "radius_m": 80 }, "question": "B店に○○はあるか" }
+  ]
+}`,
+      p: "件ごとに template と重ねて、ふつうの依頼と同じ検査を順に行います。1件でも通らなければ全体を断り、何も作りません（details.index に何件目かが入ります）。残高と1日の上限は合計で見ます。応答の verifications は items の順で、それぞれ別の verification_id として追えます。MCP では request_reality_verifications_batch が同じことをします。",
     },
     schedule: {
       title: "決まった時刻に繰り返し確かめる",
@@ -405,9 +426,13 @@ const COPY = {
       p4: ", so other agents can look before they ask.",
     },
     tools: {
-      title: "MCP tools (7)",
+      title: "MCP tools (8)",
       items: [
         ["request_reality_verification", "Ask. Returns a verification_id at once; read the result later"],
+        [
+          "request_reality_verifications_batch",
+          "The same request at many places, or many questions at once. Up to 50 items; all are created or none is",
+        ],
         ["get_reality_verification", "Read the state and result. wait_seconds (up to 20) waits for a change"],
         [
           "cancel_reality_verification",
@@ -445,7 +470,11 @@ const COPY = {
           ],
           [
             "answer_schema",
-            `The shape of the answer, fixed per type. Multiple choice: { "type": "enum", "values": [...] } (two or more of ${answerChoices(" / ")}; CUSTOM_CHOICE lets you define up to ${LIMITS.answer.maxChoices} of your own). Number: { "type": "number", "unit": "JPY" } (PRICE_CHECK, MEASUREMENT). Text: { "type": "text", "max_chars": 2000 } (the other types). Text answers from every witness go into the result's answers, and answer holds their SHA-256`,
+            `The shape of the answer, fixed per type. Multiple choice: { "type": "enum", "values": [...] } (two or more of ${answerChoices(" / ")}; CUSTOM_CHOICE lets you define up to ${LIMITS.answer.maxChoices} of your own). Number: { "type": "number", "unit": "JPY" } (PRICE_CHECK, MEASUREMENT). Text: { "type": "text", "max_chars": 2000 } (the other types). Text types also take a form, several named fields in one answer: { "type": "form", "fields": [{ "key": "price", "label": "Price", "type": "number", "unit": "JPY" }, ...] } (up to ${LIMITS.answer.maxFormFields} fields; each witness returns one JSON object). Text and form answers from every witness go into the result's answers, and answer holds their SHA-256`,
+          ],
+          [
+            "acceptance_criteria",
+            `What you will accept (optional, up to ${LIMITS.acceptanceCriteria.maxChars} characters), such as "the price tag must be legible" or "the shop name must be in the photo". Shown to the worker under the question and given to the AI review alongside it`,
           ],
           [
             "location",
@@ -453,7 +482,7 @@ const COPY = {
           ],
           [
             "deadline",
-            `Between ${LIMITS.deadlineFromNow.minMinutes} minutes and ${LIMITS.deadlineFromNow.maxHours} hours from now`,
+            `Between ${LIMITS.deadlineFromNow.minMinutes} minutes and ${LIMITS.deadlineFromNow.maxHours} hours from now; up to ${LIMITS.deadlineFromNow.maxHoursAnywhere / 24} days for a request with no location`,
           ],
           [
             "freshness.max_age_seconds",
@@ -497,6 +526,19 @@ const COPY = {
       code: `"reuse": { "max_age_seconds": 600 },   // use a result from the last 10 minutes if there is one
 "allow_reuse": true                     // let other requesters reuse my result`,
       p: "Only results whose original requester set allow_reuse are used, and only VERIFIED ones for the same shop, type and answer choices. When one is found, a 200 returns reused: true and the result itself, and no new request is created. NOTICE_POSTED is excluded, since each question looks at a different notice.",
+    },
+    batch: {
+      title: "The same request at many places, at once",
+      lead: "A shelf check at 50 shops, the same price question across a city, several different questions about one site. One call creates up to 50 requests.",
+      code: `POST /v1/verifications/batch      // one Idempotency-Key for the batch
+{
+  "template": { ...request.json without question and location },
+  "items": [
+    { "location": { "lat": 35.6595, "lng": 139.7005, "radius_m": 80 }, "question": "Does shop A stock X?" },
+    { "location": { "lat": 35.6600, "lng": 139.7000, "radius_m": 80 }, "question": "Does shop B stock X?" }
+  ]
+}`,
+      p: "Each item is laid over the template and checked exactly like a single request. If any item fails, the whole batch is refused and nothing is created (details.index names the item). Balance and the daily limit are checked on the total. verifications in the response follow the order of items; each is its own verification_id. Over MCP, request_reality_verifications_batch does the same.",
     },
     schedule: {
       title: "Check again at set times",
@@ -759,6 +801,11 @@ ${c.x402.samples.map((s) => `$A ${s}`).join("\n")}`}</Code>
       <Section title={c.reuse.title} lead={c.reuse.lead}>
         <Code>{c.reuse.code}</Code>
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">{c.reuse.p}</p>
+      </Section>
+
+      <Section title={c.batch.title} lead={c.batch.lead}>
+        <Code>{c.batch.code}</Code>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">{c.batch.p}</p>
       </Section>
 
       <Section title={c.schedule.title} lead={c.schedule.lead}>

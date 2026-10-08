@@ -50,7 +50,46 @@ const SolanaSignature = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{64,88}$/);
 export const AnswerValueSchema = z.string().min(1).max(LIMITS.answer.maxTextChars);
 const ChoiceValue = z.string().trim().min(1).max(LIMITS.answer.maxChoiceChars);
 
-/** How the worker answers. enum values must fit the type (TASK_TYPE_SPECS); checked in validateAnswerSchema. */
+const FieldKey = z.string().regex(/^[a-z][a-z0-9_]{0,31}$/, "snake_case key, up to 32 characters");
+const FieldLabel = z.string().trim().min(1).max(LIMITS.answer.maxFieldLabelChars);
+/** One field of a form answer (01 §4.25): the same three shapes as a whole answer, named and labelled. */
+export const FormFieldSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("enum"),
+      key: FieldKey,
+      label: FieldLabel,
+      values: z.array(ChoiceValue).min(2).max(LIMITS.answer.maxChoices),
+      required: z.boolean().default(true),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("number"),
+      key: FieldKey,
+      label: FieldLabel,
+      unit: z.string().trim().min(1).max(16).optional(),
+      min: z.number().optional(),
+      max: z.number().optional(),
+      required: z.boolean().default(true),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("text"),
+      key: FieldKey,
+      label: FieldLabel,
+      max_chars: z.number().int().min(1).max(LIMITS.answer.maxTextChars).optional(),
+      required: z.boolean().default(true),
+    })
+    .strict(),
+]);
+export type FormField = z.infer<typeof FormFieldSchema>;
+
+/**
+ * How the worker answers. enum values must fit the type (TASK_TYPE_SPECS); checked in validateAnswerSchema.
+ * form (01 §4.25): several named fields in one answer, for text types; stored and returned as one JSON object.
+ */
 export const AnswerSchemaSpec = z.discriminatedUnion("type", [
   z
     .object({ type: z.literal("enum"), values: z.array(ChoiceValue).min(2).max(LIMITS.answer.maxChoices) })
@@ -67,6 +106,12 @@ export const AnswerSchemaSpec = z.discriminatedUnion("type", [
     .object({
       type: z.literal("text"),
       max_chars: z.number().int().min(1).max(LIMITS.answer.maxTextChars).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("form"),
+      fields: z.array(FormFieldSchema).min(1).max(LIMITS.answer.maxFormFields),
     })
     .strict(),
 ]);
@@ -138,8 +183,14 @@ export const CreateVerificationRequestSchema = z
     question: z.string().min(1).max(LIMITS.question.maxChars),
     // Must match the type's answer kind and, for fixed-choice types, its values (validateAnswerSchema).
     answer_schema: AnswerSchemaSpec,
+    /**
+     * What a submission must contain to be accepted (01 §4.25): shown to the worker before they start and given
+     * to the AI review next to the question. Plain language; no instructions to the reviewer.
+     */
+    acceptance_criteria: z.string().trim().min(1).max(LIMITS.acceptanceCriteria.maxChars).optional(),
     /** Required for at-a-place types; may be omitted for work that can be done anywhere (TASK_TYPE_SPECS). */
     location: LocationSchema.optional(),
+    /** Within 24 h for work at a place; up to 7 days for work with no location (01 §4.25). */
     deadline: IsoDateTime,
     freshness: z
       .object({
@@ -196,6 +247,32 @@ export const CreateVerificationResponseSchema = z.object({
   /** true: an existing shared result was returned (01 §4.9); `verification_id` is that task and `result` is final. */
   reused: z.boolean().optional(),
   result: z.record(z.string(), z.unknown()).optional(),
+});
+
+/**
+ * POST /v1/verifications/batch (01 §4.25): one body, many tasks. Each item is the template with its own
+ * location and/or question laid over it, then checked exactly like a single request. All or nothing.
+ */
+export const CreateVerificationBatchRequestSchema = z
+  .object({
+    template: CreateVerificationRequestSchema.partial({ question: true, location: true }),
+    items: z
+      .array(
+        z
+          .object({
+            question: z.string().min(1).max(LIMITS.question.maxChars).optional(),
+            location: LocationSchema.optional(),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(LIMITS.batch.maxItems),
+  })
+  .strict();
+export type CreateVerificationBatchRequest = z.infer<typeof CreateVerificationBatchRequestSchema>;
+export const CreateVerificationBatchResponseSchema = z.object({
+  /** In the order of `items`. */
+  verifications: z.array(CreateVerificationResponseSchema),
 });
 
 export const X402CreateVerificationResponseSchema = CreateVerificationResponseSchema.extend({
@@ -278,6 +355,7 @@ export const GetVerificationResponseSchema = z.object({
   type: z.enum(TASK_TYPES),
   status: z.enum(TASK_STATUSES),
   question: z.string(),
+  acceptance_criteria: z.string().nullable(),
   answer_schema: AnswerSchemaSpec,
   location: LocationSchema.nullable(),
   deadline: IsoDateTime,
@@ -495,6 +573,8 @@ export const WorkerTaskSchema = z.object({
   verification_id: VerificationIdSchema,
   type: z.enum(TASK_TYPES),
   question: z.string(),
+  /** What the requester will accept (01 §4.25). Null when they did not say. */
+  acceptance_criteria: z.string().nullable(),
   answer_values: z.array(AnswerValueSchema),
   answer_schema: AnswerSchemaSpec,
   /** null: the work can be done anywhere. */
@@ -584,6 +664,7 @@ export const ClaimDetailResponseSchema = z.object({
   task_result: z.object({ status: z.enum(OUTCOMES), answer: AnswerValueSchema.nullable() }).nullable(),
   type: z.enum(TASK_TYPES),
   question: z.string(),
+  acceptance_criteria: z.string().nullable(),
   answer_values: z.array(AnswerValueSchema),
   answer_schema: AnswerSchemaSpec,
   location_required: z.boolean(),

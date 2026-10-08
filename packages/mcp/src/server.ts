@@ -5,6 +5,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { jcs } from "@proofmarket/core";
 import { ProofMarketApiError, type ProofMarketClient } from "@proofmarket/sdk";
 import {
+  BATCH_TOOL,
   CANCEL_TOOL,
   DISPUTE_TOOL,
   GET_TOOL,
@@ -48,6 +49,7 @@ export function createServer(
   const sleep = opts.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const server = new McpServer({ name: "proofmarket", version: "0.1.0" });
   const { name: rName, ...rDef } = REQUEST_TOOL;
+  const { name: bName, ...bDef } = BATCH_TOOL;
   const { name: gName, ...gDef } = GET_TOOL;
   const { name: cName, ...cDef } = CANCEL_TOOL;
   const { name: dName, ...dDef } = DISPUTE_TOOL;
@@ -66,6 +68,21 @@ export function createServer(
           ? "A recent shared result for this place was reused; it is final and nobody was sent. " +
             "This verification belongs to another requester, so read it here (or via the public result) rather than get_reality_verification."
           : "A human witness must travel to the place. Poll get_reality_verification for the result.",
+      });
+    } catch (e) {
+      return err(e);
+    }
+  });
+
+  server.registerTool(bName, bDef, async (args) => {
+    try {
+      const { idempotency_key, template, items } = args;
+      const { principal_ref, ...rest } = template;
+      const body = { template: { ...rest, principal_ref: principal_ref ?? opts.principalRef }, items };
+      const r = await client.createVerificationBatch(body, idempotency_key ?? defaultIdempotencyKey(body));
+      return ok({
+        ...r,
+        note: `${r.verifications.length} verifications created. Each needs a human; poll get_reality_verification per verification_id.`,
       });
     } catch (e) {
       return err(e);

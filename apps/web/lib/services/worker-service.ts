@@ -203,6 +203,7 @@ function workerTaskView(t: TaskRow, distanceM: number | null, slots: number) {
     verification_id: t.id,
     type: t.type,
     question: t.question,
+    acceptance_criteria: t.acceptanceCriteria ?? null,
     answer_values: t.answerValues,
     answer_schema: answerSchemaOf(
       t.answerKind,
@@ -453,6 +454,7 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
     .select({
       type: schema.verificationRequests.type,
       question: schema.verificationRequests.question,
+      acceptanceCriteria: schema.verificationRequests.acceptanceCriteria,
       answerValues: schema.verificationRequests.answerValues,
       answerKind: schema.verificationRequests.answerKind,
       answerSpec: schema.verificationRequests.answerSpec,
@@ -489,6 +491,7 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
     task_result: result && accepted ? { status: result.outcome, answer: result.finalAnswer } : null,
     type: task?.type ?? "PLACE_STATUS_VERIFICATION",
     question: task?.question ?? "",
+    acceptance_criteria: task?.acceptanceCriteria ?? null,
     answer_values: task?.answerValues ?? [],
     answer_schema: answerSchemaOf(
       task?.answerKind ?? "enum",

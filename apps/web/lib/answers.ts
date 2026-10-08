@@ -208,21 +208,39 @@ export const answerLabel = (lang: Lang, v: string | null | undefined) =>
   v ? (v in ANSWER_JA ? answerText(lang, v as AnswerValue).label : v) : null;
 export const answerJa = (v: string | null | undefined) => answerLabel("ja", v);
 
+/** One field of a form answer (01 §4.25), as the API returns it. */
+export type FormFieldView =
+  | { type: "enum"; key: string; label: string; values: string[]; required?: boolean }
+  | {
+      type: "number";
+      key: string;
+      label: string;
+      unit?: string;
+      min?: number;
+      max?: number;
+      required?: boolean;
+    }
+  | { type: "text"; key: string; label: string; max_chars?: number; required?: boolean };
+
 export type AnswerSchemaView =
   | { type: "enum"; values: string[] }
   | { type: "number"; unit?: string; min?: number; max?: number }
-  | { type: "text"; max_chars?: number };
+  | { type: "text"; max_chars?: number }
+  | { type: "form"; fields: FormFieldView[] };
 
 /** One line telling the worker how to answer (01 §4.15). */
 export function answerFormat(lang: Lang, s: AnswerSchemaView | undefined): string {
   const choices = (s?.type === "enum" ? s.values : []).map((v) => answerLabel(lang, v)).join(" / ");
+  const labels = (s?.type === "form" ? s.fields : []).map((f) => f.label).join(lang === "en" ? ", " : "、");
   if (lang === "en") {
     if (!s || s.type === "enum") return `Choose one: ${choices}`;
     if (s.type === "number") return `Answer with a number${s.unit ? ` (unit: ${s.unit})` : ""}`;
+    if (s.type === "form") return `Fill in ${s.fields.length} fields: ${labels}`;
     return `Answer in text${s.max_chars ? ` (up to ${s.max_chars} characters)` : ""}`;
   }
   if (!s || s.type === "enum") return `選んで答える: ${choices}`;
   if (s.type === "number") return `数字で答える${s.unit ? `（単位: ${s.unit}）` : ""}`;
+  if (s.type === "form") return `${s.fields.length} 項目に答える: ${labels}`;
   return `文章で答える${s.max_chars ? `（${s.max_chars}字まで）` : ""}`;
 }
 export const answerFormatJa = (s: AnswerSchemaView | undefined) => answerFormat("ja", s);

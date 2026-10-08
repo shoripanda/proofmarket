@@ -11,8 +11,10 @@ import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
 import {
   cancelVerification,
   createVerification,
+  createVerificationBatch,
   disputeVerification,
   getVerification,
+  parseBatchBody,
   parseCreateBody,
 } from "../services/requester-service";
 import { createSchedule, listSchedules, stopSchedule } from "../services/schedule-service";
@@ -32,6 +34,23 @@ export async function handleCreate(app: AppContext, req: Request): Promise<Respo
   const body = parseCreateBody(raw);
   const out = await withIdempotency(app, auth.credentialId, "POST /v1/verifications", key, raw, (tx) =>
     createVerification(app, tx, auth, body, key),
+  );
+  return Response.json(out.body, {
+    status: out.status,
+    headers: { ...rateLimitHeaders(rl), ...(out.replayed ? { "Idempotent-Replayed": "true" } : {}) },
+  });
+}
+
+/** POST /v1/verifications/batch (01 §4.25). One Idempotency-Key for the whole batch. */
+export async function handleCreateBatch(app: AppContext, req: Request): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  const rl = await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
+  const key = req.headers.get("idempotency-key");
+  if (!key) throw new ApiError("VALIDATION_FAILED", { header: "Idempotency-Key is required" });
+  const raw = await readJson(req);
+  const bodies = parseBatchBody(raw);
+  const out = await withIdempotency(app, auth.credentialId, "POST /v1/verifications/batch", key, raw, (tx) =>
+    createVerificationBatch(app, tx, auth, bodies, key),
   );
   return Response.json(out.body, {
     status: out.status,

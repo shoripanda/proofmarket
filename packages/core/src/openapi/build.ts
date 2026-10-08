@@ -33,6 +33,16 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "post",
+    path: "/v1/verifications/batch",
+    auth: "requester",
+    priority: "Stretch",
+    idempotent: true,
+    summary: "Create up to 50 verification requests from one template; all or nothing (01 §4.25)",
+    body: S.CreateVerificationBatchRequestSchema,
+    ok: { status: 201, schema: S.CreateVerificationBatchResponseSchema },
+  },
+  {
+    method: "post",
     path: "/v1/x402/verifications",
     auth: "none",
     priority: "Stretch",

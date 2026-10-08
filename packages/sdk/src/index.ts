@@ -3,12 +3,13 @@
 import type { ApiErrorBody } from "@proofmarket/core";
 import type {
   CreateScheduleRequest,
+  CreateVerificationBatchRequest,
   CreateVerificationRequest,
   GetVerificationResponse,
   Schedule,
 } from "@proofmarket/core/schemas/api";
 
-export type { CreateVerificationRequest, GetVerificationResponse };
+export type { CreateVerificationBatchRequest, CreateVerificationRequest, GetVerificationResponse };
 
 export interface ProofMarketClientOptions {
   baseUrl: string;
@@ -103,6 +104,19 @@ export class ProofMarketClient {
         body,
         headers: { "idempotency-key": idempotencyKey },
       },
+    );
+    return { ...json, replayed: res.headers.get("idempotent-replayed") === "true" };
+  }
+
+  /** POST /v1/verifications/batch — one template, many places or questions; all or nothing (01 §4.25). */
+  async createVerificationBatch(
+    body: CreateVerificationBatchRequest,
+    idempotencyKey: string,
+  ): Promise<{ verifications: Omit<CreateVerificationResult, "replayed">[]; replayed: boolean }> {
+    const { json, res } = await this.request<{ verifications: Omit<CreateVerificationResult, "replayed">[] }>(
+      "POST",
+      "/v1/verifications/batch",
+      { body, headers: { "idempotency-key": idempotencyKey } },
     );
     return { ...json, replayed: res.headers.get("idempotent-replayed") === "true" };
   }

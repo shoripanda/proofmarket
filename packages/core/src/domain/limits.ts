@@ -6,11 +6,16 @@ export const LIMITS = {
   publicMap: { maxAgeHours: 72, maxItems: 200 },
   /** 1000 so a request can name a book, page and passage (01 §4.15). */
   question: { maxChars: 1000 },
-  answer: { maxTextChars: 4000, maxChoiceChars: 40, maxChoices: 6 },
+  answer: { maxTextChars: 4000, maxChoiceChars: 40, maxChoices: 6, maxFormFields: 8, maxFieldLabelChars: 80 },
+  /** 01 §4.25: what the requester will accept, shown to the worker and given to the AI review. */
+  acceptanceCriteria: { maxChars: 500 },
+  /** 01 §4.25: one request body sent to many places or with many questions. */
+  batch: { maxItems: 50 },
   radiusM: { min: 25, max: 500 },
   /** Up to an hour: transcribing or a phone call takes longer than a shop-front photo (01 §4.15). */
   freshnessMaxAgeS: { min: 60, max: 3600, default: 300 },
-  deadlineFromNow: { minMinutes: 10, maxHours: 24 },
+  /** maxHoursAnywhere: work with no place (a book, a phone call) may wait up to a week (01 §4.25). */
+  deadlineFromNow: { minMinutes: 10, maxHours: 24, maxHoursAnywhere: 168 },
   witnesses: { max: 5 }, // also bounded by MAX_WITNESSES env (1 until PR-14)
   claimTtlS: 1800,
   attemptsPerClaim: 3,

@@ -13,6 +13,7 @@ interface Task {
   verification_id: string;
   type: string;
   question: string;
+  acceptance_criteria: string | null;
   answer_values: string[];
   answer_schema: AnswerSchemaView;
   location: { lat: number; lng: number; radius_m: number } | null;
@@ -60,6 +61,12 @@ export default function TaskDetailPage() {
               {types[t.type as TaskType]?.name ?? t.type}
             </p>
             <p className="mt-1 text-xl font-bold leading-snug">{t.question}</p>
+            {t.acceptance_criteria ? (
+              <p className="mt-3 whitespace-pre-wrap rounded-xl bg-amber-50 p-3 text-sm leading-relaxed text-amber-900">
+                <span className="font-bold">{pick(lang, "受け取りの条件: ", "Accepted when: ")}</span>
+                {t.acceptance_criteria}
+              </p>
+            ) : null}
             <p className="mt-3 text-sm text-slate-600">{answerFormat(lang, t.answer_schema)}</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">{types[t.type as TaskType]?.howTo}</p>
           </Card>

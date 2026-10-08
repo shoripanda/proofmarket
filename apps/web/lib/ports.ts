@@ -31,6 +31,8 @@ export interface ReviewInput {
   type: string;
   /** The requester's instruction, verbatim. Untrusted. */
   question: string;
+  /** What the requester will accept (01 §4.25), verbatim. Untrusted. */
+  acceptanceCriteria?: string;
   answerFormat: string;
   /** The worker's answer, verbatim. Untrusted. */
   answer: string;

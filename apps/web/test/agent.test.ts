@@ -65,7 +65,7 @@ describe("MCP tools", () => {
     return mcp;
   }
 
-  it("lists the seven tools with the asynchronous warning in the description", async () => {
+  it("lists the eight tools with the asynchronous warning in the description", async () => {
     const mcp = await connect();
     const { tools } = await mcp.listTools();
     expect(tools.map((x) => x.name).sort()).toEqual([
@@ -74,6 +74,7 @@ describe("MCP tools", () => {
       "get_reality_verification",
       "list_reality_verification_watches",
       "request_reality_verification",
+      "request_reality_verifications_batch",
       "stop_reality_verification_watch",
       "watch_reality_verification",
     ]);
