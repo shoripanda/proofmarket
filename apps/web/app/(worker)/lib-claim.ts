@@ -1,5 +1,6 @@
 "use client";
 import type { AnswerSchemaView } from "@/lib/answers";
+import type { AttestationView } from "./attestation-band";
 export interface ClaimDetail {
   claim_id: string;
   verification_id: string;
@@ -16,6 +17,7 @@ export interface ClaimDetail {
   type: string;
   question: string;
   acceptance_criteria: string | null;
+  attestation: AttestationView | null;
   answer_values: string[];
   answer_schema: AnswerSchemaView;
   location_required: boolean;

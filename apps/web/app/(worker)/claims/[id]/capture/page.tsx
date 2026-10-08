@@ -10,6 +10,7 @@ import { ANSWER_JA, answerText, taskTypeText } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
 import { langHref, pick } from "@/lib/lang";
+import { AttestationBand } from "../../../attestation-band";
 import type { ClaimDetail } from "../../../lib-claim";
 
 interface Challenge {
@@ -57,7 +58,9 @@ export default function CapturePage() {
           Object.fromEntries(
             formFields.flatMap((f) => {
               const v = (fields[f.key] ?? "").trim();
-              return v ? [[f.key, f.type === "number" ? Number(v.replaceAll(",", "")) : v]] : [];
+              if (!v) return [];
+              if (f.type === "number") return [[f.key, Number(v.replaceAll(",", ""))]];
+              return [[f.key, f.type === "scale" ? Number(v) : v]];
             }),
           ),
         )
@@ -200,6 +203,7 @@ export default function CapturePage() {
   const full = photos.length >= MAX_PHOTOS;
   return (
     <Shell title={pick(lang, "撮影と回答", "Shoot and answer")} back={`/claims/${id}`}>
+      <AttestationBand lang={lang} attestation={claim?.attestation} className="rounded-2xl" />
       {claim ? (
         <p className="whitespace-pre-wrap rounded-2xl bg-slate-50 p-3 text-sm">{claim.question}</p>
       ) : null}
@@ -324,7 +328,29 @@ export default function CapturePage() {
                       <span className="ml-1 font-normal text-slate-500">({f.unit})</span>
                     ) : null}
                   </span>
-                  {f.type === "enum" ? (
+                  {f.type === "scale" ? (
+                    // 13 §4: a row of circles; words only at the two ends.
+                    <div className="grid gap-1">
+                      <fieldset className="flex justify-between gap-1" aria-label={f.label}>
+                        {Array.from({ length: f.max - (f.min ?? 1) + 1 }, (_, i) =>
+                          String((f.min ?? 1) + i),
+                        ).map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            aria-pressed={fields[f.key] === n}
+                            aria-label={n}
+                            onClick={() => setFields((s) => ({ ...s, [f.key]: s[f.key] === n ? "" : n }))}
+                            className={`aspect-square flex-1 rounded-full border-2 transition ${f.max > 5 ? "max-w-8" : "max-w-12"} ${fields[f.key] === n ? "border-teal-600 bg-teal-600 ring-4 ring-teal-200" : "border-slate-300 bg-white"}`}
+                          />
+                        ))}
+                      </fieldset>
+                      <div className="flex justify-between text-xs font-normal text-slate-500">
+                        <span>{f.labels[0]}</span>
+                        <span>{f.labels[1]}</span>
+                      </div>
+                    </div>
+                  ) : f.type === "enum" ? (
                     <div className="grid grid-cols-2 gap-2">
                       {f.values.map((v) => (
                         <button

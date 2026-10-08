@@ -35,10 +35,14 @@ export const REQUEST_TOOL = {
     "This tool returns a verification_id immediately; call get_reality_verification to read the result. " +
     "Never assume or invent the outcome before the result status is VERIFIED, REJECTED or EXPIRED. " +
     `Types and answer_schema: ${TYPE_GUIDE}. ` +
-    "Text types also take a form: { type: 'form', fields: [{ key, label, type: enum|number|text, ... }] } (1-8 fields) " +
+    "Text types also take a form: { type: 'form', fields: [{ key, label, type: enum|number|text|scale, ... }] } (1-8 fields) " +
     "when you need several things back at once (say a price, a stock status and a note); the answer comes back as one " +
     "JSON object per witness. The 17 types are examples: CUSTOM_TASK / CUSTOM_CHOICE take any hands-on work. " +
     "acceptance_criteria (up to 500 chars) tells the worker and the AI review what you will accept. " +
+    "A scale field ({ type: 'scale', max: 5 or 10, labels: [low end, high end] }) measures a sense such as noise or " +
+    "smell; with 3 or more witnesses, result.aggregate gives the median, min and max per number or scale field. " +
+    "attestation: { subject: 'agent_action', description } (up to 200 chars) has a person confirm something you, the " +
+    "agent, did (delivered a parcel, installed a device, cleaned a room), and the public proof page says so. " +
     "location is required for at-a-place types and may be omitted for work that can be done anywhere; " +
     "deadline is within 24 h for work at a place and up to 7 days without one. " +
     "For text answers, result.answers holds every accepted text and result.answer is the SHA-256 of the first. " +

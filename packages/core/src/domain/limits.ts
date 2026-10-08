@@ -9,6 +9,8 @@ export const LIMITS = {
   answer: { maxTextChars: 4000, maxChoiceChars: 40, maxChoices: 6, maxFormFields: 8, maxFieldLabelChars: 80 },
   /** 01 §4.25: what the requester will accept, shown to the worker and given to the AI review. */
   acceptanceCriteria: { maxChars: 500 },
+  /** 13 §5: what the agent says it did, shown to the worker and on the proof page. */
+  attestation: { maxDescriptionChars: 200 },
   /** 01 §4.25: one request body sent to many places or with many questions. */
   batch: { maxItems: 50 },
   radiusM: { min: 25, max: 500 },

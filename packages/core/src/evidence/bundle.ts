@@ -117,6 +117,7 @@ export const RESULT_HASH_FIELDS = [
   "reason",
   "answer",
   "witnesses",
+  "aggregate",
   "answer_counts",
   "checks",
   "rejected_submissions",

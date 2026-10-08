@@ -23,6 +23,7 @@ import { type Db, schema } from "@proofmarket/db";
 import { and, count, eq, gt, gte, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { LEGAL_VERSIONS } from "../legal";
+import { attestationOf } from "./attestation";
 import { appendAudit } from "./audit";
 import { bountyOf, reservedMicro } from "./bounty";
 import { randomToken, sha256 } from "./crypto";
@@ -210,6 +211,7 @@ function workerTaskView(t: TaskRow, distanceM: number | null, slots: number, now
     type: t.type,
     question: t.question,
     acceptance_criteria: t.acceptanceCriteria ?? null,
+    attestation: attestationOf(t),
     answer_values: t.answerValues,
     answer_schema: answerSchemaOf(
       t.answerKind,
@@ -514,6 +516,7 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
       type: schema.verificationRequests.type,
       question: schema.verificationRequests.question,
       acceptanceCriteria: schema.verificationRequests.acceptanceCriteria,
+      attestation: schema.verificationRequests.attestation,
       answerValues: schema.verificationRequests.answerValues,
       answerKind: schema.verificationRequests.answerKind,
       answerSpec: schema.verificationRequests.answerSpec,
@@ -551,6 +554,7 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
     type: task?.type ?? "PLACE_STATUS_VERIFICATION",
     question: task?.question ?? "",
     acceptance_criteria: task?.acceptanceCriteria ?? null,
+    attestation: task ? attestationOf(task) : null,
     answer_values: task?.answerValues ?? [],
     answer_schema: answerSchemaOf(
       task?.answerKind ?? "enum",

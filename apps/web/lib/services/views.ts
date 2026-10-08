@@ -21,6 +21,8 @@ import {
 import { type Db, schema } from "@proofmarket/db";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { proofLinks } from "../proof";
+import { aggregateOf } from "./aggregate";
+import { attestationOf } from "./attestation";
 import { bountyOf } from "./bounty";
 import { activeReport } from "./store-service";
 import type { TaskRow } from "./task-engine";
@@ -96,6 +98,7 @@ export async function buildResult(db: Db, task: TaskRow): Promise<VerificationRe
   else if (money?.status === "FAILED") status = "FAILED_RETRYING";
   const settleInfo = (settle?.recipients as SettleRecipients | null) ?? null;
   const answerCounts = res.answerCounts as Record<string, number>;
+  const texts = task.answerKind === "text" ? await acceptedTexts(db, res.acceptedSubmissionIds) : null;
 
   return {
     verification_id: task.id,
@@ -106,9 +109,10 @@ export async function buildResult(db: Db, task: TaskRow): Promise<VerificationRe
       res.finalAnswer !== null && task.answerKind === "text"
         ? (`sha256:${createHash("sha256").update(res.finalAnswer).digest("hex")}` as const)
         : (res.finalAnswer ?? null),
-    ...(task.answerKind === "text" ? { answers: await acceptedTexts(db, res.acceptedSubmissionIds) } : {}),
+    ...(texts ? { answers: texts } : {}),
     ...(await reviewsOf(db, res.acceptedSubmissionIds)),
     witnesses: { valid: res.validWitnessCount, required: res.requiredWitnesses, quorum: res.quorum },
+    ...aggregateOf(task, texts ?? []),
     answer_counts: answerCounts as VerificationResult["answer_counts"],
     consensus_ratio: consensusRatio(answerCounts),
     checks: byType,
@@ -247,6 +251,7 @@ export async function buildVerificationView(
     status: task.status as GetVerificationResponse["status"],
     question: task.question,
     acceptance_criteria: task.acceptanceCriteria ?? null,
+    attestation: attestationOf(task),
     answer_schema: answerSchemaOf(
       task.answerKind,
       task.answerValues,

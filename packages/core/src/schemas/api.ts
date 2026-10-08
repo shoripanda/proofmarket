@@ -52,6 +52,7 @@ const ChoiceValue = z.string().trim().min(1).max(LIMITS.answer.maxChoiceChars);
 
 const FieldKey = z.string().regex(/^[a-z][a-z0-9_]{0,31}$/, "snake_case key, up to 32 characters");
 const FieldLabel = z.string().trim().min(1).max(LIMITS.answer.maxFieldLabelChars);
+const ScaleLabel = z.string().trim().min(1).max(20);
 /** One field of a form answer (01 §4.25): the same three shapes as a whole answer, named and labelled. */
 export const FormFieldSchema = z.discriminatedUnion("type", [
   z
@@ -80,6 +81,21 @@ export const FormFieldSchema = z.discriminatedUnion("type", [
       key: FieldKey,
       label: FieldLabel,
       max_chars: z.number().int().min(1).max(LIMITS.answer.maxTextChars).optional(),
+      required: z.boolean().default(true),
+    })
+    .strict(),
+  /**
+   * Sense index (13 §4): a whole number from 1 to `max` (5 or 10, checked in validateAnswerSchema), shown as a
+   * row of circles with `labels` at the two ends (e.g. "quiet", "loud").
+   */
+  z
+    .object({
+      type: z.literal("scale"),
+      key: FieldKey,
+      label: FieldLabel,
+      min: z.literal(1).default(1),
+      max: z.number().int(),
+      labels: z.tuple([ScaleLabel, ScaleLabel]),
       required: z.boolean().default(true),
     })
     .strict(),
@@ -177,6 +193,18 @@ export const AssuranceInputSchema = z
   ])
   .transform((a) => ("level" in a ? { ...ASSURANCE_LEVELS[a.level] } : a));
 
+/**
+ * Attestation (13 §5): the agent asks a person to confirm something the agent itself did (delivered, installed,
+ * cleaned). Checks and judgement are the same as any task; only the wording to the worker and on the proof changes.
+ */
+export const AgentAttestationSchema = z
+  .object({
+    subject: z.literal("agent_action"),
+    description: z.string().trim().min(1).max(LIMITS.attestation.maxDescriptionChars),
+  })
+  .strict();
+export type AgentAttestation = z.infer<typeof AgentAttestationSchema>;
+
 export const CreateVerificationRequestSchema = z
   .object({
     type: z.enum(TASK_TYPES),
@@ -188,6 +216,8 @@ export const CreateVerificationRequestSchema = z
      * to the AI review next to the question. Plain language; no instructions to the reviewer.
      */
     acceptance_criteria: z.string().trim().min(1).max(LIMITS.acceptanceCriteria.maxChars).optional(),
+    /** Confirm an action the agent says it took (13 §5). Shown to the worker and on the proof page. */
+    attestation: AgentAttestationSchema.optional(),
     /** Required for at-a-place types; may be omitted for work that can be done anywhere (TASK_TYPE_SPECS). */
     location: LocationSchema.optional(),
     /** Within 24 h for work at a place; up to 7 days for work with no location (01 §4.25). */
@@ -334,6 +364,16 @@ export const VerificationResultSchema = z.object({
    */
   proof: z.object({ url: z.url(), badge_url: z.url(), markdown: z.string() }).optional(),
   witnesses: z.object({ valid: z.number().int(), required: z.number().int(), quorum: z.number().int() }),
+  /**
+   * Sense index (13 §4): per number or scale field of a form, over 3 or more accepted answers. The median of an
+   * even count is the lower middle value. Part of result_hash. Not a vote: the outcome is decided as for text.
+   */
+  aggregate: z
+    .record(
+      z.string(),
+      z.object({ median: z.number(), min: z.number(), max: z.number(), n: z.number().int() }),
+    )
+    .optional(),
   answer_counts: z.record(z.string(), z.number().int()),
   consensus_ratio: z.number().min(0).max(1).nullable(),
   checks: z.object({
@@ -372,6 +412,8 @@ export const GetVerificationResponseSchema = z.object({
   status: z.enum(TASK_STATUSES),
   question: z.string(),
   acceptance_criteria: z.string().nullable(),
+  /** What the agent asked a person to confirm it did (13 §5); null on an ordinary task. */
+  attestation: AgentAttestationSchema.nullable(),
   answer_schema: AnswerSchemaSpec,
   location: LocationSchema.nullable(),
   deadline: IsoDateTime,
@@ -436,9 +478,15 @@ export const PublicVerificationResultSchema = VerificationResultSchema.omit({
   answers: true,
   reviews: true,
   proof: true,
+  aggregate: true,
 }).extend({
   type: z.enum(TASK_TYPES),
   answer_kind: z.enum(ANSWER_KINDS),
+  /**
+   * What the agent asked a person to confirm it did (13 §5), written by the requester; null on an ordinary task.
+   * Named apart from `attestation`, which here is the on-chain record. Not part of result_hash.
+   */
+  agent_attestation: AgentAttestationSchema.nullable(),
   /** Set only when the requester published the result (01 §4.22). */
   published: z
     .object({
@@ -625,6 +673,8 @@ export const WorkerTaskSchema = z.object({
   question: z.string(),
   /** What the requester will accept (01 §4.25). Null when they did not say. */
   acceptance_criteria: z.string().nullable(),
+  /** The agent's claim the worker is asked to check (13 §5); null on an ordinary task. */
+  attestation: AgentAttestationSchema.nullable(),
   answer_values: z.array(AnswerValueSchema),
   answer_schema: AnswerSchemaSpec,
   /** null: the work can be done anywhere. */
@@ -724,6 +774,7 @@ export const ClaimDetailResponseSchema = z.object({
   type: z.enum(TASK_TYPES),
   question: z.string(),
   acceptance_criteria: z.string().nullable(),
+  attestation: AgentAttestationSchema.nullable(),
   answer_values: z.array(AnswerValueSchema),
   answer_schema: AnswerSchemaSpec,
   location_required: z.boolean(),

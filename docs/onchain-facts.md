@@ -49,7 +49,7 @@ result yet is 404. `finalized_at` here is when ProofMarket finalized the result;
 
 ```
 result_hash = SHA-256(JCS(pick(result, RESULT_HASH_FIELDS)))
-RESULT_HASH_FIELDS = verification_id, status, reason, answer, witnesses, answer_counts,
+RESULT_HASH_FIELDS = verification_id, status, reason, answer, witnesses, aggregate, answer_counts,
                      checks, rejected_submissions, evidence_root
 ```
 
@@ -59,7 +59,9 @@ JCS is RFC 8785 canonical JSON. Only these fields are hashed; anything else an A
 
 Use the requester's result (`GET /v1/verifications/{id}` → `result`) to recompute it. The public result
 (`GET /v1/public/verifications/{id}`) leaves out `rejected_submissions`; it then counts as `{}`. That is right
-when nothing was rejected. Otherwise it gives a mismatch, never a false match.
+when nothing was rejected. Otherwise it gives a mismatch, never a false match. The public result also leaves out
+`aggregate` (the sense index of a form, 13 §4), which is hashed only when 3 or more form answers were accepted;
+for those, recompute from the requester's result.
 
 `evidence_root` is the SHA-256 of the canonical evidence bundle (07 §5.1), which the requester can download.
 

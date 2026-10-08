@@ -169,7 +169,8 @@ export interface VerifyOnChainInput {
   /**
    * The `result` of GET /v1/verifications/{id}, or the body of GET /v1/public/verifications/{id}. The public
    * result leaves out `rejected_submissions`; it is then taken as `{}`, which is right when nothing was rejected
-   * and otherwise gives `matches: false` (never a false match).
+   * and otherwise gives `matches: false` (never a false match). It also leaves out `aggregate` (13 §4), so a form
+   * result with a sense index only matches from the requester's result.
    */
   result: Record<string, unknown>;
   rpcUrl?: string;
@@ -226,7 +227,7 @@ export function compareWithAccount(
   else if (!account.result_hash) reason = "the result was never finalized on chain (refunded or still open)";
   else if (account.result_hash !== computed)
     reason = isPublic
-      ? "hash differs; a public result has no rejected_submissions, so pass the requester's result"
+      ? "hash differs; a public result has no rejected_submissions or aggregate, so pass the requester's result"
       : "hash differs: the result is not the one recorded on chain";
   return { ...base, matches: reason === null, reason };
 }

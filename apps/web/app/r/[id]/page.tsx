@@ -300,8 +300,8 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
                       <dd className="mt-1 leading-relaxed">
                         {pick(
                           lang,
-                          "結果のうち次の項目だけを JCS（RFC 8785）で並べ、SHA-256 をとります。proof・type・answer_kind・published などの付け足しの項目は入れません。公開の結果には rejected_submissions が無いので、空の {} として計算します（落ちた提出があった依頼では、依頼者の結果でしか一致しません）。",
-                          "Take only these fields of the result, canonicalise them with JCS (RFC 8785) and hash with SHA-256. Added fields such as proof, type, answer_kind and published are left out. The public result has no rejected_submissions, so it counts as {} (a request with rejected submissions only matches from the requester's result).",
+                          "結果のうち次の項目だけを JCS（RFC 8785）で並べ、SHA-256 をとります。proof・type・answer_kind・published などの付け足しの項目は入れません。公開の結果には rejected_submissions が無いので、空の {} として計算します（落ちた提出があった依頼と、数値の集計 aggregate がある依頼では、依頼者の結果でしか一致しません）。",
+                          "Take only these fields of the result, canonicalise them with JCS (RFC 8785) and hash with SHA-256. Added fields such as proof, type, answer_kind and published are left out. The public result has no rejected_submissions, so it counts as {} (a request with rejected submissions, or with a numeric aggregate, only matches from the requester's result).",
                         )}
                       </dd>
                       <dd className="mt-1 break-all font-mono">{RESULT_HASH_FIELDS.join(", ")}</dd>

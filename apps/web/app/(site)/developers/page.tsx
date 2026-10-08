@@ -210,11 +210,15 @@ const COPY = {
           ],
           [
             "answer_schema",
-            `答えの形。type ごとに決まっている。選択式は { "type": "enum", "values": [...] }（${answerChoices("・")} から2個以上。CUSTOM_CHOICE は自分で${LIMITS.answer.maxChoices}個まで決める）。数値は { "type": "number", "unit": "円" }（PRICE_CHECK・MEASUREMENT）。文章は { "type": "text", "max_chars": 2000 }（ほかの種類）。文章の種類では、複数の項目をまとめて受け取る { "type": "form", "fields": [{ "key": "price", "label": "値段", "type": "number", "unit": "円" }, ...] } も使える（${LIMITS.answer.maxFormFields}項目まで。答えは項目ごとの値を持つ JSON が 1 人 1 つ）。文章と form の答えは結果の answers に全員分が入り、answer にはその SHA-256 が入る`,
+            `答えの形。type ごとに決まっている。選択式は { "type": "enum", "values": [...] }（${answerChoices("・")} から2個以上。CUSTOM_CHOICE は自分で${LIMITS.answer.maxChoices}個まで決める）。数値は { "type": "number", "unit": "円" }（PRICE_CHECK・MEASUREMENT）。文章は { "type": "text", "max_chars": 2000 }（ほかの種類）。文章の種類では、複数の項目をまとめて受け取る { "type": "form", "fields": [{ "key": "price", "label": "値段", "type": "number", "unit": "円" }, ...] } も使える（${LIMITS.answer.maxFormFields}項目まで。答えは項目ごとの値を持つ JSON が 1 人 1 つ）。文章と form の答えは結果の answers に全員分が入り、answer にはその SHA-256 が入る。form の項目には尺度 { "type": "scale", "key": "noise", "label": "騒音", "max": 5, "labels": ["静か", "うるさい"] } も使える（max は 5 か 10。worker には丸が横に並び、言葉は両端だけに出る。3 人以上の答えがそろうと、結果の aggregate に項目ごとの中央値・最小・最大が入る）`,
           ],
           [
             "acceptance_criteria",
             `受け取りの条件（任意、${LIMITS.acceptanceCriteria.maxChars}字まで）。「値札の数字が読める写真であること」「店名が写っていること」のように書く。worker には質問文の下に出て、AI の照合にも質問文と一緒に渡る`,
+          ],
+          [
+            "attestation",
+            `エージェント自身がしたことを、人に確かめてもらう（任意）。{ "subject": "agent_action", "description": "302号室に荷物を届けた" } のように書く（description は${LIMITS.attestation.maxDescriptionChars}字まで）。worker には「AI エージェントが『…』と言っています」と出て、証明ページの見出しは「『…』が本当だと、人が確かめました」になる。検査と判定はふつうの依頼と同じ`,
           ],
           [
             "location",
@@ -283,6 +287,25 @@ const COPY = {
   ]
 }`,
       p: "件ごとに template と重ねて、ふつうの依頼と同じ検査を順に行います。1件でも通らなければ全体を断り、何も作りません（details.index に何件目かが入ります）。残高と1日の上限は合計で見ます。応答の verifications は items の順で、それぞれ別の verification_id として追えます。MCP では request_reality_verifications_batch が同じことをします。",
+    },
+    senses: {
+      title: "店の雰囲気を 3 人で測る",
+      lead: "匂い・騒音・清潔感・明るさのように、写真だけでは伝わらない感覚も頼めます。3 人に、1〜5 の尺度で答えてもらいます。",
+      code: `{
+  "type": "SITE_REPORT",
+  "question": "カフェ○○の店内の雰囲気を、4 つの尺度で答えてください",
+  "answer_schema": { "type": "form", "fields": [
+    { "type": "scale", "key": "smell", "label": "匂い",   "max": 5, "labels": ["気にならない", "強い"] },
+    { "type": "scale", "key": "noise", "label": "騒音",   "max": 5, "labels": ["静か", "うるさい"] },
+    { "type": "scale", "key": "clean", "label": "清潔感", "max": 5, "labels": ["汚れている", "きれい"] },
+    { "type": "scale", "key": "light", "label": "明るさ", "max": 5, "labels": ["暗い", "明るい"] }
+  ] },
+  "acceptance_criteria": "店内の様子が分かる写真であること。人の顔は大きく写さないこと",
+  "location": { "lat": 35.6595, "lng": 139.7005, "radius_m": 80 },
+  "assurance": { "level": "high" },
+  ...残りは request.json と同じ
+}`,
+      p: "3 人の答えがそろうと、result.aggregate に尺度ごとの { median, min, max, n } が入ります。人数が偶数のときの中央値は小さい方を取るので、整数のままです。多数決はしません。判定は文章の答えと同じです。aggregate は result_hash に含まれます。",
     },
     schedule: {
       title: "決まった時刻に繰り返し確かめる",
@@ -488,11 +511,15 @@ const COPY = {
           ],
           [
             "answer_schema",
-            `The shape of the answer, fixed per type. Multiple choice: { "type": "enum", "values": [...] } (two or more of ${answerChoices(" / ")}; CUSTOM_CHOICE lets you define up to ${LIMITS.answer.maxChoices} of your own). Number: { "type": "number", "unit": "JPY" } (PRICE_CHECK, MEASUREMENT). Text: { "type": "text", "max_chars": 2000 } (the other types). Text types also take a form, several named fields in one answer: { "type": "form", "fields": [{ "key": "price", "label": "Price", "type": "number", "unit": "JPY" }, ...] } (up to ${LIMITS.answer.maxFormFields} fields; each witness returns one JSON object). Text and form answers from every witness go into the result's answers, and answer holds their SHA-256`,
+            `The shape of the answer, fixed per type. Multiple choice: { "type": "enum", "values": [...] } (two or more of ${answerChoices(" / ")}; CUSTOM_CHOICE lets you define up to ${LIMITS.answer.maxChoices} of your own). Number: { "type": "number", "unit": "JPY" } (PRICE_CHECK, MEASUREMENT). Text: { "type": "text", "max_chars": 2000 } (the other types). Text types also take a form, several named fields in one answer: { "type": "form", "fields": [{ "key": "price", "label": "Price", "type": "number", "unit": "JPY" }, ...] } (up to ${LIMITS.answer.maxFormFields} fields; each witness returns one JSON object). Text and form answers from every witness go into the result's answers, and answer holds their SHA-256. A form field can also be a scale: { "type": "scale", "key": "noise", "label": "Noise", "max": 5, "labels": ["quiet", "loud"] } (max is 5 or 10; the worker sees a row of circles with words only at the ends; once 3 or more answers are in, the result's aggregate gives the median, min and max per field)`,
           ],
           [
             "acceptance_criteria",
             `What you will accept (optional, up to ${LIMITS.acceptanceCriteria.maxChars} characters), such as "the price tag must be legible" or "the shop name must be in the photo". Shown to the worker under the question and given to the AI review alongside it`,
+          ],
+          [
+            "attestation",
+            `Have a person confirm something the agent itself did (optional): { "subject": "agent_action", "description": "Delivered the parcel to room 302" } (description up to ${LIMITS.attestation.maxDescriptionChars} characters). The worker sees "An AI agent says '…'", and the proof page headline reads "A person confirmed: “…”". Checks and judgement are the same as any request`,
           ],
           [
             "location",
@@ -561,6 +588,25 @@ const COPY = {
   ]
 }`,
       p: "Each item is laid over the template and checked exactly like a single request. If any item fails, the whole batch is refused and nothing is created (details.index names the item). Balance and the daily limit are checked on the total. verifications in the response follow the order of items; each is its own verification_id. Over MCP, request_reality_verifications_batch does the same.",
+    },
+    senses: {
+      title: "Measure the feel of a shop with 3 people",
+      lead: "Smell, noise, cleanliness, brightness: senses a photo cannot carry. Three people each answer on a scale of 1 to 5.",
+      code: `{
+  "type": "SITE_REPORT",
+  "question": "How does the inside of cafe X feel? Answer on the four scales",
+  "answer_schema": { "type": "form", "fields": [
+    { "type": "scale", "key": "smell", "label": "Smell",       "max": 5, "labels": ["none", "strong"] },
+    { "type": "scale", "key": "noise", "label": "Noise",       "max": 5, "labels": ["quiet", "loud"] },
+    { "type": "scale", "key": "clean", "label": "Cleanliness", "max": 5, "labels": ["dirty", "spotless"] },
+    { "type": "scale", "key": "light", "label": "Brightness",  "max": 5, "labels": ["dark", "bright"] }
+  ] },
+  "acceptance_criteria": "The photo shows the inside of the shop, with no faces in close-up",
+  "location": { "lat": 35.6595, "lng": 139.7005, "radius_m": 80 },
+  "assurance": { "level": "high" },
+  ...the rest as in request.json
+}`,
+      p: "Once all 3 answers are in, result.aggregate holds { median, min, max, n } per scale. With an even count the median is the lower middle value, so it stays a whole number. There is no vote: the outcome is decided as for text answers. aggregate is part of result_hash.",
     },
     schedule: {
       title: "Check again at set times",
@@ -845,6 +891,11 @@ ${c.x402.samples.map((s) => `$A ${s}`).join("\n")}`}</Code>
       <Section title={c.batch.title} lead={c.batch.lead}>
         <Code>{c.batch.code}</Code>
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">{c.batch.p}</p>
+      </Section>
+
+      <Section title={c.senses.title} lead={c.senses.lead}>
+        <Code>{c.senses.code}</Code>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">{c.senses.p}</p>
       </Section>
 
       <Section title={c.schedule.title} lead={c.schedule.lead}>
