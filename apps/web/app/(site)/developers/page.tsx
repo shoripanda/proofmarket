@@ -138,7 +138,7 @@ const COPY = {
         `--type CUSTOM_CHOICE --choices "はい,いいえ" --question "この駅のエレベーターは今動いていますか"`,
         `--type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`,
       ],
-      note: "同じ取引を2回送っても、依頼は1件しかできません。2回目は同じ verification_id を返し、API キーは付けません。1件の上限は 5 USDC です。テスト用の USDC は Circle の faucet（Solana Devnet）で受け取れます。",
+      note: "同じ取引を2回送っても、依頼は1件しかできません。2回目は同じ verification_id を返し、API キーは付けません。報酬に上限はありません。テスト用の USDC は Circle の faucet（Solana Devnet）で受け取れます。",
     },
     proof: {
       title: "結果を利用者に見せる（証明のリンク）",
@@ -286,7 +286,7 @@ const COPY = {
     { "location": { "lat": 35.6600, "lng": 139.7000, "radius_m": 80 }, "question": "B店に○○はあるか" }
   ]
 }`,
-      p: "件ごとに template と重ねて、ふつうの依頼と同じ検査を順に行います。1件でも通らなければ全体を断り、何も作りません（details.index に何件目かが入ります）。残高と1日の上限は合計で見ます。応答の verifications は items の順で、それぞれ別の verification_id として追えます。MCP では request_reality_verifications_batch が同じことをします。",
+      p: "件ごとに template と重ねて、ふつうの依頼と同じ検査を順に行います。1件でも通らなければ全体を断り、何も作りません（details.index に何件目かが入ります）。残高は合計で見ます。応答の verifications は items の順で、それぞれ別の verification_id として追えます。MCP では request_reality_verifications_batch が同じことをします。",
     },
     senses: {
       title: "店の雰囲気を 3 人で測る",
@@ -329,7 +329,7 @@ const COPY = {
     },
     limits: {
       title: "上限と支払い",
-      p: "API キーごとに、1件あたりの上限額と1日（日本時間）の上限額が決まっています。依頼を出すと、報酬×人数の額が前払いの残高から拘束され、確定すると worker に支払われます。期限切れや取り消しのときは残高に戻ります。試験運用中の残高は Solana Devnet のテスト用 USDC で、実際のお金は動きません。",
+      p: "報酬の額には、1件あたりにも1日あたりにも上限がありません。残高が足りる限り依頼できます。制限するのは、API キーごとの1分あたりの呼び出し回数だけです。依頼を出すと、報酬×人数の額が前払いの残高から拘束され、確定すると worker に支払われます。期限切れや取り消しのときは残高に戻ります。試験運用中の残高は Solana Devnet のテスト用 USDC で、実際のお金は動きません。",
     },
   },
   en: {
@@ -436,7 +436,7 @@ const COPY = {
         `--type CUSTOM_CHOICE --choices "yes,no" --question "Is the lift at this station running right now?"`,
         `--type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`,
       ],
-      note: "Sending the same transaction twice never creates two requests: the second call returns the same verification_id without an API key. The cap is 5 USDC per request. Test USDC is available from Circle's faucet (Solana Devnet).",
+      note: "Sending the same transaction twice never creates two requests: the second call returns the same verification_id without an API key. There is no cap on the bounty. Test USDC is available from Circle's faucet (Solana Devnet).",
     },
     proof: {
       title: "Show the result to your user (proof link)",
@@ -587,7 +587,7 @@ const COPY = {
     { "location": { "lat": 35.6600, "lng": 139.7000, "radius_m": 80 }, "question": "Does shop B stock X?" }
   ]
 }`,
-      p: "Each item is laid over the template and checked exactly like a single request. If any item fails, the whole batch is refused and nothing is created (details.index names the item). Balance and the daily limit are checked on the total. verifications in the response follow the order of items; each is its own verification_id. Over MCP, request_reality_verifications_batch does the same.",
+      p: "Each item is laid over the template and checked exactly like a single request. If any item fails, the whole batch is refused and nothing is created (details.index names the item). The balance is checked on the total. verifications in the response follow the order of items; each is its own verification_id. Over MCP, request_reality_verifications_batch does the same.",
     },
     senses: {
       title: "Measure the feel of a shop with 3 people",
@@ -630,7 +630,7 @@ const COPY = {
     },
     limits: {
       title: "Limits and payment",
-      p: "Each API key has a per-request limit and a daily (Japan time) limit. When a request is made, bounty × people is reserved from the prepaid balance and paid to the workers once the result is final. On expiry or cancellation it returns to the balance. During the pilot the balance is test USDC on Solana Devnet; no real money moves.",
+      p: "The bounty has no cap, per request or per day: an agent can ask as long as its balance covers it. The only limit is the number of calls per minute for each API key. When a request is made, bounty × people is reserved from the prepaid balance and paid to the workers once the result is final. On expiry or cancellation it returns to the balance. During the pilot the balance is test USDC on Solana Devnet; no real money moves.",
     },
   },
 } satisfies Record<Lang, unknown>;

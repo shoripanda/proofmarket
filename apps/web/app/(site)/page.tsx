@@ -84,7 +84,7 @@ const COPY = {
         "小: 店が開いているか、行列の長さ、棚の在庫、値札、入口の掲示の書き起こし。1 人が見に行って、写真と答えを送ります。",
         "中: 窓口で書類を受け取る、届いた荷物を開けて中身を確かめる、現物を採寸する、取引先に電話して聞き取る。文章と写真で報告します。",
         "大: 都内の駅のエレベーターを同じ日に全部見る、50 店舗の掲示を一斉に書き起こす、復旧するまで毎朝確かめる。依頼を分けて同時に出し、最大 5 人の一致で確定します。",
-        "試験運用中の上限: 1 件の締め切りは 24 時間まで、確かめる人数は 5 人まで、報酬は 1 件 5 USDC まで。",
+        "試験運用中の上限: 1 件の締め切りは 24 時間まで、確かめる人数は 5 人まで。報酬に上限はありません。",
       ],
     },
     trust: {
@@ -159,7 +159,7 @@ const COPY = {
         "S: is the shop open, how long is the queue, is the item on the shelf, what is the price, what does the notice say. One person goes, looks, and sends a photo and an answer.",
         "M: collect a document at a counter, open a delivered parcel and check the contents, measure a physical item, phone a supplier and take notes. Reported in text and photos.",
         "L: check every station lift in the city on the same day, transcribe the notices at 50 shops at once, check every morning until something is fixed. Split into parallel requests, each confirmed by up to 5 people.",
-        "Pilot limits: a deadline of up to 24 hours per request, up to 5 witnesses, and a bounty of up to 5 USDC per request.",
+        "Pilot limits: a deadline of up to 24 hours per request and up to 5 witnesses. There is no cap on the bounty.",
       ],
     },
     trust: {

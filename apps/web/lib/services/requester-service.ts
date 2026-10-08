@@ -254,21 +254,8 @@ export async function createVerification(
   // 15-17 under a credential row lock so parallel creates cannot overdraw (02 §4.2, I-RACE-03).
   await lockCredential(tx, auth.credentialId);
   // The ceiling is reserved and escrowed; the part not paid comes back at the first claim (13 §1).
+  // No per-request or daily ceiling on the reward: an agent may ask as much and as often as its balance allows.
   const total = fundedPerWitnessMicro({ amount: body.bounty.amount, maxAmount }) * BigInt(n);
-  if (total > toMicro(auth.limits.maxTaskAmount)) throw new ApiError("TASK_AMOUNT_LIMIT_EXCEEDED");
-  const [today] = await tx
-    .select({ s: sql<string>`coalesce(sum(-amount), 0)` })
-    .from(schema.requesterLedger)
-    .where(
-      and(
-        eq(schema.requesterLedger.credentialId, auth.credentialId),
-        eq(schema.requesterLedger.entryType, "RESERVE"),
-        gte(schema.requesterLedger.createdAt, startOfSpendDay(now)),
-      ),
-    );
-  if (toMicro(String(today?.s ?? "0")) + total > toMicro(auth.limits.dailySpendLimit)) {
-    throw new ApiError("DAILY_SPEND_LIMIT_EXCEEDED");
-  }
   const [bal] = await tx
     .select({ s: sql<string>`coalesce(sum(amount), 0)` })
     .from(schema.requesterLedger)

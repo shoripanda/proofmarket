@@ -125,7 +125,7 @@ export default async function EnHome() {
           ))}
         </div>
         <p className="mt-4 text-xs text-slate-500">
-          Pilot limits: a request runs up to 24 hours, with up to 5 witnesses and up to 5 USDC per request.
+          Pilot limits: a request runs up to 24 hours, with up to 5 witnesses. There is no cap on the bounty.
           Larger jobs are split into several requests.
         </p>
       </Section>

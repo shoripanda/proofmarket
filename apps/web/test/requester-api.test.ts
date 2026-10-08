@@ -219,22 +219,21 @@ describe("POST /v1/verifications", () => {
     ).toHaveLength(0);
   });
 
-  it("I-LIM-01: per-task limit, daily limit, balance and rate limit", async () => {
+  it("I-LIM-01: no cap on the bounty (per request or per day); balance and rate limit still apply", async () => {
     const amt = (a: string, n = 1) =>
       createBody(t.principalId, {
         bounty: { asset: "USDC", amount: a, network: "solana-devnet" },
         assurance: { required_witnesses: n, quorum: 1 },
       });
-    expect(await errCode(await create(amt("2.6", 2)))).toBe("TASK_AMOUNT_LIMIT_EXCEEDED"); // 5.2 > 5
-    for (let i = 0; i < 2; i++) expect((await create(amt("5"))).status).toBe(201); // balance 10 -> 0
-    expect(await errCode(await create(amt("0.5")))).toBe("INSUFFICIENT_BALANCE");
-    // daily: top up and exceed 20
+    // the key's stored limits are 5 per request and 20 a day; neither is enforced any more
+    expect((await create(amt("2.6", 2))).status).toBe(201); // 5.2, balance 10 -> 4.8
+    expect(await errCode(await create(amt("5")))).toBe("INSUFFICIENT_BALANCE");
     await t.db
       .insert(schema.requesterLedger)
-      .values({ credentialId: t.credentialId, entryType: "TOPUP", amount: "100" });
-    for (let i = 0; i < 2; i++) expect((await create(amt("5"))).status).toBe(201); // today 20
-    const daily = await create(amt("0.5"));
-    expect(await errCode(daily)).toBe("DAILY_SPEND_LIMIT_EXCEEDED");
+      .values({ credentialId: t.credentialId, entryType: "TOPUP", amount: "1000" });
+    expect((await create(amt("300", 3))).status).toBe(201); // 900 in one request
+    expect((await create(amt("50"))).status).toBe(201); // today 955.2, well past 20
+    expect(await errCode(await create(amt("60")))).toBe("INSUFFICIENT_BALANCE"); // 54.8 left
     // next JST day resets the daily window (deadline must stay within 24 h of now)
     t.setNow(new Date("2026-10-09T15:00:01Z"));
     expect((await create(createBody(t.principalId, { deadline: "2026-10-09T16:00:00Z" }))).status).toBe(201);

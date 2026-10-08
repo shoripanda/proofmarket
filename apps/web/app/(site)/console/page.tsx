@@ -84,14 +84,9 @@ export default async function ConsolePage() {
       </div>
 
       <Section title={pick(lang, "残高と上限", "Balance and limits")}>
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Stat label={pick(lang, "残高", "Balance")} value={d.balance} unit="USDC" />
-          <Stat
-            label={pick(lang, "今日使った額", "Spent today")}
-            value={d.spent_today}
-            unit={`/ ${d.key.daily_spend_limit} USDC`}
-          />
-          <Stat label={pick(lang, "1件の上限", "Per request")} value={d.key.max_task_amount} unit="USDC" />
+          <Stat label={pick(lang, "今日使った額", "Spent today")} value={d.spent_today} unit="USDC" />
           <Stat
             label={pick(lang, "1分あたり", "Per minute")}
             value={String(d.key.rate_limit_per_min)}
