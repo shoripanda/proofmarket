@@ -10,7 +10,7 @@ Built for the Colosseum **Crypto World's Fair** hackathon (October 2026).
 |---|---|
 | Live site | https://proofmarket.fun ( [English](https://proofmarket.fun/en) ) |
 | Try it in the browser | https://proofmarket.fun/try |
-| Technical demo video (60 s) | https://youtu.be/LMNePpCFWdM |
+| Technical demo video (72 s) | https://youtu.be/LMNePpCFWdM |
 | Developers (MCP / x402 / REST) | https://proofmarket.fun/en/developers |
 | Public map and open dataset | https://proofmarket.fun/map · https://proofmarket.fun/data |
 | Live numbers | https://proofmarket.fun/stats |
