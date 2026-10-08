@@ -193,6 +193,17 @@ export const verificationRequests = pgTable(
     bountyAsset: text("bounty_asset").notNull(),
     bountyAmount: money("bounty_amount").notNull(),
     bountyNetwork: text("bounty_network").notNull(),
+    /** Rising bounty (13 §1): the ceiling, how many minutes the rise takes, and the amount fixed at the first claim. */
+    bountyMaxAmount: money("bounty_max_amount"),
+    bountyRampMinutes: integer("bounty_ramp_minutes"),
+    bountyFinalAmount: money("bounty_final_amount"),
+    /** Optimistic verification (13 §3): the challenge window and when the provisional result was served. */
+    challengeMinutes: integer("challenge_minutes"),
+    provisionalAt: tsz("provisional_at"),
+    /** What the request attests (13 §5): { subject: "agent_action", description }. Null for ordinary requests. */
+    attestation: jsonb("attestation"),
+    /** Public surfaces round the place to ~1 km when "coarse" (13 §9 PR 7). The requester always sees it exact. */
+    locationPrivacy: text("location_privacy").notNull().default("exact"),
     status: text("status").notNull(),
     fundingStatus: text("funding_status").notNull().default("NONE"),
     settlementStatus: text("settlement_status").notNull().default("NONE"),
@@ -235,6 +246,10 @@ export const verificationRequests = pgTable(
     check("vr_witnesses_chk", sql`required_witnesses between 1 and 5`),
     check("vr_quorum_chk", sql`quorum between 1 and required_witnesses`),
     check("vr_bounty_chk", sql`bounty_amount > 0`),
+    check("vr_bounty_max_chk", sql`bounty_max_amount is null or bounty_max_amount >= bounty_amount`),
+    check("vr_bounty_ramp_chk", sql`bounty_ramp_minutes is null or bounty_ramp_minutes between 10 and 1440`),
+    check("vr_challenge_chk", sql`challenge_minutes is null or challenge_minutes between 10 and 120`),
+    check("vr_location_privacy_chk", sql`location_privacy in ('exact','coarse')`),
     check("vr_network_chk", sql`bounty_network = 'solana-devnet'`),
     check("vr_status_chk", oneOf("status", TASK_STATUSES)),
     check("vr_funding_chk", oneOf("funding_status", FUNDING_STATUSES)),
@@ -298,6 +313,8 @@ export const claims = pgTable(
       .notNull()
       .references(() => workers.id),
     state: text("state").notNull(),
+    /** Rising bounty (13 §1): the amount at claim time; null when the bounty is fixed. */
+    rewardAmount: money("reward_amount"),
     attempts: smallint("attempts").notNull().default(0),
     acceptedAt: tsz("accepted_at").notNull().defaultNow(),
     expiresAt: tsz("expires_at").notNull(),
@@ -793,6 +810,43 @@ export const consoleSessions = pgTable("console_sessions", {
   tokenHash: bytea("token_hash").notNull().unique(),
   createdAt: tsz("created_at").notNull().defaultNow(),
   expiresAt: tsz("expires_at").notNull(),
+});
+
+// ---------- optimistic verification (13 §3) ----------
+/** One challenge per provisional result: who bonded, the recheck it spawned, and how it ended. */
+export const verificationChallenges = pgTable(
+  "verification_challenges",
+  {
+    id: text("id").primaryKey(),
+    verificationId: text("verification_id")
+      .notNull()
+      .references(() => verificationRequests.id)
+      .unique(),
+    challengerCredentialId: text("challenger_credential_id")
+      .notNull()
+      .references(() => requesterCredentials.id),
+    bondAmount: money("bond_amount").notNull(),
+    recheckVerificationId: text("recheck_verification_id").references(() => verificationRequests.id),
+    state: text("state").notNull().default("OPEN"),
+    createdAt: tsz("created_at").notNull().defaultNow(),
+    resolvedAt: tsz("resolved_at"),
+  },
+  (t) => [check("vc_state_chk", sql`state in ('OPEN','UPHELD','OVERTURNED')`)],
+);
+
+/** Extra amounts owed to a worker outside the on-chain settle (13 §3: an upheld challenge's bond share). */
+export const payoutAdjustments = pgTable("payout_adjustments", {
+  id: text("id").primaryKey(),
+  workerId: text("worker_id")
+    .notNull()
+    .references(() => workers.id),
+  verificationId: text("verification_id")
+    .notNull()
+    .references(() => verificationRequests.id),
+  amount: money("amount").notNull(),
+  reason: text("reason").notNull(),
+  createdAt: tsz("created_at").notNull().defaultNow(),
+  paidAt: tsz("paid_at"),
 });
 
 // ---------- x402 (01 §4.19) ----------
