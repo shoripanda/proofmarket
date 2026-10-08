@@ -1,6 +1,8 @@
 "use client";
 // Cards that show what the agent sends and gets back, instead of raw JSON (the JSON stays behind a toggle).
 import type { ReactNode } from "react";
+import { useLang } from "@/lib/client/lang";
+import { pick } from "@/lib/lang";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -40,23 +42,30 @@ export function RequestCard({
   witnesses: number;
   raw: unknown;
 }) {
+  const lang = useLang();
   return (
     <div className="fade-in-up rounded-2xl border border-slate-200 bg-white p-4">
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-teal-700 px-2 py-0.5 text-[11px] font-bold text-white">依頼</span>
+        <span className="rounded-full bg-teal-700 px-2 py-0.5 text-[11px] font-bold text-white">
+          {pick(lang, "依頼", "Request")}
+        </span>
         <span className="text-xs text-slate-500">request_reality_verification</span>
       </div>
       <p className="mt-2 text-sm font-semibold leading-snug text-slate-900">{question}</p>
       <dl className="mt-3">
-        <Row label="種類">{typeName}</Row>
-        <Row label="場所">{place}</Row>
-        <Row label="締め切り">{deadlineMin}分以内</Row>
-        <Row label="確かめる人数">{witnesses}人</Row>
-        <Row label="報酬（1人）">
+        <Row label={pick(lang, "種類", "Type")}>{typeName}</Row>
+        <Row label={pick(lang, "場所", "Place")}>{place}</Row>
+        <Row label={pick(lang, "締め切り", "Deadline")}>
+          {pick(lang, `${deadlineMin}分以内`, `within ${deadlineMin} min`)}
+        </Row>
+        <Row label={pick(lang, "確かめる人数", "Witnesses")}>
+          {pick(lang, `${witnesses}人`, `${witnesses} ${witnesses === 1 ? "person" : "people"}`)}
+        </Row>
+        <Row label={pick(lang, "報酬（1人）", "Bounty (per person)")}>
           <span className="text-teal-700">{bounty} USDC</span>
         </Row>
       </dl>
-      <RawJson title="生の JSON を見る" value={raw} />
+      <RawJson title={pick(lang, "生の JSON を見る", "Show raw JSON")} value={raw} />
     </div>
   );
 }
@@ -73,35 +82,46 @@ export function StatusCard({
   activeClaims: number;
   raw: unknown;
 }) {
-  const STATUS_JA: Record<typeof status, string> = {
-    CREATED: "受け付けました",
-    OPEN: "worker を待っています",
-    CLAIMED: "worker が向かっています",
-    SUBMITTED: "提出を確かめています",
+  const lang = useLang();
+  const STATUS_TEXT: Record<typeof status, string> = {
+    CREATED: pick(lang, "受け付けました", "accepted"),
+    OPEN: pick(lang, "worker を待っています", "waiting for a worker"),
+    CLAIMED: pick(lang, "worker が向かっています", "a worker is on the way"),
+    SUBMITTED: pick(lang, "提出を確かめています", "checking the submission"),
   };
   return (
     <div className="fade-in-up rounded-2xl border border-slate-200 bg-white p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs text-slate-500">get_reality_verification</span>
         <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-800 ring-1 ring-sky-200">
-          {status}・{STATUS_JA[status]}
+          {status}
+          {pick(lang, "・", " · ")}
+          {STATUS_TEXT[status]}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-sm">
         <div
           className={`rounded-xl p-3 ${escrow === "locked" ? "bg-teal-50 text-teal-900" : "bg-slate-50 text-slate-500"}`}
         >
-          <p className="text-[11px]">エスクロー</p>
-          <p className="mt-0.5 font-bold">{escrow === "locked" ? "預かり済み" : "預けています…"}</p>
+          <p className="text-[11px]">{pick(lang, "エスクロー", "Escrow")}</p>
+          <p className="mt-0.5 font-bold">
+            {escrow === "locked"
+              ? pick(lang, "預かり済み", "funded")
+              : pick(lang, "預けています…", "funding…")}
+          </p>
         </div>
         <div
           className={`rounded-xl p-3 ${activeClaims ? "bg-amber-50 text-amber-900" : "bg-slate-50 text-slate-500"}`}
         >
           <p className="text-[11px]">worker</p>
-          <p className="mt-0.5 font-bold">{activeClaims ? `${activeClaims}人が作業中` : "探しています…"}</p>
+          <p className="mt-0.5 font-bold">
+            {activeClaims
+              ? pick(lang, `${activeClaims}人が作業中`, `${activeClaims} working`)
+              : pick(lang, "探しています…", "looking…")}
+          </p>
         </div>
       </div>
-      <RawJson title="生の JSON を見る" value={raw} />
+      <RawJson title={pick(lang, "生の JSON を見る", "Show raw JSON")} value={raw} />
     </div>
   );
 }
@@ -128,13 +148,13 @@ function Tick({ on, delayMs }: { on: boolean; delayMs: number }) {
   );
 }
 
-const CHECK_LABELS: [string, string][] = [
-  ["geofence", "指定の場所で撮った"],
-  ["freshness", "いま撮った"],
-  ["task_nonce", "この依頼のために撮った"],
-  ["replay", "使い回しではない"],
-  ["duplicate", "ほかの人の写真と同じでない"],
-  ["vision_consistency", "AI：依頼どおりの内容"],
+const CHECK_LABELS: [string, string, string][] = [
+  ["geofence", "指定の場所で撮った", "Taken at the requested place"],
+  ["freshness", "いま撮った", "Taken just now"],
+  ["task_nonce", "この依頼のために撮った", "Taken for this request"],
+  ["replay", "使い回しではない", "Not a reused photo"],
+  ["duplicate", "ほかの人の写真と同じでない", "Not the same as someone else's photo"],
+  ["vision_consistency", "AI：依頼どおりの内容", "AI: content matches the request"],
 ];
 
 /** The verified result: answer, checks ticking on, the AI verdict, money moving on Solana, the proof badge. */
@@ -155,43 +175,49 @@ export function ResultCard({
   badgeTime: string;
   raw: unknown;
 }) {
+  const lang = useLang();
+  const flowTitle = pick(lang, "エスクローから worker へ支払い", "Payout from escrow to the worker");
   return (
     <div className="fade-in-up rounded-2xl border border-teal-300 bg-teal-50 p-4">
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-teal-700 px-2 py-0.5 text-[11px] font-bold text-white">結果</span>
-        <span className="text-xs font-semibold text-teal-900">VERIFIED・人が確かめた結果</span>
+        <span className="rounded-full bg-teal-700 px-2 py-0.5 text-[11px] font-bold text-white">
+          {pick(lang, "結果", "Result")}
+        </span>
+        <span className="text-xs font-semibold text-teal-900">
+          {pick(lang, "VERIFIED・人が確かめた結果", "VERIFIED · checked by a person")}
+        </span>
       </div>
       <div className="mt-3 rounded-xl bg-white p-3">
-        <p className="text-[11px] text-slate-500">答え（書き起こし）</p>
+        <p className="text-[11px] text-slate-500">
+          {pick(lang, "答え（書き起こし）", "Answer (transcription)")}
+        </p>
         <p className="mt-1 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-900">
           {answerLines.join("\n")}
         </p>
       </div>
       <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
-        {CHECK_LABELS.map(([k, label], i) => (
+        {CHECK_LABELS.map(([k, ja, en], i) => (
           <li key={k} className="flex items-center gap-2 text-xs text-slate-700">
             <Tick on delayMs={120 * i} />
-            {label}
+            {pick(lang, ja, en)}
           </li>
         ))}
       </ul>
       <p className="mt-2 rounded-lg bg-white/70 px-3 py-2 text-xs leading-relaxed text-slate-600">
-        AI の判定: <b className="text-teal-800">pass</b> — {reviewReason}
+        {pick(lang, "AI の判定: ", "AI verdict: ")}
+        <b className="text-teal-800">pass</b> — {reviewReason}
       </p>
 
       {/* money moving: escrow -> worker */}
       <div className="mt-3 rounded-xl bg-white p-3">
-        <p className="text-[11px] text-slate-500">Solana Devnet・記録と支払い</p>
-        <svg
-          viewBox="0 0 320 60"
-          className="mt-1 w-full"
-          role="img"
-          aria-label="エスクローから worker へ支払い"
-        >
-          <title>エスクローから worker へ支払い</title>
+        <p className="text-[11px] text-slate-500">
+          {pick(lang, "Solana Devnet・記録と支払い", "Solana Devnet · record and payout")}
+        </p>
+        <svg viewBox="0 0 320 60" className="mt-1 w-full" role="img" aria-label={flowTitle}>
+          <title>{flowTitle}</title>
           <rect x="6" y="14" width="96" height="32" rx="8" fill="#f1f5f9" stroke="#94a3b8" />
           <text x="54" y="34" textAnchor="middle" fontSize="12" fill="#334155">
-            エスクロー
+            {pick(lang, "エスクロー", "Escrow")}
           </text>
           <rect
             x="218"
@@ -221,19 +247,26 @@ export function ResultCard({
         </svg>
         <p className="mt-1 text-[11px] text-slate-500">
           {settled
-            ? "結果のハッシュと支払いを1つの取引で記録しました。"
-            : "結果のハッシュを記録し、支払っています…"}
+            ? pick(
+                lang,
+                "結果のハッシュと支払いを1つの取引で記録しました。",
+                "The result hash and the payout were recorded in one transaction.",
+              )
+            : pick(lang, "結果のハッシュを記録し、支払っています…", "Recording the result hash and paying…")}
         </p>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
         <span className="inline-flex overflow-hidden rounded-md text-[11px] font-semibold text-white">
-          <span className="bg-slate-700 px-2 py-0.5">人が確認</span>
-          <span className="bg-teal-700 px-2 py-0.5">回答あり・{badgeTime}</span>
+          <span className="bg-slate-700 px-2 py-0.5">{pick(lang, "人が確認", "Human-verified")}</span>
+          <span className="bg-teal-700 px-2 py-0.5">
+            {pick(lang, "回答あり・", "answered · ")}
+            {badgeTime}
+          </span>
         </span>
         <span className="text-slate-500">{proofUrl}</span>
       </div>
-      <RawJson title="生の JSON を見る" value={raw} />
+      <RawJson title={pick(lang, "生の JSON を見る", "Show raw JSON")} value={raw} />
     </div>
   );
 }

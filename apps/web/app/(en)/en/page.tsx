@@ -71,7 +71,7 @@ export default async function EnHome() {
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            href="/try"
+            href="/en/try"
             className="rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-800"
           >
             Play the 3-minute demo
@@ -83,9 +83,6 @@ export default async function EnHome() {
             Connect Claude, ChatGPT or your own agent
           </Link>
         </div>
-        <p className="mt-3 text-xs text-slate-500">
-          The demo page is bilingual in spirit but its labels are Japanese; every step is explained below.
-        </p>
       </PageHero>
 
       <Section
@@ -153,7 +150,10 @@ export default async function EnHome() {
             label="paid to workers"
             note="Solana Devnet"
           />
-          <BigNumber value={s ? duration(s.median_seconds_to_result) : "—"} label="median time to a result" />
+          <BigNumber
+            value={s ? duration(s.median_seconds_to_result, "en") : "—"}
+            label="median time to a result"
+          />
           <BigNumber value={String(TASK_TYPES.length)} label="task types" note="on site and from home" />
         </div>
         <ul className="mt-6 grid gap-3 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
@@ -171,7 +171,7 @@ export default async function EnHome() {
           ))}
         </ul>
         <p className="mt-4 text-sm">
-          <Link href="/stats" className="font-semibold text-teal-700 underline">
+          <Link href="/en/stats" className="font-semibold text-teal-700 underline">
             Full numbers →
           </Link>
         </p>
@@ -299,7 +299,7 @@ export default async function EnHome() {
               timestamp. Cities can read how their stations and shops actually behave. Licence: CC BY 4.0.
             </p>
             <p className="text-xs text-slate-500">
-              <Link href="/data" className="font-semibold text-teal-700 underline">
+              <Link href="/en/data" className="font-semibold text-teal-700 underline">
                 /data
               </Link>{" "}
               · <code className="font-mono">GET /v1/public/dataset</code> ·{" "}
@@ -319,7 +319,7 @@ export default async function EnHome() {
 
       <Section title="Try it in the next five minutes">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Link href="/try" className="card-link rounded-2xl border border-slate-200 p-5">
+          <Link href="/en/try" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">1. Play both sides</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               Agent on the left, worker's phone on the right. Send a summary and watch the AI send it back;
@@ -333,7 +333,7 @@ export default async function EnHome() {
               answer.
             </p>
           </Link>
-          <Link href="/demo" className="card-link rounded-2xl border border-slate-200 p-5">
+          <Link href="/en/demo" className="card-link rounded-2xl border border-slate-200 p-5">
             <h3 className="font-bold">3. Verify a result on chain</h3>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               A real result, field by field, with an in-browser check against the Solana account that holds

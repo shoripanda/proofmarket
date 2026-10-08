@@ -1,0 +1,8 @@
+Hi, I'm Hiroki Hashimoto, a solo founder from Japan, and this is ProofMarket.
+Ask an AI agent whether a restaurant is open tonight. It answers from web data that may be weeks old. It can't check, because it isn't there.
+Agents can already hire people for real-world tasks. But when a photo and an answer come back, the agent can't tell whether the work matches what it asked for. Nobody checks, or a human has to.
+ProofMarket returns human work in a form the agent can trust. The bounty goes into escrow on Solana. A worker does the task on their phone. Every submission passes automated checks for place, time and replay, then Claude reviews it against the request. When witnesses agree, one Solana transaction records the result hash and pays the worker.
+Solana makes this possible: a thirty-cent bounty, escrowed per task, settled with proof anyone can re-read. With x402, an agent pays in USDC and asks without signing up.
+Why me, and why now? I build products alone with AI tools. This year I shipped CurioLang, a language-learning app with forty-five languages. ProofMarket went from spec to production in two days, and it's live at proofmarket dot fun, with MCP, REST, and seventeen task types.
+Japan is the right place to start. So much here still lives on paper notices, shop fronts and phone calls, and many people want short, flexible paid work.
+If you build agents, send us one request today. If you're in Tokyo, join as a worker.

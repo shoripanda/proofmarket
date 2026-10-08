@@ -1,7 +1,10 @@
-// Japanese labels for task types and answers, shared by the worker app (client) and the site (server).
+// Labels for task types and answers in both languages, shared by the worker app (client) and the site (server).
 import type { AnswerValue, TaskType } from "@proofmarket/core";
+import type { Lang } from "./lang";
 
-export const TASK_TYPE_JA: Record<TaskType, { name: string; howTo: string }> = {
+type TypeText = { name: string; howTo: string };
+
+export const TASK_TYPE_JA: Record<TaskType, TypeText> = {
   PLACE_STATUS_VERIFICATION: {
     name: "営業しているか",
     howTo: "店頭・看板・営業時間の掲示を写して、営業しているかを答えます。",
@@ -76,6 +79,86 @@ export const TASK_TYPE_JA: Record<TaskType, { name: string; howTo: string }> = {
   },
 };
 
+export const TASK_TYPE_EN: Record<TaskType, TypeText> = {
+  PLACE_STATUS_VERIFICATION: {
+    name: "Open or closed",
+    howTo: "Photograph the shop front, sign or opening-hours notice and answer whether it is open.",
+  },
+  QUEUE_LENGTH: {
+    name: "Queue outside",
+    howTo: "Count the people queuing outside and answer. Shoot the queue from behind so no faces show.",
+  },
+  NOTICE_POSTED: {
+    name: "Notice at the entrance",
+    howTo:
+      "Check whether the notice in the question (a temporary-closure sign, for example) is posted. Photograph the notice or the entrance.",
+  },
+  CROWD_LEVEL: {
+    name: "How crowded",
+    howTo: "Judge how crowded the place is. Frame the shot so the overall scene is visible.",
+  },
+  SEAT_AVAILABILITY: {
+    name: "Free seats",
+    howTo: "Check whether seats are free. Frame the shot so the seating area is visible.",
+  },
+  PARKING_AVAILABILITY: {
+    name: "Parking spaces",
+    howTo: "Check whether the car park has space. Photograph the full/vacant sign or the car park itself.",
+  },
+  STOCK_CHECK: {
+    name: "In stock",
+    howTo: "Check whether the item in the question is on the shelf. Photograph the shelf.",
+  },
+  PRICE_CHECK: {
+    name: "Price",
+    howTo:
+      "Check the price of the item or service on the price tag or menu and answer with a number. Photograph the tag.",
+  },
+  SIGN_TRANSCRIPTION: {
+    name: "Transcribe a sign or menu",
+    howTo: "Copy the text on the sign, notice or menu exactly as written. Photograph what you transcribed.",
+  },
+  SITE_REPORT: {
+    name: "On-site report",
+    howTo: "Go to the place in the question and describe what you see. Take one photo that shows the scene.",
+  },
+  DOCUMENT_TRANSCRIPTION: {
+    name: "Transcribe a book or paper",
+    howTo: "Copy the specified part of the book or paper document exactly as written. Photograph that page.",
+  },
+  DOCUMENT_QA: {
+    name: "Answer from a book or paper",
+    howTo:
+      "Read the book or paper document in the question and answer in writing. Photograph the page you relied on.",
+  },
+  PRODUCT_INSPECTION: {
+    name: "Inspect a physical item",
+    howTo:
+      "Pick up the item in the question, check the label, model number or markings, and describe them. Photograph that part.",
+  },
+  PHONE_INQUIRY: {
+    name: "Phone inquiry",
+    howTo:
+      "Call the party in the question, ask, and write down what you were told. Photograph your call log or notes.",
+  },
+  MEASUREMENT: {
+    name: "Measurement",
+    howTo:
+      "Measure the length, weight or similar of the item in the question and answer with a number. Photograph the measurement in progress.",
+  },
+  CUSTOM_CHOICE: {
+    name: "Multiple choice",
+    howTo: "Read the question and pick the option that applies. Take a photo that supports your choice.",
+  },
+  CUSTOM_TASK: {
+    name: "Other task",
+    howTo:
+      "Do the task in the question and describe the result. Take a photo that shows the work or its result.",
+  },
+};
+
+export const taskTypeText = (lang: Lang) => (lang === "en" ? TASK_TYPE_EN : TASK_TYPE_JA);
+
 export const ANSWER_JA: Record<AnswerValue, { label: string; tone: string }> = {
   OPEN: { label: "営業している", tone: "bg-emerald-600" },
   CLOSED: { label: "営業していない", tone: "bg-slate-700" },
@@ -95,9 +178,35 @@ export const ANSWER_JA: Record<AnswerValue, { label: string; tone: string }> = {
   UNCLEAR: { label: "分からない", tone: "bg-amber-600" },
 };
 
-/** Fixed codes get their Japanese label; requester-defined choices, numbers and text are shown as written. */
-export const answerJa = (v: string | null | undefined) =>
-  v ? (ANSWER_JA[v as AnswerValue]?.label ?? v) : null;
+const ANSWER_EN_LABEL: Record<AnswerValue, string> = {
+  OPEN: "Open",
+  CLOSED: "Closed",
+  NO_QUEUE: "No queue",
+  SHORT_QUEUE: "Up to about 5",
+  LONG_QUEUE: "6 or more",
+  POSTED: "Posted",
+  NOT_POSTED: "Not posted",
+  EMPTY: "Empty",
+  MODERATE: "Moderate",
+  CROWDED: "Crowded",
+  SEATS_AVAILABLE: "Seats available",
+  SPACES_AVAILABLE: "Spaces available",
+  FULL: "Full",
+  IN_STOCK: "In stock",
+  OUT_OF_STOCK: "Out of stock",
+  UNCLEAR: "Can't tell",
+};
+
+/** Label and colour for a fixed answer code. */
+export const answerText = (lang: Lang, v: AnswerValue) => ({
+  label: lang === "en" ? ANSWER_EN_LABEL[v] : ANSWER_JA[v].label,
+  tone: ANSWER_JA[v].tone,
+});
+
+/** Fixed codes get their label; requester-defined choices, numbers and text are shown as written. */
+export const answerLabel = (lang: Lang, v: string | null | undefined) =>
+  v ? (v in ANSWER_JA ? answerText(lang, v as AnswerValue).label : v) : null;
+export const answerJa = (v: string | null | undefined) => answerLabel("ja", v);
 
 export type AnswerSchemaView =
   | { type: "enum"; values: string[] }
@@ -105,9 +214,15 @@ export type AnswerSchemaView =
   | { type: "text"; max_chars?: number };
 
 /** One line telling the worker how to answer (01 §4.15). */
-export function answerFormatJa(s: AnswerSchemaView | undefined): string {
-  if (!s || s.type === "enum")
-    return `選んで答える: ${(s?.values ?? []).map((v) => answerJa(v)).join(" / ")}`;
+export function answerFormat(lang: Lang, s: AnswerSchemaView | undefined): string {
+  const choices = (s?.type === "enum" ? s.values : []).map((v) => answerLabel(lang, v)).join(" / ");
+  if (lang === "en") {
+    if (!s || s.type === "enum") return `Choose one: ${choices}`;
+    if (s.type === "number") return `Answer with a number${s.unit ? ` (unit: ${s.unit})` : ""}`;
+    return `Answer in text${s.max_chars ? ` (up to ${s.max_chars} characters)` : ""}`;
+  }
+  if (!s || s.type === "enum") return `選んで答える: ${choices}`;
   if (s.type === "number") return `数字で答える${s.unit ? `（単位: ${s.unit}）` : ""}`;
   return `文章で答える${s.max_chars ? `（${s.max_chars}字まで）` : ""}`;
 }
+export const answerFormatJa = (s: AnswerSchemaView | undefined) => answerFormat("ja", s);

@@ -2,6 +2,8 @@
 // S-12 みんなの地図 (01 §4.22). Leaflet with OpenStreetMap tiles; loaded in the browser only.
 import "leaflet/dist/leaflet.css";
 import { useEffect, useRef } from "react";
+import { useLang } from "@/lib/client/lang";
+import { pick } from "@/lib/lang";
 
 export interface MapPoint {
   id: string;
@@ -18,7 +20,9 @@ export interface MapPoint {
 const TOKYO: [number, number] = [35.6812, 139.7671];
 
 export function PublicMapView({ points }: { points: MapPoint[] }) {
+  const lang = useLang();
   const el = useRef<HTMLDivElement>(null);
+  const linkText = pick(lang, "確かめた記録を見る", "See the proof");
 
   useEffect(() => {
     let dispose = () => {};
@@ -45,7 +49,7 @@ export function PublicMapView({ points }: { points: MapPoint[] }) {
         when.style.cssText = "margin:0 0 6px;color:#64748b;font-size:12px";
         const link = document.createElement("a");
         link.href = p.href;
-        link.textContent = "確かめた記録を見る";
+        link.textContent = linkText;
         box.append(title, answer, when, link);
         L.circleMarker([p.lat, p.lng], {
           radius: 9,
@@ -68,13 +72,13 @@ export function PublicMapView({ points }: { points: MapPoint[] }) {
       gone = true;
       dispose();
     };
-  }, [points]);
+  }, [points, linkText]);
 
   return (
     <div
       ref={el}
       role="application"
-      aria-label="人が確かめた事実の地図"
+      aria-label={pick(lang, "人が確かめた事実の地図", "Map of facts checked by people")}
       className="h-[26rem] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"
     />
   );

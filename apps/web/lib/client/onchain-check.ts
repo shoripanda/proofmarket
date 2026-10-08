@@ -1,6 +1,7 @@
 // Compare a public result with the Task account on Solana, from the visitor's own browser (S-07).
 // Layout follows programs/proofmarket/src/state.rs (Anchor: 8-byte discriminator, borsh, 1-byte enums).
 import bs58 from "bs58";
+import { type Lang, pick } from "@/lib/lang";
 
 const OFF = {
   taskIdHash: 11,
@@ -57,28 +58,37 @@ export async function compare(
   shown: { verificationId: string; status: string; evidenceRoot: string; resultHash: string },
   account: { owner: string; data: Uint8Array },
   programId: string,
+  lang: Lang = "ja",
 ): Promise<CheckItem[]> {
   const t = decodeTask(account.data);
   const strip = (s: string) => s.replace(/^sha256:/, "");
   const idHash = await taskIdHashHex(shown.verificationId);
   return [
     {
-      label: "ProofMarket のプログラムが持つ口座",
+      label: pick(lang, "ProofMarket のプログラムが持つ口座", "Account owned by the ProofMarket program"),
       ok: account.owner === programId,
       detail: account.owner,
     },
-    { label: "この結果の ID から計算した値と一致", ok: t.taskIdHash === idHash, detail: t.taskIdHash },
     {
-      label: "結果の種類が一致",
-      ok: EXPECTED_OUTCOME[shown.status] === t.outcome,
-      detail: `${t.outcome}（${t.status}）`,
+      label: pick(lang, "この結果の ID から計算した値と一致", "Matches the hash of this result's ID"),
+      ok: t.taskIdHash === idHash,
+      detail: t.taskIdHash,
     },
     {
-      label: "evidence_root が一致",
+      label: pick(lang, "結果の種類が一致", "Outcome matches"),
+      ok: EXPECTED_OUTCOME[shown.status] === t.outcome,
+      detail: `${t.outcome} (${t.status})`,
+    },
+    {
+      label: pick(lang, "evidence_root が一致", "evidence_root matches"),
       ok: t.evidenceRoot === strip(shown.evidenceRoot),
       detail: t.evidenceRoot,
     },
-    { label: "result_hash が一致", ok: t.resultHash === strip(shown.resultHash), detail: t.resultHash },
+    {
+      label: pick(lang, "result_hash が一致", "result_hash matches"),
+      ok: t.resultHash === strip(shown.resultHash),
+      detail: t.resultHash,
+    },
   ];
 }
 

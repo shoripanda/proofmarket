@@ -1,28 +1,39 @@
 "use client";
 // S-B09 店舗からの申告フォーム. Posts to /v1/store/{token} (01 §4.13).
 import { useState } from "react";
+import { useLang } from "@/lib/client/lang";
+import { dateLocale, type Lang, pick } from "@/lib/lang";
 
 type Current = { status: "CLOSED_TODAY" | "OPEN_AS_USUAL"; reported_at: string; valid_until: string } | null;
-const LABEL: Record<NonNullable<Current>["status"], string> = {
-  CLOSED_TODAY: "本日は臨時休業",
-  OPEN_AS_USUAL: "通常どおり営業",
+const LABEL: Record<Lang, Record<NonNullable<Current>["status"], string>> = {
+  ja: { CLOSED_TODAY: "本日は臨時休業", OPEN_AS_USUAL: "通常どおり営業" },
+  en: { CLOSED_TODAY: "Closed today", OPEN_AS_USUAL: "Open as usual" },
 };
-/** "10/4 の終わりまで" for a JST midnight, otherwise the date and time. */
-function until(iso: string) {
+/** "10/4 の終わりまで" / "until the end of 4 Oct" for a JST midnight, otherwise the date and time. */
+function until(iso: string, lang: Lang) {
   const d = new Date(iso);
+  const loc = dateLocale(lang);
   const hm = d.toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" });
   if (hm === "00:00") {
-    const day = new Date(d.getTime() - 1).toLocaleDateString("ja-JP", {
+    const day = new Date(d.getTime() - 1).toLocaleDateString(loc, {
       timeZone: "Asia/Tokyo",
-      month: "numeric",
+      month: lang === "en" ? "short" : "numeric",
       day: "numeric",
     });
-    return `${day} の終わりまで`;
+    return pick(lang, `${day} の終わりまで`, `until the end of ${day}`);
   }
-  return `${d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} まで`;
+  const at = d.toLocaleString(loc, {
+    timeZone: "Asia/Tokyo",
+    month: lang === "en" ? "short" : "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return pick(lang, `${at} まで`, `until ${at}`);
 }
 
 export function StoreReportForm({ token, initial }: { token: string; initial: Current }) {
+  const lang = useLang();
   const [current, setCurrent] = useState<Current>(initial);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,7 +51,13 @@ export function StoreReportForm({ token, initial }: { token: string; initial: Cu
       setCurrent(((await res.json()) as { current: Current }).current);
       setNote("");
     } else {
-      setErr("送れませんでした。少し待ってからもう一度お試しください。");
+      setErr(
+        pick(
+          lang,
+          "送れませんでした。少し待ってからもう一度お試しください。",
+          "Could not send. Please wait a moment and try again.",
+        ),
+      );
     }
     setBusy(false);
   }
@@ -48,14 +65,14 @@ export function StoreReportForm({ token, initial }: { token: string; initial: Cu
   return (
     <div className="max-w-xl space-y-5">
       <div className="rounded-2xl bg-slate-50 p-4 text-sm">
-        <p className="text-slate-500">いまの申告</p>
+        <p className="text-slate-500">{pick(lang, "いまの申告", "Current notice")}</p>
         {current ? (
           <p className="mt-1">
-            <span className="text-lg font-bold">{LABEL[current.status]}</span>
-            <span className="ml-2 text-slate-500">{until(current.valid_until)}</span>
+            <span className="text-lg font-bold">{LABEL[lang][current.status]}</span>
+            <span className="ml-2 text-slate-500">{until(current.valid_until, lang)}</span>
           </p>
         ) : (
-          <p className="mt-1 text-slate-600">申告はありません。</p>
+          <p className="mt-1 text-slate-600">{pick(lang, "申告はありません。", "No notice.")}</p>
         )}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -65,7 +82,7 @@ export function StoreReportForm({ token, initial }: { token: string; initial: Cu
           onClick={() => send("CLOSED_TODAY")}
           className="rounded-2xl bg-slate-800 px-4 py-4 font-bold text-white disabled:opacity-40"
         >
-          本日は臨時休業
+          {LABEL[lang].CLOSED_TODAY}
         </button>
         <button
           type="button"
@@ -73,12 +90,16 @@ export function StoreReportForm({ token, initial }: { token: string; initial: Cu
           onClick={() => send("OPEN_AS_USUAL")}
           className="rounded-2xl bg-teal-700 px-4 py-4 font-bold text-white disabled:opacity-40"
         >
-          通常どおり営業
+          {LABEL[lang].OPEN_AS_USUAL}
         </button>
       </div>
       <div>
         <label htmlFor="note" className="text-sm font-semibold">
-          運営者へのメモ（任意・公開されません）
+          {pick(
+            lang,
+            "運営者へのメモ（任意・公開されません）",
+            "Note to the operator (optional, not published)",
+          )}
         </label>
         <input
           id="note"
