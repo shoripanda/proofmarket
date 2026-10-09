@@ -675,10 +675,16 @@ async function markProvisional(tx: Db, task: TaskRow, now: Date): Promise<void> 
     metadata: { action: "provisional", challenge_minutes: task.challengeMinutes },
   });
   if (task.callbackEndpointId) {
-    await enqueueJob(tx, "DELIVER_WEBHOOK", `verification.provisional:${task.id}`, {
-      verification_id: task.id,
-      endpoint_id: task.callbackEndpointId,
-      event: "verification.provisional",
-    });
+    await enqueueJob(
+      tx,
+      "DELIVER_WEBHOOK",
+      `verification.provisional:${task.id}`,
+      {
+        verification_id: task.id,
+        endpoint_id: task.callbackEndpointId,
+        event: "verification.provisional",
+      },
+      now,
+    );
   }
 }

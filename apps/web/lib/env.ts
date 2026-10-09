@@ -50,6 +50,8 @@ const FullSchema = z.object({
   /** Enables the AI review of submissions (01 §4.16). */
   ANTHROPIC_API_KEY: z.string().optional(),
   REVIEW_MODEL: z.string().optional(),
+  /** low (default, fastest) / medium / high. */
+  REVIEW_EFFORT: z.enum(["low", "medium", "high"]).optional(),
 });
 
 const DEV_SECRET = "dev-only-not-a-secret-dev-only-not-a-secret";

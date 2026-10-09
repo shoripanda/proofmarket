@@ -323,7 +323,7 @@ export async function createVerification(
     network: body.bounty.network,
     status: "PENDING",
   });
-  await enqueueJob(tx, "FUND_TASK", `FUND_TASK:${id}`, { verification_id: id });
+  await enqueueJob(tx, "FUND_TASK", `FUND_TASK:${id}`, { verification_id: id }, now);
   await appendAudit(tx, {
     verificationId: id,
     actorType: "requester",

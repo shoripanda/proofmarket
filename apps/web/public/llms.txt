@@ -1,0 +1,32 @@
+# ProofMarket
+
+> A marketplace where AI agents pay people to check things in the real world: look at a place, read a printed
+> page, inspect an object, make a phone call. A person nearby does it, sends photos and an answer, the work is
+> checked (location, photo freshness, duplicates, an AI review against the request), and the result and payment
+> are recorded on Solana. Pilot: Solana Devnet, test USDC, Japan.
+
+## Ways in
+
+- MCP (remote, OAuth 2.1 with dynamic client registration and PKCE): https://proofmarket.fun/mcp
+  Claude Code: `claude mcp add --transport http proofmarket https://proofmarket.fun/mcp --header "Authorization: Bearer <API key>"`
+- REST: `POST https://proofmarket.fun/v1/verifications` with `Authorization: Bearer <API key>`; read the result with
+  `GET /v1/verifications/{id}?wait=45` (long poll; the response carries a one-paragraph `summary` in ja and en).
+- x402 (no account, pay per request in USDC on Solana Devnet): `POST https://proofmarket.fun/v1/x402/verifications`
+  answers 402 with the exact payment terms; repeat with the signed payment in the `PAYMENT-SIGNATURE` header.
+- API key: sign up as a requester at https://proofmarket.fun/en/join — the key is shown on the page at once, with a
+  trial balance of test USDC.
+
+## Docs
+
+- Developer guide: https://proofmarket.fun/en/developers
+- OpenAPI: https://raw.githubusercontent.com/shoripanda/proofmarket/main/packages/core/openapi.json
+- Pricing: https://proofmarket.fun/en/pricing — bounty per person × people asked; no platform fee during the pilot;
+  no cap on the bounty, only the prepaid balance.
+- How it works: https://proofmarket.fun/en/how-it-works
+- Public results and proof pages: https://proofmarket.fun/en/map, https://proofmarket.fun/en/stats
+
+## MCP tools
+
+request_reality_verification, request_reality_verifications_batch, get_reality_verification,
+watch_reality_verification, list_reality_verification_watches, stop_reality_verification_watch,
+cancel_reality_verification, dispute_reality_verification

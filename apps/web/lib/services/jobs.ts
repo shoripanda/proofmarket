@@ -4,7 +4,7 @@ import "server-only";
 
 import { LIMITS, OUTBOX_RETRY, type OutboxJobKind, type WebhookEvent } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, eq, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
 import { runOptimistic } from "./challenge-service";
@@ -120,6 +120,8 @@ export async function kick(app: AppContext, dedupeKey: string): Promise<void> {
 }
 
 const DEADLINE_STATUSES = ["FUNDED", "OPEN", "CLAIMED", "SUBMITTED"];
+/** Deadlines handled per tick (one transaction each). */
+export const DEADLINES_PER_TICK = 200;
 /** How long a deadline waits for a pending outside review (01 §4.17). */
 const REVIEW_GRACE_MS = 30 * 60_000;
 
@@ -175,6 +177,8 @@ export async function tick(
         dedupeKey: `PURGE_EVIDENCE:${now.toISOString().slice(0, 10)}`,
         payload: {},
         state: "PENDING",
+        runAfter: now,
+        updatedAt: now,
       })
       .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey }),
   );
@@ -202,7 +206,10 @@ async function runDeadlines(app: AppContext, now: Date, failed: string[]): Promi
         lte(schema.verificationRequests.deadline, now),
         isNull(schema.verificationRequests.provisionalAt),
       ),
-    );
+    )
+    // Oldest first and bounded, so one tick stays well inside its minute; the rest wait for the next tick.
+    .orderBy(asc(schema.verificationRequests.deadline))
+    .limit(DEADLINES_PER_TICK);
   for (const { id } of due) {
     // One task at a time: a task that cannot be expired must not hold the others (or the jobs) back.
     await step(failed, `deadline:${id}`, async () => {
@@ -250,4 +257,36 @@ async function runExpiry(app: AppContext, now: Date): Promise<void> {
     "evidence-raw",
     stale.map((u) => u.key),
   ); // 03 §3.4: DISCARDED also deletes the object
+}
+
+/**
+ * Readiness for an outside uptime monitor (/v1/health/ready). The tick leaves no heartbeat row, so a stalled
+ * tick is read from its backlog: jobs due for over 5 minutes, or deadlines passed for longer than the review
+ * grace plus 10 minutes. DEAD jobs need an operator (`requeue`). Only booleans leave the server.
+ */
+export async function readiness(app: AppContext): Promise<{ ok: boolean; checks: Record<string, boolean> }> {
+  const now = app.now().getTime();
+  const [jobs] = await app.db
+    .select({
+      overdue: sql<number>`count(*) filter (where ${schema.outboxJobs.state} = 'PENDING' and ${schema.outboxJobs.runAfter} < ${new Date(now - 5 * 60_000).toISOString()})`,
+      dead: sql<number>`count(*) filter (where ${schema.outboxJobs.state} = 'DEAD')`,
+    })
+    .from(schema.outboxJobs);
+  const [late] = await app.db
+    .select({ n: sql<number>`count(*)` })
+    .from(schema.verificationRequests)
+    .where(
+      and(
+        inArray(schema.verificationRequests.status, DEADLINE_STATUSES),
+        lte(schema.verificationRequests.deadline, new Date(now - REVIEW_GRACE_MS - 10 * 60_000)),
+        isNull(schema.verificationRequests.provisionalAt),
+      ),
+    );
+  const checks = {
+    database: true,
+    jobs_draining: Number(jobs?.overdue ?? 0) === 0,
+    deadlines_on_time: Number(late?.n ?? 0) === 0,
+    no_dead_jobs: Number(jobs?.dead ?? 0) === 0,
+  };
+  return { ok: Object.values(checks).every(Boolean), checks };
 }
