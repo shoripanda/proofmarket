@@ -1,6 +1,7 @@
 // Production housekeeping: growing bookkeeping tables are trimmed daily, and /v1/health/ready tells an outside
 // monitor whether the minute tick keeps up.
 import { schema } from "@proofmarket/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleCreate } from "../lib/handlers/requester";
 import { readiness, tick } from "../lib/services/jobs";
@@ -70,5 +71,38 @@ describe("readiness", () => {
       .insert(schema.outboxJobs)
       .values({ kind: "PURGE_EVIDENCE", dedupeKey: "dead-1", payload: {}, state: "DEAD" });
     expect((await readiness(t.app)).checks.no_dead_jobs).toBe(false);
+  });
+});
+
+describe("tick warnings (08 §5)", () => {
+  it("counts DEAD jobs and payments stuck for over 10 minutes", async () => {
+    expect((await tick(t.app)).warnings).toEqual({
+      dead_jobs: 0,
+      stuck_payments: 0,
+      operator_sol_low: false,
+    });
+    await t.db
+      .insert(schema.outboxJobs)
+      .values({ kind: "PURGE_EVIDENCE", dedupeKey: "dead-2", payload: {}, state: "DEAD" });
+    const res = await call(
+      (r) => handleCreate(t.app, r),
+      jsonReq("POST", "/v1/verifications", {
+        key: t.apiKey,
+        body: createBody(t.principalId),
+        idem: crypto.randomUUID(),
+      }),
+    );
+    const { verification_id: id } = (await res.json()) as { verification_id: string };
+    await tick(t.app); // FUND_TASK runs on the fake chain and records its payment
+    // backdate that payment and leave it unconfirmed
+    await t.db
+      .update(schema.paymentRecords)
+      .set({ status: "PENDING", createdAt: new Date(t.app.now().getTime() - 11 * 60_000) })
+      .where(eq(schema.paymentRecords.verificationId, id));
+    expect((await tick(t.app)).warnings).toEqual({
+      dead_jobs: 1,
+      stuck_payments: 1,
+      operator_sol_low: false,
+    });
   });
 });

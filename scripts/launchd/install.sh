@@ -1,6 +1,7 @@
 #!/bin/zsh
-# Install (or reinstall) the review runner as a per-user launchd agent: every 2 minutes it asks the server for
-# submissions waiting for review and lets Claude Code judge them (01 §4.17). Log: ~/Library/Logs/proofmarket-review-runner.log
+# Install (or reinstall) the review runner as a per-user launchd agent. It stays running and asks the server every
+# few seconds for submissions waiting for review, then lets Claude Code judge them (01 §4.17).
+# Log: ~/Library/Logs/proofmarket-review-runner.log
 # Stop: launchctl bootout gui/$(id -u)/com.proofmarket.review-runner
 set -e
 REPO=$(cd "$(dirname "$0")/../.." && pwd)

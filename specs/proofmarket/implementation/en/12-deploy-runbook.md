@@ -98,13 +98,13 @@ pnpm --filter @proofmarket/scripts run run gen-vapid.ts --subject https://<conta
 | `MAX_WITNESSES` | `5` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `~/.config/proofmarket/env.vapid`. Without all three, push notifications are off (everything else works) |
 | `RESEND_API_KEY`, `MAIL_FROM` | Resend (https://resend.com). `MAIL_FROM` looks like `ProofMarket <keys@proofmarket.fun>` and must be on a domain verified in Resend. Optional. With both set, the API key shown on the sign-up page is also emailed as a copy (01 §4.28); without them the key is still handed over on the page |
-| `ANTHROPIC_API_KEY`, `REVIEW_MODEL`, `REVIEW_EFFORT` | Optional. With the key, the AI review of each submission runs inside the server at once, instead of waiting for the review-runner on the Mac (every 2 minutes). `REVIEW_MODEL` defaults to `claude-opus-5-5`; `REVIEW_EFFORT` is `low` (default, fastest), `medium` or `high`. Aim: a verdict within 10 seconds of the upload. A call over 25 seconds is retried once; if that fails too, the check is kept as a warning |
+| `ANTHROPIC_API_KEY`, `REVIEW_MODEL`, `REVIEW_EFFORT` | Optional. With the key, the AI review of each submission runs inside the server at once, instead of waiting for the review-runner on the Mac (it polls every 5 seconds, but stops when the Mac sleeps). `REVIEW_MODEL` defaults to `claude-opus-5-5`; `REVIEW_EFFORT` is `low` (default, fastest), `medium` or `high`. Aim: a verdict within 10 seconds of the upload. A call over 25 seconds is retried once; if that fails too, the check is kept as a warning |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT_EMAIL` | Operator name and contact shown on `/legal/operator`. If unset, the page says they will be added before launch |
 
 Do not set `DEV_MODE` or `NEXT_PUBLIC_DEV_MODE`; the app refuses to start with them.
 
 4. After deploying, check that `https://<app>/v1/health` returns `{"ok":true}`, then register the tick from Section 3, step 5
-5. Register `https://<app>/v1/health/ready` with an outside uptime monitor (UptimeRobot or similar) every 5 minutes. It answers 200 when the database responds and the minute tick keeps up, 503 otherwise; the false entry in `checks` (`jobs_draining`, `deadlines_on_time`, `no_dead_jobs`) names the cause. Bring DEAD jobs back with the admin `requeue`
+5. The GitHub Actions `uptime` workflow (`.github/workflows/uptime.yml`) checks `https://proofmarket.fun/v1/health/ready` every 5 minutes. It answers 200 when the database responds and the minute tick keeps up, 503 otherwise, and GitHub emails the owner about a failed run; the false entry in `checks` (`jobs_draining`, `deadlines_on_time`, `no_dead_jobs`) names the cause. The tick itself counts the 08 §5 items every minute (DEAD jobs, payments in flight for over 10 minutes, the operator's SOL balance) and logs a `tick_needs_operator` warning. Bring DEAD jobs back with the admin `requeue`
 
 ## 6. Initial data
 

@@ -1,0 +1,23 @@
+# Outside check of production (12 §5.5, 08 §5): every 5 minutes, GET /v1/health/ready. It answers 200 when the
+# database responds and the minute tick keeps up, 503 otherwise. A failed run makes GitHub email the owner.
+# (GitHub may delay scheduled runs by a few minutes; that is fine for this check.)
+name: uptime
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ready:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: GET /v1/health/ready
+        run: |
+          body=$(curl -sS --max-time 20 -w '\n%{http_code}' https://proofmarket.fun/v1/health/ready) || { echo "unreachable"; exit 1; }
+          code=${body##*$'\n'}
+          echo "$code ${body%$'\n'*}"
+          [ "$code" = "200" ]
