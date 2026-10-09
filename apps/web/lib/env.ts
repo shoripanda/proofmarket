@@ -16,6 +16,10 @@ const Common = {
     .string()
     .regex(/^(mailto:|https:)/)
     .optional(),
+  // Email (01 §4.28). With both set, a requester sign-up on /join gets its API key by email at once;
+  // without them, sign-ups are only stored for the operator (scripts/list-participation.ts), as before.
+  RESEND_API_KEY: z.string().min(1).optional(),
+  MAIL_FROM: z.string().min(3).optional(),
   /** Rising bounty (13 §1). Off until program v1.1 is deployed; while off, `bounty.max_amount` is refused. */
   RISING_BOUNTY_ENABLED: z
     .enum(["true", "false", "1", "0"])

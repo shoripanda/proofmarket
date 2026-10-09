@@ -28,6 +28,8 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
     push,
     // Off by default so other tests are unaffected; `t.app.reviewer = t.reviewer` turns it on.
     reviewer: null,
+    // Off by default (sign-ups wait for the operator); `t.app.mailer = new FakeMailer()` turns email on.
+    mailer: null,
     config: {
       appEnv: "test",
       pilotBBox: { minLat: 35.6, minLng: 139.65, maxLat: 35.72, maxLng: 139.78 },

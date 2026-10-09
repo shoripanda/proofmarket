@@ -26,6 +26,15 @@ export interface PushSender {
   ): Promise<{ ok: true } | { ok: false; gone: boolean }>;
 }
 
+/** Transactional email (01 §4.28). `ok: false` = the provider refused it or could not be reached. */
+export interface Mailer {
+  send(m: {
+    to: string;
+    subject: string;
+    text: string;
+  }): Promise<{ ok: true } | { ok: false; reason: string }>;
+}
+
 /** What the reviewer is shown for one submission (01 §4.16). */
 export interface ReviewInput {
   type: string;

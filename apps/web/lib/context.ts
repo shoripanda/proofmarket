@@ -22,10 +22,11 @@ import {
   localStorage,
 } from "./adapters/dev";
 import { createPrivyIdentity } from "./adapters/privy";
+import { createResendMailer } from "./adapters/resend-mailer";
 import { createSupabaseStorage } from "./adapters/supabase-storage";
 import { createWebPushSender } from "./adapters/web-push";
 import { env, isDev } from "./env";
-import type { EvidenceStorage, IdentityProvider, PushSender, SubmissionReviewer } from "./ports";
+import type { EvidenceStorage, IdentityProvider, Mailer, PushSender, SubmissionReviewer } from "./ports";
 
 /** Everything a service needs, injected so integration tests can use PGlite and fakes. */
 export interface AppContext {
@@ -42,6 +43,8 @@ export interface AppContext {
   push: PushSender | null;
   /** Null when ANTHROPIC_API_KEY is not set: vision_consistency is then not_run (01 §4.16). */
   reviewer: SubmissionReviewer | null;
+  /** Null when RESEND_API_KEY / MAIL_FROM are not set: requester sign-ups then wait for the operator (01 §4.28). */
+  mailer: Mailer | null;
 }
 
 export interface AppConfig {
@@ -104,6 +107,7 @@ function buildContext(): AppContext {
       ),
       push: pushFromEnv(e),
       reviewer: reviewerFromEnv(),
+      mailer: mailerFromEnv(e),
     };
     return ctx;
   }
@@ -137,6 +141,7 @@ function buildContext(): AppContext {
     ),
     push: pushFromEnv(e),
     reviewer: reviewerFromEnv(),
+    mailer: mailerFromEnv(e),
   };
   return ctx;
 }
@@ -145,6 +150,12 @@ function reviewerFromEnv(): SubmissionReviewer | null {
   const key = process.env.ANTHROPIC_API_KEY;
   return key
     ? createClaudeReviewer({ apiKey: key, model: process.env.REVIEW_MODEL || "claude-opus-5-5" })
+    : null;
+}
+
+function mailerFromEnv(e: ReturnType<typeof env>): Mailer | null {
+  return e.RESEND_API_KEY && e.MAIL_FROM
+    ? createResendMailer({ apiKey: e.RESEND_API_KEY, from: e.MAIL_FROM })
     : null;
 }
 

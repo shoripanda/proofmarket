@@ -691,8 +691,13 @@ export const participationRequests = pgTable(
     status: text("status").notNull().default("new"),
     createdAt: tsz("created_at").notNull().defaultNow(),
     deleteAfter: tsz("delete_after").notNull(),
+    /** HMAC of the lowercased address: finds earlier sign-ups without decrypting every row (01 §4.28). */
+    contactHash: bytea("contact_hash"),
+    /** The API key issued to this address by email, when the request was a requester one (01 §4.28). */
+    credentialId: text("credential_id"),
   },
-  (_t) => [
+  (t) => [
+    index("participation_contact_hash_idx").on(t.contactHash),
     check("participation_role_chk", oneOf("role", PARTICIPATION_ROLES)),
     check("participation_area_chk", sql`area is null or ${oneOf("area", PARTICIPATION_AREAS)}`),
     check("participation_note_chk", sql`note is null or char_length(note) <= 500`),
