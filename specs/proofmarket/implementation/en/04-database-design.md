@@ -131,6 +131,7 @@ create table verification_requests (
   bounty_asset            text not null,
   bounty_amount           numeric(20,6) not null check (bounty_amount > 0),  -- per worker
   bounty_network          text not null check (bounty_network = 'solana-devnet'),
+  platform_fee_amount     numeric(20,6) not null default 0 check (platform_fee_amount >= 0), -- platform fee (01 §4.1); 0 in the MVP
   status                  text not null,              -- Chapter 03, Section 2
   funding_status          text not null default 'NONE',
   settlement_status       text not null default 'NONE',

@@ -57,7 +57,7 @@ The operating rules that the existing specs did not decide are set out below. Th
 
 ### 4.1 Reward amount
 
-`bounty.amount` is the reward amount per witness. At creation, `amount × required_witnesses` is reserved from the requester's balance and placed in the on-chain escrow. The platform fee is 0 in the MVP, and only a field for it is provided (the rate is undecided, as stated in `project-brief.md`).
+`bounty.amount` is the reward amount per witness. At creation, `amount × required_witnesses` is reserved from the requester's balance and placed in the on-chain escrow. The platform fee is 0 in the MVP, and only a field for it is provided (`verification_requests.platform_fee_amount`, migration 0027; the rate is undecided, as stated in `project-brief.md`).
 
 ### 4.2 What is paid
 
