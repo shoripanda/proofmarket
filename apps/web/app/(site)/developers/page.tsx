@@ -87,14 +87,25 @@ const COPY = {
           note: "OAuth 2.1（動的クライアント登録・PKCE）で接続する。キーは ProofMarket 側にだけ渡る",
         },
         {
+          name: "Codex CLI（OpenAI）",
+          checked: true,
+          steps: [
+            "ターミナルで codex mcp add proofmarket --url <URL>/mcp --bearer-token-env-var PROOFMARKET_API_KEY を実行し、環境変数 PROOFMARKET_API_KEY に API キーを入れる",
+            "codex を起動し、「ProofMarket の道具を一覧して」と頼む。道具の名前が出れば接続できている",
+            "キーを環境変数に置きたくなければ、codex mcp add proofmarket --url <URL>/mcp のあと codex mcp login proofmarket を実行し、開いた許可画面にキーを貼る（OAuth）",
+          ],
+          note: "Codex CLI 0.145 で確認済み。設定は ~/.codex/config.toml に残る",
+        },
+        {
           name: "ChatGPT",
           checked: false,
           steps: [
-            "設定 → アプリ → 詳細設定 で「開発者モード」をオンにする（Plus 以上）",
-            "設定 → コネクタ → 「カスタムコネクタを追加」で URL に <URL>/mcp、認証に OAuth を選ぶ",
-            "許可画面で API キーを貼る",
+            "設定 → アプリ（コネクタ）→ 詳細設定 で「開発者モード」をオンにする（Plus 以上）",
+            "「作成」（カスタムコネクタを追加）で、名前に ProofMarket、MCP サーバーの URL に <URL>/mcp、認証に OAuth を選んで作る",
+            "「接続」を押すと ProofMarket の許可画面が開く。API キーを貼って許可する",
+            "新しい会話で ProofMarket を有効にし、「この店が開いているか確かめて」のように頼む",
           ],
-          note: "ChatGPT は動的クライアント登録に対応していて、ProofMarket 側もそれを出している",
+          note: "OAuth 2.1（動的クライアント登録・PKCE・iss 付きの応答）。ChatGPT の固定の戻り先（chatgpt.com/connector_platform_oauth_redirect）にも、接続ごとの戻り先にも応じる",
         },
         {
           name: "Cursor・Windsurf などの MCP 対応エディタ",
@@ -400,14 +411,25 @@ const COPY = {
           note: "Connects over OAuth 2.1 (dynamic client registration, PKCE). The key goes to ProofMarket only",
         },
         {
+          name: "Codex CLI (OpenAI)",
+          checked: true,
+          steps: [
+            "In a terminal, run codex mcp add proofmarket --url <URL>/mcp --bearer-token-env-var PROOFMARKET_API_KEY, and put the API key in the PROOFMARKET_API_KEY environment variable",
+            "Start codex and ask it to list the ProofMarket tools. Tool names mean the connection works",
+            "To keep the key out of the environment, run codex mcp add proofmarket --url <URL>/mcp and then codex mcp login proofmarket; paste the key on the consent page that opens (OAuth)",
+          ],
+          note: "Checked with Codex CLI 0.145. The setting lives in ~/.codex/config.toml",
+        },
+        {
           name: "ChatGPT",
           checked: false,
           steps: [
-            "Turn on Developer mode under Settings → Apps → Advanced (Plus or above)",
-            "Settings → Connectors → “Add custom connector”: URL <URL>/mcp, authentication OAuth",
-            "Paste the API key on the consent page",
+            "Turn on Developer mode under Settings → Apps (Connectors) → Advanced (Plus or above)",
+            "“Create” (add a custom connector): name ProofMarket, MCP server URL <URL>/mcp, authentication OAuth",
+            "Press “Connect”; ProofMarket's consent page opens. Paste the API key and allow",
+            "Enable ProofMarket in a new conversation and ask, for example, whether a shop is open",
           ],
-          note: "ChatGPT supports dynamic client registration, which ProofMarket advertises",
+          note: "OAuth 2.1 (dynamic client registration, PKCE, iss in every response). Both ChatGPT's stable redirect (chatgpt.com/connector_platform_oauth_redirect) and the per-connection one are accepted",
         },
         {
           name: "Cursor, Windsurf and other MCP-capable editors",

@@ -92,21 +92,25 @@ describe("metadata and registration", () => {
       registration_endpoint: `${BASE}/oauth/register`,
       code_challenge_methods_supported: ["S256"],
       token_endpoint_auth_methods_supported: ["none"],
+      authorization_response_iss_parameter_supported: true,
     });
   });
 
-  it("accepts https and localhost redirects, rejects plain http elsewhere and confidential clients", async () => {
+  it("accepts https and localhost redirects, rejects plain http elsewhere; every client comes back public", async () => {
     expect((await register([REDIRECT, "http://localhost:6274/cb"])).client_id).toMatch(/^ocl_/);
     await expect(register(["http://evil.example/cb"])).rejects.toMatchObject({
       error: "invalid_redirect_uri",
     });
-    await expect(
-      registerClient(
-        t.app,
-        { redirect_uris: [REDIRECT], token_endpoint_auth_method: "client_secret_basic" },
-        "1.2.3.4",
-      ),
-    ).rejects.toMatchObject({ error: "invalid_client_metadata" });
+    // a client asking for a secret-based method is registered as a public client (the server picks the method)
+    const res = await registerClient(
+      t.app,
+      { redirect_uris: [REDIRECT], token_endpoint_auth_method: "client_secret_basic" },
+      "1.2.3.4",
+    );
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { token_endpoint_auth_method: string; client_secret?: string };
+    expect(body.token_endpoint_auth_method).toBe("none");
+    expect(body.client_secret).toBeUndefined();
   });
 });
 
