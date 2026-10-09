@@ -1,8 +1,10 @@
 // Outside AI review (01 §4.17): fetch submissions held for review, let Claude Code (the operator's own
 // subscription, headless) compare each photo and answer with the request, and post the verdict back.
-//   run review-runner.ts [--base-url https://<app>] [--once]
-// Run every couple of minutes by launchd (see scripts/launchd/README.md). ADMIN_TOKEN comes from
-// ~/.config/proofmarket/env.secrets; nothing secret is passed to Claude.
+//   run review-runner.ts [--base-url https://<app>] [--once | --loop]
+// launchd keeps it running with --loop (scripts/launchd): it asks the server every few seconds, so a submission is
+// judged within seconds of the upload instead of waiting for a 2-minute timer. Without --loop it does one pass and
+// exits. ADMIN_TOKEN comes from ~/.config/proofmarket/env.secrets; nothing secret is passed to Claude.
+// REVIEW_EFFORT (low, the default, is the fastest) and REVIEW_MODEL (optional) tune the judgment.
 import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -16,6 +18,11 @@ const BASE = (a["base-url"] ?? process.env.PROOFMARKET_BASE_URL ?? "https://proo
   "",
 );
 const CLAUDE = process.env.CLAUDE_BIN ?? join(homedir(), ".local/bin/claude");
+const EFFORT = process.env.REVIEW_EFFORT ?? "low";
+const MODEL = process.env.REVIEW_MODEL;
+/** --loop: how often to ask for work, and how long to back off after the server could not be reached. */
+const POLL_MS = Number(process.env.REVIEW_POLL_MS ?? 5000);
+const BACKOFF_MS = 30_000;
 const ADMIN_TOKEN = readFileSync(join(homedir(), ".config/proofmarket/env.secrets"), "utf8")
   .split("\n")
   .find((l) => l.startsWith("ADMIN_TOKEN="))
@@ -126,6 +133,9 @@ function runClaude(dir: string, prompt: string): Promise<{ out: unknown; model: 
         "--setting-sources",
         "",
         "--no-session-persistence",
+        "--effort",
+        EFFORT,
+        ...(MODEL ? ["--model", MODEL] : []),
       ],
       { cwd: dir, stdio: ["ignore", "pipe", "pipe"] },
     );
@@ -173,8 +183,10 @@ async function reviewOne(r: z.infer<typeof Pending>["reviews"][number]) {
         ? `<acceptance_criteria>\n${r.acceptance_criteria}\n</acceptance_criteria>\n\n`
         : "") +
       `<answer>\n${r.answer}\n</answer>`;
+    const t0 = Date.now();
     const { out, model } = await runClaude(dir, prompt);
     const v = Verdict.parse(out);
+    const judgeMs = Date.now() - t0;
     const body = {
       verdict: v.verdict,
       reason: v.reason.slice(0, 300),
@@ -185,7 +197,7 @@ async function reviewOne(r: z.infer<typeof Pending>["reviews"][number]) {
       method: "POST",
       body: JSON.stringify(body),
     });
-    console.log(new Date().toISOString(), r.submission_id, v.verdict, JSON.stringify(res));
+    console.log(new Date().toISOString(), r.submission_id, v.verdict, `${judgeMs}ms`, JSON.stringify(res));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -224,16 +236,41 @@ try {
   if (alive) process.exit(0);
   writeFileSync(LOCK, String(process.pid));
 }
-try {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** One pass: judge everything waiting. Returns how many were handled. */
+async function pass(): Promise<number> {
   const { reviews } = Pending.parse(await api("/v1/admin/reviews"));
   for (const r of reviews) {
     try {
       await reviewOne(r);
     } catch (e) {
-      // Left as CHECKING; the next run retries it.
+      // Left as CHECKING; the next pass retries it.
       console.error(new Date().toISOString(), r.submission_id, "review failed:", (e as Error).message);
     }
     if (a.once === "true") break;
+  }
+  return reviews.length;
+}
+
+let stopping = false;
+for (const sig of ["SIGTERM", "SIGINT"] as const) process.on(sig, () => (stopping = true));
+try {
+  if (a.loop === "true") {
+    console.log(new Date().toISOString(), `review-runner: polling every ${POLL_MS}ms (effort ${EFFORT})`);
+    while (!stopping) {
+      let wait = POLL_MS;
+      try {
+        await pass();
+      } catch (e) {
+        // The server (or the network) is away: say so once and try again later, without quitting.
+        console.error(new Date().toISOString(), "poll failed:", (e as Error).message.slice(0, 200));
+        wait = BACKOFF_MS;
+      }
+      await sleep(wait);
+    }
+  } else {
+    await pass();
   }
 } finally {
   rmSync(LOCK, { force: true });

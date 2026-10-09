@@ -156,7 +156,7 @@ async function step(failed: string[], name: string, fn: () => Promise<unknown>):
 export async function tick(
   app: AppContext,
   maxJobs = 20,
-): Promise<{ deadlines: number; jobsRun: number; failed: string[] }> {
+): Promise<{ deadlines: number; jobsRun: number; failed: string[]; warnings: TickWarnings | null }> {
   const now = app.now();
   const failed: string[] = [];
   // 0. Submissions the outside reviewer never answered pass with a warning (01 §4.17), so they still count below.
@@ -192,7 +192,47 @@ export async function tick(
     if (!job) break;
     await runLeased(app, job, runner);
   }
-  return { deadlines, jobsRun, failed };
+  // 7. 08 §5: count what needs an operator and warn in the log; the counts also come back to the caller.
+  let warnings: TickWarnings | null = null;
+  await step(failed, "warnings", async () => {
+    warnings = await tickWarnings(app, now);
+  });
+  return { deadlines, jobsRun, failed, warnings };
+}
+
+export type TickWarnings = { dead_jobs: number; stuck_payments: number; operator_sol_low: boolean };
+
+/** Payments still PENDING/SUBMITTED after this long need a look (08 §5). */
+const STUCK_PAYMENT_MS = 10 * 60_000;
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+async function tickWarnings(app: AppContext, now: Date): Promise<TickWarnings> {
+  const [jobs] = await app.db
+    .select({ n: sql<number>`count(*)` })
+    .from(schema.outboxJobs)
+    .where(eq(schema.outboxJobs.state, "DEAD"));
+  const [pay] = await app.db
+    .select({ n: sql<number>`count(*)` })
+    .from(schema.paymentRecords)
+    .where(
+      and(
+        inArray(schema.paymentRecords.status, ["PENDING", "SUBMITTED"]),
+        lte(schema.paymentRecords.createdAt, new Date(now.getTime() - STUCK_PAYMENT_MS)),
+      ),
+    );
+  // The operator pays every fee; the chain read may fail on its own without failing the tick.
+  const sol = await app
+    .settlement()
+    .balances()
+    .then((b) => b.operatorLamports)
+    .catch(() => null);
+  const w: TickWarnings = {
+    dead_jobs: Number(jobs?.n ?? 0),
+    stuck_payments: Number(pay?.n ?? 0),
+    operator_sol_low: sol !== null && sol < BigInt(LIMITS.operatorMinSolBalance) * LAMPORTS_PER_SOL,
+  };
+  if (w.dead_jobs || w.stuck_payments || w.operator_sol_low) log("warn", "tick_needs_operator", { ...w });
+  return w;
 }
 
 async function runDeadlines(app: AppContext, now: Date, failed: string[]): Promise<number> {
