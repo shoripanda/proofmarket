@@ -129,6 +129,7 @@ create table verification_requests (
   bounty_asset            text not null,
   bounty_amount           numeric(20,6) not null check (bounty_amount > 0),  -- 1 人あたり
   bounty_network          text not null check (bounty_network = 'solana-devnet'),
+  platform_fee_amount     numeric(20,6) not null default 0 check (platform_fee_amount >= 0), -- 手数料（01 §4.1）。MVP では 0
   status                  text not null,              -- 03 章 2 節
   funding_status          text not null default 'NONE',
   settlement_status       text not null default 'NONE',

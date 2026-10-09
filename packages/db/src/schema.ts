@@ -193,6 +193,8 @@ export const verificationRequests = pgTable(
     bountyAsset: text("bounty_asset").notNull(),
     bountyAmount: money("bounty_amount").notNull(),
     bountyNetwork: text("bounty_network").notNull(),
+    /** Platform fee on this request (01 §4.1): 0 during the MVP, the column exists so the rate can be set later. */
+    platformFeeAmount: money("platform_fee_amount").notNull().default("0"),
     /** Rising bounty (13 §1): the ceiling, how many minutes the rise takes, and the amount fixed at the first claim. */
     bountyMaxAmount: money("bounty_max_amount"),
     bountyRampMinutes: integer("bounty_ramp_minutes"),
@@ -247,6 +249,7 @@ export const verificationRequests = pgTable(
     check("vr_quorum_chk", sql`quorum between 1 and required_witnesses`),
     check("vr_bounty_chk", sql`bounty_amount > 0`),
     check("vr_bounty_max_chk", sql`bounty_max_amount is null or bounty_max_amount >= bounty_amount`),
+    check("vr_platform_fee_chk", sql`platform_fee_amount >= 0`),
     check("vr_bounty_ramp_chk", sql`bounty_ramp_minutes is null or bounty_ramp_minutes between 10 and 1440`),
     check("vr_challenge_chk", sql`challenge_minutes is null or challenge_minutes between 10 and 120`),
     check("vr_location_privacy_chk", sql`location_privacy in ('exact','coarse')`),

@@ -55,7 +55,7 @@ API キーは必ず 1 つの Responsible Principal に紐づく（`users-and-sta
 
 ### 4.1 報酬額
 
-`bounty.amount` は witness 1 人あたりの報酬額とする。作成時に `amount × required_witnesses` を requester の残高から引き当て、オンチェーンのエスクローに入れる。プラットフォーム手数料は MVP では 0 とし、記録の欄だけ用意する（料率は `project-brief.md` のとおり未確定）。
+`bounty.amount` は witness 1 人あたりの報酬額とする。作成時に `amount × required_witnesses` を requester の残高から引き当て、オンチェーンのエスクローに入れる。プラットフォーム手数料は MVP では 0 とし、記録の欄だけ用意する（`verification_requests.platform_fee_amount`、移行 0027。料率は `project-brief.md` のとおり未確定）。
 
 ### 4.2 支払いの対象
 
