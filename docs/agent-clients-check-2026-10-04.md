@@ -10,7 +10,8 @@
 | REST（curl） | **つながった** | 2026-10-05 | `tools/list` を直接呼んで 4 つの道具。キー無しは 401 と `WWW-Authenticate: Bearer resource_metadata=...` |
 | OAuth の公開設定 | **そろっている** | 2026-10-05 | `/.well-known/oauth-protected-resource`・`/.well-known/oauth-authorization-server`。登録・認可・トークンの窓口、PKCE S256、公開クライアントのみ |
 | claude.ai のコネクタ | **つながった** | 2026-10-06 | `https://proofmarket.fun/mcp` をカスタムコネクタに登録。OAuth（動的クライアント登録 → ProofMarket の許可画面で API キー）を経て、会話から 7 つの道具が見えた |
-| ChatGPT（開発者モードのコネクタ） | 未確認 | — | 同上。公式の案内では DCR に対応（developers.openai.com の Authentication） |
+| Codex CLI（API キーを環境変数で） | **つながった** | 2026-10-10 | `codex mcp add proofmarket --url https://proofmarket.fun/mcp --bearer-token-env-var PROOFMARKET_API_KEY` → `codex exec` から道具の名前が返った（Codex CLI 0.145.0、既定の gpt-6-astra はこの版で使えず `-m gpt-5.5` で実行）。OAuth（`codex mcp login`）は手順のみ |
+| ChatGPT（開発者モードのコネクタ） | サーバー側は準備済み・接続は未確認 | 2026-10-10 | OpenAI の要件（S256・registration_endpoint・RFC 9207 の iss）を満たすよう、メタデータに `authorization_response_iss_parameter_supported: true` を足し、登録時に `token_endpoint_auth_method` が何でも公開クライアントとして受けるようにした。実際の接続はオーナーの ChatGPT（Plus 以上、開発者モード）で試す |
 | Cursor など | 未確認 | — | 手順のみ |
 
 ## 試験で出した依頼

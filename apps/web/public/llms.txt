@@ -9,6 +9,9 @@
 
 - MCP (remote, OAuth 2.1 with dynamic client registration and PKCE): https://proofmarket.fun/mcp
   Claude Code: `claude mcp add --transport http proofmarket https://proofmarket.fun/mcp --header "Authorization: Bearer <API key>"`
+  Codex CLI: `codex mcp add proofmarket --url https://proofmarket.fun/mcp --bearer-token-env-var PROOFMARKET_API_KEY`
+  (or `codex mcp login proofmarket` for OAuth). claude.ai and ChatGPT: add https://proofmarket.fun/mcp as a custom
+  connector with OAuth; paste the API key on the consent page.
 - REST: `POST https://proofmarket.fun/v1/verifications` with `Authorization: Bearer <API key>`; read the result with
   `GET /v1/verifications/{id}?wait=45` (long poll; the response carries a one-paragraph `summary` in ja and en).
 - x402 (no account, pay per request in USDC on Solana Devnet): `POST https://proofmarket.fun/v1/x402/verifications`

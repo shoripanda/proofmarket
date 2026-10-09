@@ -69,6 +69,9 @@ export function authorizationServerMetadata(base: string) {
     grant_types_supported: ["authorization_code", "refresh_token"],
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none"],
+    // RFC 9207: every authorization response, success or error, carries iss (checkAuthorize / approve). ChatGPT
+    // then uses its stable redirect URI and client id instead of one per connection.
+    authorization_response_iss_parameter_supported: true,
   };
 }
 
@@ -101,10 +104,9 @@ export async function registerClient(app: AppContext, body: unknown, ip: string)
   await consumeRateLimit(app, `oauth-register:${ip}`, 10);
   const parsed = RegisterBody.safeParse(body);
   if (!parsed.success) throw new OAuthError("invalid_client_metadata", "redirect_uris (1-5) is required");
-  const { redirect_uris, client_name, token_endpoint_auth_method } = parsed.data;
-  if (token_endpoint_auth_method && token_endpoint_auth_method !== "none") {
-    throw new OAuthError("invalid_client_metadata", "only public clients (token_endpoint_auth_method=none)");
-  }
+  // Every client is public here (PKCE, no secret). A client that asks for a secret-based method (ChatGPT's
+  // registration may) is registered anyway; the response says "none", which RFC 7591 lets the server choose.
+  const { redirect_uris, client_name } = parsed.data;
   if (!redirect_uris.every(allowedRedirect)) {
     throw new OAuthError("invalid_redirect_uri", "redirect_uris must be https, or http on localhost");
   }
