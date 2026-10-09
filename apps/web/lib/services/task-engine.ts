@@ -149,7 +149,7 @@ export async function applyTaskEvent(
           .where(and(eq(schema.claims.verificationId, task.id), eq(schema.claims.state, "ACTIVE")));
         break;
       case "enqueue":
-        await enqueueJob(tx, e.job, `${e.job}:${task.id}`, { verification_id: task.id });
+        await enqueueJob(tx, e.job, `${e.job}:${task.id}`, { verification_id: task.id }, now);
         break;
       case "cancelJob":
         await tx
@@ -190,11 +190,17 @@ export async function applyTaskEvent(
       }
       case "webhook":
         if (task.callbackEndpointId) {
-          await enqueueJob(tx, "DELIVER_WEBHOOK", `${e.event}:${task.id}`, {
-            verification_id: task.id,
-            endpoint_id: task.callbackEndpointId,
-            event: e.event,
-          });
+          await enqueueJob(
+            tx,
+            "DELIVER_WEBHOOK",
+            `${e.event}:${task.id}`,
+            {
+              verification_id: task.id,
+              endpoint_id: task.callbackEndpointId,
+              event: e.event,
+            },
+            now,
+          );
         }
         break;
       case "createClaim":
@@ -223,15 +229,20 @@ export async function applyTaskEvent(
   return { rule, next, domainEffects };
 }
 
+/**
+ * `now` is the app clock. run_after must not fall back to the database default: leaseNextJob compares it with the
+ * app clock, so a database clock ahead of it (tests with a fixed clock) would hold every new job back.
+ */
 export async function enqueueJob(
   tx: Db,
   kind: (typeof schema.outboxJobs.$inferInsert)["kind"],
   dedupeKey: string,
   payload: Record<string, unknown>,
+  now: Date,
 ): Promise<void> {
   await tx
     .insert(schema.outboxJobs)
-    .values({ kind, dedupeKey, payload, state: "PENDING" })
+    .values({ kind, dedupeKey, payload, state: "PENDING", runAfter: now, updatedAt: now })
     .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey });
 }
 

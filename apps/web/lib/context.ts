@@ -11,7 +11,7 @@ import {
   type X402Facilitator,
 } from "@proofmarket/solana";
 import bs58 from "bs58";
-import { createClaudeReviewer } from "./adapters/claude-reviewer";
+import { createClaudeReviewer, type ReviewEffort } from "./adapters/claude-reviewer";
 import {
   assertDevAllowed,
   DEVNET_GENESIS,
@@ -149,7 +149,11 @@ function buildContext(): AppContext {
 function reviewerFromEnv(): SubmissionReviewer | null {
   const key = process.env.ANTHROPIC_API_KEY;
   return key
-    ? createClaudeReviewer({ apiKey: key, model: process.env.REVIEW_MODEL || "claude-opus-5-5" })
+    ? createClaudeReviewer({
+        apiKey: key,
+        model: process.env.REVIEW_MODEL || "claude-opus-5-5",
+        effort: parseEffort(process.env.REVIEW_EFFORT),
+      })
     : null;
 }
 
@@ -169,4 +173,8 @@ function pushFromEnv(e: ReturnType<typeof env>): PushSender | null {
 function once<T>(f: () => T): () => T {
   let v: T | undefined;
   return () => (v ??= f());
+}
+
+function parseEffort(v: string | undefined): ReviewEffort | undefined {
+  return v === "low" || v === "medium" || v === "high" ? v : undefined;
 }

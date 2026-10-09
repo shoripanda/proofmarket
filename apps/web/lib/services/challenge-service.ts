@@ -129,11 +129,17 @@ export async function challengeVerification(
     metadata: { action: "challenge_opened", recheck: recheckId, reason: r.data.reason ?? null },
   });
   if (orig.callbackEndpointId) {
-    await enqueueJob(tx, "DELIVER_WEBHOOK", `verification.challenged:${orig.id}`, {
-      verification_id: orig.id,
-      endpoint_id: orig.callbackEndpointId,
-      event: "verification.challenged",
-    });
+    await enqueueJob(
+      tx,
+      "DELIVER_WEBHOOK",
+      `verification.challenged:${orig.id}`,
+      {
+        verification_id: orig.id,
+        endpoint_id: orig.callbackEndpointId,
+        event: "verification.challenged",
+      },
+      now,
+    );
   }
   return {
     status: 201,

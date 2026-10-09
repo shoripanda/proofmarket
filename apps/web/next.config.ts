@@ -19,10 +19,17 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          // 08 §1.4: CSP. Tightened in PR-05 once Privy origins are known.
+          // 08 §1.4. No page may be framed (clickjacking on the worker app and the OAuth consent page). Script and
+          // connect sources stay open for now: Privy and the Solana RPC pull from origins that change with their SDKs.
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+          },
+          { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "no-referrer" },
-          { key: "Permissions-Policy", value: "camera=(self), geolocation=(self)" },
+          // microphone: "話して入力" on the worker app (13 §6)
+          { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(self)" },
         ],
       },
     ];
