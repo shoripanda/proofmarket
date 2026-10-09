@@ -16,7 +16,12 @@ export function JoinForm({ initialRole }: { initialRole: Role }) {
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
-  const [delivery, setDelivery] = useState<"email" | "operator">("operator");
+  const [issued, setIssued] = useState<{
+    apiKey: string;
+    principalRef: string;
+    trial: string;
+    emailed: boolean;
+  } | null>(null);
   const [msg, setMsg] = useState("");
 
   async function submit(e: React.FormEvent) {
@@ -36,18 +41,36 @@ export function JoinForm({ initialRole }: { initialRole: Role }) {
       }),
     }).catch(() => null);
     if (res?.ok) {
-      const body = (await res.json().catch(() => null)) as { delivery?: string } | null;
-      setDelivery(body?.delivery === "email" ? "email" : "operator");
+      const body = (await res.json().catch(() => null)) as {
+        api_key?: string;
+        principal_ref?: string;
+        trial_balance?: string;
+        emailed?: boolean;
+      } | null;
+      setIssued(
+        body?.api_key
+          ? {
+              apiKey: body.api_key,
+              principalRef: body.principal_ref ?? "",
+              trial: body.trial_balance ?? "",
+              emailed: body.emailed === true,
+            }
+          : null,
+      );
       setState("done");
       return;
     }
-    const code = res ? ((await res.json().catch(() => null)) as { error?: { code?: string } } | null) : null;
+    const code = res
+      ? ((await res.json().catch(() => null)) as {
+          error?: { code?: string; details?: { limit?: string } };
+        } | null)
+      : null;
     setMsg(
-      code?.error?.code === "EMAIL_NOT_SENT"
+      code?.error?.details?.limit === "per_day"
         ? pick(
             lang,
-            "メールを送れませんでした。キーは発行していないので、少し待ってからもう一度送ってください。",
-            "We could not send the email. No key was issued, so please wait a moment and try again.",
+            "この接続元からは、今日はもう API キーを発行できません（1日3つまで）。明日もう一度お試しください。",
+            "No more API keys can be issued from this network today (3 per day). Please try again tomorrow.",
           )
         : code?.error?.code === "RATE_LIMITED"
           ? pick(
@@ -70,26 +93,19 @@ export function JoinForm({ initialRole }: { initialRole: Role }) {
     setState("error");
   }
 
+  if (state === "done" && issued) {
+    return <IssuedKey lang={lang} {...issued} />;
+  }
   if (state === "done") {
     return (
       <div className="rounded-2xl bg-emerald-50 p-6 text-emerald-900 ring-1 ring-emerald-200">
-        <p className="font-bold">
-          {delivery === "email"
-            ? pick(lang, "API キーをメールで送りました。", "We have emailed your API key.")
-            : pick(lang, "受け付けました。", "Received.")}
-        </p>
+        <p className="font-bold">{pick(lang, "受け付けました。", "Received.")}</p>
         <p className="mt-1 text-sm leading-relaxed">
-          {delivery === "email"
-            ? pick(
-                lang,
-                "入力したメールアドレスを確かめてください。数分たっても届かないときは、迷惑メールのフォルダも見てください。キーはそのメールにしか載っていません。",
-                "Please check the address you entered. If nothing arrives within a few minutes, look in your spam folder. The key appears only in that email.",
-              )
-            : pick(
-                lang,
-                "運営者が内容を確かめて、入力したメールアドレスに連絡します。試験運用中のため、すぐにはお返事できないことがあります。",
-                "The operator will review your application and write to the email address you entered. During the pilot, a reply may take a little while.",
-              )}
+          {pick(
+            lang,
+            "運営者が内容を確かめて、入力したメールアドレスに招待コードを送ります。試験運用中のため、すぐにはお返事できないことがあります。",
+            "The operator will review your application and email an invite code to the address you entered. During the pilot, a reply may take a little while.",
+          )}
         </p>
       </div>
     );
@@ -231,5 +247,120 @@ export function JoinForm({ initialRole }: { initialRole: Role }) {
         {state === "busy" ? pick(lang, "送っています…", "Sending…") : pick(lang, "申し込む", "Apply")}
       </button>
     </form>
+  );
+}
+
+/** The key, once, with what to paste into each kind of agent (01 §4.28). */
+function IssuedKey({
+  lang,
+  apiKey,
+  principalRef,
+  trial,
+  emailed,
+}: {
+  lang: ReturnType<typeof useLang>;
+  apiKey: string;
+  principalRef: string;
+  trial: string;
+  emailed: boolean;
+}) {
+  const base = typeof window === "undefined" ? "https://proofmarket.fun" : window.location.origin;
+  const snippets: [string, string][] = [
+    [pick(lang, "API キー", "API key"), apiKey],
+    [
+      pick(
+        lang,
+        "principal_ref（REST で依頼を作るときに本文に入れる ID。MCP では自動で入ります）",
+        "principal_ref (goes in REST request bodies; MCP fills it in)",
+      ),
+      principalRef,
+    ],
+    [
+      pick(lang, "Claude Code（ターミナルで実行）", "Claude Code (run in a terminal)"),
+      `claude mcp add --transport http proofmarket ${base}/mcp --header "Authorization: Bearer ${apiKey}"`,
+    ],
+    [
+      pick(
+        lang,
+        "MCP の設定ファイル（Cursor・Claude Desktop など）",
+        "MCP config (Cursor, Claude Desktop, ...)",
+      ),
+      JSON.stringify(
+        {
+          mcpServers: { proofmarket: { url: `${base}/mcp`, headers: { Authorization: `Bearer ${apiKey}` } } },
+        },
+        null,
+        2,
+      ),
+    ],
+    [
+      pick(lang, "REST API（環境変数に入れる）", "REST API (as an environment variable)"),
+      `export PROOFMARKET_API_KEY=${apiKey}\ncurl ${base}/v1/health`,
+    ],
+  ];
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl bg-emerald-50 p-6 text-emerald-900 ring-1 ring-emerald-200">
+        <p className="font-bold">{pick(lang, "API キーを発行しました。", "Your API key is ready.")}</p>
+        <p className="mt-1 text-sm leading-relaxed">
+          {pick(
+            lang,
+            `このキーが表示されるのは今だけです。運営者の側にもキーそのものは残らないので、いまコピーして保管してください。最初の残高として ${trial} USDC（Devnet の試験用）を入れてあります。`,
+            `This is the only time the key is shown; we keep only a hash of it, so copy it now. It starts with ${trial} USDC (Devnet test USDC).`,
+          )}
+          {emailed
+            ? pick(
+                lang,
+                "入力したメールアドレスにも控えを送りました。",
+                " A copy was also sent to your email address.",
+              )
+            : ""}
+        </p>
+      </div>
+      {snippets.map(([label, text]) => (
+        <CopyBlock key={label} label={label} text={text} lang={lang} />
+      ))}
+      <p className="text-sm text-slate-600">
+        {pick(
+          lang,
+          "claude.ai や ChatGPT などのリモート MCP は、",
+          "For remote MCP in claude.ai, ChatGPT and others, ",
+        )}
+        <a className="font-semibold text-teal-800 underline" href="/developers">
+          {pick(lang, "開発者向けの案内", "the developer guide")}
+        </a>
+        {pick(
+          lang,
+          "の手順で URL を追加し、認証の画面でこのキーを入れます。",
+          " shows how to add the URL; paste this key on the sign-in screen.",
+        )}
+      </p>
+    </div>
+  );
+}
+
+function CopyBlock({ label, text, lang }: { label: string; text: string; lang: ReturnType<typeof useLang> }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold">{label}</p>
+        <button
+          type="button"
+          className="min-h-11 shrink-0 whitespace-nowrap rounded-xl border border-slate-300 px-4 text-sm font-semibold"
+          onClick={() => {
+            navigator.clipboard?.writeText(text).then(
+              () => setCopied(true),
+              () => setCopied(false),
+            );
+          }}
+        >
+          {copied ? pick(lang, "コピーしました", "Copied") : pick(lang, "コピー", "Copy")}
+        </button>
+      </div>
+      <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-2xl bg-slate-900 p-4 text-xs leading-relaxed text-slate-100">
+        <code>{text}</code>
+      </pre>
+    </div>
   );
 }

@@ -4,26 +4,26 @@ import "server-only";
 import { createHmac } from "node:crypto";
 import { ApiError, newId, PARTICIPATION_AREAS, PARTICIPATION_ROLES } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, desc, eq, gt, isNotNull, lte } from "drizzle-orm";
+import { eq, lte } from "drizzle-orm";
 import { z } from "zod";
 import type { AppContext } from "../context";
 import { log } from "../log";
 import { createPrincipal, issueApiKey, topUp } from "./admin-service";
 import { decryptBytes, encryptBytes, sha256 } from "./crypto";
-import { consumeRateLimit } from "./rate-limit";
+import { consumeDailyLimit, consumeRateLimit } from "./rate-limit";
 
 /** Bump when the notice shown next to the form changes. */
 export const PARTICIPATION_CONSENT_VERSION = "2026-10-04";
 export const PARTICIPATION_RETENTION_DAYS = 90;
 
 /**
- * A key issued from /join (01 §4.28): the runbook's numbers for hand-issued keys (12 §6). The two limits are
- * stored on the credential but no longer enforced (bounty caps were dropped); the balance is what bounds it.
- * The pilot runs on Devnet, so the starting balance is test USDC.
+ * A key issued from /join (01 §4.28). Anyone can get one at once, so the starting balance is a trial amount
+ * (10 requests at the usual 0.5 USDC), and one network can get at most KEYS_PER_IP_PER_DAY a day. The two
+ * limits are stored on the credential but are no longer enforced (bounty caps were dropped); the balance is
+ * what bounds it. The pilot runs on Devnet, so the balance is test USDC.
  */
-export const EMAIL_KEY_LIMITS = { maxTaskAmount: "5", dailySpendLimit: "20", topUp: "20" } as const;
-/** A second sign-up from the same address within this window sends nothing (stops mail bombing). */
-const RESEND_QUIET_MS = 24 * 3_600_000;
+export const SIGNUP_KEY = { maxTaskAmount: "5", dailySpendLimit: "20", trialBalance: "5" } as const;
+export const KEYS_PER_IP_PER_DAY = 3;
 
 const BodySchema = z
   .object({
@@ -32,16 +32,32 @@ const BodySchema = z
     area: z.enum(PARTICIPATION_AREAS).optional(),
     note: z.string().trim().max(500).optional(),
     consent: z.literal(true),
-    /** Language of the reply email. */
+    /** Language of the copy emailed with the key. */
     lang: z.enum(["ja", "en"]).optional(),
     /** Honeypot: hidden from people, filled by naive bots. */
     website: z.string().max(0).optional(),
   })
   .strict();
 
-export async function createParticipationRequest(app: AppContext, raw: unknown, ip: string) {
+export type ParticipationResult =
+  | { ok: true; delivery: "operator" }
+  | {
+      ok: true;
+      delivery: "screen";
+      api_key: string;
+      principal_ref: string;
+      trial_balance: string;
+      emailed: boolean;
+    };
+
+export async function createParticipationRequest(
+  app: AppContext,
+  raw: unknown,
+  ip: string,
+): Promise<ParticipationResult> {
   // The IP is only hashed for the rate-limit scope, never stored with the request.
-  await consumeRateLimit(app, `participation:${sha256(ip).toString("hex").slice(0, 32)}`, 5);
+  const ipScope = sha256(ip).toString("hex").slice(0, 32);
+  await consumeRateLimit(app, `participation:${ipScope}`, 5);
   const r = BodySchema.safeParse(raw);
   if (!r.success) {
     throw new ApiError("VALIDATION_FAILED", {
@@ -61,82 +77,42 @@ export async function createParticipationRequest(app: AppContext, raw: unknown, 
     createdAt: now,
     deleteAfter: new Date(now.getTime() + PARTICIPATION_RETENTION_DAYS * 86_400_000),
   };
-  if (b.role === "requester" && app.mailer) {
-    await issueKeyByEmail(app, app.mailer, row, email, b.lang ?? "ja");
-    return { ok: true as const, delivery: "email" as const };
+  if (b.role === "worker") {
+    await app.db.insert(schema.participationRequests).values({ id: newId("participation"), ...row });
+    return { ok: true, delivery: "operator" };
   }
-  await app.db.insert(schema.participationRequests).values({ id: newId("participation"), ...row });
-  return { ok: true as const, delivery: "operator" as const };
-}
-
-/**
- * Requester sign-up -> API key by email, at once (01 §4.28). The key is only ever in the email: if the email
- * cannot be sent, the whole issue is rolled back and the caller gets EMAIL_NOT_SENT (nothing half-issued).
- * One key per address. A repeat sign-up gets a short notice instead (at most once a day), and the response is
- * the same either way, so the form does not reveal who has applied.
- */
-async function issueKeyByEmail(
-  app: AppContext,
-  mailer: NonNullable<AppContext["mailer"]>,
-  row: Omit<typeof schema.participationRequests.$inferInsert, "id"> & {
-    contactHash: Buffer;
-    createdAt: Date;
-  },
-  email: string,
-  lang: "ja" | "en",
-) {
-  const earlier = await app.db
-    .select({ createdAt: schema.participationRequests.createdAt })
-    .from(schema.participationRequests)
-    .where(
-      and(
-        eq(schema.participationRequests.contactHash, row.contactHash),
-        isNotNull(schema.participationRequests.credentialId),
-      ),
-    )
-    .orderBy(desc(schema.participationRequests.createdAt))
-    .limit(1);
-  if (earlier[0]) {
-    const recent = await app.db
-      .select({ id: schema.participationRequests.id })
-      .from(schema.participationRequests)
-      .where(
-        and(
-          eq(schema.participationRequests.contactHash, row.contactHash),
-          gt(schema.participationRequests.createdAt, new Date(row.createdAt.getTime() - RESEND_QUIET_MS)),
-        ),
-      )
-      .limit(1);
-    await app.db
-      .insert(schema.participationRequests)
-      .values({ id: newId("participation"), ...row, status: "closed" });
-    if (!recent[0]) {
-      const sent = await mailer.send({ to: email, ...alreadyIssuedMail(lang, earlier[0].createdAt) });
-      if (!sent.ok) log("warn", "participation.notice_not_sent", { reason: sent.reason });
-    }
-    return;
-  }
-  await app.db.transaction(async (tx) => {
+  await consumeDailyLimit(app, `signup-key:${ipScope}`, KEYS_PER_IP_PER_DAY);
+  const { apiKey, principalId } = await app.db.transaction(async (tx) => {
     const id = newId("participation");
-    const principalId = await createPrincipal(tx, {
-      displayName: `signup:${id.slice(-8)}`,
-      type: "person",
-    });
-    const { credentialId, apiKey } = await issueApiKey(tx, {
+    const principalId = await createPrincipal(tx, { displayName: `signup:${id.slice(-8)}`, type: "person" });
+    const issued = await issueApiKey(tx, {
       principalId,
       requesterName: "signup",
-      maxTaskAmount: EMAIL_KEY_LIMITS.maxTaskAmount,
-      dailySpendLimit: EMAIL_KEY_LIMITS.dailySpendLimit,
-      operator: "signup-email",
+      maxTaskAmount: SIGNUP_KEY.maxTaskAmount,
+      dailySpendLimit: SIGNUP_KEY.dailySpendLimit,
+      operator: "signup",
     });
-    await topUp(tx, credentialId, EMAIL_KEY_LIMITS.topUp);
-    await tx.insert(schema.participationRequests).values({ id, ...row, status: "contacted", credentialId });
-    const sent = await mailer.send({ to: email, ...keyMail(lang, apiKey) });
-    if (!sent.ok) {
-      log("warn", "participation.key_not_sent", { reason: sent.reason });
-      throw new ApiError("EMAIL_NOT_SENT");
-    }
+    await topUp(tx, issued.credentialId, SIGNUP_KEY.trialBalance);
+    await tx
+      .insert(schema.participationRequests)
+      .values({ id, ...row, status: "contacted", credentialId: issued.credentialId });
+    return { apiKey: issued.apiKey, principalId };
   });
+  // The key is shown on the page; the email is a copy. A failed send never takes the key back.
+  let emailed = false;
+  if (app.mailer) {
+    const sent = await app.mailer.send({ to: email, ...keyMail(b.lang ?? "ja", apiKey, principalId) });
+    emailed = sent.ok;
+    if (!sent.ok) log("warn", "participation.key_not_sent", { reason: sent.reason });
+  }
+  return {
+    ok: true,
+    delivery: "screen",
+    api_key: apiKey,
+    principal_ref: principalId,
+    trial_balance: SIGNUP_KEY.trialBalance,
+    emailed,
+  };
 }
 
 function contactHash(app: AppContext, email: string): Buffer {
@@ -145,64 +121,49 @@ function contactHash(app: AppContext, email: string): Buffer {
 
 const BASE_URL = () => process.env.NEXT_PUBLIC_BASE_URL ?? "https://proofmarket.fun";
 
-function keyMail(lang: "ja" | "en", apiKey: string): { subject: string; text: string } {
-  const l = EMAIL_KEY_LIMITS;
+function keyMail(lang: "ja" | "en", apiKey: string, principalRef: string): { subject: string; text: string } {
+  const base = BASE_URL();
+  const add = `claude mcp add --transport http proofmarket ${base}/mcp --header "Authorization: Bearer ${apiKey}"`;
   if (lang === "en") {
     return {
       subject: "Your ProofMarket API key",
       text: [
-        "Thank you for signing up. Here is your requester API key.",
+        "Here is a copy of the requester API key you were shown when you signed up.",
         "",
         apiKey,
         "",
-        "This is the only copy. We store only a hash of it, so we cannot show it again. Keep it somewhere safe.",
+        `principal_ref (put it in REST request bodies; MCP fills it in for you): ${principalRef}`,
         "",
-        `Starting balance: ${l.topUp} USDC (Devnet test USDC, no real money)`,
+        "We store only a hash of it, so we cannot show it again. Keep it somewhere safe.",
+        `Starting balance: ${SIGNUP_KEY.trialBalance} USDC (Devnet test USDC, no real money).`,
         "",
-        `How to send your first request: ${BASE_URL()}/developers`,
+        "Connect Claude Code:",
+        add,
+        "",
+        `Other agents and the REST API: ${base}/developers`,
         "",
         "If you did not sign up, someone entered your address by mistake. You can ignore this email.",
       ].join("\n"),
     };
   }
   return {
-    subject: "ProofMarket の API キーをお送りします",
+    subject: "ProofMarket の API キー（控え）",
     text: [
-      "お申し込みありがとうございます。依頼者用の API キーです。",
+      "お申し込みの画面に表示した、依頼者用の API キーの控えです。",
       "",
       apiKey,
       "",
-      "このキーを見られるのは、このメールだけです。運営者の側にもキーそのものは残っていないので、なくさないように保管してください。",
+      `principal_ref（REST で依頼を作るときに本文に入れる ID。MCP では自動で入ります）：${principalRef}`,
       "",
-      `最初の残高：${l.topUp} USDC（Devnet の試験用 USDC で、本物のお金ではありません）`,
+      "運営者の側にはキーそのものが残っていないので、もう一度は表示できません。なくさないように保管してください。",
+      `最初の残高：${SIGNUP_KEY.trialBalance} USDC（Devnet の試験用 USDC で、本物のお金ではありません）`,
       "",
-      `依頼の出し方：${BASE_URL()}/developers`,
+      "Claude Code につなぐ：",
+      add,
+      "",
+      `ほかのエージェントや REST API でのつなぎ方：${base}/developers`,
       "",
       "心当たりがない場合は、どなたかが誤ってこのアドレスを入力したものです。このメールは無視してかまいません。",
-    ].join("\n"),
-  };
-}
-
-function alreadyIssuedMail(lang: "ja" | "en", at: Date): { subject: string; text: string } {
-  const day = at.toISOString().slice(0, 10);
-  if (lang === "en") {
-    return {
-      subject: "Your ProofMarket API key was already sent",
-      text: [
-        `An API key was already sent to this address on ${day}. We send one key per address.`,
-        'Please look for the email titled "Your ProofMarket API key".',
-        "",
-        "If you did not sign up, you can ignore this email.",
-      ].join("\n"),
-    };
-  }
-  return {
-    subject: "ProofMarket の API キーは送信済みです",
-    text: [
-      `このアドレスには ${day} に API キーをお送りしています。キーは 1 つのアドレスに 1 つです。`,
-      "「ProofMarket の API キーをお送りします」という件名のメールを探してください。",
-      "",
-      "心当たりがない場合は、このメールは無視してかまいません。",
     ].join("\n"),
   };
 }

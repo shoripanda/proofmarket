@@ -97,7 +97,7 @@ pnpm --filter @proofmarket/scripts run run gen-vapid.ts --subject https://<conta
 | `PILOT_BBOX` | `35.60,139.65,35.72,139.78` (central Tokyo incl. Shibuya and Shinjuku) |
 | `MAX_WITNESSES` | `5` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `~/.config/proofmarket/env.vapid`. Without all three, push notifications are off (everything else works) |
-| `RESEND_API_KEY`, `MAIL_FROM` | Resend (https://resend.com). `MAIL_FROM` looks like `ProofMarket <keys@proofmarket.fun>` and must be on a domain verified in Resend. With both set, a requester sign-up gets its API key by email at once (01 §4.28); without them the operator issues keys by hand as before |
+| `RESEND_API_KEY`, `MAIL_FROM` | Resend (https://resend.com). `MAIL_FROM` looks like `ProofMarket <keys@proofmarket.fun>` and must be on a domain verified in Resend. Optional. With both set, the API key shown on the sign-up page is also emailed as a copy (01 §4.28); without them the key is still handed over on the page |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT_EMAIL` | Operator name and contact shown on `/legal/operator`. If unset, the page says they will be added before launch |
 
 Do not set `DEV_MODE` or `NEXT_PUBLIC_DEV_MODE`; the app refuses to start with them.

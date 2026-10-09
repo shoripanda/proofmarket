@@ -486,7 +486,7 @@ Rate limiting uses a fixed 1-minute window and counts with a single statement: `
 
 ### 3.20 participation_requests (sign-ups, added 2026-10-04)
 
-Requests to join as a worker or to get an API key, sent from the site's `/join`. The operator reads them and issues invite codes. A requester sign-up gets its API key by email at once when email is configured (01 §4.28, migration 0026).
+Requests to join as a worker or to get an API key, sent from the site's `/join`. The operator reads them and issues invite codes. A requester sign-up gets its API key on the spot, shown on the page (01 §4.28, migration 0026).
 
 ```sql
 create table participation_requests (
@@ -499,8 +499,8 @@ create table participation_requests (
   status       text not null default 'new' check (status in ('new','contacted','closed')),
   created_at   timestamptz not null default now(),
   delete_after timestamptz not null,             -- created_at + 90 days
-  contact_hash bytea,                            -- HMAC-SHA256(LOCATION_ENC_KEY, lowercased address); finds sign-ups from the same address (indexed)
-  credential_id text                             -- the key sent by email; enforces one key per address
+  contact_hash bytea,                            -- HMAC-SHA256(LOCATION_ENC_KEY, lowercased address); finds sign-ups by address (indexed)
+  credential_id text                             -- the key issued on the spot
 );
 ```
 

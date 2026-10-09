@@ -484,7 +484,7 @@ create table rate_limit_counters (
 
 ### 3.20 participation_requests（参加の申し込み、2026-10-04 追加）
 
-サイトの `/join` から届く、worker としての参加と API キーの申し込み。運営者が読んで招待コードを出す。依頼者の申し込みは、メールの設定があればその場でキーを発行してメールで送る（01 §4.28、移行 0026）。
+サイトの `/join` から届く、worker としての参加と API キーの申し込み。運営者が読んで招待コードを出す。依頼者の申し込みは、その場でキーを発行して画面に出す（01 §4.28、移行 0026）。
 
 ```sql
 create table participation_requests (
@@ -497,8 +497,8 @@ create table participation_requests (
   status       text not null default 'new' check (status in ('new','contacted','closed')),
   created_at   timestamptz not null default now(),
   delete_after timestamptz not null,             -- created_at + 90 日
-  contact_hash bytea,                            -- HMAC-SHA256(LOCATION_ENC_KEY, 小文字のアドレス)。同じアドレスの申し込みを探す（索引あり）
-  credential_id text                             -- メールで送ったキー。1 アドレス 1 キーの判定に使う
+  contact_hash bytea,                            -- HMAC-SHA256(LOCATION_ENC_KEY, 小文字のアドレス)。アドレスで申し込みを探す（索引あり）
+  credential_id text                             -- その場で発行したキー
 );
 ```
 

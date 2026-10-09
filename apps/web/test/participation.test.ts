@@ -6,6 +6,7 @@ import { createResendMailer } from "../lib/adapters/resend-mailer";
 import { authenticateApiKey } from "../lib/auth/requester";
 import {
   createParticipationRequest,
+  KEYS_PER_IP_PER_DAY,
   listParticipationRequests,
   setParticipationStatus,
 } from "../lib/services/participation-service";
@@ -74,83 +75,76 @@ describe("participation requests", () => {
   });
 });
 
-describe("requester sign-up -> API key by email (01 §4.28)", () => {
+describe("requester sign-up -> API key on the spot (01 §4.28)", () => {
   const req = { role: "requester", email: "Agent@Example.com", consent: true, lang: "en" };
-  let mail: FakeMailer;
-  beforeEach(() => {
-    mail = new FakeMailer();
-    t.app.mailer = mail;
-  });
-  const keyIn = (text: string) => text.match(/pm_test_[0-9a-f]{8}_\S+/)?.[0] ?? "";
   const credentials = async () => (await t.db.select().from(schema.requesterCredentials)).length;
+  const issue = async (ip = "ip") => {
+    const r = await createParticipationRequest(t.app, req, ip);
+    if (r.delivery !== "screen") throw new Error("expected a key");
+    return r;
+  };
 
-  it("issues a working key with a starting balance and emails it once", async () => {
+  it("returns a working key with the trial balance; only its hash is stored", async () => {
     const before = await credentials();
-    expect(await createParticipationRequest(t.app, req, "ip")).toEqual({ ok: true, delivery: "email" });
-    expect(mail.sent).toHaveLength(1);
-    expect(mail.sent[0]?.to).toBe("agent@example.com");
-    const key = keyIn(mail.sent[0]?.text ?? "");
-    const auth = await authenticateApiKey(t.app, key);
+    const r = await issue();
+    expect(r).toMatchObject({ ok: true, delivery: "screen", trial_balance: "5", emailed: false });
+    const auth = await authenticateApiKey(t.app, r.api_key);
+    expect(r.principal_ref).toBe(auth.principalId);
     const ledger = await t.db
       .select()
       .from(schema.requesterLedger)
       .where(eq(schema.requesterLedger.credentialId, auth.credentialId));
-    expect(ledger).toMatchObject([{ entryType: "TOPUP", amount: "20.000000" }]);
+    expect(ledger).toMatchObject([{ entryType: "TOPUP" }]);
+    expect(Number(ledger[0]?.amount)).toBe(5);
     expect(await credentials()).toBe(before + 1);
     const [row] = await t.db.select().from(schema.participationRequests);
     expect(row).toMatchObject({ status: "contacted", credentialId: auth.credentialId });
-    // Not left in the operator's queue, and the key itself is stored nowhere.
     expect(await listParticipationRequests(t.db, t.app.config.locationEncKey)).toEqual([]);
     expect(JSON.stringify(await t.db.select().from(schema.requesterCredentials))).not.toContain(
-      key.slice(-20),
+      r.api_key.slice(-20),
     );
   });
 
-  it("writes in Japanese by default", async () => {
-    await createParticipationRequest(t.app, { ...req, lang: undefined }, "ip");
-    expect(mail.sent[0]?.subject).toBe("ProofMarket の API キーをお送りします");
-    expect(keyIn(mail.sent[0]?.text ?? "")).not.toBe("");
-  });
-
-  it("rolls everything back when the email cannot be sent", async () => {
-    const before = await credentials();
+  it("emails a copy when a mailer is set; a failed send keeps the key", async () => {
+    const mail = new FakeMailer();
+    t.app.mailer = mail;
+    const r = await issue();
+    expect(r.emailed).toBe(true);
+    expect(mail.sent[0]).toMatchObject({ to: "agent@example.com", subject: "Your ProofMarket API key" });
+    expect(mail.sent[0]?.text).toContain(r.api_key);
+    expect(mail.sent[0]?.text).toContain("claude mcp add --transport http proofmarket");
+    expect(mail.sent[0]?.text).toContain(r.principal_ref);
     mail.fail = true;
-    expect(await err(createParticipationRequest(t.app, req, "ip"))).toBe("EMAIL_NOT_SENT");
-    expect(await credentials()).toBe(before);
-    expect(await t.db.select().from(schema.participationRequests)).toEqual([]);
-    mail.fail = false;
-    expect(await createParticipationRequest(t.app, req, "ip")).toEqual({ ok: true, delivery: "email" });
-    expect(await credentials()).toBe(before + 1);
+    const r2 = await issue();
+    expect(r2.emailed).toBe(false);
+    await expect(authenticateApiKey(t.app, r2.api_key)).resolves.toBeTruthy();
   });
 
-  it("one key per address; a repeat gets a notice at most once a day, with the same response", async () => {
-    await createParticipationRequest(t.app, req, "ip");
+  it("writes the copy in Japanese by default", async () => {
+    const mail = new FakeMailer();
+    t.app.mailer = mail;
+    await createParticipationRequest(t.app, { ...req, lang: undefined }, "ip");
+    expect(mail.sent[0]?.subject).toBe("ProofMarket の API キー（控え）");
+  });
+
+  it("one network gets at most 3 keys a day; the next day it can again", async () => {
+    for (let i = 0; i < KEYS_PER_IP_PER_DAY; i++) await issue("7.7.7.7");
     const before = await credentials();
-    t.advance(25 * 3_600_000);
-    expect(await createParticipationRequest(t.app, { ...req, email: "agent@EXAMPLE.com" }, "ip")).toEqual({
-      ok: true,
-      delivery: "email",
-    });
-    expect(await createParticipationRequest(t.app, req, "ip")).toEqual({ ok: true, delivery: "email" });
+    expect(await err(createParticipationRequest(t.app, req, "7.7.7.7"))).toBe("RATE_LIMITED");
     expect(await credentials()).toBe(before);
-    expect(mail.sent.map((m) => keyIn(m.text) !== "")).toEqual([true, false]);
-    expect(mail.sent[1]?.subject).toBe("Your ProofMarket API key was already sent");
+    expect(await err(issue("6.6.6.6"))).toBeNull();
+    t.advance(86_400_000);
+    expect(await err(issue("7.7.7.7"))).toBeNull();
   });
 
-  it("a second sign-up within a day sends nothing at all", async () => {
-    await createParticipationRequest(t.app, req, "ip");
-    await createParticipationRequest(t.app, req, "ip");
-    expect(mail.sent).toHaveLength(1);
-  });
-
-  it("workers still wait for the operator, and without a mailer requesters do too", async () => {
+  it("workers still wait for the operator, with no key and no email", async () => {
+    const mail = new FakeMailer();
+    t.app.mailer = mail;
+    const before = await credentials();
     expect(await createParticipationRequest(t.app, ok, "ip")).toEqual({ ok: true, delivery: "operator" });
-    t.app.mailer = null;
-    const before = await credentials();
-    expect(await createParticipationRequest(t.app, req, "ip")).toEqual({ ok: true, delivery: "operator" });
     expect(mail.sent).toEqual([]);
     expect(await credentials()).toBe(before);
-    expect(await listParticipationRequests(t.db, t.app.config.locationEncKey)).toHaveLength(2);
+    expect(await listParticipationRequests(t.db, t.app.config.locationEncKey)).toHaveLength(1);
   });
 });
 

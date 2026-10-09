@@ -95,7 +95,7 @@ pnpm --filter @proofmarket/scripts run run gen-vapid.ts --subject https://<連�
 | `PILOT_BBOX` | `35.60,139.65,35.72,139.78`（渋谷・新宿を含む東京都心） |
 | `MAX_WITNESSES` | `5` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`、`VAPID_PRIVATE_KEY`、`VAPID_SUBJECT` | `~/.config/proofmarket/env.vapid`。3つとも無いとプッシュ通知は出ない（ほかは動く） |
-| `RESEND_API_KEY`、`MAIL_FROM` | Resend（https://resend.com）。`MAIL_FROM` は `ProofMarket <keys@proofmarket.fun>` の形で、Resend で確認済みのドメインのアドレスにする。2 つともあると、依頼者の申し込みにその場で API キーをメールで送る（01 §4.28）。無ければ従来どおり運営者が手で出す |
+| `RESEND_API_KEY`、`MAIL_FROM` | Resend（https://resend.com）。`MAIL_FROM` は `ProofMarket <keys@proofmarket.fun>` の形で、Resend で確認済みのドメインのアドレスにする。任意。2 つともあると、申し込みの画面で渡した API キーの控えをメールでも送る（01 §4.28）。無くてもキーは画面で渡せる |
 | `OPERATOR_NAME`、`OPERATOR_CONTACT_EMAIL` | `/legal/operator` に出す運営者の名前と連絡先。未設定なら「公開前に記載します」と出る |
 
 `DEV_MODE` と `NEXT_PUBLIC_DEV_MODE` は入れない。入れると起動を拒否する。
