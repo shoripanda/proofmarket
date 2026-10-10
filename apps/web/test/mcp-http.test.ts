@@ -3,7 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleMcp } from "../lib/mcp-http";
-import { createBody, createTestApp } from "./support/app";
+import { createBody, createTestApp, SHOP } from "./support/app";
 
 let t: Awaited<ReturnType<typeof createTestApp>>;
 let kicked: string[];
@@ -78,5 +78,49 @@ describe("POST /mcp", () => {
     };
     expect(c.structuredContent.status).toBe("CANCELLED");
     expect(kicked).toContain(`REFUND_TASK:${id}`);
+  });
+
+  // The tools reach the REST handlers through lib/mcp-http.ts's TABLE; a missing row used to 404 in production.
+  it("every tool that calls the API reaches its handler: batch and the three watch tools", async () => {
+    const mcp = await connect(t.apiKey);
+    type Out = { isError?: boolean; content: { text: string }[]; structuredContent: Record<string, unknown> };
+    const callTool = async (name: string, args: Record<string, unknown>) => {
+      const r = (await mcp.callTool({ name, arguments: args })) as unknown as Out;
+      expect(r.isError, `${name}: ${r.content?.[0]?.text}`).toBeFalsy();
+      return r.structuredContent;
+    };
+
+    const { location: _l, question: _q, principal_ref: _p, ...template } = createBody(t.principalId);
+    const batch = (await callTool("request_reality_verifications_batch", {
+      template,
+      items: [
+        { location: { ...SHOP, radius_m: 80 }, question: "Is shop A open?" },
+        { location: { lat: 35.66, lng: 139.7, radius_m: 80 }, question: "Is shop B open?" },
+      ],
+    })) as { verifications: { verification_id: string }[] };
+    expect(batch.verifications).toHaveLength(2);
+    for (const v of batch.verifications) expect(kicked).toContain(`FUND_TASK:${v.verification_id}`);
+
+    const { deadline: _d, principal_ref: _p2, ...request } = createBody(t.principalId);
+    const w = (await callTool("watch_reality_verification", {
+      request,
+      deadline_minutes: 30,
+      times_jst: ["12:30"],
+      days_jst: [5],
+    })) as { schedule_id: string };
+    expect(w.schedule_id).toMatch(/^sch_/);
+
+    const list = JSON.stringify(await callTool("list_reality_verification_watches", {}));
+    expect(list).toContain(w.schedule_id);
+
+    const stopped = await callTool("stop_reality_verification_watch", { schedule_id: w.schedule_id });
+    expect(stopped).toMatchObject({ active: false });
+  });
+
+  it("a path with no row is reported as an internal error, not as an unknown verification", async () => {
+    const { inProcessFetch } = await import("../lib/mcp-http");
+    const res = await inProcessFetch(t.app)("http://pm.test/v1/nowhere", { method: "GET" });
+    expect(res.status).toBe(500);
+    expect(await res.json()).toMatchObject({ error: { code: "INTERNAL_ERROR" } });
   });
 });
