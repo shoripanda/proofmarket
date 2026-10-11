@@ -155,6 +155,15 @@ describe("authorize", () => {
     expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
   });
 
+  it("consent page tells someone without a key where to get one, in a new tab", async () => {
+    const params = authorizeParams("ocl_x");
+    const ja = await consentPage({ clientName: "c", redirectUri: REDIRECT, params }).text();
+    expect(ja).toContain('href="/join?role=requester" target="_blank" rel="noopener"');
+    const en = await consentPage({ clientName: "c", redirectUri: REDIRECT, params, lang: "en" }).text();
+    expect(en).toContain('href="/en/join?role=requester"');
+    expect(en).not.toContain("starts with pm_test_");
+  });
+
   it("a wrong API key is refused", async () => {
     const { client_id } = await register();
     const check = await checkAuthorize(t.app, BASE, authorizeParams(client_id));

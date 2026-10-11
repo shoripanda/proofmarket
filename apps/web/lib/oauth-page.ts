@@ -26,11 +26,12 @@ h1{font-size:18px;margin:0 0 16px}p{font-size:14px;line-height:1.7;margin:0 0 12
 .warn{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:13px}
 .err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:10px 12px;font-size:13px}
 label{display:block;font-size:13px;margin:16px 0 6px}
+.hint{font-size:13px;margin:8px 0 0}a{color:#0f766e}
 input[type=password]{width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px}
 button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:8px;background:#0f172a;color:#fff;font-size:15px}
 @media (prefers-color-scheme:dark){body{background:#0f172a;color:#e2e8f0}main{background:#1e293b;border-color:#334155}
 .host{background:#334155}.warn{background:#422006;border-color:#854d0e}.err{background:#450a0a;border-color:#7f1d1d;color:#fecaca}
-input[type=password]{background:#0f172a;color:#e2e8f0;border-color:#475569}button{background:#e2e8f0;color:#0f172a}}`;
+input[type=password]{background:#0f172a;color:#e2e8f0;border-color:#475569}button{background:#e2e8f0;color:#0f172a}a{color:#5eead4}}`;
 
 /** "en" when the browser prefers English over Japanese; Japanese otherwise. */
 export function langFromAccept(header: string | null): Lang {
@@ -81,8 +82,13 @@ export function consentPage(o: {
   )}</p>
 ${o.error ? `<p class="err">${esc(o.error)}</p>` : ""}
 <form method="post" action="/oauth/authorize">${hidden}
-<label for="k">${pick(lang, "API キー（pm_test_ で始まる文字列）", "API key (starts with pm_test_)")}</label>
+<label for="k">${pick(lang, "API キー（/join で受け取った文字列）", "API key (the one you got at /join)")}</label>
 <input id="k" name="api_key" type="password" autocomplete="off" required>
+<p class="hint">${pick(
+    lang,
+    `キーをお持ちでなければ、<a href="/join?role=requester" target="_blank" rel="noopener">こちらで受け取れます</a>（その場で表示・試験用の 5 USDC つき）。受け取ったらこの画面に戻って貼ってください。`,
+    `No key yet? <a href="/en/join?role=requester" target="_blank" rel="noopener">Get one here</a> (shown at once, with 5 test USDC). Then come back to this page and paste it.`,
+  )}</p>
 <button type="submit">${pick(lang, "接続を許可する", "Allow the connection")}</button>
 </form>`;
   return new Response(page(lang, title, body), { status: o.error ? 401 : 200, headers: HEADERS });
