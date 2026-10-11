@@ -37,6 +37,13 @@ const FullSchema = z.object({
   PRIVY_APP_SECRET: z.string().min(1),
   PRIVY_VERIFICATION_KEY: z.string().min(1).optional(),
   SOLANA_RPC_URL: z.url(),
+  /** 15 §4.1. devnet unless set; mainnet-beta also needs REAL_FUNDS_ENABLED and LEGAL_SIGNOFF (lib/cluster.ts). */
+  SOLANA_CLUSTER: z.enum(["devnet", "mainnet-beta"]).default("devnet"),
+  REAL_FUNDS_ENABLED: z
+    .enum(["true", "false", "1", "0"])
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
+  LEGAL_SIGNOFF: z.string().optional(),
   SOLANA_EXPECTED_GENESIS_HASH: z.string().min(32),
   PROGRAM_ID: z.string().min(32),
   BOUNTY_MINT: z.string().min(32),
