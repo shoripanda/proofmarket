@@ -529,7 +529,8 @@
                       "asset": {
                         "type": "string",
                         "enum": [
-                          "USDC"
+                          "USDC",
+                          "SOL"
                         ]
                       },
                       "amount": {
@@ -698,6 +699,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -1268,7 +1270,8 @@
                           "asset": {
                             "type": "string",
                             "enum": [
-                              "USDC"
+                              "USDC",
+                              "SOL"
                             ]
                           },
                           "amount": {
@@ -1495,6 +1498,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -2047,7 +2051,8 @@
                       "asset": {
                         "type": "string",
                         "enum": [
-                          "USDC"
+                          "USDC",
+                          "SOL"
                         ]
                       },
                       "amount": {
@@ -2246,6 +2251,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -2870,7 +2876,8 @@
                         "asset": {
                           "type": "string",
                           "enum": [
-                            "USDC"
+                            "USDC",
+                            "SOL"
                           ]
                         },
                         "amount": {
@@ -3455,6 +3462,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -4079,7 +4087,8 @@
                         "asset": {
                           "type": "string",
                           "enum": [
-                            "USDC"
+                            "USDC",
+                            "SOL"
                           ]
                         },
                         "amount": {
@@ -4664,6 +4673,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -4811,6 +4821,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -5006,6 +5017,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -5141,7 +5153,8 @@
                         "asset": {
                           "type": "string",
                           "enum": [
-                            "USDC"
+                            "USDC",
+                            "SOL"
                           ]
                         },
                         "amount": {
@@ -5191,6 +5204,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -5745,7 +5759,8 @@
                           "asset": {
                             "type": "string",
                             "enum": [
-                              "USDC"
+                              "USDC",
+                              "SOL"
                             ]
                           },
                           "amount": {
@@ -6135,6 +6150,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -6415,6 +6431,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -6695,6 +6712,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -6890,6 +6908,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -7126,6 +7145,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -7639,7 +7659,8 @@
                               "asset": {
                                 "type": "string",
                                 "enum": [
-                                  "USDC"
+                                  "USDC",
+                                  "SOL"
                                 ]
                               },
                               "amount": {
@@ -7747,6 +7768,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -8223,7 +8245,8 @@
                         "asset": {
                           "type": "string",
                           "enum": [
-                            "USDC"
+                            "USDC",
+                            "SOL"
                           ]
                         },
                         "amount": {
@@ -8325,6 +8348,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -8488,6 +8512,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -8625,6 +8650,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -8801,6 +8827,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -9095,6 +9122,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -9687,6 +9715,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -10279,6 +10308,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -10380,7 +10410,8 @@
                           "asset": {
                             "type": "string",
                             "enum": [
-                              "USDC"
+                              "USDC",
+                              "SOL"
                             ]
                           },
                           "status": {
@@ -10443,6 +10474,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -10937,6 +10969,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -11127,6 +11160,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -11267,6 +11301,29 @@
                         "amount",
                         "network"
                       ]
+                    },
+                    "paid_by_asset": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "asset": {
+                            "type": "string",
+                            "enum": [
+                              "USDC",
+                              "SOL"
+                            ]
+                          },
+                          "amount": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,6})?$"
+                          }
+                        },
+                        "required": [
+                          "asset",
+                          "amount"
+                        ]
+                      }
                     },
                     "median_seconds_to_result": {
                       "nullable": true,
@@ -11428,6 +11485,7 @@
                     "workers_with_valid_submission",
                     "requesters",
                     "paid_to_workers",
+                    "paid_by_asset",
                     "median_seconds_to_result",
                     "ai_review",
                     "by_type",
@@ -11458,6 +11516,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -11684,6 +11743,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -11958,6 +12018,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -12089,6 +12150,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -12199,6 +12261,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -12309,6 +12372,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -12419,6 +12483,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -12529,6 +12594,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",
@@ -12639,6 +12705,7 @@
                             "WORKER_NOT_ONBOARDED",
                             "INVITE_INVALID",
                             "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
                             "UNSUPPORTED_TASK_TYPE",
                             "DEADLINE_OUT_OF_RANGE",
                             "LOCATION_OUT_OF_PILOT_AREA",

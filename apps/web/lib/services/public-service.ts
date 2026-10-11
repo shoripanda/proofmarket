@@ -1,4 +1,5 @@
 import "server-only";
+import type { Asset } from "@proofmarket/core/schemas/api";
 // Public result (05 §4), worker payouts (05 §3.7), requester evidence URLs (05 §2.5).
 
 import {
@@ -150,7 +151,7 @@ export async function workerPayouts(app: AppContext, workerId: string) {
     payouts.push({
       verification_id: p.verificationId,
       amount: mine.amount,
-      asset: "USDC" as const,
+      asset: p.asset as Asset,
       status:
         p.status === "CONFIRMED"
           ? ("SETTLED" as const)
@@ -180,7 +181,7 @@ export async function workerPayouts(app: AppContext, workerId: string) {
     payouts.push({
       verification_id: v.v,
       amount: fromMicro(settledPerWitnessMicro(bountyOf(v.task))), // the fixed amount of a rising bounty (13 §1)
-      asset: "USDC" as const,
+      asset: v.task.bountyAsset as Asset,
       status: "PENDING" as const,
       explorer_url: null,
       paid_at: null,

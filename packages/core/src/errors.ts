@@ -23,6 +23,7 @@ export const ERROR_CATALOG = {
   },
   INVITE_INVALID: { http: 403, retryable: false, message: "The invite code is invalid or expired." },
   VALIDATION_FAILED: { http: 400, retryable: false, message: "The request is invalid." },
+  UNSUPPORTED_ASSET: { http: 400, retryable: false, message: "This asset is not accepted here." },
   UNSUPPORTED_TASK_TYPE: { http: 400, retryable: false, message: "This task type is not allowed." },
   DEADLINE_OUT_OF_RANGE: {
     http: 400,

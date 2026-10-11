@@ -21,6 +21,11 @@ const Common = {
   RESEND_API_KEY: z.string().min(1).optional(),
   MAIL_FROM: z.string().min(3).optional(),
   /** Rising bounty (13 §1). Off until program v1.1 is deployed; while off, `bounty.max_amount` is refused. */
+  /** Rewards in SOL (15 §3). Off until program v1.2 with wSOL is deployed; while off, asset SOL is refused. */
+  SOL_ENABLED: z
+    .enum(["true", "false", "1", "0"])
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
   RISING_BOUNTY_ENABLED: z
     .enum(["true", "false", "1", "0"])
     .optional()

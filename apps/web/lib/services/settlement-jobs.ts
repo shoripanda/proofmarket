@@ -95,6 +95,9 @@ export async function runFundTask(
 ): Promise<JobOutcome> {
   const task = await loadTask(app.db, verificationId);
   if (task?.status !== "CREATED") return { kind: "done" }; // already funded or cancelled (T14)
+  // The deployed program escrows BOUNTY_MINT only; SOL needs program v1.2 (15 §3.1). SOL_ENABLED stays off till then.
+  if (task.bountyAsset !== "USDC")
+    throw new Error(`funding ${task.bountyAsset} needs program v1.2 (15 §3.1)`);
   const pay = await paymentRecord(app.db, task, "FUND", fundedMicro(task));
   const adapter = app.settlement();
   const r = await adapter.fundTask(

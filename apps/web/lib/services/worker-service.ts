@@ -1,4 +1,5 @@
 import "server-only";
+import type { Asset } from "@proofmarket/core/schemas/api";
 // Worker API services (05 §3). Task/claim mutations lock the task row first (02 §4.2).
 
 import {
@@ -222,7 +223,7 @@ function workerTaskView(t: TaskRow, distanceM: number | null, slots: number, now
     distance_m: distanceM === null ? null : Math.round(distanceM),
     // 13 §1: `amount` is what a claim now would earn; `max` and `rises_until` say whether waiting pays more.
     reward: {
-      asset: "USDC" as const,
+      asset: t.bountyAsset as Asset,
       amount: current,
       current,
       max: t.bountyMaxAmount === null ? null : fromMicro(toMicro(t.bountyMaxAmount)),

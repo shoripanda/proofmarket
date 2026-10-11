@@ -84,10 +84,13 @@ export async function dashboard(app: AppContext, auth: RequesterAuth) {
     .select()
     .from(schema.requesterCredentials)
     .where(eq(schema.requesterCredentials.id, auth.credentialId));
-  const [bal] = await app.db
-    .select({ s: sql<string>`coalesce(sum(amount), 0)` })
+  // Each asset is its own balance (15 §3.3); `balance` and `spent_today` stay in USDC as before.
+  const balRows = await app.db
+    .select({ asset: schema.requesterLedger.asset, s: sql<string>`coalesce(sum(amount), 0)` })
     .from(schema.requesterLedger)
-    .where(eq(schema.requesterLedger.credentialId, auth.credentialId));
+    .where(eq(schema.requesterLedger.credentialId, auth.credentialId))
+    .groupBy(schema.requesterLedger.asset);
+  const bal = balRows.find((r) => r.asset === "USDC");
   const [today] = await app.db
     .select({ s: sql<string>`coalesce(sum(-amount), 0)` })
     .from(schema.requesterLedger)
@@ -95,6 +98,7 @@ export async function dashboard(app: AppContext, auth: RequesterAuth) {
       and(
         eq(schema.requesterLedger.credentialId, auth.credentialId),
         eq(schema.requesterLedger.entryType, "RESERVE"),
+        eq(schema.requesterLedger.asset, "USDC"),
         gte(schema.requesterLedger.createdAt, startOfSpendDay(now)),
       ),
     );
@@ -140,6 +144,10 @@ export async function dashboard(app: AppContext, auth: RequesterAuth) {
       rate_limit_per_min: cred?.rateLimitPerMin ?? 0,
     },
     balance: money(bal?.s),
+    balances: {
+      USDC: money(bal?.s),
+      SOL: money(balRows.find((r) => r.asset === "SOL")?.s),
+    },
     spent_today: money(today?.s),
     tasks: tasks.map(({ t, answer }) => ({
       verification_id: t.id,

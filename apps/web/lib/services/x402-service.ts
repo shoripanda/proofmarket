@@ -42,6 +42,10 @@ export function parseX402Body(raw: unknown): CreateVerificationRequest {
       issues: r.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
     });
   }
+  // 15 §3.3: the x402 "exact" scheme moves an SPL token; payments stay in USDC.
+  if (r.data.bounty.asset !== "USDC") {
+    throw new ApiError("UNSUPPORTED_ASSET", { field: "bounty.asset", reason: "x402_usdc_only" });
+  }
   // 13 §1: a rising bounty hands back what is not paid, but an x402 payment is exact and its credential is
   // throwaway, so the difference would have nowhere to go. Rising bounties need an API key.
   if (r.data.bounty.max_amount !== undefined) {

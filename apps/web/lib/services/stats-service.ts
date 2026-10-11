@@ -3,7 +3,7 @@ import "server-only";
 // Never reads question, answer, location, worker IDs or payout addresses into the output.
 
 import { fromMicro, type TaskType, toMicro } from "@proofmarket/core";
-import type { PublicStats } from "@proofmarket/core/schemas/api";
+import type { Asset, PublicStats } from "@proofmarket/core/schemas/api";
 import { schema } from "@proofmarket/db";
 import { and, count, countDistinct, desc, eq, isNotNull } from "drizzle-orm";
 import type { AppContext } from "../context";
@@ -74,7 +74,7 @@ export async function publicStats(app: AppContext): Promise<PublicStats> {
 
   // Confirmed settlements: the USDC that actually reached workers, and the newest ones as links.
   const settled = await db
-    .select({ recipients: schema.paymentRecords.recipients })
+    .select({ asset: schema.paymentRecords.asset, recipients: schema.paymentRecords.recipients })
     .from(schema.paymentRecords)
     .where(
       and(
@@ -82,10 +82,13 @@ export async function publicStats(app: AppContext): Promise<PublicStats> {
         eq(schema.paymentRecords.status, "CONFIRMED"),
       ),
     );
-  let paid = 0n;
+  // Per asset: USDC and SOL are never added together (15 §3.3).
+  const paidBy = new Map<string, bigint>([["USDC", 0n]]);
   for (const s of settled) {
-    for (const p of (s.recipients as SettleRecipients | null)?.paid ?? []) paid += toMicro(p.amount);
+    for (const p of (s.recipients as SettleRecipients | null)?.paid ?? [])
+      paidBy.set(s.asset, (paidBy.get(s.asset) ?? 0n) + toMicro(p.amount));
   }
+  const paid = paidBy.get("USDC") ?? 0n;
 
   const recent = await db
     .select({
@@ -117,6 +120,7 @@ export async function publicStats(app: AppContext): Promise<PublicStats> {
     workers_with_valid_submission: Number(workers?.n ?? 0),
     requesters: Number(requesters?.n ?? 0),
     paid_to_workers: { asset: "USDC", amount: fromMicro(paid), network: "solana-devnet" },
+    paid_by_asset: [...paidBy].map(([asset, v]) => ({ asset: asset as Asset, amount: fromMicro(v) })),
     median_seconds_to_result: median(durations),
     ai_review: { pass: reviews("pass"), fail: reviews("fail"), uncertain: reviews("warning") },
     by_type: byType,

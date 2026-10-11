@@ -24,6 +24,7 @@ import {
   toMicro,
 } from "@proofmarket/core";
 import {
+  type Asset,
   CreateVerificationRequestSchema,
   ObjectionRequestSchema,
   type ObjectionResponseSchema,
@@ -146,7 +147,7 @@ export async function challengeVerification(
     body: {
       verification_id: orig.id as ObjectionResponse["verification_id"],
       recheck_verification_id: recheckId as ObjectionResponse["recheck_verification_id"],
-      bond: { asset: "USDC", amount: fromMicro(bond) },
+      bond: { asset: orig.bountyAsset as Asset, amount: fromMicro(bond) },
       state: "challenged",
     },
   };

@@ -44,6 +44,9 @@ const Amount = z
   .string()
   .regex(/^(0|[1-9]\d{0,11})(\.\d{1,6})?$/, "decimal string with up to 6 decimals")
   .refine((v) => Number(v) > 0, "must be > 0");
+/** What a reward is paid in (15 §3). SOL is accepted only while SOL_ENABLED is on. */
+export const AssetSchema = z.enum(["USDC", "SOL"]);
+export type Asset = z.infer<typeof AssetSchema>;
 const Sha256Hex = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 const SolanaSignature = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{64,88}$/);
 
@@ -265,7 +268,7 @@ export const CreateVerificationRequestSchema = z
     assurance: AssuranceInputSchema,
     bounty: z
       .object({
-        asset: z.literal("USDC"),
+        asset: AssetSchema,
         amount: Amount, // per witness (D-07)
         network: z.literal("solana-devnet"),
         /**
@@ -498,7 +501,7 @@ export const GetVerificationResponseSchema = z.object({
     challenge_minutes: z.number().int().nullable(),
   }),
   bounty: z.object({
-    asset: z.literal("USDC"),
+    asset: AssetSchema,
     amount: Amount,
     network: z.literal("solana-devnet"),
     /** Rising bounty (13 §1); null when the reward is fixed. */
@@ -652,11 +655,13 @@ export const PublicStatsSchema = z.object({
   verifications: z.object({ total: z.number().int(), completed: z.number().int() }),
   workers_with_valid_submission: z.number().int(),
   requesters: z.number().int(),
+  /** USDC only, as before SOL existed; every asset is in paid_by_asset. */
   paid_to_workers: z.object({
     asset: z.literal("USDC"),
     amount: z.string().regex(/^\d+(\.\d{1,6})?$/),
     network: z.literal("solana-devnet"),
   }),
+  paid_by_asset: z.array(z.object({ asset: AssetSchema, amount: z.string().regex(/^\d+(\.\d{1,6})?$/) })),
   median_seconds_to_result: z.number().int().nullable(),
   ai_review: z.object({ pass: z.number().int(), fail: z.number().int(), uncertain: z.number().int() }),
   by_type: z.array(
@@ -752,7 +757,7 @@ export const WorkerTaskSchema = z.object({
   location: LocationSchema.nullable(),
   distance_m: z.number().int().nullable(),
   reward: z.object({
-    asset: z.literal("USDC"),
+    asset: AssetSchema,
     amount: Amount,
     /** Rising bounty (13 §1): the amount now (equals `amount`, kept for clients that read it). */
     current: Amount,
@@ -856,7 +861,7 @@ export const PayoutsResponseSchema = z.object({
     z.object({
       verification_id: VerificationIdSchema,
       amount: Amount,
-      asset: z.literal("USDC"),
+      asset: AssetSchema,
       status: z.enum(API_SETTLEMENT_STATUSES),
       explorer_url: z.url().nullable(),
       paid_at: IsoDateTime.nullable(),
@@ -985,6 +990,6 @@ export const ObjectionResponseSchema = z.object({
   verification_id: VerificationIdSchema,
   recheck_verification_id: VerificationIdSchema,
   /** Twice the bounty, reserved from the caller's balance. Returned in full if the recheck disagrees. */
-  bond: z.object({ asset: z.literal("USDC"), amount: Amount }),
+  bond: z.object({ asset: AssetSchema, amount: Amount }),
   state: z.literal("challenged"),
 });
