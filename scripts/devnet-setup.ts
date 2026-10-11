@@ -1,18 +1,20 @@
 // Devnet (or localnet) setup for the ProofMarket program (06 §7 steps 5-6, §6).
 //   run devnet-setup.ts --url <rpc> [--own-mint] [--mint <pubkey>] [--allow-localnet] [--fund-treasury 100]
+//                       [--allow-wsol]   (program v1.2: allow tasks in wSOL = rewards in SOL, 15 §3.1)
 // Keys live in ~/.config/proofmarket/{admin,operator,verifier}.json (created if missing, mode 0600).
 // Writes ~/.config/proofmarket/env.<cluster> with the server env values (contains secrets; never commit).
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { AnchorProvider, Program, Wallet } from "@anchor-lang/core";
-import { configPda } from "@proofmarket/solana";
+import { allowedMintPda, configPda } from "@proofmarket/solana";
 import idl from "@proofmarket/solana/idl" with { type: "json" };
 import {
   createAssociatedTokenAccountIdempotent,
   createMint,
   getAssociatedTokenAddressSync,
   mintTo,
+  NATIVE_MINT,
 } from "@solana/spl-token";
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
@@ -112,6 +114,20 @@ if (
 }
 if (!c.bountyMint.equals(mint))
   console.error(`note: config.bounty_mint is ${c.bountyMint.toBase58()} (use update_config to switch)`);
+
+// 15 §3.1: allow wSOL once (add_mint fails if it is already allowed, so check first).
+if (a["allow-wsol"] === "true") {
+  const [allowed] = allowedMintPda(programId, NATIVE_MINT);
+  if (await conn.getAccountInfo(allowed)) {
+    console.error(`wSOL already allowed (${allowed.toBase58()})`);
+  } else {
+    const sig = await program.methods
+      .addMint()
+      .accountsPartial({ admin: admin.publicKey, config, mint: NATIVE_MINT, allowedMint: allowed })
+      .rpc();
+    console.error(`add_mint wSOL: ${sig}`);
+  }
+}
 
 const envFile = join(DIR, `env.${cluster}`);
 writeFileSync(

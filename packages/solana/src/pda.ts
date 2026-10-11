@@ -5,6 +5,7 @@ export const SEEDS = {
   config: "config",
   task: "task",
   vault: "vault",
+  mint: "mint",
 } as const;
 
 export const MAX_RECIPIENTS = 5;
@@ -20,6 +21,11 @@ export function taskPda(programId: PublicKey, taskIdHash: Uint8Array): [PublicKe
 
 export function vaultPda(programId: PublicKey, task: PublicKey): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([Buffer.from(SEEDS.vault), task.toBuffer()], programId);
+}
+
+/** seeds = ["mint", mint]: exists when the admin allowed tasks in `mint` besides Config.bounty_mint (15 §3.1). */
+export function allowedMintPda(programId: PublicKey, mint: PublicKey): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync([Buffer.from(SEEDS.mint), mint.toBuffer()], programId);
 }
 
 export function explorerTxUrl(signature: string): string {

@@ -20,7 +20,7 @@ use proofmarket::{
     error::ProofMarketError,
     events::{TaskInitialized, TaskRefunded, TaskSettled, VerificationFinalized},
     FinalizeVerificationArgs, InitializeConfigArgs, InitializeTaskArgs, Outcome, RefundReason,
-    Task, TaskStatus, UpdateConfigArgs, CONFIG_SEED, MAX_RECIPIENTS, TASK_SEED, VAULT_SEED,
+    Task, TaskStatus, UpdateConfigArgs, CONFIG_SEED, MAX_RECIPIENTS, MINT_SEED, TASK_SEED, VAULT_SEED,
 };
 use solana_account::Account as SolanaAccount;
 use solana_keypair::Keypair;
@@ -342,6 +342,7 @@ impl Env {
                 treasury: *treasury,
                 token_program: spl_token::ID,
                 system_program: anchor_lang::system_program::ID,
+                allowed_mint: None,
             }
             .to_account_metas(None),
             data: proofmarket::instruction::InitializeTask { args }.data(),
@@ -1339,4 +1340,201 @@ fn initialize_config_validates_args() {
         max_witnesses: 4,
     });
     assert_custom_err(env.as_admin(ix), SYSTEM_ACCOUNT_ALREADY_IN_USE);
+}
+
+// ---------------------------------------------------------------------------------------------
+// 15 §3.1: allowed mints (wSOL for rewards in SOL)
+// ---------------------------------------------------------------------------------------------
+
+fn allowed_mint_pda(mint: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[MINT_SEED, mint.as_ref()], &proofmarket::ID).0
+}
+
+impl Env {
+    fn ix_add_mint(&self, admin: &Pubkey, mint: &Pubkey) -> Instruction {
+        Instruction {
+            program_id: proofmarket::ID,
+            accounts: proofmarket::accounts::AddMint {
+                admin: *admin,
+                config: config_pda(),
+                mint: *mint,
+                allowed_mint: allowed_mint_pda(mint),
+                system_program: anchor_lang::system_program::ID,
+            }
+            .to_account_metas(None),
+            data: proofmarket::instruction::AddMint {}.data(),
+        }
+    }
+
+    fn ix_remove_mint(&self, mint: &Pubkey) -> Instruction {
+        Instruction {
+            program_id: proofmarket::ID,
+            accounts: proofmarket::accounts::RemoveMint {
+                admin: self.admin.pubkey(),
+                config: config_pda(),
+                allowed_mint: allowed_mint_pda(mint),
+            }
+            .to_account_metas(None),
+            data: proofmarket::instruction::RemoveMint {}.data(),
+        }
+    }
+
+    /// initialize_task in `mint`, passing its AllowedMint (or the program id = None when `allowed` is false).
+    fn ix_initialize_task_in(&self, mint: &Pubkey, treasury: &Pubkey, allowed: bool, args: InitializeTaskArgs) -> Instruction {
+        let task = task_pda(&args.task_id_hash);
+        Instruction {
+            program_id: proofmarket::ID,
+            accounts: proofmarket::accounts::InitializeTask {
+                operator: self.operator.pubkey(),
+                config: config_pda(),
+                task,
+                mint: *mint,
+                vault: vault_pda(&task),
+                treasury: *treasury,
+                token_program: spl_token::ID,
+                system_program: anchor_lang::system_program::ID,
+                allowed_mint: allowed.then(|| allowed_mint_pda(mint)),
+            }
+            .to_account_metas(None),
+            data: proofmarket::instruction::InitializeTask { args }.data(),
+        }
+    }
+
+    fn ix_settle_in(&self, task: &Pubkey, mint: &Pubkey, treasury: &Pubkey, recipient_atas: &[Pubkey]) -> Instruction {
+        let mut accounts = proofmarket::accounts::Settle {
+            operator: self.operator.pubkey(),
+            config: config_pda(),
+            task: *task,
+            mint: *mint,
+            vault: vault_pda(task),
+            treasury: *treasury,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None);
+        accounts.extend(recipient_atas.iter().map(|a| AccountMeta::new(*a, false)));
+        Instruction { program_id: proofmarket::ID, accounts, data: proofmarket::instruction::Settle {}.data() }
+    }
+
+    fn ix_refund_in(&self, task: &Pubkey, treasury: &Pubkey, reason: RefundReason) -> Instruction {
+        Instruction {
+            program_id: proofmarket::ID,
+            accounts: proofmarket::accounts::Refund {
+                operator: self.operator.pubkey(),
+                config: config_pda(),
+                task: *task,
+                vault: vault_pda(task),
+                treasury: *treasury,
+                token_program: spl_token::ID,
+            }
+            .to_account_metas(None),
+            data: proofmarket::instruction::Refund { reason }.data(),
+        }
+    }
+
+    /// A second mint, allowed by the admin, with an operator-owned treasury of its own.
+    fn allowed_second_mint(&mut self) -> (Pubkey, Pubkey) {
+        let mint = self.new_mint();
+        let operator = self.operator.pubkey();
+        let treasury = self.new_ata(&operator, &mint, TREASURY_START);
+        let admin = self.admin.pubkey();
+        let ix = self.ix_add_mint(&admin, &mint);
+        assert_ok(self.as_admin(ix));
+        (mint, treasury)
+    }
+}
+
+#[test]
+fn p_mint_01_task_in_allowed_mint_funds_settles_and_refunds() {
+    let mut env = Env::new();
+    let (mint, treasury) = env.allowed_second_mint();
+
+    // settle: N=3, 2 recipients paid in the second mint, the rest back to its treasury
+    let args = task_args(41);
+    let task = task_pda(&args.task_id_hash);
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, args);
+    assert_ok(env.as_operator(ix));
+    assert_eq!(env.token_balance(&treasury), TREASURY_START - 3 * AMOUNT);
+    assert_eq!(env.task(&task).mint, mint);
+    let mut wallets = vec![];
+    let mut atas = vec![];
+    for _ in 0..2 {
+        let w = Keypair::new().pubkey();
+        atas.push(env.new_ata(&w, &mint, 0));
+        wallets.push(w);
+    }
+    env.finalize(&task, Outcome::Verified, &wallets);
+    let ix = env.ix_settle_in(&task, &mint, &treasury, &atas);
+    assert_ok(env.as_operator(ix));
+    for a in &atas {
+        assert_eq!(env.token_balance(a), AMOUNT);
+    }
+    assert_eq!(env.token_balance(&treasury), TREASURY_START - 2 * AMOUNT);
+    assert!(env.is_closed(&vault_pda(&task)));
+
+    // refund: everything back to the second mint's treasury; the USDC treasury is not accepted for it
+    let args = task_args(42);
+    let task = task_pda(&args.task_id_hash);
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, args);
+    assert_ok(env.as_operator(ix));
+    let usdc_treasury = env.treasury;
+    let ix = env.ix_refund_in(&task, &usdc_treasury, RefundReason::Cancelled);
+    assert_err(env.as_operator(ix), ProofMarketError::InvalidTreasury);
+    let ix = env.ix_refund_in(&task, &treasury, RefundReason::Cancelled);
+    assert_ok(env.as_operator(ix));
+    assert_eq!(env.token_balance(&treasury), TREASURY_START - 2 * AMOUNT);
+    assert_eq!(env.task(&task).status, TaskStatus::Refunded);
+}
+
+#[test]
+fn p_mint_02_only_allowed_mints_and_operator_treasuries() {
+    let mut env = Env::new();
+    let other = env.new_mint();
+    let operator = env.operator.pubkey();
+    let other_treasury = env.new_ata(&operator, &other, TREASURY_START);
+
+    // not allowed: without or with a (non-existent) AllowedMint
+    let ix = env.ix_initialize_task_in(&other, &other_treasury, false, task_args(51));
+    assert_err(env.as_operator(ix), ProofMarketError::InvalidMint);
+    let ix = env.ix_initialize_task_in(&other, &other_treasury, true, task_args(51));
+    assert!(env.as_operator(ix).is_err());
+
+    // only the admin may allow a mint
+    let ix = env.ix_add_mint(&operator, &other);
+    let op = env.operator.insecure_clone();
+    assert_err(env.send(&[ix], &op), ProofMarketError::Unauthorized);
+    let admin = env.admin.pubkey();
+    let ix = env.ix_add_mint(&admin, &other);
+    assert_ok(env.as_admin(ix));
+
+    // the treasury of an allowed mint must belong to the operator
+    let stranger = Keypair::new().pubkey();
+    let foreign = env.new_ata(&stranger, &other, TREASURY_START);
+    let ix = env.ix_initialize_task_in(&other, &foreign, true, task_args(52));
+    assert_err(env.as_operator(ix), ProofMarketError::InvalidTreasury);
+    let ix = env.ix_initialize_task_in(&other, &other_treasury, true, task_args(52));
+    assert_ok(env.as_operator(ix));
+
+    // the configured mint still needs exactly Config.treasury
+    let mint = env.mint;
+    let ix = env.ix_initialize_task_in(&mint, &other_treasury, false, task_args(53));
+    assert_err(env.as_operator(ix), ProofMarketError::InvalidTreasury);
+
+    // removed: no new tasks in it
+    let ix = env.ix_remove_mint(&other);
+    assert_ok(env.as_admin(ix));
+    let ix = env.ix_initialize_task_in(&other, &other_treasury, false, task_args(54));
+    assert_err(env.as_operator(ix), ProofMarketError::InvalidMint);
+}
+
+#[test]
+fn p_mint_03_clients_from_before_v1_2_still_fund_the_configured_mint() {
+    let mut env = Env::new();
+    // The pre-v1.2 account list has no trailing allowed_mint at all.
+    let mut ix = env.ix_initialize_task(task_args(61));
+    let last = ix.accounts.pop().expect("allowed_mint placeholder");
+    assert_eq!(last.pubkey, proofmarket::ID);
+    let task = task_pda(&task_args(61).task_id_hash);
+    assert_ok(env.as_operator(ix));
+    assert_eq!(env.task(&task).status, TaskStatus::Funded);
+    assert_eq!(env.token_balance(&env.treasury.clone()), TREASURY_START - 3 * AMOUNT);
 }

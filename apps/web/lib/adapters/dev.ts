@@ -126,6 +126,7 @@ export function devChain(): SettlementAdapter {
         resultHash: new Uint8Array(32),
         recipients: [],
         paidTotal: 0n,
+        mint: i.asset === "SOL" ? "So11111111111111111111111111111111111111112" : "DevUsdcMint",
       });
       return ok(s, addr);
     },

@@ -5,7 +5,7 @@ use crate::{
     constants::*,
     error::ProofMarketError,
     events::TaskInitialized,
-    state::{Config, Outcome, RefundReason, Task, TaskStatus},
+    state::{AllowedMint, Config, Outcome, RefundReason, Task, TaskStatus},
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -34,7 +34,10 @@ pub struct InitializeTask<'info> {
         bump
     )]
     pub task: Account<'info, Task>,
-    #[account(address = config.bounty_mint @ ProofMarketError::InvalidMint)]
+    /// Config.bounty_mint, or a mint whose AllowedMint is passed as `allowed_mint` (15 §3.1).
+    #[account(
+        constraint = mint.key() == config.bounty_mint || allowed_mint.is_some() @ ProofMarketError::InvalidMint
+    )]
     pub mint: Account<'info, Mint>,
     #[account(
         init,
@@ -45,10 +48,19 @@ pub struct InitializeTask<'info> {
         token::authority = task,
     )]
     pub vault: Account<'info, TokenAccount>,
-    #[account(mut, address = config.treasury @ ProofMarketError::InvalidTreasury)]
+    /// Config.treasury for Config.bounty_mint; for an allowed mint, an operator-owned account of that mint.
+    #[account(
+        mut,
+        constraint = treasury.mint == mint.key() @ ProofMarketError::InvalidTreasury,
+        constraint = (mint.key() == config.bounty_mint && treasury.key() == config.treasury)
+            || (mint.key() != config.bounty_mint && treasury.owner == config.operator) @ ProofMarketError::InvalidTreasury
+    )]
     pub treasury: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+    /// Last and optional so clients from before v1.2 may leave it out (allow-missing-optionals).
+    #[account(seeds = [MINT_SEED, mint.key().as_ref()], bump = allowed_mint.bump)]
+    pub allowed_mint: Option<Account<'info, AllowedMint>>,
 }
 
 /// 06 §3.2:

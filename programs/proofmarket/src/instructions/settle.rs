@@ -8,7 +8,7 @@ use crate::{
     constants::*,
     error::ProofMarketError,
     events::TaskSettled,
-    instructions::{load_vault, task_signer_seeds},
+    instructions::{is_treasury_for, load_vault, task_signer_seeds},
     state::{Config, Task, TaskStatus},
 };
 
@@ -27,7 +27,10 @@ pub struct Settle<'info> {
     /// CHECK: address pinned by seeds; owner and layout are checked by `load_vault`.
     #[account(mut, seeds = [VAULT_SEED, task.key().as_ref()], bump = task.vault_bump)]
     pub vault: UncheckedAccount<'info>,
-    #[account(mut, address = config.treasury @ ProofMarketError::InvalidTreasury)]
+    #[account(
+        mut,
+        constraint = is_treasury_for(&treasury, treasury.key(), &config, task.mint) @ ProofMarketError::InvalidTreasury
+    )]
     pub treasury: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     // remaining_accounts: recipients' ATAs (writable), same order as task.recipients[..recipient_count]

@@ -4,7 +4,9 @@
 import { AnchorProvider, BN, Program } from "@anchor-lang/core";
 import {
   createAssociatedTokenAccountIdempotentInstruction,
+  createSyncNativeInstruction,
   getAssociatedTokenAddressSync,
+  NATIVE_MINT,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
@@ -12,6 +14,7 @@ import {
   Connection,
   Keypair,
   PublicKey,
+  SystemProgram,
   TransactionExpiredBlockheightExceededError,
   type TransactionInstruction,
   TransactionMessage,
@@ -29,7 +32,7 @@ import type {
   RefundInput,
   SettlementAdapter,
 } from "./adapter.ts";
-import { configPda, taskPda, vaultPda } from "./pda.ts";
+import { allowedMintPda, configPda, taskPda, vaultPda } from "./pda.ts";
 
 export interface AnchorAdapterConfig {
   rpcUrl: string;
@@ -69,6 +72,9 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
   );
   const [config] = configPda(programId);
   const treasury = getAssociatedTokenAddressSync(mint, operator.publicKey);
+  // 15 §3.1: SOL is escrowed as wSOL out of the operator's wSOL account; settle / refund return to the
+  // operator's account of the task's mint (for BOUNTY_MINT that is Config.treasury, checked at start).
+  const treasuryOf = (m: PublicKey) => getAssociatedTokenAddressSync(m, operator.publicKey);
   const timeoutMs = cfg.confirmTimeoutMs ?? 60_000;
   let checked = false;
 
@@ -88,6 +94,7 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
       resultHash: Uint8Array.from(t.resultHash),
       recipients: t.recipients.slice(0, t.recipientCount).map((p) => p.toBase58()),
       paidTotal: BigInt(t.paidTotal.toString()),
+      mint: t.mint.toBase58(),
     };
   }
 
@@ -161,6 +168,30 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
       await this.assertSafeToStart();
       const [task] = taskPda(programId, i.taskIdHash);
       if (await readTask(i.taskIdHash)) return confirmed(null, task.toBase58(), true);
+      const sol = i.asset === "SOL";
+      const taskMint = sol ? NATIVE_MINT : mint;
+      const from = treasuryOf(taskMint);
+      const pre: TransactionInstruction[] = [];
+      if (sol) {
+        // Wrap only what the wSOL account lacks (refunds and settle remainders come back to it as wSOL).
+        const need = i.amountPerWitness * BigInt(i.requiredWitnesses);
+        const bal = await connection.getTokenAccountBalance(from, "confirmed").catch(() => null);
+        const short = need - BigInt(bal?.value.amount ?? "0");
+        pre.push(
+          createAssociatedTokenAccountIdempotentInstruction(
+            operator.publicKey,
+            from,
+            operator.publicKey,
+            NATIVE_MINT,
+          ),
+        );
+        if (short > 0n) {
+          pre.push(
+            SystemProgram.transfer({ fromPubkey: operator.publicKey, toPubkey: from, lamports: short }),
+            createSyncNativeInstruction(from),
+          );
+        }
+      }
       const ix = await program.methods
         .initializeTask({
           taskIdHash: Array.from(i.taskIdHash),
@@ -174,13 +205,14 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           operator: operator.publicKey,
           config,
           task,
-          mint,
+          mint: taskMint,
           vault: vaultPda(programId, task)[0],
-          treasury,
+          treasury: from,
           tokenProgram: TOKEN_PROGRAM_ID,
+          allowedMint: sol ? allowedMintPda(programId, NATIVE_MINT)[0] : null,
         })
         .instruction();
-      const r = await send([ix], [operator], onSigned);
+      const r = await send([...pre, ix], [operator], onSigned);
       if (r.ok) return confirmed(r.signature, task.toBase58());
       // A timed-out send may still have landed: report retry; the job re-reads the PDA next time.
       return { kind: "retry", signature: r.signature, error: r.error };
@@ -202,8 +234,9 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           (i.amountPerWitness === undefined || onChain.amountPerWitness === i.amountPerWitness);
         if (!same) return { kind: "halt", error: "on-chain finalize differs from DB (I-SET-05)" };
       }
+      const taskMint = new PublicKey(onChain.mint);
       const recipients = i.recipients.map((r) => new PublicKey(r));
-      const atas = recipients.map((r) => getAssociatedTokenAddressSync(mint, r));
+      const atas = recipients.map((r) => getAssociatedTokenAddressSync(taskMint, r));
       // Create missing ATAs in their own tx (06 §4: keeps the settle tx small).
       const infos = await connection.getMultipleAccountsInfo(atas, "confirmed");
       const missing = atas
@@ -211,7 +244,7 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
         .filter((x) => !x.exists);
       if (missing.length) {
         const ataIxs = missing.map((m) =>
-          createAssociatedTokenAccountIdempotentInstruction(operator.publicKey, m.ata, m.owner, mint),
+          createAssociatedTokenAccountIdempotentInstruction(operator.publicKey, m.ata, m.owner, taskMint),
         );
         const r = await send(ataIxs, [operator], async () => undefined);
         if (!r.ok) return { kind: "retry", signature: null, error: `ata: ${r.error}` };
@@ -239,9 +272,9 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
             operator: operator.publicKey,
             config,
             task,
-            mint,
+            mint: taskMint,
             vault: vaultPda(programId, task)[0],
-            treasury,
+            treasury: treasuryOf(taskMint),
             tokenProgram: TOKEN_PROGRAM_ID,
           })
           .remainingAccounts(atas.map((pubkey) => ({ pubkey, isSigner: false, isWritable: true })))
@@ -268,7 +301,7 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           config,
           task,
           vault: vaultPda(programId, task)[0],
-          treasury,
+          treasury: treasuryOf(new PublicKey(onChain.mint)),
           tokenProgram: TOKEN_PROGRAM_ID,
         })
         .instruction();

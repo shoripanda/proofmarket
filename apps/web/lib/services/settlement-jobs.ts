@@ -9,6 +9,7 @@ import {
   newId,
   OUTBOX_RETRY,
   settledPerWitnessMicro,
+  toBaseUnits,
 } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
 import type { ChainResult, OnChainOutcome } from "@proofmarket/solana";
@@ -86,6 +87,12 @@ async function paymentRecord(
   return row;
 }
 
+/** USDC or SOL (15 §3); any other value in the column is a bug, so it fails loudly. */
+function assetOf(task: TaskRow): "USDC" | "SOL" {
+  if (task.bountyAsset === "USDC" || task.bountyAsset === "SOL") return task.bountyAsset;
+  throw new Error(`unknown bounty asset ${task.bountyAsset}`);
+}
+
 // ---------- FUND_TASK ----------
 
 export async function runFundTask(
@@ -95,9 +102,8 @@ export async function runFundTask(
 ): Promise<JobOutcome> {
   const task = await loadTask(app.db, verificationId);
   if (task?.status !== "CREATED") return { kind: "done" }; // already funded or cancelled (T14)
-  // The deployed program escrows BOUNTY_MINT only; SOL needs program v1.2 (15 §3.1). SOL_ENABLED stays off till then.
-  if (task.bountyAsset !== "USDC")
-    throw new Error(`funding ${task.bountyAsset} needs program v1.2 (15 §3.1)`);
+  // SOL is escrowed as wSOL; it needs program v1.2 with wSOL allowed (15 §3.1), which SOL_ENABLED waits for.
+  const asset = assetOf(task);
   const pay = await paymentRecord(app.db, task, "FUND", fundedMicro(task));
   const adapter = app.settlement();
   const r = await adapter.fundTask(
@@ -105,7 +111,9 @@ export async function runFundTask(
       verificationId,
       taskIdHash: task.taskIdHash,
       requesterRefHash: sha256(task.credentialId), // 06 §2.2: SHA-256(credential_id)
-      amountPerWitness: fundedPerWitnessMicro(bountyOf(task)), // the ceiling for a rising bounty (13 §1)
+      // the ceiling for a rising bounty (13 §1), in the asset's base units (SOL: lamports, 15 §3.2)
+      amountPerWitness: toBaseUnits(fundedPerWitnessMicro(bountyOf(task)), asset),
+      asset,
       requiredWitnesses: task.requiredWitnesses,
       quorum: task.quorum,
       deadline: task.deadline,
@@ -232,7 +240,7 @@ export async function runFinalizeAndSettle(app: AppContext, verificationId: stri
       evidenceRoot: result.evidenceRoot,
       resultHash: result.resultHash,
       recipients: valid.map((v) => v.pubkey),
-      ...(task.bountyMaxAmount !== null ? { amountPerWitness: per } : {}),
+      ...(task.bountyMaxAmount !== null ? { amountPerWitness: toBaseUnits(per, assetOf(task)) } : {}),
     },
     recordSignature(app, pay.id),
   );

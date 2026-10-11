@@ -8,6 +8,53 @@
   },
   "instructions": [
     {
+      "name": "add_mint",
+      "docs": ["admin: allow tasks in another mint, e.g. wSOL for rewards in SOL (15 §3.1)."],
+      "discriminator": [171, 222, 111, 37, 60, 166, 208, 108],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "allowed_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "finalize_verification",
       "docs": [
         "verifier: write outcome, evidence_root, result_hash, recipients. Funded -> Finalized. No time limit (D-11)."
@@ -145,7 +192,8 @@
           }
         },
         {
-          "name": "mint"
+          "name": "mint",
+          "docs": ["Config.bounty_mint, or a mint whose AllowedMint is passed as `allowed_mint` (15 §3.1)."]
         },
         {
           "name": "vault",
@@ -165,6 +213,9 @@
         },
         {
           "name": "treasury",
+          "docs": [
+            "Config.treasury for Config.bounty_mint; for an allowed mint, an operator-owned account of that mint."
+          ],
           "writable": true
         },
         {
@@ -174,6 +225,25 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "allowed_mint",
+          "docs": [
+            "Last and optional so clients from before v1.2 may leave it out (allow-missing-optionals)."
+          ],
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
         }
       ],
       "args": [
@@ -263,6 +333,47 @@
           }
         }
       ]
+    },
+    {
+      "name": "remove_mint",
+      "docs": ["admin: stop new tasks in an allowed mint; funded tasks still settle or refund."],
+      "discriminator": [113, 35, 250, 141, 254, 115, 233, 5],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "allowed_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116]
+              },
+              {
+                "kind": "account",
+                "path": "allowed_mint.mint",
+                "account": "AllowedMint"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
     },
     {
       "name": "settle",
@@ -378,6 +489,10 @@
   ],
   "accounts": [
     {
+      "name": "AllowedMint",
+      "discriminator": [173, 229, 179, 46, 121, 164, 247, 6]
+    },
+    {
       "name": "Config",
       "discriminator": [155, 12, 170, 224, 30, 250, 204, 130]
     },
@@ -487,6 +602,26 @@
     }
   ],
   "types": [
+    {
+      "name": "AllowedMint",
+      "docs": [
+        "seeds = [MINT_SEED, mint]. Its existence allows tasks in `mint` besides Config.bounty_mint (15 §3.1):",
+        "wSOL for rewards in SOL. Added and removed by the admin."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
     {
       "name": "Config",
       "docs": ["seeds = [CONFIG_SEED]"],
@@ -979,6 +1114,14 @@
       "name": "CONFIG_SEED",
       "type": "bytes",
       "value": "[99, 111, 110, 102, 105, 103]"
+    },
+    {
+      "name": "MINT_SEED",
+      "docs": [
+        "seeds = [MINT_SEED, mint]: a mint other than Config.bounty_mint that tasks may escrow (15 §3.1)."
+      ],
+      "type": "bytes",
+      "value": "[109, 105, 110, 116]"
     },
     {
       "name": "TASK_SEED",

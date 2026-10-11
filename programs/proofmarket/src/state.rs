@@ -20,6 +20,15 @@ pub struct Config {
     pub bump: u8,
 }
 
+/// seeds = [MINT_SEED, mint]. Its existence allows tasks in `mint` besides Config.bounty_mint (15 §3.1):
+/// wSOL for rewards in SOL. Added and removed by the admin.
+#[account]
+#[derive(InitSpace)]
+pub struct AllowedMint {
+    pub mint: Pubkey,
+    pub bump: u8,
+}
+
 /// seeds = [TASK_SEED, task_id_hash]. Kept forever as the public receipt; only the vault is closed.
 #[account]
 #[derive(InitSpace)]

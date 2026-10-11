@@ -20,13 +20,17 @@ export interface OnChainTask {
   resultHash: Uint8Array;
   recipients: string[]; // first recipient_count entries
   paidTotal: bigint;
+  /** The escrowed mint: BOUNTY_MINT, or wSOL for a reward in SOL (15 §3.1). */
+  mint: string;
 }
 
 export interface FundTaskInput {
   verificationId: string;
   taskIdHash: Uint8Array;
   requesterRefHash: Uint8Array;
-  amountPerWitness: bigint; // base units
+  amountPerWitness: bigint; // base units of the asset (USDC: 10^-6, SOL: lamports)
+  /** USDC (BOUNTY_MINT) unless given. SOL is escrowed as wSOL and needs program v1.2 with wSOL allowed. */
+  asset?: "USDC" | "SOL";
   requiredWitnesses: number;
   quorum: number;
   deadline: Date;

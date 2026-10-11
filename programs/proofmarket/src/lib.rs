@@ -32,6 +32,16 @@ pub mod proofmarket {
         instructions::update_config::handle_update_config(ctx, args)
     }
 
+    /// admin: allow tasks in another mint, e.g. wSOL for rewards in SOL (15 §3.1).
+    pub fn add_mint(ctx: Context<AddMint>) -> Result<()> {
+        instructions::allowed_mint::handle_add_mint(ctx)
+    }
+
+    /// admin: stop new tasks in an allowed mint; funded tasks still settle or refund.
+    pub fn remove_mint(ctx: Context<RemoveMint>) -> Result<()> {
+        instructions::allowed_mint::handle_remove_mint(ctx)
+    }
+
     /// operator: create Task + vault, move amount_per_witness * N from treasury into the vault. -> Funded
     pub fn initialize_task(ctx: Context<InitializeTask>, args: InitializeTaskArgs) -> Result<()> {
         instructions::initialize_task::handle_initialize_task(ctx, args)
