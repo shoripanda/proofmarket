@@ -12,6 +12,7 @@ import {
   endConsoleSession,
   sessionCookie,
 } from "../services/console-service";
+import { ensureDepositReference } from "../services/deposit-service";
 import { clientIp } from "../services/oauth-service";
 import { stopSchedule } from "../services/schedule-service";
 
@@ -37,4 +38,12 @@ export async function handleConsoleStopSchedule(app: AppContext, req: Request, i
   const auth = await consoleAuth(app, cookieToken(req));
   if (!auth) throw new ApiError("UNAUTHENTICATED");
   return Response.json(await stopSchedule(app, auth, id));
+}
+
+/** POST /v1/console/deposit — issue the requester's deposit reference (15 §4.3); repeat calls return the same one. */
+export async function handleConsoleDeposit(app: AppContext, req: Request) {
+  assertSameOrigin(req);
+  const auth = await consoleAuth(app, cookieToken(req));
+  if (!auth) throw new ApiError("UNAUTHENTICATED");
+  return Response.json({ reference: await ensureDepositReference(app, auth) });
 }

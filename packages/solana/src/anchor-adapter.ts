@@ -32,6 +32,7 @@ import type {
   RefundInput,
   SettlementAdapter,
 } from "./adapter.ts";
+import { findDepositsByReference } from "./deposits.ts";
 import { allowedMintPda, configPda, taskPda, vaultPda } from "./pda.ts";
 
 export interface AnchorAdapterConfig {
@@ -162,6 +163,22 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
       const lamports = await connection.getBalance(operator.publicKey, "confirmed");
       const bal = await connection.getTokenAccountBalance(treasury, "confirmed").catch(() => null);
       return { operatorLamports: BigInt(lamports), treasuryAmount: BigInt(bal?.value.amount ?? "0") };
+    },
+
+    depositAddresses() {
+      return {
+        wallet: operator.publicKey.toBase58(),
+        usdcAccount: treasury.toBase58(),
+        usdcMint: mint.toBase58(),
+      };
+    },
+    findDeposits(reference, until) {
+      return findDepositsByReference(
+        connection,
+        { operator: operator.publicKey, usdcMint: mint },
+        reference,
+        until,
+      );
     },
 
     async fundTask(i: FundTaskInput, onSigned) {

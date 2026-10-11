@@ -20,6 +20,11 @@ export function toBaseUnits(micro: bigint, asset: keyof typeof ASSET_DECIMALS): 
   return micro * 10n ** BigInt(ASSET_DECIMALS[asset] - LIMITS.bountyDecimals);
 }
 
+/** On-chain base units -> off-chain micro units, rounding down (SOL: lamports / 1000; dust is dropped). */
+export function fromBaseUnits(base: bigint, asset: keyof typeof ASSET_DECIMALS): bigint {
+  return base / 10n ** BigInt(ASSET_DECIMALS[asset] - LIMITS.bountyDecimals);
+}
+
 /** 500000n -> "0.5" (trailing zeros trimmed, at least one integer digit). */
 export function fromMicro(v: bigint): string {
   const neg = v < 0n;

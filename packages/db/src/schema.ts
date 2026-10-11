@@ -100,6 +100,9 @@ export const requesterCredentials = pgTable(
     status: text("status").notNull().default("active"),
     createdAt: tsz("created_at").notNull().defaultNow(),
     revokedAt: tsz("revoked_at"),
+    /** 15 §4.3: Solana Pay reference the requester puts on deposits; null until they ask for one. */
+    depositReference: text("deposit_reference").unique(),
+    depositCheckedAt: tsz("deposit_checked_at"),
   },
   (_t) => [check("requester_credentials_status_chk", oneOf("status", ["active", "suspended"]))],
 );
@@ -124,6 +127,28 @@ export const requesterLedger = pgTable(
     uniqueIndex("one_credit_back_per_task")
       .on(t.verificationId)
       .where(sql`entry_type in ('RELEASE','REFUND')`),
+  ],
+);
+
+// ---------- 3.27 deposits (15 §4.3) ----------
+/** One finalized transfer to the treasury per row; the TOPUP ledger entry is written in the same transaction. */
+export const deposits = pgTable(
+  "deposits",
+  {
+    signature: text("signature").primaryKey(),
+    credentialId: text("credential_id")
+      .notNull()
+      .references(() => requesterCredentials.id),
+    asset: text("asset").notNull(),
+    amount: money("amount").notNull(),
+    slot: bigint("slot", { mode: "number" }).notNull(),
+    fromPubkey: text("from_pubkey"),
+    createdAt: tsz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("deposits_asset_chk", oneOf("asset", ["USDC", "SOL"])),
+    check("deposits_amount_chk", sql`amount > 0`),
+    index("deposits_credential_idx").on(t.credentialId, t.createdAt),
   ],
 );
 

@@ -8,6 +8,7 @@ import { and, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import { authenticateApiKey, credentialAuth, type RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
 import { randomToken, sha256 } from "./crypto";
+import { depositView } from "./deposit-service";
 import { consumeRateLimit } from "./rate-limit";
 import { startOfSpendDay } from "./requester-service";
 import { listSchedules } from "./schedule-service";
@@ -168,5 +169,6 @@ export async function dashboard(app: AppContext, auth: RequesterAuth) {
       })),
     },
     schedules: (await listSchedules(app, auth)).schedules,
+    deposit: await depositView(app, auth),
   };
 }
