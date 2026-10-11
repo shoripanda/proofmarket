@@ -58,6 +58,8 @@ export interface AppConfig {
   webhookPepper: string;
   /** 13 §1: accept `bounty.max_amount` (needs program v1.1 on chain). */
   risingBountyEnabled: boolean;
+  /** 15 §3: accept rewards in SOL. */
+  solEnabled: boolean;
   /** PROGRAM_ID; unset in DEV_MODE (13 §2 then falls back to the Devnet program). */
   programId?: string;
 }
@@ -85,6 +87,7 @@ function buildContext(): AppContext {
     workerRefSalt: e.WORKER_REF_SALT,
     webhookPepper: e.WEBHOOK_SIGNING_SECRET_PEPPER,
     risingBountyEnabled: e.RISING_BOUNTY_ENABLED,
+    solEnabled: e.SOL_ENABLED,
     ...(isDev(e) ? {} : { programId: e.PROGRAM_ID }),
   };
   if (isDev(e)) {

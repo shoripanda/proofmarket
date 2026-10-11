@@ -245,6 +245,16 @@ export async function createVerification(
       ? null
       : (body.bounty.ramp_minutes ??
         Math.min(1440, Math.max(10, Math.floor((deadline.getTime() - now.getTime()) / 60_000))));
+  if (body.bounty.asset === "SOL") {
+    if (!app.config.solEnabled) throw new ApiError("UNSUPPORTED_ASSET", { field: "bounty.asset" });
+    if (toMicro(body.bounty.amount) < toMicro(LIMITS.minSolBounty)) {
+      throw new ApiError("VALIDATION_FAILED", {
+        field: "bounty.amount",
+        reason: "below_min",
+        min: LIMITS.minSolBounty,
+      });
+    }
+  }
   const policy = evaluateQuestion(body.question);
   if (!policy.ok) throw new ApiError("TASK_POLICY_VIOLATION", { rule_id: policy.ruleId });
 
@@ -259,7 +269,12 @@ export async function createVerification(
   const [bal] = await tx
     .select({ s: sql<string>`coalesce(sum(amount), 0)` })
     .from(schema.requesterLedger)
-    .where(eq(schema.requesterLedger.credentialId, auth.credentialId));
+    .where(
+      and(
+        eq(schema.requesterLedger.credentialId, auth.credentialId),
+        eq(schema.requesterLedger.asset, body.bounty.asset), // each asset is its own balance (15 §3.3)
+      ),
+    );
   if (toMicro(String(bal?.s ?? "0")) < total) throw new ApiError("INSUFFICIENT_BALANCE");
 
   const id = newId("verification");

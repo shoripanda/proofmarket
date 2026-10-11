@@ -15,6 +15,7 @@ import {
   toMicro,
 } from "@proofmarket/core";
 import {
+  type Asset,
   type GetVerificationResponse,
   levelOf,
   type VerificationResult,
@@ -356,7 +357,7 @@ export async function buildVerificationView(
       challenge_minutes: task.challengeMinutes,
     },
     bounty: {
-      asset: "USDC",
+      asset: task.bountyAsset as Asset,
       amount: fromMicro(toMicro(task.bountyAmount)),
       network: "solana-devnet",
       max_amount: task.bountyMaxAmount === null ? null : fromMicro(toMicro(task.bountyMaxAmount)),

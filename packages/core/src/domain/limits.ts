@@ -43,6 +43,8 @@ export const LIMITS = {
   uploadDiscardAfterS: 3600,
   idempotencyRetentionH: 24,
   bountyDecimals: 6,
+  /** Smallest reward per witness in SOL (15 §3.2). USDC keeps no floor. */
+  minSolBounty: "0.001",
   /** Treasury/operator alerting (06 §5.2). */
   operatorMinSolBalance: 1,
 } as const;

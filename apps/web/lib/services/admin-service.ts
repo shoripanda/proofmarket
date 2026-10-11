@@ -69,8 +69,13 @@ export async function issueApiKey(
   return { credentialId, apiKey: `pm_test_${prefix}_${secret}` };
 }
 
-export async function topUp(db: Db, credentialId: string, amount: string): Promise<void> {
-  await db.insert(schema.requesterLedger).values({ credentialId, entryType: "TOPUP", amount });
+export async function topUp(
+  db: Db,
+  credentialId: string,
+  amount: string,
+  asset: "USDC" | "SOL" = "USDC",
+): Promise<void> {
+  await db.insert(schema.requesterLedger).values({ credentialId, entryType: "TOPUP", amount, asset });
 }
 
 export async function registerPlace(
