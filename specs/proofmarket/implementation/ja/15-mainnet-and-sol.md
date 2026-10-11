@@ -30,10 +30,13 @@ SOL はそのままではトークン口座に入らない。プログラムは 
 
 プログラム v1.2 で、ミントを 1 つに縛る制約を外す。
 
-- 新しい PDA `AllowedMint`（seeds `["mint", mint]`）に `mint`・`treasury`（operator の ATA）・`decimals`・`bump` を持たせる。
-- 命令 `add_mint`（admin だけ）で USDC と wSOL を登録する。`Config.bounty_mint` は互換のため残し、`AllowedMint` が無い古い呼び出しはこれまでどおり `Config.bounty_mint` で受ける。
-- initialize_task は、task の mint に `AllowedMint` があることを確かめる。資金の出どころは、その `AllowedMint.treasury`。
+- 新しい PDA `AllowedMint`（seeds `["mint", mint]`）に `mint` と `bump` を持たせる。この口座があることが「そのミントで依頼を作ってよい」の意味になる。
+- 命令 `add_mint` と `remove_mint`（どちらも admin だけ）で登録と取り消しをする。取り消しても、すでに資金を入れた依頼は払い出しも返金もできる。
+- initialize_task は `Config.bounty_mint`（資金の出どころは `Config.treasury`、これまでどおり）か、`AllowedMint` のあるミントを受け付ける。後者の出どころは operator が持つそのミントの口座。
+- `allowed_mint` は initialize_task の口座一覧の最後に置く省略可能な口座で、anchor-lang の `allow-missing-optionals` を有効にする。v1.2 より前のサーバーは何も渡さずに今までどおり動く（テスト p_mint_03、localnet で main のアダプタも確認）。
+- settle と refund の残りは、依頼のミントの口座で、`Config.treasury` か operator の持ち物であるものへ戻す。
 - `Task` のレイアウトは変えない（`mint` の欄は既にある）。
+- サーバーは SOL の依頼で、operator の wSOL 口座に足りない分だけを包んでから資金を入れる。返金や払い残りは wSOL のまま口座に戻り、次の依頼で使う。
 
 証人には wSOL のまま払う。証人の画面に「SOL として受け取る」ボタンを置き、wSOL 口座を閉じてネイティブの SOL に戻す（証人の Privy の財布が署名する）。プログラムの中で戻すと、受取人が複数いるときに口座を閉じられないためである。
 
