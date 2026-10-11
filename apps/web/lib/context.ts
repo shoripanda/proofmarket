@@ -25,6 +25,7 @@ import { createPrivyIdentity } from "./adapters/privy";
 import { createResendMailer } from "./adapters/resend-mailer";
 import { createSupabaseStorage } from "./adapters/supabase-storage";
 import { createWebPushSender } from "./adapters/web-push";
+import { checkClusterGate } from "./cluster";
 import { env, isDev } from "./env";
 import type { EvidenceStorage, IdentityProvider, Mailer, PushSender, SubmissionReviewer } from "./ports";
 
@@ -111,6 +112,18 @@ function buildContext(): AppContext {
     };
     return ctx;
   }
+  const operatorSecretKey = bs58.decode(e.OPERATOR_SECRET_KEY);
+  const verifierSecretKey = bs58.decode(e.VERIFIER_SECRET_KEY);
+  // Before anything can sign: refuses mainnet without the real-money gate (15 §4.1).
+  // An ed25519 secret key carries its public key in the last 32 bytes.
+  checkClusterGate({
+    cluster: e.SOLANA_CLUSTER,
+    expectedGenesisHash: e.SOLANA_EXPECTED_GENESIS_HASH,
+    bountyMint: e.BOUNTY_MINT,
+    realFundsEnabled: e.REAL_FUNDS_ENABLED,
+    legalSignoff: e.LEGAL_SIGNOFF,
+    signerKeys: [operatorSecretKey, verifierSecretKey].map((k) => bs58.encode(k.slice(32))),
+  });
   ctx = {
     db: createDb(e.DATABASE_URL),
     now: () => new Date(),
@@ -127,8 +140,8 @@ function buildContext(): AppContext {
         expectedGenesisHash: e.SOLANA_EXPECTED_GENESIS_HASH,
         programId: e.PROGRAM_ID,
         bountyMint: e.BOUNTY_MINT,
-        operatorSecretKey: bs58.decode(e.OPERATOR_SECRET_KEY),
-        verifierSecretKey: bs58.decode(e.VERIFIER_SECRET_KEY),
+        operatorSecretKey,
+        verifierSecretKey,
       }),
     ),
     x402: once(() =>
@@ -136,7 +149,7 @@ function buildContext(): AppContext {
         rpcUrl: e.SOLANA_RPC_URL,
         expectedGenesisHash: e.SOLANA_EXPECTED_GENESIS_HASH,
         bountyMint: e.BOUNTY_MINT,
-        operatorSecretKey: bs58.decode(e.OPERATOR_SECRET_KEY),
+        operatorSecretKey,
       }),
     ),
     push: pushFromEnv(e),

@@ -470,7 +470,7 @@ ID の付け方: 既存の `requirements.md` の ID をそのまま使い、実�
 | REQ-X-P-102 | settle と refund はオンチェーンの状態で互いに排他にする。どちらも 1 回しか成功しない | P0 |
 | REQ-X-P-103 | 送信に失敗したら、オンチェーンの状態を読んでから再送する。状態が既に進んでいれば再送せず記録だけ直す | P0 |
 | REQ-X-P-104 | 手数料と worker の受取口座（ATA）の作成費はプラットフォームが払う | P0 |
-| REQ-X-P-105 | Mainnet への送信はコードの設定で禁止する（RPC の URL と genesis hash を起動時に検査） | P0 |
+| REQ-X-P-105 | Mainnet への送信はコードの設定で禁止する（RPC の URL と genesis hash を起動時に検査）。例外は 15 §4.1 の 3 条件（REAL_FUNDS_ENABLED・LEGAL_SIGNOFF・Devnet と別の鍵）がそろったときだけ（`apps/web/lib/cluster.ts`） | P0 |
 
 ### 6.5 結果と公開
 
