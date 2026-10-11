@@ -604,6 +604,11 @@ export type Proofmarket = {
       name: "amountIncrease";
       msg: "Finalized amount_per_witness may not exceed the funded amount";
     },
+    {
+      code: 6016;
+      name: "payoutBelowRent";
+      msg: "A SOL payout to an empty wallet must cover its rent-exempt minimum";
+    },
   ];
   types: [
     {

@@ -66,3 +66,7 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-08 [本番 / tick 500] 生の `sql\`…\`` に JS の Date（`${now}`）を直接渡した（challenge-service の runOptimistic）→ postgres-js は Date を `toString()`（`Thu Oct 08 2026 …`）で送り Postgres が読めず、tick が毎分 500。PGlite のテストでは ISO になるので通ってしまい、tick の先頭で落ちたため決済ジョブまで止まった（VERIFIED が「確定待ち」のまま）→ 生 SQL の時刻は `now.toISOString()`（jobs.ts と同じ）を渡す。tick は段ごとに try/catch で分離し、戻り値 `failed` に段名を残す
 - 2026-10-09 [/join の API キー] 申し込んだのにキーのメールが届かない、という報告を「送信の不具合」として調べた → /join は申し込みを DB に保存するだけで、メールを送る仕組みもキーを発行する処理も無かった（運営者が `list-participation.ts` で読んで手で出す作り）。届かないのは未実装のため → 01 §4.28 で、その場で発行して画面に出す形にした（メールは控え。Resend の登録や DNS を待たずに使える）。移行 0026 はコードより先に当てる（新しい列に書き込むので、逆だと /join が止まる）
 - 2026-10-09 [テスト / 時計] outbox ジョブを `run_after` の DB 既定値（実時計の now()）で積み、取り出しはアプリの時計（テストでは 2026-10-09T03:00Z 固定）と比べていた → 現実の時刻が固定時計を追い越した日から、新しいジョブが「まだ先」扱いで走らず、main で無関係なテストが 14 件落ちた → 時刻の列は DB 既定に頼らず `app.now()` を明示して入れる（`enqueueJob` は `now` 必須）
+- 2026-10-11 [CI / Anchor CLI の導入] `avm install 1.2.0` が「failed build provenance verification」（来歴の取得が 403 Forbidden）で止まり program ジョブが落ちた。コードとは無関係 → `gh run rerun <id> --failed` で再実行すれば通る
+- 2026-10-11 [localnet / 起動直後のバリデータ] `solana-test-validator --reset` の直後に `PM_LOCALNET=1` のテストを流すと、最初の USDC の往復が finalized を 60 秒待ちきれず retry で落ちる（main のアダプタでも同じ）→ devnet-setup のあとにもう一度流す（2 回目は全部通る）。退行と取り違えない
+- 2026-10-11 [wSOL の払い出し設計] 証人に wSOL を渡して画面で SOL に戻させる案 → 証人の財布は最初 SOL が 0 で、戻す手数料を払えない → settle で vault を task 口座へ閉じ、プログラムが task 口座から財布へ SOL を直接移す（15 §3.1）
+

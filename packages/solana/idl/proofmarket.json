@@ -599,6 +599,11 @@
       "code": 6015,
       "name": "AmountIncrease",
       "msg": "Finalized amount_per_witness may not exceed the funded amount"
+    },
+    {
+      "code": 6016,
+      "name": "PayoutBelowRent",
+      "msg": "A SOL payout to an empty wallet must cover its rent-exempt minimum"
     }
   ],
   "types": [

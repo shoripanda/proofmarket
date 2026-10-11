@@ -1538,3 +1538,121 @@ fn p_mint_03_clients_from_before_v1_2_still_fund_the_configured_mint() {
     assert_eq!(env.task(&task).status, TaskStatus::Funded);
     assert_eq!(env.token_balance(&env.treasury.clone()), TREASURY_START - 3 * AMOUNT);
 }
+
+// 15 §3.1: wSOL tasks pay native SOL straight into the recipients' wallets.
+
+impl Env {
+    /// The native mint (created if LiteSVM lacks it), allowed by the admin, and the operator's wSOL account
+    /// holding `wrapped` lamports on top of its rent, as SyncNative would leave it.
+    fn allowed_native_mint(&mut self, wrapped: u64) -> Pubkey {
+        let mint = spl_token::native_mint::ID;
+        if self.svm.get_account(&mint).is_none() {
+            let state = spl_token::state::Mint {
+                mint_authority: COption::None,
+                supply: 0,
+                decimals: 9,
+                is_initialized: true,
+                freeze_authority: COption::None,
+            };
+            let mut data = vec![0u8; spl_token::state::Mint::LEN];
+            spl_token::state::Mint::pack(state, &mut data).unwrap();
+            self.put_token_program_account(mint, data);
+        }
+        let operator = self.operator.pubkey();
+        let treasury = get_associated_token_address(&operator, &mint);
+        let rent = self.svm.minimum_balance_for_rent_exemption(spl_token::state::Account::LEN);
+        let state = spl_token::state::Account {
+            mint,
+            owner: operator,
+            amount: wrapped,
+            delegate: COption::None,
+            state: spl_token::state::AccountState::Initialized,
+            is_native: COption::Some(rent),
+            delegated_amount: 0,
+            close_authority: COption::None,
+        };
+        let mut data = vec![0u8; spl_token::state::Account::LEN];
+        spl_token::state::Account::pack(state, &mut data).unwrap();
+        self.svm
+            .set_account(
+                treasury,
+                SolanaAccount { lamports: rent + wrapped, data, owner: spl_token::ID, executable: false, rent_epoch: 0 },
+            )
+            .unwrap();
+        let admin = self.admin.pubkey();
+        let ix = self.ix_add_mint(&admin, &mint);
+        assert_ok(self.as_admin(ix));
+        treasury
+    }
+
+    fn lamports(&self, a: &Pubkey) -> u64 {
+        self.svm.get_account(a).map_or(0, |x| x.lamports)
+    }
+}
+
+#[test]
+fn p_mint_04_wsol_task_pays_native_sol_to_empty_wallets() {
+    let mut env = Env::new();
+    let treasury = env.allowed_native_mint(10 * SOL);
+    let mint = spl_token::native_mint::ID;
+    let per = SOL / 100; // 0.01 SOL
+
+    let mut args = task_args(71);
+    args.amount_per_witness = per;
+    let task = task_pda(&args.task_id_hash);
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, args);
+    assert_ok(env.as_operator(ix));
+    let task_rent = env.lamports(&task);
+
+    // two brand-new wallets (no account at all) out of N = 3
+    let wallets: Vec<Pubkey> = (0..2).map(|_| Pubkey::new_unique()).collect();
+    env.finalize(&task, Outcome::Verified, &wallets);
+    let operator = env.operator.pubkey();
+    let op_before = env.lamports(&operator);
+    let vault_rent = env.lamports(&vault_pda(&task)) - 3 * per;
+    let ix = env.ix_settle_in(&task, &mint, &treasury, &wallets);
+    let logs = assert_ok(env.as_operator(ix));
+
+    for w in &wallets {
+        assert_eq!(env.lamports(w), per, "native SOL in the wallet itself");
+    }
+    assert_eq!(env.token_balance(&treasury), 10 * SOL - 2 * per, "the unpaid slot is back as wSOL");
+    assert!(env.is_closed(&vault_pda(&task)));
+    assert_eq!(env.lamports(&task), task_rent, "the task keeps exactly its own rent");
+    // the operator paid the fee (5000 per signature) and got the vault's rent back
+    assert_eq!(env.lamports(&operator), op_before + vault_rent - 5000);
+    let ev: TaskSettled = find_event(&logs).expect("TaskSettled");
+    assert_eq!((ev.paid_total, ev.remainder), (2 * per, per));
+    assert_eq!(env.task(&task).status, TaskStatus::Settled);
+}
+
+#[test]
+fn p_mint_05_wsol_settle_checks_wallets() {
+    let mut env = Env::new();
+    let treasury = env.allowed_native_mint(10 * SOL);
+    let mint = spl_token::native_mint::ID;
+
+    // a token account (an ATA) instead of the wallet is refused
+    let mut args = task_args(81);
+    args.amount_per_witness = SOL / 100;
+    let task = task_pda(&args.task_id_hash);
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, args);
+    assert_ok(env.as_operator(ix));
+    let wallets = [Pubkey::new_unique(), Pubkey::new_unique()]; // quorum 2
+    env.finalize(&task, Outcome::Verified, &wallets);
+    let ata = env.new_ata(&wallets[1], &mint, 0);
+    let ix = env.ix_settle_in(&task, &mint, &treasury, &[wallets[0], ata]);
+    assert_err(env.as_operator(ix), ProofMarketError::RecipientAccountMismatch);
+
+    // below the rent-exempt minimum for an empty wallet
+    let mut args = task_args(82);
+    args.amount_per_witness = 100_000; // 0.0001 SOL
+    let task = task_pda(&args.task_id_hash);
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, args);
+    assert_ok(env.as_operator(ix));
+    let empty = [Pubkey::new_unique(), Pubkey::new_unique()];
+    env.finalize(&task, Outcome::Verified, &empty);
+    let ix = env.ix_settle_in(&task, &mint, &treasury, &empty);
+    assert_err(env.as_operator(ix), ProofMarketError::PayoutBelowRent);
+}
+

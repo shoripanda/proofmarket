@@ -35,4 +35,6 @@ pub enum ProofMarketError {
     NotExpired,
     #[msg("Finalized amount_per_witness may not exceed the funded amount")]
     AmountIncrease,
+    #[msg("A SOL payout to an empty wallet must cover its rent-exempt minimum")]
+    PayoutBelowRent,
 }

@@ -152,7 +152,7 @@ describe.skipIf(!enabled)("anchor adapter on localnet", () => {
   });
 
   // 15 §3.1: needs program v1.2 and `devnet-setup.ts --allow-wsol`.
-  it("SOL: fund as wSOL (wrapping the shortfall) -> settle pays the worker wSOL -> rest stays wrapped; refund too", async () => {
+  it("SOL: fund as wSOL (wrapping the shortfall) -> settle pays native SOL to a fresh wallet -> rest stays wrapped; refund too", async () => {
     const op = Keypair.fromSecretKey(bs58.decode(env.OPERATOR_SECRET_KEY ?? "")).publicKey;
     const wsolTreasury = getAssociatedTokenAddressSync(NATIVE_MINT, op);
     const wsol = async (a: PublicKey) =>
@@ -192,7 +192,9 @@ describe.skipIf(!enabled)("anchor adapter on localnet", () => {
       onSigned,
     );
     expect(s).toMatchObject({ kind: "confirmed", alreadyDone: false });
-    expect(await wsol(getAssociatedTokenAddressSync(NATIVE_MINT, worker))).toBe(lamports);
+    // native SOL in the brand-new wallet itself: no token account, nothing to unwrap
+    expect(BigInt(await conn.getBalance(worker, "confirmed"))).toBe(lamports);
+    expect(await conn.getAccountInfo(getAssociatedTokenAddressSync(NATIVE_MINT, worker))).toBeNull();
     expect(await wsol(wsolTreasury)).toBe(afterFund + lamports); // the unpaid witness slot came back
 
     // A second task reuses the wrapped remainder; a refund returns all of it as wSOL.

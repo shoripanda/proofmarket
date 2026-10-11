@@ -235,19 +235,23 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
         if (!same) return { kind: "halt", error: "on-chain finalize differs from DB (I-SET-05)" };
       }
       const taskMint = new PublicKey(onChain.mint);
+      const native = taskMint.equals(NATIVE_MINT);
       const recipients = i.recipients.map((r) => new PublicKey(r));
-      const atas = recipients.map((r) => getAssociatedTokenAddressSync(taskMint, r));
-      // Create missing ATAs in their own tx (06 §4: keeps the settle tx small).
-      const infos = await connection.getMultipleAccountsInfo(atas, "confirmed");
-      const missing = atas
-        .map((ata, k) => ({ ata, owner: recipients[k] as PublicKey, exists: infos[k] !== null }))
-        .filter((x) => !x.exists);
-      if (missing.length) {
-        const ataIxs = missing.map((m) =>
-          createAssociatedTokenAccountIdempotentInstruction(operator.publicKey, m.ata, m.owner, taskMint),
-        );
-        const r = await send(ataIxs, [operator], async () => undefined);
-        if (!r.ok) return { kind: "retry", signature: null, error: `ata: ${r.error}` };
+      // wSOL tasks pay native SOL into the wallets themselves (15 §3.1); others pay into each wallet's ATA.
+      const atas = native ? recipients : recipients.map((r) => getAssociatedTokenAddressSync(taskMint, r));
+      if (!native) {
+        // Create missing ATAs in their own tx (06 §4: keeps the settle tx small).
+        const infos = await connection.getMultipleAccountsInfo(atas, "confirmed");
+        const missing = atas
+          .map((ata, k) => ({ ata, owner: recipients[k] as PublicKey, exists: infos[k] !== null }))
+          .filter((x) => !x.exists);
+        if (missing.length) {
+          const ataIxs = missing.map((m) =>
+            createAssociatedTokenAccountIdempotentInstruction(operator.publicKey, m.ata, m.owner, taskMint),
+          );
+          const r = await send(ataIxs, [operator], async () => undefined);
+          if (!r.ok) return { kind: "retry", signature: null, error: `ata: ${r.error}` };
+        }
       }
       const ixs: TransactionInstruction[] = [];
       if (onChain.status === "Funded") {

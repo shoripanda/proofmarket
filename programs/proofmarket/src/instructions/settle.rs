@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::get_associated_token_address,
-    token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer},
+    token::{self, spl_token::native_mint, CloseAccount, Mint, Token, TokenAccount, Transfer},
 };
 
 use crate::{
@@ -43,6 +43,12 @@ pub struct Settle<'info> {
 ///   writable, and its mint and owner match (RecipientAccountMismatch). All are checked before any transfer.
 /// - amount_per_witness * recipient_count <= vault.amount; pay each, remainder -> treasury, close vault -> operator
 /// - status = Settled, paid_total, closed_at; emit TaskSettled
+///
+/// 15 §3.1, wSOL tasks: recipients get native SOL in their wallets, so a fresh wallet needs no token account
+/// and nothing to unwrap. remaining_accounts are then the recipient wallets themselves (writable, owned by the
+/// system program). The remainder goes to the treasury as wSOL, the vault is closed into the task account (its
+/// rent plus the wrapped payout become lamports there), and the program, which owns the task account, moves
+/// amount_per_witness to each wallet and the vault's rent to the operator.
 pub fn handle_settle<'info>(ctx: Context<'info, Settle<'info>>) -> Result<()> {
     let task = &ctx.accounts.task;
     require!(
@@ -56,10 +62,27 @@ pub fn handle_settle<'info>(ctx: Context<'info, Settle<'info>>) -> Result<()> {
         recipient_accounts.len() == recipient_count,
         ProofMarketError::RecipientCountMismatch
     );
+    let native = task.mint == native_mint::ID;
     for (account, recipient) in recipient_accounts
         .iter()
         .zip(task.recipients[..recipient_count].iter())
     {
+        if native {
+            require!(
+                account.key() == *recipient
+                    && account.is_writable
+                    && *account.owner == anchor_lang::system_program::ID,
+                ProofMarketError::RecipientAccountMismatch
+            );
+            // The runtime rejects a lamport balance between 0 and the rent-exempt minimum; say why up front.
+            if account.lamports() == 0 {
+                require!(
+                    task.amount_per_witness >= Rent::get()?.minimum_balance(0),
+                    ProofMarketError::PayoutBelowRent
+                );
+            }
+            continue;
+        }
         require_keys_eq!(
             account.key(),
             get_associated_token_address(recipient, &task.mint),
@@ -97,6 +120,9 @@ pub fn handle_settle<'info>(ctx: Context<'info, Settle<'info>>) -> Result<()> {
     let token_program = ctx.accounts.token_program.key();
     let vault = ctx.accounts.vault.to_account_info();
     let authority = ctx.accounts.task.to_account_info();
+    if native {
+        return settle_native(ctx, paid_total, remainder);
+    }
     for account in recipient_accounts {
         token::transfer(
             CpiContext::new_with_signer(
@@ -140,6 +166,66 @@ pub fn handle_settle<'info>(ctx: Context<'info, Settle<'info>>) -> Result<()> {
     task.closed_at = Clock::get()?.unix_timestamp;
     task.status = TaskStatus::Settled;
 
+    emit!(TaskSettled {
+        task: task_key,
+        paid_total,
+        remainder,
+    });
+    Ok(())
+}
+
+/// The wSOL branch of settle (see handle_settle). Every check has already passed.
+fn settle_native<'info>(ctx: Context<'info, Settle<'info>>, paid_total: u64, remainder: u64) -> Result<()> {
+    let task = &ctx.accounts.task;
+    let task_key = task.key();
+    let amount_per_witness = task.amount_per_witness;
+    let task_id_hash = task.task_id_hash;
+    let bump = [task.bump];
+    let seeds = task_signer_seeds(&task_id_hash, &bump);
+    let signer: &[&[&[u8]]] = &[&seeds];
+    let token_program = ctx.accounts.token_program.key();
+    let vault = ctx.accounts.vault.to_account_info();
+    let task_info = ctx.accounts.task.to_account_info();
+
+    if remainder > 0 {
+        token::transfer(
+            CpiContext::new_with_signer(
+                token_program,
+                Transfer {
+                    from: vault.clone(),
+                    to: ctx.accounts.treasury.to_account_info(),
+                    authority: task_info.clone(),
+                },
+                signer,
+            ),
+            remainder,
+        )?;
+    }
+    // A native token account may be closed with a balance: all its lamports (rent + paid_total) go to the task.
+    let vault_lamports = vault.lamports();
+    let vault_rent = vault_lamports
+        .checked_sub(paid_total)
+        .ok_or(ProofMarketError::InsufficientVaultBalance)?;
+    token::close_account(CpiContext::new_with_signer(
+        token_program,
+        CloseAccount {
+            account: vault,
+            destination: task_info.clone(),
+            authority: task_info.clone(),
+        },
+        signer,
+    ))?;
+    for account in ctx.remaining_accounts {
+        **task_info.try_borrow_mut_lamports()? -= amount_per_witness;
+        **account.try_borrow_mut_lamports()? += amount_per_witness;
+    }
+    **task_info.try_borrow_mut_lamports()? -= vault_rent;
+    **ctx.accounts.operator.to_account_info().try_borrow_mut_lamports()? += vault_rent;
+
+    let task = &mut ctx.accounts.task;
+    task.paid_total = paid_total;
+    task.closed_at = Clock::get()?.unix_timestamp;
+    task.status = TaskStatus::Settled;
     emit!(TaskSettled {
         task: task_key,
         paid_total,
