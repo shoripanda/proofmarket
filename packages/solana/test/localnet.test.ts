@@ -7,7 +7,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import { describe, expect, it } from "vitest";
@@ -149,5 +149,61 @@ describe.skipIf(!enabled)("anchor adapter on localnet", () => {
     );
     expect(settle).toMatchObject({ kind: "halt" }); // D10
     expect(signed.length).toBeGreaterThan(0);
+  });
+
+  // 15 §3.1: needs program v1.2 and `devnet-setup.ts --allow-wsol`.
+  it("SOL: fund as wSOL (wrapping the shortfall) -> settle pays native SOL to a fresh wallet -> rest stays wrapped; refund too", async () => {
+    const op = Keypair.fromSecretKey(bs58.decode(env.OPERATOR_SECRET_KEY ?? "")).publicKey;
+    const wsolTreasury = getAssociatedTokenAddressSync(NATIVE_MINT, op);
+    const wsol = async (a: PublicKey) =>
+      BigInt((await conn.getTokenAccountBalance(a).catch(() => null))?.value.amount ?? "0");
+    const lamports = 10_000_000n; // 0.01 SOL per witness
+    const fundSol = (h: Uint8Array) =>
+      adapter.fundTask(
+        {
+          verificationId: "ver_sol",
+          taskIdHash: h,
+          requesterRefHash: randomBytes(32),
+          amountPerWitness: lamports,
+          asset: "SOL",
+          requiredWitnesses: 2,
+          quorum: 2,
+          deadline: new Date(Date.now() + 3_600_000),
+        },
+        onSigned,
+      );
+
+    const h = randomBytes(32);
+    expect(await fundSol(h)).toMatchObject({ kind: "confirmed", alreadyDone: false });
+    const t = await adapter.readTask(h);
+    expect(t).toMatchObject({ status: "Funded", mint: NATIVE_MINT.toBase58(), amountPerWitness: lamports });
+    const afterFund = await wsol(wsolTreasury);
+
+    const worker = Keypair.generate().publicKey;
+    const s = await adapter.finalizeAndSettle(
+      {
+        verificationId: "ver_sol",
+        taskIdHash: h,
+        outcome: "EXPIRED",
+        evidenceRoot: randomBytes(32),
+        resultHash: randomBytes(32),
+        recipients: [worker.toBase58()],
+      },
+      onSigned,
+    );
+    expect(s).toMatchObject({ kind: "confirmed", alreadyDone: false });
+    // native SOL in the brand-new wallet itself: no token account, nothing to unwrap
+    expect(BigInt(await conn.getBalance(worker, "confirmed"))).toBe(lamports);
+    expect(await conn.getAccountInfo(getAssociatedTokenAddressSync(NATIVE_MINT, worker))).toBeNull();
+    expect(await wsol(wsolTreasury)).toBe(afterFund + lamports); // the unpaid witness slot came back
+
+    // A second task reuses the wrapped remainder; a refund returns all of it as wSOL.
+    const h2 = randomBytes(32);
+    expect(await fundSol(h2)).toMatchObject({ kind: "confirmed" });
+    const beforeRefund = await wsol(wsolTreasury);
+    expect(
+      await adapter.refund({ verificationId: "ver_sol", taskIdHash: h2, reason: "Cancelled" }, onSigned),
+    ).toMatchObject({ kind: "confirmed" });
+    expect(await wsol(wsolTreasury)).toBe(beforeRefund + 2n * lamports);
   });
 });

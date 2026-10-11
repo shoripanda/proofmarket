@@ -14,6 +14,53 @@ export type Proofmarket = {
   };
   instructions: [
     {
+      name: "addMint";
+      docs: ["admin: allow tasks in another mint, e.g. wSOL for rewards in SOL (15 §3.1)."];
+      discriminator: [171, 222, 111, 37, 60, 166, 208, 108];
+      accounts: [
+        {
+          name: "admin";
+          writable: true;
+          signer: true;
+        },
+        {
+          name: "config";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [99, 111, 110, 102, 105, 103];
+              },
+            ];
+          };
+        },
+        {
+          name: "mint";
+        },
+        {
+          name: "allowedMint";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [109, 105, 110, 116];
+              },
+              {
+                kind: "account";
+                path: "mint";
+              },
+            ];
+          };
+        },
+        {
+          name: "systemProgram";
+          address: "11111111111111111111111111111111";
+        },
+      ];
+      args: [];
+    },
+    {
       name: "finalizeVerification";
       docs: [
         "verifier: write outcome, evidence_root, result_hash, recipients. Funded -> Finalized. No time limit (D-11).",
@@ -152,6 +199,7 @@ export type Proofmarket = {
         },
         {
           name: "mint";
+          docs: ["Config.bounty_mint, or a mint whose AllowedMint is passed as `allowed_mint` (15 §3.1)."];
         },
         {
           name: "vault";
@@ -171,6 +219,9 @@ export type Proofmarket = {
         },
         {
           name: "treasury";
+          docs: [
+            "Config.treasury for Config.bounty_mint; for an allowed mint, an operator-owned account of that mint.",
+          ];
           writable: true;
         },
         {
@@ -180,6 +231,23 @@ export type Proofmarket = {
         {
           name: "systemProgram";
           address: "11111111111111111111111111111111";
+        },
+        {
+          name: "allowedMint";
+          docs: ["Last and optional so clients from before v1.2 may leave it out (allow-missing-optionals)."];
+          optional: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [109, 105, 110, 116];
+              },
+              {
+                kind: "account";
+                path: "mint";
+              },
+            ];
+          };
         },
       ];
       args: [
@@ -269,6 +337,47 @@ export type Proofmarket = {
           };
         },
       ];
+    },
+    {
+      name: "removeMint";
+      docs: ["admin: stop new tasks in an allowed mint; funded tasks still settle or refund."];
+      discriminator: [113, 35, 250, 141, 254, 115, 233, 5];
+      accounts: [
+        {
+          name: "admin";
+          writable: true;
+          signer: true;
+        },
+        {
+          name: "config";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [99, 111, 110, 102, 105, 103];
+              },
+            ];
+          };
+        },
+        {
+          name: "allowedMint";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [109, 105, 110, 116];
+              },
+              {
+                kind: "account";
+                path: "allowedMint.mint";
+                account: "allowedMint";
+              },
+            ];
+          };
+        },
+      ];
+      args: [];
     },
     {
       name: "settle";
@@ -384,6 +493,10 @@ export type Proofmarket = {
   ];
   accounts: [
     {
+      name: "allowedMint";
+      discriminator: [173, 229, 179, 46, 121, 164, 247, 6];
+    },
+    {
       name: "config";
       discriminator: [155, 12, 170, 224, 30, 250, 204, 130];
     },
@@ -491,8 +604,33 @@ export type Proofmarket = {
       name: "amountIncrease";
       msg: "Finalized amount_per_witness may not exceed the funded amount";
     },
+    {
+      code: 6016;
+      name: "payoutBelowRent";
+      msg: "A SOL payout to an empty wallet must cover its rent-exempt minimum";
+    },
   ];
   types: [
+    {
+      name: "allowedMint";
+      docs: [
+        "seeds = [MINT_SEED, mint]. Its existence allows tasks in `mint` besides Config.bounty_mint (15 §3.1):",
+        "wSOL for rewards in SOL. Added and removed by the admin.",
+      ];
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "mint";
+            type: "pubkey";
+          },
+          {
+            name: "bump";
+            type: "u8";
+          },
+        ];
+      };
+    },
     {
       name: "config";
       docs: ["seeds = [CONFIG_SEED]"];
@@ -985,6 +1123,14 @@ export type Proofmarket = {
       name: "configSeed";
       type: "bytes";
       value: "[99, 111, 110, 102, 105, 103]";
+    },
+    {
+      name: "mintSeed";
+      docs: [
+        "seeds = [MINT_SEED, mint]: a mint other than Config.bounty_mint that tasks may escrow (15 §3.1).",
+      ];
+      type: "bytes";
+      value: "[109, 105, 110, 116]";
     },
     {
       name: "taskSeed";

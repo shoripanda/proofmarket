@@ -20,7 +20,9 @@ custom-heap = []
 custom-panic = []
 
 [dependencies]
-anchor-lang = "1.2.0"
+# allow-missing-optionals: initialize_task's trailing optional `allowed_mint` may be left out, so the server
+# that predates v1.2 keeps working against the upgraded program (15 §3.1).
+anchor-lang = { version = "1.2.0", features = ["allow-missing-optionals"] }
 anchor-spl = { version = "1.2.0", default-features = false, features = ["token", "token_2022", "associated_token"] }
 
 [dev-dependencies]

@@ -59,6 +59,7 @@ export class FakeChain implements SettlementAdapter {
       resultHash: new Uint8Array(32),
       recipients: [],
       paidTotal: 0n,
+      mint: i.asset === "SOL" ? "So11111111111111111111111111111111111111112" : "TestUsdcMint",
     });
     if (m === "land-but-timeout") return { kind: "retry", signature: s, error: "not finalized in 60s" };
     return { kind: "confirmed", signature: s, alreadyDone: false, taskAccount };

@@ -1,4 +1,4 @@
-// Rewards in SOL (15 §3): behind SOL_ENABLED, a balance of their own, USDC-only x402, no funding before v1.2.
+// Rewards in SOL (15 §3): behind SOL_ENABLED, a balance of their own, USDC-only x402, escrowed as wSOL.
 import { toBaseUnits } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
@@ -11,6 +11,7 @@ import { runFundTask } from "../lib/services/settlement-jobs";
 import { parseX402Body } from "../lib/services/x402-service";
 import { call, createBody, createTestApp, jsonReq } from "./support/app";
 
+const WSOL = "So11111111111111111111111111111111111111112";
 let t: Awaited<ReturnType<typeof createTestApp>>;
 beforeEach(async () => {
   t = await createTestApp(); // 10 USDC, no SOL
@@ -55,10 +56,16 @@ describe("SOL rewards", () => {
     expect((await create(sol("0.001"))).status).toBe(201);
   });
 
-  it("are not funded on chain until program v1.2 (the job fails instead of escrowing USDC)", async () => {
+  it("are escrowed in lamports as wSOL: 0.02 SOL x 1 witness = 20,000,000", async () => {
     await topUp(t.db, t.credentialId, "1", "SOL");
-    const { verification_id } = (await (await create(sol())).json()) as { verification_id: string };
-    await expect(runFundTask(t.app, verification_id, 1)).rejects.toThrow(/program v1\.2/);
+    const { verification_id } = (await (await create(sol("0.02"))).json()) as { verification_id: string };
+    expect(await runFundTask(t.app, verification_id, 1)).toMatchObject({ kind: "done" });
+    const [task] = await t.db
+      .select()
+      .from(schema.verificationRequests)
+      .where(eq(schema.verificationRequests.id, verification_id));
+    const onChain = await t.chain.readTask(task?.taskIdHash ?? new Uint8Array());
+    expect(onChain).toMatchObject({ amountPerWitness: 20_000_000n, mint: WSOL });
   });
 
   it("x402 stays USDC", () => {
