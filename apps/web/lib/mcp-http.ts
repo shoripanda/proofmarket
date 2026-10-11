@@ -8,22 +8,68 @@ import type { AppContext } from "./context";
 import {
   handleCancel,
   handleCreate,
+  handleCreateBatch,
+  handleCreateSchedule,
   handleDispute,
   handleGet,
+  handleListSchedules,
   handlePublicResult,
+  handleStopSchedule,
 } from "./handlers/requester";
 import { route } from "./http";
 import { publicBase, resourceMetadataUrl } from "./services/oauth-service";
 
 type Kick = (dedupeKeys: string[]) => void;
 type H = (app: AppContext, req: Request, id: string) => Promise<Response>;
+// Follow-up job keys after a successful call: the same ones the app/v1 route files enqueue.
+type Jobs = (res: Response, id: string) => Promise<string[]>;
 
-const TABLE: [string, RegExp, H][] = [
-  ["POST", /^\/v1\/verifications$/, (a, r) => handleCreate(a, r)],
-  ["GET", /^\/v1\/verifications\/([^/]+)$/, handleGet],
-  ["POST", /^\/v1\/verifications\/([^/]+)\/cancel$/, handleCancel],
-  ["POST", /^\/v1\/verifications\/([^/]+)\/dispute$/, handleDispute],
-  ["GET", /^\/v1\/public\/verifications\/([^/]+)$/, handlePublicResult],
+const body = <T>(res: Response) => res.clone().json() as Promise<T>;
+const none: Jobs = async () => [];
+
+// Every SDK method an MCP tool calls must have a row here (test/mcp-http.test.ts calls all eight tools).
+// batch comes before /v1/verifications/{id} so "batch" is never read as an id.
+const TABLE: [string, RegExp, H, Jobs][] = [
+  [
+    "POST",
+    /^\/v1\/verifications$/,
+    (a, r) => handleCreate(a, r),
+    async (res) =>
+      res.status === 201
+        ? [`FUND_TASK:${(await body<{ verification_id: string }>(res)).verification_id}`]
+        : [],
+  ],
+  [
+    "POST",
+    /^\/v1\/verifications\/batch$/,
+    (a, r) => handleCreateBatch(a, r),
+    async (res) =>
+      res.status === 201
+        ? (await body<{ verifications: { verification_id: string }[] }>(res)).verifications.map(
+            (v) => `FUND_TASK:${v.verification_id}`,
+          )
+        : [],
+  ],
+  ["GET", /^\/v1\/verifications\/([^/]+)$/, handleGet, none],
+  [
+    "POST",
+    /^\/v1\/verifications\/([^/]+)\/cancel$/,
+    handleCancel,
+    async (res, id) => (res.ok ? [`REFUND_TASK:${id}`] : []),
+  ],
+  [
+    "POST",
+    /^\/v1\/verifications\/([^/]+)\/dispute$/,
+    handleDispute,
+    async (res) =>
+      res.status === 201
+        ? [`FUND_TASK:${(await body<{ recheck_verification_id: string }>(res)).recheck_verification_id}`]
+        : [],
+  ],
+  ["GET", /^\/v1\/public\/verifications\/([^/]+)$/, handlePublicResult, none],
+  ["POST", /^\/v1\/schedules$/, (a, r) => handleCreateSchedule(a, r), none],
+  ["GET", /^\/v1\/schedules$/, (a, r) => handleListSchedules(a, r), none],
+  ["DELETE", /^\/v1\/schedules\/([^/]+)$/, handleStopSchedule, none],
 ];
 
 /** fetch that routes SDK requests to the REST handlers in this process (same auth, limits and idempotency). */
@@ -31,25 +77,27 @@ export function inProcessFetch(app: AppContext, kick: Kick = () => {}): typeof f
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const req = new Request(input, init);
     const path = new URL(req.url).pathname;
-    for (const [m, re, h] of TABLE) {
+    for (const [m, re, h, jobs] of TABLE) {
       const match = re.exec(path);
       if (req.method !== m || !match) continue;
-      const res = await route((r: Request) => h(app, r, decodeURIComponent(match[1] ?? "")))(req, undefined);
-      // Same follow-up jobs as app/v1/verifications/**/route.ts.
-      if (m === "POST" && res.status === 201 && !match[1]) {
-        const { verification_id } = (await res.clone().json()) as { verification_id: string };
-        kick([`FUND_TASK:${verification_id}`]);
-      } else if (m === "POST" && res.status === 201 && path.endsWith("/dispute")) {
-        const { recheck_verification_id } = (await res.clone().json()) as { recheck_verification_id: string };
-        kick([`FUND_TASK:${recheck_verification_id}`]);
-      } else if (m === "POST" && res.ok && match[1]) {
-        kick([`REFUND_TASK:${match[1]}`]);
-      }
+      const id = decodeURIComponent(match[1] ?? "");
+      const res = await route((r: Request) => h(app, r, id))(req, undefined);
+      const keys = await jobs(res, id);
+      if (keys.length) kick(keys);
       return res;
     }
+    // A missing row is our bug, not a wrong id: say so instead of VERIFICATION_NOT_FOUND.
+    console.error(`[mcp] no in-process route for ${req.method} ${path}`);
     return Response.json(
-      { error: { code: "VERIFICATION_NOT_FOUND", message: "no route", retryable: false, details: {} } },
-      { status: 404 },
+      {
+        error: {
+          code: "INTERNAL_ERROR",
+          message: `MCP has no route for ${req.method} ${path}`,
+          retryable: false,
+          details: {},
+        },
+      },
+      { status: 500 },
     );
   }) as typeof fetch;
 }
