@@ -146,6 +146,12 @@ const HELPERS = ({ W, H, hide }) => {
     cam = { s, x: tx, y: ty };
     body.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
   };
+  // Panels tagged data-pm (the agent, the phone) are faded out while the camera is on the other one, so
+  // nothing half-visible with cut-off text remains at the edge of the frame.
+  window.pmShow = (sel) => {
+    for (const el of document.querySelectorAll("[data-pm]"))
+      el.style.opacity = !sel || el.matches(sel) ? "1" : "0";
+  };
   const cur = document.createElement("div");
   cur.id = "pm-cursor";
   cur.style.cssText =
@@ -230,11 +236,13 @@ async function recordScene(
     async done(extra = 0) {
       if (now() < lastEnd + extra) await wait((lastEnd + extra - now()) * 1000);
     },
+    /** Move the camera onto an element. `show: "agent" | "phone" | "both"` picks which tagged panel stays visible. */
     async cam(find, opts) {
       const ok = await page.evaluate(
         ([f, o]) => {
           const el = new Function(`return (${f})`)()();
           if (el) window.pmCam(el, o);
+          if (o?.show) window.pmShow(o.show === "both" ? null : `[data-pm="${o.show}"]`);
           return !!el;
         },
         [find.toString(), opts],
@@ -361,6 +369,21 @@ segs.push(
         // The demo's answer shortcuts are hidden; the worker types instead.
         const pick = [...document.querySelectorAll("p")].find((p) => p.textContent.startsWith("Demo only"));
         if (pick) pick.parentElement.style.display = "none";
+        // Tag the two panels so the camera can fade out the one it is not looking at (see pmShow).
+        const agent = [...document.querySelectorAll("section")]
+          .filter((s) => s.textContent.includes("AI agent (the requester)"))
+          .at(-1);
+        const ph = document.querySelector('[class*="border-8"]');
+        const phoneWrap = ph.parentElement?.textContent.trim().startsWith("Worker's phone")
+          ? ph.parentElement
+          : ph;
+        for (const [el, name] of [
+          [agent, "agent"],
+          [phoneWrap, "phone"],
+        ]) {
+          el.dataset.pm = name;
+          el.style.transition = "opacity 600ms ease";
+        }
       });
     },
     async run(x) {
@@ -379,7 +402,7 @@ segs.push(
           box.scrollTop = t === "bottom" ? box.scrollHeight : 0;
         }, to);
 
-      await x.cam(fn(agent), { max: 1.75, pad: 30 });
+      await x.cam(fn(agent), { max: 1.75, pad: 30, show: "agent" });
       await x.say("a1");
       await x.wait(8200);
       await x.tap(fn(`() => window.pmFind("Send the request")`));
@@ -390,13 +413,14 @@ segs.push(
         fn(
           `() => { const a = [...document.querySelectorAll("section")].filter((s) => s.textContent.includes("AI agent (the requester)")).at(-1); const q = window.pmFind("Transcribe the opening-hours notice", a); return q?.closest("div.rounded-2xl") ?? q; }`,
         ),
-        { max: 1.9, pad: 40 },
+        { max: 1.9, pad: 40, show: "agent" },
       );
       await x.wait(5200);
-      await x.cam(fn(agent), { max: 1.75, pad: 30 });
+      // Both panels: the escrow is funded on the left, the task has just arrived on the phone.
+      await x.cam(fn(agent), { max: 1.75, pad: 30, show: "both" });
       await x.done();
 
-      await x.cam(fn(phone), { max: 1.6, pad: 24 });
+      await x.cam(fn(phone), { max: 1.6, pad: 24, show: "phone" });
       await x.say("w1");
       await x.wait(2200);
       await x.tap(
@@ -479,7 +503,7 @@ segs.push(
       await x.page.waitForFunction(() => document.body.textContent.includes("Received"), null, {
         timeout: 30_000,
       });
-      await x.cam(fn(phone), { max: 1.6, pad: 24 });
+      await x.cam(fn(phone), { max: 1.6, pad: 24, show: "phone" });
       await x.done();
 
       await x.say("a3");
@@ -487,7 +511,7 @@ segs.push(
         fn(
           `() => { const e = window.pmFind("Someone just checked on the spot"); return e?.closest("div.rounded-2xl") ?? e?.parentElement; }`,
         ),
-        { max: 1.9, pad: 40 },
+        { max: 1.9, pad: 40, show: "agent" },
       );
       await x.done(0.6);
     },
@@ -600,21 +624,30 @@ timeline.forEach((c, i) => {
   );
   last = `v${i + 2}`;
 });
-const audioBase = 2 + timeline.length;
+// The narration is mixed into one wav on its own. Mixing it inside the video graph above gave an audio
+// stream whose timestamps spanned 14 s for 150 s of samples (played back 10x too fast, then silence).
+const vin = [];
+const vfc = [];
 timeline.forEach((c, i) => {
-  inputs.push("-i", `${D}/voice/${c.id}.wav`);
+  vin.push("-i", `${D}/voice/${c.id}.wav`);
   const ms = Math.round(c.start * 1000);
-  fc.push(`[${audioBase + i}:a]adelay=${ms}|${ms}[a${i}]`);
+  vfc.push(`[${i}:a]aresample=48000,adelay=${ms}|${ms}[a${i}]`);
 });
-fc.push(`${timeline.map((_, i) => `[a${i}]`).join("")}amix=inputs=${timeline.length}:normalize=0[aout]`);
+vfc.push(`${timeline.map((_, i) => `[a${i}]`).join("")}amix=inputs=${timeline.length}:normalize=0[aout]`);
+const narration = `${TMP}/narration.wav`;
+ff([...vin, "-filter_complex", vfc.join(";"), "-map", "[aout]", "-ar", "48000", narration]);
+const spoken = Math.max(...timeline.map((c) => c.start + LEN[c.id]));
+const narrLen = dur(narration);
+if (Math.abs(narrLen - spoken) > 0.5) throw new Error(`narration.wav is ${narrLen}s, expected ${spoken}s`);
+
+const video = `${TMP}/video.mp4`;
 ff([
   ...inputs,
   "-filter_complex",
   fc.join(";"),
   "-map",
   `[${last}]`,
-  "-map",
-  "[aout]",
+  "-an",
   "-c:v",
   "libx264",
   "-preset",
@@ -625,17 +658,45 @@ ff([
   "yuv420p",
   "-r",
   "30",
+  "-t",
+  total.toFixed(2),
+  video,
+]);
+// Mux: the narration is padded with silence to the length of the video.
+ff([
+  "-i",
+  video,
+  "-i",
+  narration,
+  "-af",
+  "apad",
+  "-shortest",
+  "-c:v",
+  "copy",
   "-c:a",
   "aac",
   "-b:a",
   "192k",
-  "-ar",
-  "48000",
-  "-t",
-  total.toFixed(2),
   "-movflags",
   "+faststart",
   OUT,
 ]);
+const streamLen = (f, kind) =>
+  Number(
+    execFileSync("ffprobe", [
+      "-v",
+      "error",
+      "-select_streams",
+      kind,
+      "-show_entries",
+      "stream=duration",
+      "-of",
+      "csv=p=0",
+      f,
+    ]),
+  );
+const vLen = streamLen(OUT, "v");
+const aLen = streamLen(OUT, "a");
+if (Math.abs(vLen - aLen) > 1) throw new Error(`audio stream is ${aLen}s but video is ${vLen}s`);
 console.log(JSON.stringify(timeline.map((c) => [c.id, c.start.toFixed(1), LEN[c.id].toFixed(1)])));
-console.log("done", OUT, dur(OUT).toFixed(1), "s");
+console.log("done", OUT, vLen.toFixed(1), "s video,", aLen.toFixed(1), "s audio");
