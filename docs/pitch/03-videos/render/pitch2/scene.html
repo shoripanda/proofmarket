@@ -54,6 +54,10 @@
 <script>
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const anims = []; const seekers = [];
+// When each scene's content has finished appearing (absolute seconds); render.mjs holds the scene past it.
+let cur = -1; const ends = [];
+const seen = (t) => { if (cur >= 0) ends[cur] = Math.max(ends[cur] ?? 0, t); };
+window.sceneEnds = () => ends;
 function el(tag, cls, html, style) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; if (style) e.style.cssText = style; return e; }
 // Animate with absolute times (seconds). Keyframes get fill:both and the animation is paused for seeking.
 function tween(node, keyframes, at, dur, easing = EASE, fill = "both") {
@@ -62,11 +66,12 @@ function tween(node, keyframes, at, dur, easing = EASE, fill = "both") {
 }
 // Enter at `at`, stay, leave at `out` (if given).
 function show(node, at, { from = "translateY(40px)", dur = 0.8, out, outDur = 0.5, outTo = "translateY(-30px)", scale } = {}) {
-  node.style.opacity = "0";
+  node.style.opacity = "0"; seen(at + dur);
   tween(node, [{ opacity: 0, transform: from }, { opacity: 1, transform: scale ? `scale(${scale})` : "none" }], at, dur);
   if (out != null) tween(node, [{ opacity: 1, transform: "none" }, { opacity: 0, transform: outTo }], out, outDur, "ease-in", "forwards");
 }
 function scene(cls, s, fadeIn = 0.45, fadeOut = 0.45) {
+  cur = s.i; seen(s.voice);
   const d = el("div", `scene ${cls}`);
   document.body.append(d);
   tween(d, [{ opacity: 0 }, { opacity: 1 }], s.start, fadeIn, "ease-out");
@@ -78,7 +83,7 @@ function phone(parent, frames, x, y) {
   // frames: [[src, atSeconds], ...] crossfaded by seek
   const p = el("div", "phone", "", `left:${x}px; top:${y}px`);
   const imgs = frames.map(([src]) => { const i = el("img"); i.src = src; i.style.opacity = "0"; p.append(i); return i; });
-  parent.append(p);
+  parent.append(p); for (const [, at] of frames) seen(at + 0.35);
   seekers.push((t) => {
     for (let k = 0; k < frames.length; k++) {
       const at = frames[k][1]; const nextAt = frames[k + 1]?.[1] ?? Infinity;
@@ -96,6 +101,7 @@ function browser(parent, src, x, y, w, h, style = "") {
   const i = el("img"); i.src = src; b.append(i); parent.append(b); return b;
 }
 function counter(node, from, to, at, dur, fmt = (v) => String(v)) {
+  seen(at + dur);
   seekers.push((t) => { const k = Math.max(0, Math.min(1, (t - at) / dur)); const e = 1 - (1 - k) ** 3; node.textContent = fmt(Math.round(from + (to - from) * e)); });
 }
 function card2(title, color, rows, style) {
@@ -131,7 +137,7 @@ window.setup = (tl) => {
     const list = el("div", "", "", "position:absolute; left:140px; top:380px; display:flex; flex-direction:column; gap:30px"); d.append(list);
     [["stand in front of the shop", 2.0], ["and look", 3.2]].forEach(([txt, at]) => {
       const line = el("div", "h2", `<span class="strike">${txt}</span>`, "font-size:64px"); list.append(line); show(line, s.voice + at, { from: "translateY(30px)" });
-      const st = line.firstChild; seekers.push((t) => { const k = Math.max(0, Math.min(1, (t - (s.voice + at + 0.5)) / 0.4)); st.style.setProperty("--s", String(k)); });
+      const st = line.firstChild; seekers.push((t) => { const k = Math.max(0, Math.min(1, (t - (s.voice + at + 0.5)) / 0.4)); st.style.setProperty("--s", String(k)); }); seen(s.voice + at + 0.9);
     });
     const ph = el("div", "card", "", "position:absolute; left:1060px; top:120px; width:720px; height:840px; overflow:hidden; border-radius:30px; background:#111");
     const img = el("img", "", "", "position:absolute; left:-120px; top:0; width:960px; height:840px; object-fit:cover"); img.src = A + "shutter.jpg"; ph.append(img);
@@ -164,18 +170,15 @@ window.setup = (tl) => {
     const tg2 = el("div", "sub", "With proof on Solana.", "margin-top:10px; font-size:40px; color:rgba(255,255,255,.85); font-weight:600"); c.append(tg2); show(tg2, s.voice + 3.2);
     const note = el("div", "small", "Narration: synthesized voice", "left:0; right:0; bottom:40px; text-align:center"); d.append(note); show(note, s.start + 0.8, { from: "none" });
   }
-  // 4 — who it is for: agent builders, from any client
+  // 4 — who it is for: agent builders, from any client (the real developers page, first row whole)
   { const s = S[4]; const d = scene("white", s);
-    const h = el("div", "h2", "For anyone<br>who builds agents.", "position:absolute; left:140px; top:160px; width:820px"); d.append(h); show(h, s.voice + 0.2);
-    const sub = el("div", "sub", "One MCP endpoint. Three ways in.", "position:absolute; left:140px; top:400px; width:800px"); d.append(sub); show(sub, s.voice + 1.6);
-    const pills = el("div", "", "", "position:absolute; left:140px; top:500px; width:820px; display:flex; flex-wrap:wrap; gap:16px"); d.append(pills);
-    [["claude.ai", 2.6], ["ChatGPT", 3.1], ["Claude Code", 3.6], ["Codex CLI", 4.0], ["Your own code", 4.6]].forEach(([t, at]) => { const p = el("div", "pill", t); pills.append(p); show(p, s.voice + at, { from: "translateY(20px)" }); });
-    const ways = el("div", "", "", "position:absolute; left:140px; top:700px; display:flex; gap:16px"); d.append(ways);
-    [["MCP", 5.0], ["REST", 5.2], ["x402", 5.4]].forEach(([t, at]) => { const p = el("div", "pill teal-p", t); ways.append(p); show(p, s.voice + at, { from: "translateY(20px)" }); });
-    const foot = el("div", "small", "OAuth 2.1 · dynamic client registration · the API key goes to ProofMarket only", "left:140px; top:820px"); d.append(foot); show(foot, s.voice + 5.6, { from: "none" });
-    const b = browser(d, A + "dev-clients-col.png", 1040, 110, 760, 820, "transform-origin:0 0");
+    const h = el("div", "h2", "For anyone who builds agents.", "position:absolute; left:140px; top:70px; width:1640px"); d.append(h); show(h, s.voice + 0.2);
+    const pills = el("div", "", "", "position:absolute; left:140px; top:190px; display:flex; gap:16px"); d.append(pills);
+    [["claude.ai", 1.6], ["ChatGPT", 2.0], ["Claude Code", 2.4], ["Codex CLI", 2.8], ["Your own code", 3.2]].forEach(([t, at]) => { const p = el("div", "pill", t, "font-size:30px; padding:12px 26px"); pills.append(p); show(p, s.voice + at, { from: "translateY(20px)" }); });
+    const ways = el("div", "", "", "position:absolute; right:140px; top:190px; display:flex; gap:16px"); d.append(ways);
+    [["MCP", 3.8], ["REST", 4.0], ["x402", 4.2]].forEach(([t, at]) => { const p = el("div", "pill teal-p", t, "font-size:30px; padding:12px 26px"); ways.append(p); show(p, s.voice + at, { from: "translateY(20px)" }); });
+    const b = browser(d, A + "dev-clients-row.png", 160, 300, 1600, 740);
     show(b, s.voice + 0.8, { from: "translateY(60px)", dur: 1.0 });
-    const img = b.querySelector("img"); tween(img, [{ transform: "translateY(0)" }, { transform: "translateY(-50px)" }], s.voice + 2.0, 3.0);
   }
   // 5 — one request, escrowed (real agent card)
   { const s = S[5]; const d = scene("light", s);
@@ -183,18 +186,17 @@ window.setup = (tl) => {
     const pills = el("div", "", "", "position:absolute; left:140px; top:470px; display:flex; flex-wrap:wrap; gap:16px; width:820px"); d.append(pills);
     [["Task", 0.8], ["Place", 1.5], ["Deadline", 2.1], ["Bounty", 2.7]].forEach(([t, at]) => { const p = el("div", "pill", t); pills.append(p); show(p, s.voice + at, { from: "translateY(20px)" }); });
     const sub = el("div", "sub", "The bounty is locked in the escrow program<br>before anyone starts working.", "position:absolute; left:140px; top:620px; width:800px"); d.append(sub); show(sub, s.voice + 4.2);
-    const card = el("div", "card", "", "position:absolute; left:1040px; top:90px; width:720px; height:812px; overflow:hidden; border-radius:30px");
+    const card = el("div", "card", "", "position:absolute; left:1040px; top:70px; width:720px; overflow:hidden; border-radius:30px");
     const img = el("img", "", "", "width:720px; display:block"); img.src = A + "agent-request.png"; card.append(img); d.append(card);
     show(card, s.voice + 0.3, { from: "translateY(60px)", dur: 1.0 });
-    tween(img, [{ transform: "translateY(0)" }, { transform: "translateY(-150px)" }], s.voice + 4.0, 2.0);
-    const lock = el("div", "pill green-p", "<span class=\"dot\"></span>Escrow funded · 0.30 USDC", "position:absolute; left:1070px; top:830px; font-size:30px"); d.append(lock); show(lock, s.voice + 5.0, { from: "translateY(20px) scale(.95)" });
+    const lock = el("div", "pill green-p", "<span class=\"dot\"></span>Escrow funded · 0.30 USDC", "position:absolute; left:1070px; top:800px; font-size:30px"); d.append(lock); show(lock, s.voice + 5.0, { from: "translateY(20px) scale(.95)" });
   }
   // 6 — worker phone
   { const s = S[6]; const d = scene("white", s);
     const h = el("div", "h2", "A person nearby, or at home,<br>takes it on their phone.", "position:absolute; left:140px; top:200px; width:900px"); d.append(h); show(h, s.voice + 0.2);
     const tags = el("div", "", "", "position:absolute; left:140px; top:500px; display:flex; flex-direction:column; gap:20px; align-items:flex-start"); d.append(tags);
     [["New task · 0.30 USDC · 120 m away", 0.6], ["A photo", 3.6], ["A reading", 4.2], ["A phone call", 4.8]].forEach(([t, at]) => { const p = el("div", "pill", t); tags.append(p); show(p, s.voice + at, { from: "translateX(-30px)" }); });
-    phone(d, [[A + "phone-04.png", s.start], [A + "phone-06.png", s.voice + 2.4], [A + "phone-10.png", s.voice + 4.0]], 1240, 160);
+    phone(d, [[A + "phone-04.png", s.start], [A + "phone-10.png", s.voice + 3.4]], 1240, 160);
     const ph = d.querySelector(".phone"); show(ph, s.start + 0.1, { from: "translateY(80px)", dur: 1.0 });
   }
   // 7 — checks + review, then one transaction
@@ -253,7 +255,7 @@ window.setup = (tl) => {
     const grid = el("div", "", "", "position:absolute; left:0; right:0; top:380px; display:flex; justify-content:center; gap:140px"); d.append(grid);
     const s1 = el("div", "stat", `<b style="color:#5eead4">$2.3B</b><span style="color:#a1a1a6">mystery shopping alone, 2025</span>`); grid.append(s1); show(s1, s.voice + 0.8, { from: "translateY(30px)" });
     const s2 = el("div", "stat", `<b style="color:#5eead4">weeks</b><span style="color:#a1a1a6">from question to answer today</span>`); grid.append(s2); show(s2, s.voice + 3.4, { from: "translateY(30px)" });
-    seekers.push((t) => { const b = s2.querySelector("b"); b.textContent = t > s.voice + 9.6 ? "minutes" : "weeks"; });
+    seekers.push((t) => { const b = s2.querySelector("b"); b.textContent = t > s.voice + 9.6 ? "minutes" : "weeks"; }); seen(s.voice + 10.1);
     const s3 = el("div", "stat", `<b style="color:#5eead4">1,000×</b><span style="color:#a1a1a6">more questions, once agents ask</span>`); grid.append(s3); show(s3, s.voice + 6.2, { from: "translateY(30px)" });
     const foot = el("div", "sub", "Store audits · mystery shopping · crowd data · field research", "position:absolute; left:0; right:0; top:800px; text-align:center"); d.append(foot); show(foot, s.voice + 1.6);
     const src = el("div", "small", "Market size: Straits Research / Fortune Business Insights, 2025. 1,000× is our working assumption, not a measurement.", "left:0; right:0; bottom:40px; text-align:center"); d.append(src); show(src, s.voice + 1.0, { from: "none" });

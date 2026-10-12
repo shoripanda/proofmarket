@@ -102,6 +102,11 @@ ffmpeg -i assets/dev-clients.png -vf crop=980:1000:420:1000 assets/dev-clients-c
 # 語り（af_heart、速度 1.0）→ 2fps の下見 → 本番描画。手順は v2 と同じ
 ```
 
+v5（同日夜）: オーナーの指摘（画面や言葉が見切れる。内容を読み切る前に次へ移る）を受けて 2 点を変えた。128.9 秒。
+
+- 画面はすべて丸ごと見せる。開発者ページは「Connecting from each AI」の 1 行目（見出しと 2 枚のカード）を `crop=2080:825:400:1000` で切り出して幅 1600 の枠に収め、依頼カードは `crop=1240:1200:0:990` で「Asking someone on the spot」から「Bounty escrowed」までを 720 幅に収めてスクロールしない。電話は下端でカードが切れる画面（Task details）を使わない
+- 場面の長さは語りではなく内容で決める。`scene.html` が `show()`・`phone()`・`counter()` の出現時刻を場面ごとに記録し（`window.sceneEnds()`）、`render.mjs` が 1 回目の `setup` でそれを読んでから、「語りが終わり、最後の要素が出そろってから 1 秒（`HOLD`）置いて、0.45 秒でクロスフェード」の時間割を組み直して 2 回目の `setup` で描く
+
 はまりどころ: Wikimedia Commons の `Special:FilePath` は日本語のファイル名をそのまま渡すと落ちるので URL 符号化し、User-Agent に連絡先を入れる。Kokoro のモデル（約 340MB）は `tts/.gitignore` で除外してあり、無ければ README 冒頭の curl で取り直す（回線によっては 15 分かかる）。
 
 ## 置き場所と公開

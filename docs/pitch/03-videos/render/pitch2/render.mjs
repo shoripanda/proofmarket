@@ -9,37 +9,54 @@ const D = import.meta.dirname;
 const [out, music] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const preview = process.argv.includes("--preview"); // 2 fps, no audio: for checking layout
 const FPS = preview ? 2 : 30;
-const GAP = 0.4; // silence between narration lines
+const HOLD = 1.0; // every piece of a scene is on screen for at least this long before the crossfade starts
+const FADE = 0.45; // scene crossfade (scene.html)
 const LEAD = 0.35; // the picture changes this much before the voice starts
 const TAIL = 2.0; // seconds after the last line
 
 const dur = (f) =>
   Number(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]));
 const lines = fs.readFileSync(`${D}/narration.txt`, "utf8").split("\n").filter(Boolean);
-let t = 1.2; // the opening breathes before the first word
-const cues = lines.map((text, i) => {
-  const file = `${D}/voice/cue${i + 1}.wav`;
-  const len = dur(file);
-  const c = { i, text, file, len, start: t, sceneStart: t - LEAD };
-  t += len + GAP;
-  return c;
-});
-cues[0].sceneStart = 0;
-const total = t - GAP + TAIL;
-const timeline = {
-  total,
-  scenes: cues.map((c) => ({ start: c.sceneStart, voice: c.start, end: c.start + c.len })),
-};
-for (let i = 0; i < timeline.scenes.length; i++)
-  timeline.scenes[i].next = timeline.scenes[i + 1]?.start ?? total;
-console.log(`total ${total.toFixed(1)} s, ${Math.ceil(total * FPS)} frames`);
+const cues = lines.map((text, i) => ({
+  i,
+  text,
+  file: `${D}/voice/cue${i + 1}.wav`,
+  len: dur(`${D}/voice/cue${i + 1}.wav`),
+}));
 
+// Scene i runs from start_i; its voice starts LEAD later (1.2 s for the opening). It ends HOLD after both the
+// voice and the last piece of content (reported by scene.html after a first setup) are done, then crossfades.
+function buildTimeline(holdAfterVoice) {
+  let t = 0;
+  const scenes = cues.map((c, i) => {
+    const start = t;
+    const voice = i === 0 ? 1.2 : start + LEAD;
+    const contentEnd = Math.max(voice + c.len, voice + (holdAfterVoice[i] ?? 0));
+    c.start = voice;
+    t = contentEnd + HOLD + FADE;
+    return { i, start, voice, end: voice + c.len, contentEnd };
+  });
+  const total = scenes.at(-1).contentEnd + TAIL;
+  for (let i = 0; i < scenes.length; i++) scenes[i].next = scenes[i + 1]?.start ?? total;
+  return { total, scenes };
+}
 const b = await chromium.launch();
 const page = await b.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+// Pass 1: voice-only timing, to learn when each scene's content has finished appearing (relative to its voice).
+let timeline = buildTimeline([]);
+await page.goto(`file://${D}/scene.html`);
+await page.evaluate((tl) => window.setup(tl), timeline);
+const ends = await page.evaluate(() => window.sceneEnds());
+const offsets = timeline.scenes.map((s, i) => (ends[i] ?? s.voice) - s.voice);
+// Pass 2: the real timeline, with the holds.
+timeline = buildTimeline(offsets);
+const total = timeline.total;
 await page.goto(`file://${D}/scene.html`);
 await page.evaluate((tl) => window.setup(tl), timeline);
 await page.evaluate(() => document.fonts.ready);
 await page.waitForTimeout(300);
+console.log(`total ${total.toFixed(1)} s, ${Math.ceil(total * FPS)} frames`);
+console.log(timeline.scenes.map((s) => `${s.i}:${s.start.toFixed(1)}-${s.contentEnd.toFixed(1)}`).join(" "));
 
 const silent = `${D}/silent.mp4`;
 const ff = spawn(
