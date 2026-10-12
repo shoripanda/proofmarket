@@ -25,6 +25,29 @@ curl -L -o voices-v1.0.bin  https://github.com/thewh1teagle/kokoro-onnx/releases
 
 字幕はページの中に固定の帯として描く（録画の前に `<div id="pm-sub">` を足し、画面の文言を見張って行を切り替える）。ffmpeg 9 では画像の overlay が 1 コマ目にしか効かず、字幕が消えたので、この方式にした。語りの開始時刻も同じ見張りで決める。画面が語りより先に進んだときは、前の行を言い終えるまで次の行を待たせる。`MARKERS` の文言は `components/try-experience.tsx` の段階ラベルと「attempt 2」の表示に対応している。
 
+## 技術デモ v2（2026-10-12、提出版の差し替え）
+
+v1 は `/en/try` の自動再生をそのまま撮ったので、画面が小さく、どこを押したのかも見えなかった。字幕の帯も電話の画面の下端に重なっていた。オーナーの指摘を受けて `demo2/` で作り直した。約 145 秒。
+
+- 画面は上の 1920×900、字幕は下の 180px の帯に分けた。帯は ffmpeg で後から重ねるので、操作の上に字幕が載ることはない。帯には段階の札（「3 · A person acts」など）も出す
+- `/en/try` は「Stop and take over」で手動にし、スクリプトが 1 回ずつ押す。押す前に丸いカーソルを動かし、押した所に波紋を出す。答えは選択肢ではなく、文字を 1 字ずつ打ち込む
+- カメラは body の transform で、いま使っている部分（エージェントの欄、電話、結果）へ寄る。デモ用の注記（「In production…」、架空の URL、Play again）は隠す
+- 後半は本番の実物を見せる。公開の結果ページ（`/en/r/ver_01M42M6WXZ93MFR3YDQZ7JXEHG`）で「Compare with the record on Solana」を実際に押し、5 項目が match になるところを撮る。続けて、その依頼の settle の取引（`34sEPAZg…`）を Solana Explorer の Summary・Logs（FinalizeVerification と Settle）・Tokens（作業者に +0.5 USDC）の 3 枚で見せる。Explorer は中の箱でスクロールするのでカメラで追えず、要素ごとのスクリーンショットにした
+- 語りは Kokoro `af_heart`。edge-tts は 2026-10-12 に 403 で使えなかった
+
+```bash
+# 語り（narration.txt の 1 行 = 「id<TAB>文」）。tts/ の準備は上と同じ
+cd docs/pitch/03-videos/render/demo2 && mkdir -p voice
+while IFS=$'\t' read -r id text; do printf '%s' "$text" > /tmp/l.txt; ../tts/.venv/bin/python ../tts/say.py af_heart voice/$id.wav /tmp/l.txt 1.0; done < narration.txt
+# 録画と組み立て（本番 https://proofmarket.fun を使う。PM_BASE で差し替え可）
+PLAYWRIGHT=$(pwd)/../../../../../node_modules/.pnpm/playwright@1.63.0/node_modules/playwright node build.mjs ~/Desktop/ProofMarket-demo-v2.mp4
+```
+
+はまりどころ:
+- 文字で探すと、ボタンより先に「“I'm here” を押してください」のような説明文が当たる。ラベルがその文字で始まるボタンを優先する
+- 隠す対象を「その文字を含む要素」にすると、外側の箱ごと消えて画面が真っ白になった。いちばん内側の要素だけを隠す
+- 結果ページの照合ボタンは、外側の div を click しても動かない。`closest("button")` で押す
+
 ## ピッチ
 
 `pitch/narration.txt` の 1 行が 1 枚のスライド（`pitch/slide.html?k=N`）になる。

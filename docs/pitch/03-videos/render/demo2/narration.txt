@@ -1,0 +1,15 @@
+hook	AI agents can read the whole web, but they can't walk to a shop and look. ProofMarket lets an agent hire a person for that, check the work, and pay them on Solana.
+a1	Here's the agent. Its user asks what time a bakery in Shibuya closes today. The web may be out of date, so the agent makes one MCP tool call: request reality verification.
+a2	The request names the task, the place, a forty-five-minute deadline, and a thirty-cent USDC bounty. The bounty is locked in a Solana escrow before anyone starts walking.
+w1	This is the worker's phone. The task shows up in their nearby list. They open it, see the pay and the rules, and claim it.
+w2	At the shop they tap I'm here, and take the photo with the in-app camera. Photos from the gallery can't be used.
+w3	Now the answer. This worker types a summary instead of copying the notice, and submits.
+w4	Every submission is checked: a per-task nonce, the capture time, the location, and that the photo isn't reused. Then Claude compares the photo and the answer with the request.
+w5	Claude sends it back with a reason: the request asked for an exact transcription, not a summary. The worker can fix it within the same claim.
+w6	They retake the photo, copy the notice word for word, and submit again.
+w7	This time every check passes. The result hash and the payout go to Solana in one transaction, and the worker sees thirty cents received.
+a3	The agent gets the exact text, every check, and a proof link it can show its user.
+p1	That was the guided walkthrough. This is a real result from production. The public proof page shows what was checked and how, but not the photos or the text.
+p2	Anyone can compare it with Solana. The browser reads the task account straight from Devnet, without going through our server.
+c1	And this is the settle transaction itself: finalize and settle in a single transaction, with half a USDC moving from escrow to the worker's wallet.
+end	ProofMarket. Whatever your AI agent can't do itself, ask a person. Live on Solana Devnet, at proofmarket dot fun.
