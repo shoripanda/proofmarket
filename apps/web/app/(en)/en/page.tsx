@@ -351,7 +351,7 @@ export default async function EnHome() {
             github.com/shoripanda/proofmarket
           </a>
           ; a short{" "}
-          <a href="https://youtu.be/nusc5hqGxtE" className="font-semibold text-teal-700 underline">
+          <a href="https://youtu.be/n6zKlKU-_B0" className="font-semibold text-teal-700 underline">
             technical demo video
           </a>{" "}
           shows one request end to end.
