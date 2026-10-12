@@ -71,3 +71,5 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-11 [wSOL の払い出し設計] 証人に wSOL を渡して画面で SOL に戻させる案 → 証人の財布は最初 SOL が 0 で、戻す手数料を払えない → settle で vault を task 口座へ閉じ、プログラムが task 口座から財布へ SOL を直接移す（15 §3.1）
 - 2026-10-11 [localnet / web3.js] airdrop を confirmed で待っただけの財布から `sendAndConfirmTransaction(…, { commitment: "finalized" })` を送る → preflight も finalized で走り、まだ確定していない airdrop が見えず「Attempt to debit an account but found no record of a prior credit」で落ちる → `preflightCommitment: "confirmed"` を併せて渡す。確定を待つのは送った後だけでよい
 
+- 2026-10-12 [YouTube 投稿 / yt-upload.mjs] 「ファイルを選択」ボタンの disabled 属性が外れるのを待ってから filechooser で選ぶ → ボタンは灰色のまま filechooser が 30 秒来ず失敗 → 隠れた `input[type="file"]` に `setInputFiles` で直接渡す（ボタンを押さない）
+- 2026-10-12 [YouTube 投稿 / yt-upload.mjs] 詳細画面が出た直後にタイトル・説明を `keyboard.type` し「子ども向けでない」を押す → 欄の初期化前で全部空のまま残り、保存が「フォーム項目にエラー」で通らず非公開の下書きになった → 「ドラフトを編集」で開き直し、`insertText` で入れたあと innerText を読んで一致を確かめる（`scratchpad/yt-finish.mjs` の setBox）。最後に oEmbed が 200 か見る
