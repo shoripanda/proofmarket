@@ -86,6 +86,24 @@ node render.mjs ~/Desktop/ProofMarket-pitch-v2.mp4 music.mp3
 - 語りは Kokoro `af_heart`、速度 1.0（0.95 だと 125 秒で 2 分を超えた）。`render.mjs` の行間 `GAP` は 0.4 秒、末尾 `TAIL` は 2 秒
 - 市場規模の数字は Straits Research と Fortune Business Insights の 2025 年推計（ともに 23 億ドル台）。「1,000 倍」は測った数ではないので、画面の脚注で作業仮説だと断っている
 
+### v4（2026-10-12）: 製品が主語、提出フォームの設問に沿う
+
+オーナーの指示（自分のことは書かず製品のことを先に。Colosseum のフォームに書いた必要事項を載せる。東京だけ・試行段階といった断りは入れない。日本で作る意味は書いてよい）を受けて、同じ `pitch2/` の仕組みのまま台本と 15 場面を書き直した。104.9 秒。
+
+- 創業者の場面を外し、代わりにフォームの設問に 1 場面ずつ当てた。誰のためか（claude.ai・ChatGPT・Claude Code・Codex CLI・自前のコード）、なぜ今か（道具呼び出しと支払いは揃ったが、現実世界へ届く信用できる経路が無かった）、収益（1 人あたりの報酬 × 人数 ＋ 手数料）、Solana の使い方と技術の積み（Anchor・Next.js・Supabase・Privy・MCP+OAuth 2.1・Claude・x402 v2、プログラム ID）
+- 「Proof anyone can check」の場面は本番の証明ページの実物。`shots2.mjs` が公開結果ページで「Compare with the record on Solana」を押し、5 項目 match の箱と「Verified by a person」の箱を撮る。開発者ページの「Connecting from each AI」も撮り、Claude Code の列を `crop=980:1000:420:1000` で切り出して使う
+- 「今日動いているもの」は語らず画面の札だけで出す（17 種類・MCP 8 道具・見守り・公開地図・公開データセット・Solana Pay の入金）。「Devnet」の文字は証明の場面の脚注にだけ残した
+- 結びは「In Tokyo? Join as a worker」をやめ、「join as a worker from your phone」にした
+
+```bash
+cd docs/pitch/03-videos/render/pitch2
+node shots.mjs && node shots2.mjs        # 本番の画面。agent-request は crop=1240:1200:0:1100
+ffmpeg -i assets/dev-clients.png -vf crop=980:1000:420:1000 assets/dev-clients-col.png
+# 語り（af_heart、速度 1.0）→ 2fps の下見 → 本番描画。手順は v2 と同じ
+```
+
+はまりどころ: Wikimedia Commons の `Special:FilePath` は日本語のファイル名をそのまま渡すと落ちるので URL 符号化し、User-Agent に連絡先を入れる。Kokoro のモデル（約 340MB）は `tts/.gitignore` で除外してあり、無ければ README 冒頭の curl で取り直す（回線によっては 15 分かかる）。
+
 ## 置き場所と公開
 
 できた mp4 はリポジトリに置かず、YouTube に限定公開で上げて提出フォームに URL を書く。表題スライドと説明文に「語りは合成音声」と明記する。自分の声で録ったものに差し替えるときは、`cue*.wav` を置き換えるだけでよい。
