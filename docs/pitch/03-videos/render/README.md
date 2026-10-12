@@ -48,6 +48,14 @@ PLAYWRIGHT=$(pwd)/../../../../../node_modules/.pnpm/playwright@1.63.0/node_modul
 - 隠す対象を「その文字を含む要素」にすると、外側の箱ごと消えて画面が真っ白になった。いちばん内側の要素だけを隠す
 - 結果ページの照合ボタンは、外側の div を click しても動かない。`closest("button")` で押す
 
+### 技術デモ v4（2026-10-12 夜）: 4K
+
+Playwright の録画（`recordVideo`）は VP8・約 0.7 Mbps に固定されていて、録った時点で小さな字がにじんでいた。YouTube の 1080p 版はさらに 0.25〜0.41 Mbps まで落ちる。そこで録画の仕組みを替えた。
+
+- 録画は CDP の `Page.startScreencast`（PNG、可逆）。ブラウザを `--force-device-scale-factor=2` で起動しないと、コマは 1920×900 のまま届く。届くのはページが変わったときだけなので、出力の 1/30 秒ごとに「その時刻までに届いた最後のコマ」をハードリンクで連番にし、30fps の動画にする
+- 帯・カード・Explorer の画像も 2 倍で撮り、合成は 3840×2160。倍率は `DEMO_SCALE`（既定 2）
+- 一時ファイルは `/try` の場面だけで PNG が約 1,100 枚（数百 MB）。描画の前に空きを確かめる
+
 ## ピッチ
 
 `pitch/narration.txt` の 1 行が 1 枚のスライド（`pitch/slide.html?k=N`）になる。

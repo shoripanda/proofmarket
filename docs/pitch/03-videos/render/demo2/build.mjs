@@ -15,6 +15,8 @@ const OUT = process.argv[2] ?? `${D}/out.mp4`;
 const W = 1920;
 const H = 900; // stage
 const BAND = 180;
+// Everything is laid out at 1920x1080 and drawn at SC x (3840x2160 by default) so YouTube keeps small text sharp.
+const SC = Number(process.env.DEMO_SCALE ?? 2);
 const BASE = process.env.PM_BASE ?? "https://proofmarket.fun";
 const PROOF_ID = "ver_01M42M6WXZ93MFR3YDQZ7JXEHG";
 const SETTLE_TX = "34sEPAZgPuad9ZGfmeuGJQE9miKmfW1MWrYyQ1jUadYL8GAU6jYbPYCwVDA1i8np99LoWBdrpE3ggckURrFUHcbt";
@@ -56,11 +58,12 @@ const STEP = {
 const timeline = []; // { id, start } in final-video seconds
 let clock = 0; // length of the stage video so far
 
-const b = await chromium.launch();
+// Without the forced scale, CDP screencast frames come at CSS pixels (1920x900) whatever the context's scale.
+const b = await chromium.launch({ args: [`--force-device-scale-factor=${SC}`] });
 
 // ---------- captions: one band image per line, plus an empty one ----------
 async function renderBands() {
-  const p = await b.newPage({ viewport: { width: W, height: BAND } });
+  const p = await b.newPage({ viewport: { width: W, height: BAND }, deviceScaleFactor: SC });
   const html = (step, text) => `<!doctype html><meta charset="utf-8"><style>
     body{margin:0;width:${W}px;height:${BAND}px;background:#0f172a;display:flex;align-items:center;gap:36px;
       padding:0 64px;box-sizing:border-box;font-family:-apple-system,"Helvetica Neue",Inter,Arial,sans-serif}
@@ -80,7 +83,7 @@ async function renderBands() {
 
 // ---------- cards ----------
 async function cardImage(name, inner) {
-  const p = await b.newPage({ viewport: { width: W, height: H } });
+  const p = await b.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: SC });
   await p.setContent(`<!doctype html><meta charset="utf-8"><style>
     body{margin:0;width:${W}px;height:${H}px;background:linear-gradient(135deg,#0f766e,#134e4a);color:#fff;
       display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
@@ -201,22 +204,31 @@ const HELPERS = ({ W, H, hide }) => {
 };
 
 /** Record one page. `run(api)` drives it; returns the trimmed segment and pushes its lines to the timeline. */
-async function recordScene(
-  name,
-  url,
-  { hide = [], prepare, run, viewport = { width: W, height: H }, scale = 1 },
-) {
+async function recordScene(name, url, { hide = [], prepare, run, viewport = { width: W, height: H } }) {
   const dir = `${TMP}/rec-${name}`;
   fs.rmSync(dir, { recursive: true, force: true });
-  const ctx = await b.newContext({
-    viewport,
-    deviceScaleFactor: scale,
-    recordVideo: { dir, size: { width: W, height: H } },
-  });
+  fs.mkdirSync(dir, { recursive: true });
+  // Lossless PNG frames from CDP screencast (about 20 fps at 3840x1800) instead of Playwright's VP8 recording,
+  // which is fixed at ~0.7 Mbps and blurs small text.
+  const ctx = await b.newContext({ viewport, deviceScaleFactor: SC });
   const page = await ctx.newPage();
   await page.goto(url, { waitUntil: "networkidle", timeout: 120_000 });
   if (prepare) await prepare(page);
   await page.evaluate(HELPERS, { W: viewport.width, H: viewport.height, hide });
+  const frames = []; // { file, at } at = Date.now() when the frame arrived
+  const cdp = await ctx.newCDPSession(page);
+  cdp.on("Page.screencastFrame", (f) => {
+    const file = `${dir}/f${String(frames.length).padStart(6, "0")}.png`;
+    fs.writeFileSync(file, Buffer.from(f.data, "base64"));
+    frames.push({ file, at: Date.now() });
+    cdp.send("Page.screencastFrameAck", { sessionId: f.sessionId }).catch(() => {});
+  });
+  await cdp.send("Page.startScreencast", {
+    format: "png",
+    everyNthFrame: 1,
+    maxWidth: viewport.width * SC,
+    maxHeight: viewport.height * SC,
+  });
   await page.waitForTimeout(600);
   const t0 = Date.now(); // the segment starts here
   const local = []; // { id, at } seconds from t0
@@ -276,19 +288,33 @@ async function recordScene(
   await run(api);
   await api.done(1.2);
   const closeAt = Date.now();
+  await cdp.send("Page.stopScreencast").catch(() => {});
+  await page.waitForTimeout(300);
   await ctx.close();
-  const webm = fs.readdirSync(dir).find((f) => f.endsWith(".webm"));
-  const raw = `${dir}/${webm}`;
-  const videoStart = closeAt - dur(raw) * 1000;
-  const skip = Math.max(0, (t0 - videoStart) / 1000);
+  // Screencast sends a frame only when the page changes. Resample to exact 30 fps: output frame k shows the last
+  // screencast frame that had arrived by t0 + k/30 (hard links, no copies). The concat demuxer with per-image
+  // durations stretched the segment by seconds and put the narration out of step.
+  if (frames.length === 0) throw new Error(`no screencast frames in ${name}`);
+  const seqDir = `${dir}/seq`;
+  fs.mkdirSync(seqDir, { recursive: true });
+  const total = Math.round(((closeAt - t0) / 1000) * 30);
+  let j = 0;
+  for (let k = 0; k < total; k++) {
+    const t = t0 + (k * 1000) / 30;
+    while (j + 1 < frames.length && frames[j + 1].at <= t) j++;
+    fs.linkSync(frames[j].file, `${seqDir}/${String(k).padStart(6, "0")}.png`);
+  }
+  console.log(
+    `${name}: ${frames.length} screencast frames -> ${total} frames (${(total / 30).toFixed(2)} s)`,
+  );
   const seg = `${TMP}/seg-${name}.mp4`;
   ff([
-    "-ss",
-    skip.toFixed(3),
+    "-framerate",
+    "30",
     "-i",
-    raw,
+    `${seqDir}/%06d.png`,
     "-vf",
-    `scale=${W}:${H}:flags=lanczos,fps=30`,
+    `scale=${W * SC}:${H * SC}:flags=lanczos`,
     "-c:v",
     "libx264",
     "-preset",
@@ -297,6 +323,8 @@ async function recordScene(
     "16",
     "-pix_fmt",
     "yuv420p",
+    "-r",
+    "30",
     "-an",
     seg,
   ]);
@@ -581,7 +609,7 @@ segs.push(
     await sec.screenshot({ path: `${TMP}/ex-${k}.png` });
   }
   await p.close();
-  const viewer = await b.newPage({ viewport: { width: W, height: H } });
+  const viewer = await b.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: SC });
   for (const [, k] of shots) {
     const img = fs.readFileSync(`${TMP}/ex-${k}.png`).toString("base64");
     await viewer.setContent(`<!doctype html><style>body{margin:0;width:${W}px;height:${H}px;background:#111827;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:-apple-system,Inter,Arial,sans-serif}
@@ -613,14 +641,17 @@ fs.writeFileSync(`${TMP}/list.txt`, `${segs.map((s) => `file '${s}'`).join("\n")
 ff(["-f", "concat", "-safe", "0", "-i", `${TMP}/list.txt`, "-c", "copy", `${TMP}/stage.mp4`]);
 const total = dur(`${TMP}/stage.mp4`);
 const inputs = ["-i", `${TMP}/stage.mp4`, "-loop", "1", "-i", `${TMP}/band-empty.png`];
-const fc = [`[0:v]pad=${W}:${H + BAND}:0:0:color=0x0f172a[v0]`, `[v0][1:v]overlay=0:${H}:shortest=1[v1]`];
+const fc = [
+  `[0:v]pad=${W * SC}:${(H + BAND) * SC}:0:0:color=0x0f172a[v0]`,
+  `[v0][1:v]overlay=0:${H * SC}:shortest=1[v1]`,
+];
 let last = "v1";
 timeline.forEach((c, i) => {
   inputs.push("-loop", "1", "-i", `${TMP}/band-${c.id}.png`);
   const next = timeline[i + 1];
   const end = Math.min(next ? next.start - 0.05 : total, c.start + LEN[c.id] + 0.6);
   fc.push(
-    `[${last}][${i + 2}:v]overlay=0:${H}:enable='between(t,${c.start.toFixed(2)},${end.toFixed(2)})':shortest=1[v${i + 2}]`,
+    `[${last}][${i + 2}:v]overlay=0:${H * SC}:enable='between(t,${c.start.toFixed(2)},${end.toFixed(2)})':shortest=1[v${i + 2}]`,
   );
   last = `v${i + 2}`;
 });
