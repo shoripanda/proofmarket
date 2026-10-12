@@ -6,7 +6,10 @@ const D = import.meta.dirname;
 const BASE = process.argv[2] ?? "https://proofmarket.fun";
 const PROOF_ID = "ver_01M42M6WXZ93MFR3YDQZ7JXEHG";
 const b = await chromium.launch();
-const ctx = await b.newContext({ viewport: { width: 1200, height: 1500 }, deviceScaleFactor: 2 });
+const ctx = await b.newContext({
+  viewport: { width: 1200, height: 1500 },
+  deviceScaleFactor: Number(process.env.SHOT_SCALE ?? 2),
+});
 const p = await ctx.newPage();
 
 await p.goto(`${BASE}/en/r/${PROOF_ID}`, { waitUntil: "networkidle", timeout: 120_000 });

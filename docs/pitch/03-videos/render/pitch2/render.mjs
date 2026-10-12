@@ -41,7 +41,9 @@ function buildTimeline(holdAfterVoice) {
   return { total, scenes };
 }
 const b = await chromium.launch();
-const page = await b.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+// The layout is 1920x1080; the final render is drawn at 2x (3840x2160) so YouTube keeps small text sharp.
+const SCALE = preview ? 1 : Number(process.env.RENDER_SCALE ?? 2);
+const page = await b.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: SCALE });
 // Pass 1: voice-only timing, to learn when each scene's content has finished appearing (relative to its voice).
 let timeline = buildTimeline([]);
 await page.goto(`file://${D}/scene.html`);
@@ -74,7 +76,7 @@ const ff = spawn(
     "-c:v",
     "libx264",
     "-preset",
-    preview ? "ultrafast" : "slow",
+    preview ? "ultrafast" : "medium",
     "-crf",
     preview ? "28" : "16",
     "-pix_fmt",

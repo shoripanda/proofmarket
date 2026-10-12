@@ -23,9 +23,9 @@
   .pill.grey-p { background: #e9e9eb; color: #6e6e73; }
   .dot { width: 14px; height: 14px; border-radius: 50%; background: currentColor; opacity: .7; }
   .card { background: #fff; border-radius: 28px; box-shadow: 0 30px 80px rgba(0,0,0,.12); }
-  .phone { position: absolute; width: 440px; height: 762px; }
-  .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 40px; }
-  .phone::after { content: ""; position: absolute; inset: 0; border-radius: 40px; box-shadow: 0 50px 100px rgba(0,0,0,.28); pointer-events: none; z-index: -1; }
+  .phone { position: absolute; width: 577px; height: 1000px; }
+  .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 52px; }
+  .phone::after { content: ""; position: absolute; inset: 0; border-radius: 52px; box-shadow: 0 50px 100px rgba(0,0,0,.28); pointer-events: none; z-index: -1; }
   .browser { position: absolute; background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,.22); }
   .browser .bar { height: 46px; background: #ececef; display: flex; align-items: center; gap: 10px; padding-left: 20px; }
   .browser .bar i { width: 14px; height: 14px; border-radius: 50%; display: block; background: #d1d1d6; }
@@ -196,7 +196,7 @@ window.setup = (tl) => {
     const h = el("div", "h2", "A person nearby, or at home,<br>takes it on their phone.", "position:absolute; left:140px; top:200px; width:900px"); d.append(h); show(h, s.voice + 0.2);
     const tags = el("div", "", "", "position:absolute; left:140px; top:500px; display:flex; flex-direction:column; gap:20px; align-items:flex-start"); d.append(tags);
     [["New task · 0.30 USDC · 120 m away", 0.6], ["A photo", 3.6], ["A reading", 4.2], ["A phone call", 4.8]].forEach(([t, at]) => { const p = el("div", "pill", t); tags.append(p); show(p, s.voice + at, { from: "translateX(-30px)" }); });
-    phone(d, [[A + "phone-04.png", s.start], [A + "phone-10.png", s.voice + 3.4]], 1240, 160);
+    phone(d, [[A + "phone-03.png", s.start], [A + "phone-08.png", s.voice + 3.4]], 1150, 40);
     const ph = d.querySelector(".phone"); show(ph, s.start + 0.1, { from: "translateY(80px)", dur: 1.0 });
   }
   // 7 — checks + review, then one transaction
@@ -211,7 +211,7 @@ window.setup = (tl) => {
       <div style="font-size:32px; font-weight:600; line-height:1.3">The answer is a summary, but the request asks for the exact text.</div>
       <div class="pill red-p" style="align-self:flex-start; font-size:28px; padding:12px 24px">Sent back · 2 attempts left</div>`;
     d.append(rv); show(rv, s.voice + 3.2, { from: "translateY(40px)", out: s.voice + 5.6 });
-    phone(d, [[A + "phone-12.png", s.start], [A + "phone-14.png", s.voice + 3.2], [A + "phone-22.png", s.voice + 5.9]], 1240, 160);
+    phone(d, [[A + "phone-10.png", s.start], [A + "phone-12.png", s.voice + 3.2], [A + "phone-18.png", s.voice + 5.9]], 1150, 40);
     const ph = d.querySelector(".phone"); show(ph, s.start + 0.1, { from: "translateY(80px)", dur: 1.0 });
     const navy = el("div", "abs", "", "inset:0; background:radial-gradient(1400px 900px at 70% 80%, #16213a 0%, #0b1220 60%, #070b14 100%); opacity:0"); d.insertBefore(navy, ph);
     tween(navy, [{ opacity: 0 }, { opacity: 1 }], s.voice + 5.7, 0.8, "ease-in-out");
@@ -284,7 +284,6 @@ window.setup = (tl) => {
     const foot = el("div", "sub", "Settled in seconds. Anyone can re-read the account from the browser.", "position:absolute; left:0; right:0; top:700px; text-align:center"); d.append(foot); show(foot, s.voice + 7.2);
     const stack = el("div", "", "", "position:absolute; left:0; right:0; top:830px; display:flex; justify-content:center; flex-wrap:wrap; gap:12px"); d.append(stack);
     ["Anchor (Rust)", "Next.js", "Supabase", "Privy wallets", "MCP + OAuth 2.1", "Claude review", "x402 v2"].forEach((t, i) => { const p = el("div", "pill grey-p", t, "font-size:22px; padding:8px 18px"); stack.append(p); show(p, s.voice + 7.6 + i * 0.1, { from: "translateY(12px)", dur: 0.5 }); });
-    const pid = el("div", "small tx", "program A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s", "left:0; right:0; bottom:28px; text-align:center"); d.append(pid); show(pid, s.voice + 1.0, { from: "none" });
   }
   // 13 — Japan, then every city
   { const s = S[13]; const d = scene("light", s);
