@@ -8,6 +8,7 @@ import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
 import { runOptimistic } from "./challenge-service";
+import { runDeposits } from "./deposit-service";
 import { releaseStaleReviews } from "./evidence-service";
 import { runNotifyWorkers } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
@@ -184,7 +185,10 @@ export async function tick(
   );
   // 5. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
   await step(failed, "schedules", () => runDueSchedules(app));
-  // 6. Drain jobs.
+  // 6. Deposits (15 §4.3): credit finalized transfers that carry a requester's reference, before the jobs
+  // below so a task created against the new balance can be funded in the same tick.
+  await step(failed, "deposits", () => runDeposits(app));
+  // 7. Drain jobs.
   const runner = `tick:${crypto.randomUUID()}`;
   let jobsRun = 0;
   for (; jobsRun < maxJobs; jobsRun++) {
@@ -192,7 +196,7 @@ export async function tick(
     if (!job) break;
     await runLeased(app, job, runner);
   }
-  // 7. 08 §5: count what needs an operator and warn in the log; the counts also come back to the caller.
+  // 8. 08 §5: count what needs an operator and warn in the log; the counts also come back to the caller.
   let warnings: TickWarnings | null = null;
   await step(failed, "warnings", async () => {
     warnings = await tickWarnings(app, now);

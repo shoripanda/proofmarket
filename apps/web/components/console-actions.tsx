@@ -1,5 +1,5 @@
 "use client";
-// Console client bits: sign-in form, sign-out and stop-schedule buttons (01 §4.14).
+// Console client bits: sign-in form, sign-out, stop-schedule and deposit buttons (01 §4.14, 15 §4.3).
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useLang } from "@/lib/client/lang";
@@ -114,5 +114,53 @@ export function StopScheduleButton({ id }: { id: string }) {
     >
       {pick(lang, "止める", "Stop")}
     </button>
+  );
+}
+
+export function CreateDepositButton() {
+  const lang = useLang();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        await fetch("/v1/console/deposit", { method: "POST" }).catch(() => null);
+        setBusy(false);
+        router.refresh();
+      }}
+      className="rounded-2xl bg-teal-700 px-5 py-3 font-bold text-white disabled:opacity-40"
+    >
+      {busy
+        ? pick(lang, "発行しています…", "Issuing…")
+        : pick(lang, "入金先を発行する", "Get a deposit address")}
+    </button>
+  );
+}
+
+/** A value to copy: monospace, wraps, with a copy button. */
+export function CopyField({ label, value }: { label: string; value: string }) {
+  const lang = useLang();
+  const [done, setDone] = useState(false);
+  return (
+    <div className="rounded-xl border border-slate-200 p-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <div className="mt-1 flex items-start justify-between gap-3">
+        <code className="break-all text-xs">{value}</code>
+        <button
+          type="button"
+          onClick={async () => {
+            await navigator.clipboard?.writeText(value).catch(() => null);
+            setDone(true);
+            setTimeout(() => setDone(false), 1500);
+          }}
+          className="shrink-0 text-xs font-semibold text-teal-700 underline"
+        >
+          {done ? pick(lang, "コピーした", "Copied") : pick(lang, "コピー", "Copy")}
+        </button>
+      </div>
+    </div>
   );
 }

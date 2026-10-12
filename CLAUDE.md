@@ -69,4 +69,5 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-11 [CI / Anchor CLI の導入] `avm install 1.2.0` が「failed build provenance verification」（来歴の取得が 403 Forbidden）で止まり program ジョブが落ちた。コードとは無関係 → `gh run rerun <id> --failed` で再実行すれば通る
 - 2026-10-11 [localnet / 起動直後のバリデータ] `solana-test-validator --reset` の直後に `PM_LOCALNET=1` のテストを流すと、最初の USDC の往復が finalized を 60 秒待ちきれず retry で落ちる（main のアダプタでも同じ）→ devnet-setup のあとにもう一度流す（2 回目は全部通る）。退行と取り違えない
 - 2026-10-11 [wSOL の払い出し設計] 証人に wSOL を渡して画面で SOL に戻させる案 → 証人の財布は最初 SOL が 0 で、戻す手数料を払えない → settle で vault を task 口座へ閉じ、プログラムが task 口座から財布へ SOL を直接移す（15 §3.1）
+- 2026-10-11 [localnet / web3.js] airdrop を confirmed で待っただけの財布から `sendAndConfirmTransaction(…, { commitment: "finalized" })` を送る → preflight も finalized で走り、まだ確定していない airdrop が見えず「Attempt to debit an account but found no record of a prior credit」で落ちる → `preflightCommitment: "confirmed"` を併せて渡す。確定を待つのは送った後だけでよい
 

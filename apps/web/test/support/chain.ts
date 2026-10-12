@@ -1,5 +1,6 @@
 // In-memory stand-in for the Solana program behind the SettlementAdapter contract (06 §3-5).
 import type {
+  ChainDeposit,
   ChainResult,
   FinalizeAndSettleInput,
   FundTaskInput,
@@ -36,6 +37,19 @@ export class FakeChain implements SettlementAdapter {
   }
   async balances() {
     return { operatorLamports: 5_000_000_000n, treasuryAmount: 1_000_000_000n };
+  }
+
+  /** Deposits per reference, oldest first; tests push into this. */
+  deposits = new Map<string, ChainDeposit[]>();
+  depositCalls: { reference: string; until?: string }[] = [];
+  depositAddresses() {
+    return { wallet: "FakeOperatorWallet", usdcAccount: "FakeTreasuryUsdc", usdcMint: "TestUsdcMint" };
+  }
+  async findDeposits(reference: string, until?: string) {
+    this.depositCalls.push({ reference, until });
+    const all = this.deposits.get(reference) ?? [];
+    const i = until ? all.findIndex((d) => d.signature === until) : -1;
+    return all.slice(i + 1);
   }
 
   async fundTask(i: FundTaskInput, onSigned: (s: string) => Promise<void>): Promise<ChainResult> {

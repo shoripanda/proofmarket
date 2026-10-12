@@ -90,14 +90,18 @@ genesis hash は実際の RPC に問い合わせて確かめる（いまと同�
 - **verifier**（判定の記録）はお金を動かせないので、いまと同じ扱いでよい。
 - 手数料の SOL（取引手数料・口座の rent）は operator が払う。残高の警告（08 §5、tick の SOL 残高）は今の仕組みを使い、しきい値をメインネット用に上げる。
 
-### 4.3 入金を自分でできるようにする
+### 4.3 入金を自分でできるようにする（PR 6 で作った、2026-10-11）
 
-いまは運営者が手で TOPUP を足している。実際のお金では、依頼者が送ったことを確かめてから残高に入れる必要がある。
+運営者が手で TOPUP を足す形では、実際のお金は扱えない。依頼者が送ったことを確かめてから残高に入れる。
 
-- 依頼者ごとに参照用の公開鍵（Solana Pay の `reference`）を発行し、入金先の画面に「この treasury へ、この参照つきで送る」と QR とともに出す。
-- tick で treasury への着金を `getSignaturesForAddress(reference)` で探し、確定（finalized）した送金だけを TOPUP にする。署名を台帳に残し、同じ署名を二度数えない（一意制約）。
-- 通貨は USDC と SOL（ネイティブの SOL で受け、operator が wSOL に包む）。
-- この仕組みは Devnet でも使えるので、先に Devnet で動かす。
+- 依頼者は `/console` の「入金先を発行する」で、自分専用の参照（Solana Pay の `reference`、ed25519 の公開鍵）を 1 つ受け取る。画面には operator の財布の住所と、参照つきの Solana Pay の URL（USDC と SOL）を出す。送り先はどちらも operator の財布で、USDC の口座は財布側が導く。
+- tick は毎分、参照を持つ依頼者を「最後に見たのが古い順」に 25 件まで取り、`getSignaturesForAddress(reference, until = 前回の最後の署名)` で新しい取引を探す。確定（finalized）した取引だけを読み、system の transfer（財布あて）と spl-token の transfer / transferChecked（USDC の口座あて）を、内側の命令まで含めて合計する。
+- 1 取引 1 行を `deposits`（04 §3.27）に書き、同じトランザクションで `requester_ledger` に TOPUP を足す。署名が主キーなので、RPC が古い署名を返しても二度は数えない。
+- SOL は lamports を 10^-6 SOL に切り捨てる。0 になる端数は記録しない。
+- 参照の無い送金は自動では入らない。依頼者が取引 ID を運営者に伝え、運営者が手で TOPUP を足す。画面にもそう書いてある。
+- 1 人の依頼者ぶんの RPC が失敗しても他は続け、次の tick で同じ `until` からやり直す。
+- SOL はネイティブで受ける。依頼を作るときに足りない分だけ operator が wSOL に包む（3.1）。
+- Devnet でも同じ仕組みで動くので、先に Devnet で使う。QR はまだ出していない。
 
 ### 4.4 プログラムの配置
 
@@ -124,7 +128,7 @@ genesis hash は実際の RPC に問い合わせて確かめる（いまと同�
 | 3 | SOL のオフチェーン部分（3.2・3.3）。`SOL_ENABLED` は off | 動かない | 残高集計の索引のみ |
 | 4 | プログラム v1.2（3.1）とテスト。Devnet へ配置し、wSOL を登録 | Devnet だけ | なし |
 | 5 | 証人の画面に SOL の報酬を出す（払いは 4 のネイティブ払いで済む）。Devnet で `SOL_ENABLED=true` | Devnet だけ | なし |
-| 6 | 入金の検出（4.3） | Devnet だけ | 入金の表 |
+| 6 | 入金の検出（4.3）。画面に入金先を出し、tick が残高に入れる | Devnet だけ | `deposits` の表と参照の列（0028） |
 | 7 | メインネットの手順書（4.4・4.5）を `12-deploy-runbook.md` に足す | 動かない | なし |
 
 提出の前日なので、PR 2 以降は既定値で本番の動きが変わらないことを確かめてからマージする。

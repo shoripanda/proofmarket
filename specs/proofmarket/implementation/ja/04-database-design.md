@@ -60,7 +60,9 @@ create table requester_credentials (
   allowed_bbox         double precision[],            -- 任意。{minLat,minLng,maxLat,maxLng}。null なら PILOT_BBOX
   status               text not null default 'active' check (status in ('active','suspended')),
   created_at           timestamptz not null default now(),
-  revoked_at           timestamptz
+  revoked_at           timestamptz,
+  deposit_reference    text unique,                   -- 入金に付ける Solana Pay の参照。依頼者が画面で発行するまで null（15 §4.3）
+  deposit_checked_at   timestamptz                    -- tick が最後に入金を探した時刻。古いものから順に見る
 );
 ```
 
@@ -632,6 +634,20 @@ create table console_sessions (
 | verification_id | text FK NULL | この支払いで作った依頼 |
 | error | text NULL | 送信に失敗した理由 |
 | created_at / updated_at | timestamptz | `PENDING` のまま 120 秒たてば送り直してよい |
+
+### 3.27 deposits（依頼者の入金、2026-10-11 追加）
+
+15 §4.3。移行は 0028。RLS を有効にする。treasury への送金のうち、依頼者の参照が付いて確定（finalized）したものを 1 取引 1 行で持つ。同じトランザクションで `requester_ledger` に TOPUP を書くので、残高に二度入ることはない。
+
+| 列 | 型 | 説明 |
+|---|---|---|
+| signature | text PK | 取引 ID。二重計上を防ぐ鍵 |
+| credential_id | text FK → requester_credentials | 参照の持ち主 |
+| asset | text | `USDC` か `SOL` |
+| amount | numeric(20,6) | 残高に入れた額。SOL は lamports を 10^-6 SOL に切り捨て、0 になる端数は記録しない |
+| slot | bigint | 取引のスロット。次に探すときの起点（`until`）を決める |
+| from_pubkey | text NULL | 送り主（取引の最初の署名者） |
+| created_at | timestamptz | 残高に入れた時刻 |
 
 ## 4. 保持期間と削除
 

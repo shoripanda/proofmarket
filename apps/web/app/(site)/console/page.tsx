@@ -1,9 +1,14 @@
-// S-B10 requester console (01 §4.14): key details, balance, recent tasks, webhook deliveries, schedules.
+// S-B10 requester console (01 §4.14): key details, balance, deposits, recent tasks, webhook deliveries, schedules.
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LogoutButton, StopScheduleButton } from "@/components/console-actions";
+import {
+  CopyField,
+  CreateDepositButton,
+  LogoutButton,
+  StopScheduleButton,
+} from "@/components/console-actions";
 import { Section } from "@/components/site";
 import { answerLabel } from "@/lib/answers";
 import { appContext } from "@/lib/context";
@@ -97,6 +102,76 @@ export default async function ConsolePage() {
           {pick(lang, "使える種類: ", "Allowed types: ")}
           {d.key.allowed_task_types.join(pick(lang, "、", ", "))}
         </p>
+      </Section>
+
+      <Section
+        title={pick(lang, "入金", "Deposits")}
+        lead={pick(
+          lang,
+          "USDC か SOL を Devnet で送ると、確定（finalized）してから 1〜2 分で残高に入ります。送金には必ず下の参照（reference）を付けてください。Solana Pay のリンクを使えば自動で付きます。",
+          "Send USDC or SOL on Devnet; it reaches your balance one to two minutes after the transfer is finalized. Every transfer must carry the reference below; the Solana Pay links add it for you.",
+        )}
+      >
+        {d.deposit.reference && d.deposit.addresses && d.deposit.solana_pay ? (
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <CopyField
+                label={pick(lang, "送り先（SOL と USDC のどちらも）", "Recipient (SOL and USDC)")}
+                value={d.deposit.addresses.wallet}
+              />
+              <CopyField label={pick(lang, "参照（reference）", "Reference")} value={d.deposit.reference} />
+              <CopyField
+                label={pick(lang, "Solana Pay: USDC", "Solana Pay: USDC")}
+                value={d.deposit.solana_pay.USDC}
+              />
+              <CopyField
+                label={pick(lang, "Solana Pay: SOL", "Solana Pay: SOL")}
+                value={d.deposit.solana_pay.SOL}
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              {pick(
+                lang,
+                `USDC のミント: ${d.deposit.addresses.usdcMint}。参照の無い送金は自動では残高に入りません。その場合は運営者に取引 ID を伝えてください。`,
+                `USDC mint: ${d.deposit.addresses.usdcMint}. A transfer without the reference is not credited automatically; send the operator its transaction ID.`,
+              )}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-600">
+              {pick(
+                lang,
+                "入金先はまだ発行していません。発行すると、あなた専用の参照が付いた送り先が出ます。",
+                "No deposit address yet. Issuing one gives you a recipient with your own reference.",
+              )}
+            </p>
+            <CreateDepositButton />
+          </div>
+        )}
+        {d.deposit.deposits.length ? (
+          <ul className="mt-4 divide-y divide-slate-200 rounded-2xl border border-slate-200 text-sm">
+            {d.deposit.deposits.map((x) => (
+              <li key={x.signature} className="flex flex-wrap items-center justify-between gap-2 p-3">
+                <span className="font-semibold">
+                  {x.amount} {x.asset}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {jst(x.credited_at, lang)}
+                  {sep}
+                  <a
+                    href={`https://solscan.io/tx/${x.signature}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener"
+                    className="font-mono underline"
+                  >
+                    {x.signature.slice(0, 8)}…
+                  </a>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </Section>
 
       <Section title={pick(lang, "最近の依頼", "Recent requests")}>

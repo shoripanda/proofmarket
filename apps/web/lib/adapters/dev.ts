@@ -108,6 +108,12 @@ export function devChain(): SettlementAdapter {
     async balances() {
       return { operatorLamports: 10n ** 10n, treasuryAmount: 10n ** 9n };
     },
+    depositAddresses() {
+      return { wallet: "DevOperatorWallet", usdcAccount: "DevTreasuryUsdc", usdcMint: "DevUsdcMint" };
+    },
+    async findDeposits() {
+      return [];
+    },
     async fundTask(i: FundTaskInput, onSigned) {
       const key = k(i.taskIdHash);
       const addr = `DevTask${key.slice(0, 36)}`;

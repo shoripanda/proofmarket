@@ -7,8 +7,22 @@ import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import {
+  createAssociatedTokenAccountIdempotent,
+  createTransferCheckedInstruction,
+  getAssociatedTokenAddressSync,
+  mintTo,
+  NATIVE_MINT,
+} from "@solana/spl-token";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  sendAndConfirmTransaction,
+  Transaction,
+  type TransactionInstruction,
+} from "@solana/web3.js";
 import bs58 from "bs58";
 import { describe, expect, it } from "vitest";
 import { createAnchorAdapter } from "../src/anchor-adapter.ts";
@@ -206,4 +220,62 @@ describe.skipIf(!enabled)("anchor adapter on localnet", () => {
     ).toMatchObject({ kind: "confirmed" });
     expect(await wsol(wsolTreasury)).toBe(beforeRefund + 2n * lamports);
   });
+
+  it("deposits (15 §4.3): finalized transfers to the operator that carry the reference, oldest first", async () => {
+    // devnet-setup --own-mint made admin.json the mint authority.
+    const admin = Keypair.fromSecretKey(
+      Uint8Array.from(
+        JSON.parse(readFileSync(join(homedir(), ".config", "proofmarket", "admin.json"), "utf8")) as number[],
+      ),
+    );
+    const operator = Keypair.fromSecretKey(bs58.decode(env.OPERATOR_SECRET_KEY ?? ""));
+    const payer = Keypair.generate();
+    await conn.confirmTransaction(await conn.requestAirdrop(payer.publicKey, 2_000_000_000), "confirmed");
+    const payerAta = await createAssociatedTokenAccountIdempotent(conn, payer, mint, payer.publicKey);
+    await mintTo(conn, admin, mint, payerAta, admin, 3_000_000n);
+
+    const a = adapter.depositAddresses();
+    expect(a).toEqual({
+      wallet: operator.publicKey.toBase58(),
+      usdcAccount: getAssociatedTokenAddressSync(mint, operator.publicKey).toBase58(),
+      usdcMint: mint.toBase58(),
+    });
+    const reference = Keypair.generate().publicKey;
+    const withRef = (ix: TransactionInstruction) => {
+      ix.keys.push({ pubkey: reference, isSigner: false, isWritable: false });
+      return ix;
+    };
+    const send = (ix: TransactionInstruction, commitment: "confirmed" | "finalized") =>
+      sendAndConfirmTransaction(conn, new Transaction().add(ix), [payer], {
+        commitment,
+        preflightCommitment: "confirmed",
+      });
+    const toOperator = (lamports: number) =>
+      SystemProgram.transfer({ fromPubkey: payer.publicKey, toPubkey: operator.publicKey, lamports });
+    const s1 = await send(withRef(toOperator(100_000_000)), "confirmed");
+    const s2 = await send(
+      withRef(
+        createTransferCheckedInstruction(
+          payerAta,
+          mint,
+          new PublicKey(a.usdcAccount),
+          payer.publicKey,
+          1_250_000n,
+          6,
+        ),
+      ),
+      "confirmed",
+    );
+    // Without the reference: real money for the operator, but not attributable, so not found.
+    await send(toOperator(50_000_000), "finalized");
+
+    const found = await adapter.findDeposits(reference.toBase58());
+    expect(found.map((d) => [d.signature, d.asset, d.amount, d.from])).toEqual([
+      [s1, "SOL", 100_000_000n, payer.publicKey.toBase58()],
+      [s2, "USDC", 1_250_000n, payer.publicKey.toBase58()],
+    ]);
+    expect(found[0]?.slot).toBeLessThanOrEqual(found[1]?.slot ?? 0);
+    expect((await adapter.findDeposits(reference.toBase58(), s1)).map((d) => d.signature)).toEqual([s2]);
+    expect(await adapter.findDeposits(reference.toBase58(), s2)).toEqual([]);
+  }, 120_000);
 });

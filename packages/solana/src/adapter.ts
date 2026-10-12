@@ -4,6 +4,7 @@
 
 import type { Outcome } from "@proofmarket/core";
 import { createAnchorAdapter } from "./anchor-adapter.ts";
+import type { ChainDeposit, DepositAddresses } from "./deposits.ts";
 
 export type OnChainTaskStatus = "Funded" | "Finalized" | "Settled" | "Refunded";
 export type OnChainOutcome = "None" | "Verified" | "NoConsensus" | "InsufficientWitnesses";
@@ -86,6 +87,11 @@ export interface SettlementAdapter {
 
   /** For alerting (06 §5.2): operator SOL and treasury token balances. */
   balances(): Promise<{ operatorLamports: bigint; treasuryAmount: bigint }>;
+
+  /** 15 §4.3: where requesters send deposits (the operator wallet and its USDC account). */
+  depositAddresses(): DepositAddresses;
+  /** 15 §4.3: finalized transfers to the treasury carrying `reference`, oldest first, newer than `until`. */
+  findDeposits(reference: string, until?: string): Promise<ChainDeposit[]>;
 }
 
 /** Real implementation over @anchor-lang/core + web3.js v1 (anchor-adapter.ts). */
