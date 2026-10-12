@@ -162,3 +162,75 @@ curl -X POST https://<app>/v1/admin/flags -H "authorization: Bearer $ADMIN_TOKEN
 curl -X POST https://<app>/v1/admin/flags -H "authorization: Bearer $ADMIN_TOKEN" \
   -H "content-type: application/json" -d '{"key":"settlement_enabled","value":false}'
 ```
+
+## 9. プログラムを v1.2 に上げて SOL の報酬を開く（Devnet、2026-10-12 追加）
+
+15 §3 の SOL 対応は、Devnet のプログラムを v1.2 に差し替えてから旗を立てる。順番を守れば、どの段でも本番の USDC の依頼は止まらない。
+
+1. main で `cargo build-sbf --tools-version v1.57 --manifest-path programs/proofmarket/Cargo.toml` と `cargo test -p proofmarket`（23 本）を通す
+2. `solana program deploy target/deploy/proofmarket.so --program-id ~/.config/proofmarket/proofmarket-program-keypair.json --keypair ~/.config/proofmarket/admin.json -u devnet`。プログラム ID は変わらない。admin に 2.5 SOL ほど要る（配置中のバッファぶん。終われば戻る）
+3. `pnpm --filter @proofmarket/scripts run run devnet-setup.ts --url https://api.devnet.solana.com --allow-wsol`。wSOL を `AllowedMint` に登録する（2 回目以降は「already allowed」と出て何もしない）
+4. operator の wSOL 口座は、最初の SOL の依頼のときにサーバーが作る。operator の SOL 残高が、報酬の合計＋口座のレント（約 0.002 SOL）を上回っているかを見る
+5. Vercel の Production に `SOL_ENABLED=true` を入れて再デプロイする。`/v1/health/ready` が 200 のままなことを確かめる
+6. 運営者の鍵で 0.001 SOL × 1 人の依頼を 1 件出し、証人の財布に SOL が届くことを Solscan で確かめる。届かなければ `SOL_ENABLED` を外す（USDC の依頼には影響しない）
+
+v1.2 より前のサーバーは v1.2 のプログラムでそのまま動くので、2 と 5 の間が空いても困らない（15 §3.1）。
+
+## 10. メインネットへ切り替える（手順だけ。法務の確認が済むまで実行しない）
+
+15 §4 の設計を手順に直したもの。実行の条件は `legal-checklist.md` §1・§3・§7 の確認が終わり、D-05（資金の預かり）の結論が文書になっていること。それまでは、サーバーが起動時の門（`apps/web/lib/cluster.ts`）で止まる。
+
+### 10.1 用意するもの
+
+| もの | 中身 |
+|---|---|
+| 鍵 | メインネット用の admin・operator・verifier を新しく作り、`~/.config/proofmarket/mainnet/` に置く。Devnet の鍵と同じ公開鍵だと門で止まる |
+| admin の置き場 | ハードウェア財布か Squads のマルチシグ。サーバーには置かない。プログラムの更新権限も同じ鍵にする |
+| SOL | admin に 4.5 SOL（配置に約 2.03 SOL ＋ 配置中のバッファ）、operator に 1 SOL（手数料とレント） |
+| USDC | treasury に最初の支払い見込みぶん。上限（15 §6）は決めてから入れる |
+| RPC | 有料の RPC（Helius か Triton）のメインネット URL。公開 RPC は上限が低く、tick が毎分呼ぶには足りない |
+| 法務の文書 | 確認結果を `docs/legal/<日付>-signoff.md` に置く。`LEGAL_SIGNOFF` にその場所を入れる |
+| 監査 | v1.2 の差分を外部の目で見てもらった記録。これが無いうちは実行しない |
+
+### 10.2 プログラムを置く
+
+```bash
+solana-keygen new -o ~/.config/proofmarket/mainnet/program-keypair.json   # 新しいプログラム ID
+cargo build-sbf --tools-version v1.57 --manifest-path programs/proofmarket/Cargo.toml
+cargo test -p proofmarket
+solana program deploy target/deploy/proofmarket.so \
+  --program-id ~/.config/proofmarket/mainnet/program-keypair.json \
+  --keypair <admin のハードウェア財布> -u mainnet-beta
+```
+
+続けて `initialize_config`（operator・verifier・`bounty_mint` = `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`）と `add_mint`（wSOL）を admin で実行する。`devnet-setup.ts` はメインネットを拒むように書いてあるので、そのまま使えない。実行の日に `mainnet-setup.ts` を足し、genesis hash が `5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d` のときだけ、かつ `--i-have-legal-signoff <文書の場所>` を受けたときだけ動くようにする。配置の直後に実行し、Config の admin・operator・verifier が自分の鍵かを確かめる（横取りされていたら新しい ID で作り直す。06 §3）。
+
+### 10.3 サーバーの設定
+
+Vercel の Production で次を入れ替える。ほかの変数は 5 節のまま。
+
+| 変数 | 値 |
+|---|---|
+| `SOLANA_CLUSTER` | `mainnet-beta` |
+| `SOLANA_RPC_URL` | 有料 RPC のメインネット URL |
+| `SOLANA_EXPECTED_GENESIS_HASH` | `5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d` |
+| `PROGRAM_ID` | 10.2 で作った ID |
+| `BOUNTY_MINT` | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` |
+| `OPERATOR_SECRET_KEY`、`VERIFIER_SECRET_KEY` | メインネット用の鍵 |
+| `REAL_FUNDS_ENABLED` | `true` |
+| `LEGAL_SIGNOFF` | 法務の文書の場所 |
+
+1 つでも欠けると、最初のリクエストで門が止めてサーバーは応答しない（REQ-X-P-105）。Devnet の値が 1 つでも残っていても同じ。
+
+### 10.4 切り替えの日にやること
+
+1. 試験用の残高（`/join` の 5 USDC）を配る処理を止める。メインネットでは配らない
+2. 10.2・10.3 を済ませ、`/v1/health/ready` が 200 を返すのを見る
+3. 運営者自身が 0.10 USDC × 1 人と 0.001 SOL × 1 人の依頼を 1 件ずつ出し、依頼から支払いまでを一周して Solscan で確かめる
+4. 料金ページ・利用規約・トップの「試験運用」「テスト用 USDC」の文言を直す（`apps/web/app/(site)/pricing`・`/legal`・`page.tsx`）
+5. 08 §5 の警告のしきい値（operator の SOL 残高）をメインネット用に上げる
+6. 入金（15 §4.3）は Devnet と同じ仕組みで動く。`/console` の案内文から「Devnet」を消す
+
+### 10.5 戻し方
+
+`SOLANA_CLUSTER` を `devnet` に戻し、残りの変数を `~/.config/proofmarket/env.devnet` の値に戻して再デプロイする。メインネットのプログラムと treasury に残ったお金は admin が回収する。DB の残高（`requester_ledger`）はクラスタを区別しないので、戻す前に `deposits` と TOPUP を照らして、メインネットで入った分を手で精算する。
