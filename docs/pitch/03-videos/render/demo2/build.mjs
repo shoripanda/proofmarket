@@ -135,7 +135,6 @@ const HELPERS = ({ W, H, hide }) => {
   const body = document.body;
   body.style.transformOrigin = "0 0";
   body.style.transition = "transform 1000ms cubic-bezier(.4,0,.2,1)";
-  body.style.willChange = "transform";
   let cam = { s: 1, x: 0, y: 0 };
   window.pmCam = (el, { pad = 40, max = 2, align = "center" } = {}) => {
     const r = el.getBoundingClientRect();
@@ -148,12 +147,90 @@ const HELPERS = ({ W, H, hide }) => {
     const ty = align === "top" ? pad - s * y : H / 2 - s * (y + h / 2);
     cam = { s, x: tx, y: ty };
     body.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    if (window.pmUnfocus) window.pmUnfocus();
   };
   // Panels tagged data-pm (the agent, the phone) are faded out while the camera is on the other one, so
   // nothing half-visible with cut-off text remains at the edge of the frame.
   window.pmShow = (sel) => {
     for (const el of document.querySelectorAll("[data-pm]"))
       el.style.opacity = !sel || el.matches(sel) ? "1" : "0";
+  };
+  // Focus: zoom onto the blocks in use and wash out everything else, so nothing half-cut stays readable at the
+  // frame edge. The veil sits inside <body>, so it moves and scales with the camera. Only its opacity animates:
+  // animating the size of its huge shadow repainted the whole 4K frame and halved the captured frame rate.
+  const veil = document.createElement("div");
+  veil.style.cssText =
+    "position:absolute;left:0;top:0;width:0;height:0;border-radius:20px;pointer-events:none;z-index:2147483000;opacity:0;" +
+    "box-shadow:0 0 0 4px rgba(15,118,110,.85),0 0 0 100000px rgba(241,245,249,.93);" +
+    "transition:opacity 250ms;will-change:opacity";
+  body.append(veil);
+  const phoneBox = () => document.querySelector('[class*="border-8"] .overflow-y-auto');
+  /** The card (a direct child of the phone's scroll box) that holds `text`. */
+  window.pmCard = (text) => {
+    const box = phoneBox();
+    const el = window.pmFind(text, document.querySelector('[class*="border-8"]'));
+    if (!el || !box) return el;
+    let c = el;
+    while (c.parentElement && c.parentElement !== box) c = c.parentElement;
+    return c.parentElement === box ? c : el;
+  };
+  window.pmFocus = async (els, { pad = 50, max = 2.6, ring = 12 } = {}) => {
+    els = els.filter(Boolean);
+    if (!els.length) return false;
+    // Phone blocks: scroll the phone so all of them are inside its screen first.
+    const box = phoneBox();
+    if (box && els.every((e) => box.contains(e))) {
+      const br = box.getBoundingClientRect();
+      const top = Math.min(...els.map((e) => e.getBoundingClientRect().top));
+      const bottom = Math.max(...els.map((e) => e.getBoundingClientRect().bottom));
+      const k = br.height / (box.clientHeight || br.height); // screen px per box px
+      const want = box.scrollTop + (top - br.top) / k - 12;
+      const fits = (bottom - top) / k + 24 <= box.clientHeight;
+      const target =
+        fits && bottom <= br.bottom - 12 && top >= br.top + 12 ? box.scrollTop : Math.max(0, want);
+      if (Math.abs(target - box.scrollTop) > 1) {
+        box.style.scrollBehavior = "smooth";
+        box.scrollTop = target;
+        // A long smooth scroll outlasts any fixed wait: measure only once scrollTop has stopped moving.
+        let last = -1;
+        let still = 0;
+        for (let i = 0; i < 60 && still < 4; i++) {
+          await new Promise((r) => setTimeout(r, 50));
+          still = box.scrollTop === last ? still + 1 : 0;
+          last = box.scrollTop;
+        }
+      }
+    }
+    const rs = els.map((e) => e.getBoundingClientRect());
+    const x0 = (Math.min(...rs.map((r) => r.left)) - cam.x) / cam.s;
+    const y0 = (Math.min(...rs.map((r) => r.top)) - cam.y) / cam.s;
+    const x1 = (Math.max(...rs.map((r) => r.right)) - cam.x) / cam.s;
+    const y1 = (Math.max(...rs.map((r) => r.bottom)) - cam.y) / cam.s;
+    const w = x1 - x0;
+    const h = y1 - y0;
+    const s = Math.min((W - 2 * pad) / (w + 2 * ring), (H - 2 * pad) / (h + 2 * ring), max);
+    const tx = W / 2 - s * (x0 + w / 2);
+    const ty = H / 2 - s * (y0 + h / 2);
+    cam = { s, x: tx, y: ty };
+    body.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    const shown = veil.style.opacity === "1";
+    veil.style.opacity = "0";
+    const place = () =>
+      Object.assign(veil.style, {
+        left: `${x0 - ring}px`,
+        top: `${y0 - ring}px`,
+        width: `${w + 2 * ring}px`,
+        height: `${h + 2 * ring}px`,
+      });
+    if (shown) setTimeout(place, 260);
+    else place();
+    setTimeout(() => {
+      veil.style.opacity = "1";
+    }, 1000);
+    return true;
+  };
+  window.pmUnfocus = () => {
+    veil.style.opacity = "0";
   };
   const cur = document.createElement("div");
   cur.id = "pm-cursor";
@@ -217,11 +294,14 @@ async function recordScene(name, url, { hide = [], prepare, run, viewport = { wi
   await page.evaluate(HELPERS, { W: viewport.width, H: viewport.height, hide });
   const frames = []; // { file, at } at = Date.now() when the frame arrived
   const cdp = await ctx.newCDPSession(page);
+  const writes = [];
   cdp.on("Page.screencastFrame", (f) => {
-    const file = `${dir}/f${String(frames.length).padStart(6, "0")}.png`;
-    fs.writeFileSync(file, Buffer.from(f.data, "base64"));
-    frames.push({ file, at: Date.now() });
+    // Ack first: Chrome waits for it before sending the next frame, and a synchronous 4K PNG write here
+    // halved the frame rate during camera moves.
     cdp.send("Page.screencastFrameAck", { sessionId: f.sessionId }).catch(() => {});
+    const file = `${dir}/f${String(frames.length).padStart(6, "0")}.png`;
+    frames.push({ file, at: Date.now() });
+    writes.push(fs.promises.writeFile(file, Buffer.from(f.data, "base64")));
   });
   await cdp.send("Page.startScreencast", {
     format: "png",
@@ -265,7 +345,23 @@ async function recordScene(name, url, { hide = [], prepare, run, viewport = { wi
       }
       await wait(1100);
     },
-    async tap(find) {
+    /** Zoom onto several blocks at once (functions returning elements) and veil the rest. */
+    async focus(finds, opts) {
+      const ok = await page.evaluate(
+        async ([fs, o]) =>
+          window.pmFocus(
+            fs.map((f) => new Function(`return (${f})`)()()),
+            o,
+          ),
+        [finds.map((f) => f.toString()), opts],
+      );
+      if (!ok) {
+        console.error(`focus targets not found in ${name}: ${finds.join(" | ")}`);
+        await page.screenshot({ path: `${TMP}/miss-focus-${name}-${Date.now()}.png` });
+      }
+      await wait(1150);
+    },
+    async tap(find, { after = 500 } = {}) {
       const ok = await page.evaluate((f) => {
         const el = new Function(`return (${f})`)()();
         if (!el) return false;
@@ -282,7 +378,7 @@ async function recordScene(name, url, { hide = [], prepare, run, viewport = { wi
         window.pmRipple();
         (el.closest("button,a,[role=button]") ?? el).click();
       }, find.toString());
-      await wait(500);
+      await wait(after);
     },
   };
   await run(api);
@@ -291,6 +387,7 @@ async function recordScene(name, url, { hide = [], prepare, run, viewport = { wi
   await cdp.send("Page.stopScreencast").catch(() => {});
   await page.waitForTimeout(300);
   await ctx.close();
+  await Promise.all(writes);
   // Screencast sends a frame only when the page changes. Resample to exact 30 fps: output frame k shows the last
   // screencast frame that had arrived by t0 + k/30 (hard links, no copies). The concat demuxer with per-image
   // durations stretched the segment by seconds and put the narration out of step.
@@ -359,8 +456,6 @@ segs.push(stillSegment("hook", hookLen));
 clock += hookLen;
 
 // ---------- the walkthrough on /en/try ----------
-const IN_PHONE = (t) =>
-  `() => { const ph = document.querySelector('[class*="border-8"]'); return window.pmFind(${JSON.stringify(t)}, ph); }`;
 const fn = (body) => new Function(`return ${body}`)();
 segs.push(
   await recordScene("try", `${BASE}/en/try`, {
@@ -405,6 +500,9 @@ segs.push(
         const phoneWrap = ph.parentElement?.textContent.trim().startsWith("Worker's phone")
           ? ph.parentElement
           : ph;
+        // The label above the phone ends up cut at the top edge of the frame; the captions already say it.
+        for (const p of document.querySelectorAll("p"))
+          if (p.textContent.trim() === "Worker's phone") p.style.visibility = "hidden";
         for (const [el, name] of [
           [agent, "agent"],
           [phoneWrap, "phone"],
@@ -422,94 +520,99 @@ segs.push(
           const p = [...document.querySelectorAll("p")].find((e) => e.textContent.startsWith("Demo only"));
           if (p) p.parentElement.style.display = "none";
         });
-      const scrollPhone = (to) =>
-        x.page.evaluate((t) => {
-          const box = document.querySelector('[class*="border-8"] .overflow-y-auto');
-          if (!box) return;
-          box.style.scrollBehavior = "smooth";
-          box.scrollTop = t === "bottom" ? box.scrollHeight : 0;
-        }, to);
-
-      await x.cam(fn(agent), { max: 1.75, pad: 30, show: "agent" });
-      await x.say("a1");
-      await x.wait(8200);
-      await x.tap(fn(`() => window.pmFind("Send the request")`));
-      await x.done();
-      await x.say("a2");
-      await x.wait(600);
-      await x.cam(
-        fn(
-          `() => { const a = [...document.querySelectorAll("section")].filter((s) => s.textContent.includes("AI agent (the requester)")).at(-1); const q = window.pmFind("Transcribe the opening-hours notice", a); return q?.closest("div.rounded-2xl") ?? q; }`,
-        ),
-        { max: 1.9, pad: 40, show: "agent" },
-      );
-      await x.wait(5200);
-      // Both panels: the escrow is funded on the left, the task has just arrived on the phone.
-      await x.cam(fn(agent), { max: 1.75, pad: 30, show: "both" });
-      await x.done();
-
-      await x.cam(fn(phone), { max: 1.6, pad: 24, show: "phone" });
-      await x.say("w1");
-      await x.wait(2200);
-      await x.tap(
-        fn(
-          `() => { const ph = document.querySelector('[class*="border-8"]'); return [...ph.querySelectorAll("button,a")].find((e) => e.textContent.includes("0.30")) ?? window.pmFind("Transcribe", ph); }`,
-        ),
-      );
-      await x.wait(1300);
-      await scrollPhone("bottom");
-      await x.wait(500);
-      await x.tap(fn(IN_PHONE("Claim this task")));
-      await x.done();
-
-      await x.say("w2");
-      await x.wait(500);
-      await scrollPhone("bottom");
-      await x.tap(fn(IN_PHONE("I'm here")));
-      await x.wait(900);
-      await scrollPhone("bottom");
-      await x.wait(500);
-      await x.tap(fn(IN_PHONE("Take the photo")));
-      await hidePick();
-      await x.done();
-
-      await hidePick();
-      await x.say("w3");
-      await scrollPhone("bottom");
-      await x.wait(700);
+      // Agent side: blocks inside the agent panel.
+      const A = (t) =>
+        `() => { const a = [...document.querySelectorAll("section")].filter((s) => s.textContent.includes("AI agent (the requester)")).at(-1); const e = window.pmFind(${JSON.stringify(t)}, a); return e?.closest("div[class*='rounded']") ?? e; }`;
+      const C = (t) => `() => window.pmCard(${JSON.stringify(t)})`;
+      const BTN = (label) =>
+        `() => { const ph = document.querySelector('[class*="border-8"]'); return [...ph.querySelectorAll("button,a")].find((e) => e.textContent.trim().startsWith(${JSON.stringify(label)})); }`;
+      const TEXTAREA = `() => document.querySelector('[class*="border-8"] textarea')`;
+      const SUBMIT = `() => { const ph = document.querySelector('[class*="border-8"]'); return [...ph.querySelectorAll("button")].find((e) => e.textContent.trim() === "Submit"); }`;
+      const LABEL = `() => window.pmFind("Answer in text", document.querySelector('[class*="border-8"]'))`;
       const typeAnswer = async (text) => {
-        const box = fn(`() => document.querySelector('[class*="border-8"] textarea')`);
-        await x.tap(box);
+        await x.focus([fn(LABEL), fn(TEXTAREA), fn(SUBMIT)], { max: 2.4 });
+        await x.tap(fn(TEXTAREA));
         await x.page.locator('[class*="border-8"] textarea').focus();
         for (const [i, line] of text.split("\n").entries()) {
           if (i) await x.page.keyboard.press("Enter");
           await x.page.keyboard.type(line, { delay: 38 });
         }
+        await x.focus([fn(LABEL), fn(TEXTAREA), fn(SUBMIT)], { max: 2.4 });
+        await x.tap(fn(SUBMIT), { after: 0 });
+        // Pull back to the whole phone while it switches to the verdict screen; the next focus zooms in again.
+        await x.cam(fn(phone), { max: 1.6, pad: 24, show: "phone" });
       };
-      await typeAnswer("Open 11 to 8 on weekdays, until 6 on Saturdays, closed Sundays.");
-      await scrollPhone("bottom");
-      await x.wait(500);
+
+      // 1 · the agent asks
+      await x.cam(fn(agent), { max: 1.75, pad: 30, show: "agent" });
+      await x.say("a1");
+      await x.wait(1200);
+      await x.focus([fn(A("until what time is it open")), fn(A("Agent's reasoning"))], { max: 2.2 });
+      await x.wait(3800);
+      await x.focus([fn(A("Shall I go ahead")), fn(`() => window.pmFind("Send the request")`)], { max: 2.2 });
+      await x.wait(1200);
+      await x.tap(fn(`() => window.pmFind("Send the request")`));
+      await x.done();
+      // 2 · escrow
+      await x.say("a2");
+      await x.wait(600);
+      await x.focus([fn(A("Transcribe the opening-hours notice"))], { max: 2.2 });
+      await x.wait(4200);
+      await x.focus([fn(A("get_reality_verification"))], { max: 2.2 });
+      await x.wait(1800);
+      // Both panels: the escrow is funded on the left, the task has just arrived on the phone.
+      await x.cam(fn(agent), { max: 1.75, pad: 30, show: "both" });
+      await x.done();
+
+      // 3 · a person accepts
+      await x.cam(fn(phone), { max: 1.6, pad: 24, show: "phone" });
+      await x.say("w1");
+      await x.focus([fn(C("new task arrived")), fn(C("0.30 USDC"))]);
+      await x.wait(600);
       await x.tap(
         fn(
-          `() => { const ph = document.querySelector('[class*="border-8"]'); return [...ph.querySelectorAll("button")].find((e) => e.textContent.trim() === "Submit"); }`,
+          `() => { const ph = document.querySelector('[class*="border-8"]'); return [...ph.querySelectorAll("button,a")].find((e) => e.textContent.includes("0.30")) ?? window.pmFind("Transcribe", ph); }`,
         ),
       );
+      await x.wait(600);
+      await x.focus([fn(C("What to check")), fn(C("Bounty"))]);
+      await x.wait(1600);
+      await x.focus([fn(C("Before you shoot")), fn(BTN("Claim this task"))]);
+      await x.wait(500);
+      await x.tap(fn(BTN("Claim this task")));
       await x.done();
 
+      await x.say("w2");
+      await x.wait(300);
+      await x.focus([fn(C("Time left on your claim")), fn(BTN("I'm here"))]);
+      await x.tap(fn(BTN("I'm here")));
+      await x.wait(700);
+      await x.focus([fn(C("Capture window")), fn(BTN("Take the photo"))]);
+      await x.tap(fn(BTN("Take the photo")));
+      await hidePick();
+      await x.done();
+
+      // the first answer: a summary
+      await hidePick();
+      await x.say("w3");
+      await typeAnswer("Open 11 to 8 on weekdays, until 6 on Saturdays, closed Sundays.");
+      await x.done();
+
+      // 4 · checks, then the AI review sends it back
       await x.say("w4");
+      await x.focus([fn(C("Checking the submission"))]);
       await x.done();
       await x.say("w5");
-      await x.wait(LEN.w5 * 1000 - 600);
-      await x.tap(fn(IN_PHONE("Retake")));
+      await x.focus([fn(C("Not accepted")), fn(BTN("Retake"))]);
+      await x.wait(LEN.w5 * 1000 - 1900);
+      await x.tap(fn(BTN("Retake")));
       await x.done();
 
+      // fixed and resubmitted
       await x.say("w6");
-      await x.wait(300);
-      await scrollPhone("bottom");
-      await x.tap(fn(IN_PHONE("Take the photo")));
+      await x.focus([fn(C("Capture window")), fn(BTN("Take the photo"))]);
+      await x.tap(fn(BTN("Take the photo")));
       await hidePick();
-      await scrollPhone("bottom");
-      await x.wait(500);
       await typeAnswer(
         [
           "OPENING HOURS",
@@ -519,28 +622,19 @@ segs.push(
           "Last order 19:30",
         ].join("\n"),
       );
-      await scrollPhone("bottom");
-      await x.wait(400);
-      await x.tap(
-        fn(
-          `() => { const ph = document.querySelector('[class*="border-8"]'); return [...ph.querySelectorAll("button")].find((e) => e.textContent.trim() === "Submit"); }`,
-        ),
-      );
-      // w7 runs over the checks, so there is no silence while they tick through.
+      // 5 · w7 runs over the checks, so there is no silence while they tick through.
       await x.say("w7");
+      await x.focus([fn(C("Checking the submission"))]);
       await x.page.waitForFunction(() => document.body.textContent.includes("Received"), null, {
         timeout: 30_000,
       });
-      await x.cam(fn(phone), { max: 1.6, pad: 24, show: "phone" });
+      await x.focus([fn(C("Received"))]);
       await x.done();
 
+      // 6 · the agent gets the verified answer
       await x.say("a3");
-      await x.cam(
-        fn(
-          `() => { const e = window.pmFind("Someone just checked on the spot"); return e?.closest("div.rounded-2xl") ?? e?.parentElement; }`,
-        ),
-        { max: 1.9, pad: 40, show: "agent" },
-      );
+      await x.page.evaluate(() => window.pmShow('[data-pm="agent"]'));
+      await x.focus([fn(A("Someone just checked on the spot"))], { max: 2.2 });
       await x.done(0.6);
     },
   }),
