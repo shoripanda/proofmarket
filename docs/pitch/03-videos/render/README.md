@@ -25,6 +25,47 @@ curl -L -o voices-v1.0.bin  https://github.com/thewh1teagle/kokoro-onnx/releases
 
 字幕はページの中に固定の帯として描く（録画の前に `<div id="pm-sub">` を足し、画面の文言を見張って行を切り替える）。ffmpeg 9 では画像の overlay が 1 コマ目にしか効かず、字幕が消えたので、この方式にした。語りの開始時刻も同じ見張りで決める。画面が語りより先に進んだときは、前の行を言い終えるまで次の行を待たせる。`MARKERS` の文言は `components/try-experience.tsx` の段階ラベルと「attempt 2」の表示に対応している。
 
+## 技術デモ v2（2026-10-12、提出版の差し替え）
+
+v1 は `/en/try` の自動再生をそのまま撮ったので、画面が小さく、どこを押したのかも見えなかった。字幕の帯も電話の画面の下端に重なっていた。オーナーの指摘を受けて `demo2/` で作り直した。約 145 秒。
+
+- 画面は上の 1920×900、字幕は下の 180px の帯に分けた。帯は ffmpeg で後から重ねるので、操作の上に字幕が載ることはない。帯には段階の札（「3 · A person acts」など）も出す
+- `/en/try` は「Stop and take over」で手動にし、スクリプトが 1 回ずつ押す。押す前に丸いカーソルを動かし、押した所に波紋を出す。答えは選択肢ではなく、文字を 1 字ずつ打ち込む
+- カメラは body の transform で、いま使っている部分（エージェントの欄、電話、結果）へ寄る。デモ用の注記（「In production…」、架空の URL、Play again）は隠す
+- 後半は本番の実物を見せる。公開の結果ページ（`/en/r/ver_01M42M6WXZ93MFR3YDQZ7JXEHG`）で「Compare with the record on Solana」を実際に押し、5 項目が match になるところを撮る。続けて、その依頼の settle の取引（`34sEPAZg…`）を Solana Explorer の Summary・Logs（FinalizeVerification と Settle）・Tokens（作業者に +0.5 USDC）の 3 枚で見せる。Explorer は中の箱でスクロールするのでカメラで追えず、要素ごとのスクリーンショットにした
+- 語りは Kokoro `af_heart`。edge-tts は 2026-10-12 に 403 で使えなかった
+
+```bash
+# 語り（narration.txt の 1 行 = 「id<TAB>文」）。tts/ の準備は上と同じ
+cd docs/pitch/03-videos/render/demo2 && mkdir -p voice
+while IFS=$'\t' read -r id text; do printf '%s' "$text" > /tmp/l.txt; ../tts/.venv/bin/python ../tts/say.py af_heart voice/$id.wav /tmp/l.txt 1.0; done < narration.txt
+# 録画と組み立て（本番 https://proofmarket.fun を使う。PM_BASE で差し替え可）
+PLAYWRIGHT=$(pwd)/../../../../../node_modules/.pnpm/playwright@1.63.0/node_modules/playwright node build.mjs ~/Desktop/ProofMarket-demo-v2.mp4
+```
+
+はまりどころ:
+- 文字で探すと、ボタンより先に「“I'm here” を押してください」のような説明文が当たる。ラベルがその文字で始まるボタンを優先する
+- 隠す対象を「その文字を含む要素」にすると、外側の箱ごと消えて画面が真っ白になった。いちばん内側の要素だけを隠す
+- 結果ページの照合ボタンは、外側の div を click しても動かない。`closest("button")` で押す
+
+### 技術デモ v4（2026-10-12 夜）: 4K
+
+Playwright の録画（`recordVideo`）は VP8・約 0.7 Mbps に固定されていて、録った時点で小さな字がにじんでいた。YouTube の 1080p 版はさらに 0.25〜0.41 Mbps まで落ちる。そこで録画の仕組みを替えた。
+
+- 録画は CDP の `Page.startScreencast`（PNG、可逆）。ブラウザを `--force-device-scale-factor=2` で起動しないと、コマは 1920×900 のまま届く。届くのはページが変わったときだけなので、出力の 1/30 秒ごとに「その時刻までに届いた最後のコマ」をハードリンクで連番にし、30fps の動画にする
+- 帯・カード・Explorer の画像も 2 倍で撮り、合成は 3840×2160。倍率は `DEMO_SCALE`（既定 2）
+- 一時ファイルは `/try` の場面だけで PNG が約 1,100 枚（数百 MB）。描画の前に空きを確かめる
+
+### 技術デモ v5（2026-10-13）: 操作のたびに寄る
+
+オーナーの指摘（電話の文字が見切れる。操作はなるべく寄って見せる）を受けて、カメラの使い方を変えた。
+
+- 電話の上の「Worker's phone」の札は、フレームの上端で半分に切れていたので隠した
+- 操作のたびに `x.focus([...])` で、使っているカード（電話の中のスクロール枠の直接の子）とボタンだけに寄る。電話の中は先にスクロールして、寄る範囲がすべて画面に収まるようにする。滑らかなスクロールは長いと 450 ミリ秒では終わらないので、`scrollTop` が止まるまで待ってから測る
+- 寄った範囲の外は薄い覆い（大きな box-shadow）で消す。覆いを位置と大きさで動かすと 4K の画面全体を毎コマ描き直し、録画が 24 から 15 コマ/秒に落ちた。そこで「消す → 動かす → カメラが止まってから出す」の順にし、動かすのは不透明度だけにした
+- 「Submit」を押した直後は、画面が判定に切り替わる間に電話全体まで引き、そのあと判定のカードへ寄り直す。引かずに待つと、寄ったままの枠に切り替え途中の画面が映った
+- コマの書き込みは受け取りの返事（ack）のあとに非同期で行う。同期で書くと、ack が遅れて Chrome が次のコマを送らない
+
 ## ピッチ
 
 `pitch/narration.txt` の 1 行が 1 枚のスライド（`pitch/slide.html?k=N`）になる。
@@ -62,6 +103,36 @@ node render.mjs ~/Desktop/ProofMarket-pitch-v2.mp4 music.mp3
 - 仮の写真の枠はやめ、実物の写真 `assets/shutter.jpg` を使う。出所は Wikimedia Commons「本日休ませて頂きます (11512624976).jpg」（Rumi Yoshizawa、CC BY 2.0）。`shots.mjs` は撮らないので、`curl` で取って `sips -Z 1600` で縮めて置く。動画内とYouTube の説明文にクレジットを書く
 - 語りは Kokoro `af_heart`、速度 1.0（0.95 だと 125 秒で 2 分を超えた）。`render.mjs` の行間 `GAP` は 0.4 秒、末尾 `TAIL` は 2 秒
 - 市場規模の数字は Straits Research と Fortune Business Insights の 2025 年推計（ともに 23 億ドル台）。「1,000 倍」は測った数ではないので、画面の脚注で作業仮説だと断っている
+
+### v4（2026-10-12）: 製品が主語、提出フォームの設問に沿う
+
+オーナーの指示（自分のことは書かず製品のことを先に。Colosseum のフォームに書いた必要事項を載せる。東京だけ・試行段階といった断りは入れない。日本で作る意味は書いてよい）を受けて、同じ `pitch2/` の仕組みのまま台本と 15 場面を書き直した。104.9 秒。
+
+- 創業者の場面を外し、代わりにフォームの設問に 1 場面ずつ当てた。誰のためか（claude.ai・ChatGPT・Claude Code・Codex CLI・自前のコード）、なぜ今か（道具呼び出しと支払いは揃ったが、現実世界へ届く信用できる経路が無かった）、収益（1 人あたりの報酬 × 人数 ＋ 手数料）、Solana の使い方と技術の積み（Anchor・Next.js・Supabase・Privy・MCP+OAuth 2.1・Claude・x402 v2、プログラム ID）
+- 「Proof anyone can check」の場面は本番の証明ページの実物。`shots2.mjs` が公開結果ページで「Compare with the record on Solana」を押し、5 項目 match の箱と「Verified by a person」の箱を撮る。開発者ページの「Connecting from each AI」も撮り、Claude Code の列を `crop=980:1000:420:1000` で切り出して使う
+- 「今日動いているもの」は語らず画面の札だけで出す（17 種類・MCP 8 道具・見守り・公開地図・公開データセット・Solana Pay の入金）。「Devnet」の文字は証明の場面の脚注にだけ残した
+- 結びは「In Tokyo? Join as a worker」をやめ、「join as a worker from your phone」にした
+
+```bash
+cd docs/pitch/03-videos/render/pitch2
+node shots.mjs && node shots2.mjs        # 本番の画面。agent-request は crop=1240:1200:0:1100
+ffmpeg -i assets/dev-clients.png -vf crop=980:1000:420:1000 assets/dev-clients-col.png
+# 語り（af_heart、速度 1.0）→ 2fps の下見 → 本番描画。手順は v2 と同じ
+```
+
+v5（同日夜）: オーナーの指摘（画面や言葉が見切れる。内容を読み切る前に次へ移る）を受けて 2 点を変えた。128.9 秒。
+
+- 画面はすべて丸ごと見せる。開発者ページは「Connecting from each AI」の 1 行目（見出しと 2 枚のカード）を `crop=2080:825:400:1000` で切り出して幅 1600 の枠に収め、依頼カードは `crop=1240:1200:0:990` で「Asking someone on the spot」から「Bounty escrowed」までを 720 幅に収めてスクロールしない。電話は下端でカードが切れる画面（Task details）を使わない
+- 場面の長さは語りではなく内容で決める。`scene.html` が `show()`・`phone()`・`counter()` の出現時刻を場面ごとに記録し（`window.sceneEnds()`）、`render.mjs` が 1 回目の `setup` でそれを読んでから、「語りが終わり、最後の要素が出そろってから 1 秒（`HOLD`）置いて、0.45 秒でクロスフェード」の時間割を組み直して 2 回目の `setup` で描く
+
+v6（同日夜）: 画質と電話の大きさ。YouTube は 1080p の動画を 0.5 Mbps ほどまで圧縮し直すので、画面写真の小さな字がにじんでいた。4K で上げると YouTube は高いビットレートで圧縮し直すため、1080p で見ても字が保たれる。
+
+- `render.mjs` は配置を 1920×1080 のまま `deviceScaleFactor: 2` で描き、3840×2160 で出す（`RENDER_SCALE`、下見は 1 倍）。x264 は `medium`。描画は約 18 分
+- 素材は `SHOT_SCALE=4 node shots.mjs && SHOT_SCALE=4 node shots2.mjs` で 4 倍に撮る。切り出しも 2 倍にずれる（依頼カード `crop=2480:2400:0:1980`、開発者ページ `crop=4160:1650:800:2000`）
+- 4 倍で撮ると 1 枚ごとの撮影が遅くなり、`/try` の自動再生とのずれで番号がずれる。撮り直したら電話の画面を並べて番号を選び直す（今回は 03・08・10・12・18）
+- 電話は 577×1000（画面の高さいっぱい）にして右半分に置いた。「Why Solana」の下端にあったプログラム ID の行は外した
+
+はまりどころ: Wikimedia Commons の `Special:FilePath` は日本語のファイル名をそのまま渡すと落ちるので URL 符号化し、User-Agent に連絡先を入れる。Kokoro のモデル（約 340MB）は `tts/.gitignore` で除外してあり、無ければ README 冒頭の curl で取り直す（回線によっては 15 分かかる）。
 
 ## 置き場所と公開
 

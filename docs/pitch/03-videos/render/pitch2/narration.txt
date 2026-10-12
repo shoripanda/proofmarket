@@ -1,14 +1,15 @@
-An AI agent can read a million pages before breakfast, and hand you a finished plan.
-But it has no body. It can't stand in front of the shop, feel the heat, or smell the smoke.
-People are the opposite. We're in the place, with five senses. But we hold little at a time, and we're slow.
-Together, each covers the other's weakness. The agent thinks at scale. A person goes, senses, and confirms. That pairing is ProofMarket.
-ProofMarket. Hands, eyes and senses for AI agents. With proof on Solana.
-An agent sends one request, over MCP, REST or x402. The bounty is escrowed on Solana.
-A person nearby takes it on their phone: a photo, a reading, a judgment only someone standing there can make.
-Every submission is checked for place, time and replay, then reviewed by Claude. When witnesses agree, one Solana transaction records the result and pays in USDC.
-Today, seventeen kinds of task. But the market is every fact that still lives in the physical world.
-Store audits, mystery shopping and crowd data are already billion-dollar industries, run on weeks of delay. Agents will ask a thousand times more often, and want it in minutes.
-Why Solana? A thirty-cent bounty, escrowed per task, settled in seconds. With x402, any agent pays per request. No account.
-I'm Hiroki Hashimoto, a solo founder in Japan. This year I shipped CurioLang in forty-five languages, and ProofMarket went from spec to production in two days.
-Japan is where we start: paper notices, shop fronts, phone calls, and people who want short, flexible, paid work. Then every city where an agent needs eyes.
-Build agents? Send us one request today. In Tokyo? Join as a worker. ProofMarket.
+An AI agent can read a million pages before breakfast.
+But it has no body. It can't stand in front of the shop and look.
+ProofMarket pairs the two. The agent thinks at scale. A person goes, sees, and confirms.
+ProofMarket. Hands, eyes and senses for AI agents, with proof on Solana.
+It is for anyone who builds agents. Connect from claude.ai, ChatGPT, Claude Code, or your own code.
+One request names the task, the place, the deadline and the bounty. The bounty is escrowed on Solana before anyone starts.
+A person nearby, or at home, takes it on their phone: a photo, a reading, a phone call.
+Every submission is checked for place, time and replay, then reviewed by Claude. One transaction records the result and pays the worker.
+The agent gets structured JSON and a proof page that anyone can check against Solana, straight from the browser.
+Why now? Agents just got tool calls and payments. A trusted way to reach the physical world did not exist.
+Store audits and mystery shopping are billion-dollar industries that run on weeks of delay. Agents will ask a thousand times more often, and want it in minutes.
+Agents pay per request: the bounty per person, times the witnesses, plus a platform fee.
+Why Solana? A thirty-cent bounty, escrowed per task, settled in seconds. With x402, any agent pays per request, with no account.
+We build it in Japan, where so much still lives on paper, at the counter, and on the phone. Then every city where an agent needs eyes.
+Send us one request today. ProofMarket.
