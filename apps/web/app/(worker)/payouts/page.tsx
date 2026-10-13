@@ -10,6 +10,7 @@ import { dateLocale, type Lang, pick } from "@/lib/lang";
 interface Payout {
   verification_id: string;
   amount: string;
+  asset: "USDC" | "SOL";
   status: "PENDING" | "SUBMITTED" | "SETTLED" | "REFUNDED" | "FAILED_RETRYING";
   explorer_url: string | null;
   paid_at: string | null;
@@ -81,7 +82,9 @@ function downloadCsv(rows: Payout[], month: string, lang: Lang) {
         p.paid_at ? jstDate(p.paid_at, lang) : "",
         p.verification_id,
         p.amount,
-        pick(lang, "USDC（テスト用）", "USDC (test)"),
+        p.asset === "SOL"
+          ? pick(lang, "SOL（Devnet）", "SOL (Devnet)")
+          : pick(lang, "USDC（テスト用）", "USDC (test)"),
         STATUS_TEXT[lang][p.status],
         p.explorer_url ?? "",
       ]
@@ -133,7 +136,10 @@ export default function PayoutsPage() {
       setErr(errorText(e, lang));
     }
   }
-  const total = (list ?? []).filter((p) => p.status === "SETTLED").reduce((a, p) => a + Number(p.amount), 0);
+  // One total per asset (15 §3.3): the two are never added together.
+  const totals = { USDC: 0, SOL: 0 };
+  for (const p of list ?? []) if (p.status === "SETTLED") totals[p.asset] += Number(p.amount);
+  const fix = (n: number) => String(Math.round(n * 1e6) / 1e6);
   const monthLabel = (m: string) =>
     lang === "en"
       ? new Date(`${m}-15T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
@@ -143,9 +149,10 @@ export default function PayoutsPage() {
       {err ? <Notice tone="error">{err}</Notice> : null}
       <Card>
         <p className="text-sm text-slate-500">{pick(lang, "受け取り済みの合計", "Total received")}</p>
-        <p className="mt-1 text-3xl font-bold text-teal-700">
-          {yen(String(Math.round(total * 1e6) / 1e6), lang)}
-        </p>
+        <p className="mt-1 text-3xl font-bold text-teal-700">{yen(fix(totals.USDC), lang)}</p>
+        {totals.SOL > 0 ? (
+          <p className="mt-1 text-2xl font-bold text-teal-700">{yen(fix(totals.SOL), lang, "SOL")}</p>
+        ) : null}
         <p className="mt-1 text-xs text-slate-400">{rateNote(lang)}</p>
       </Card>
       {trust ? (
@@ -227,7 +234,7 @@ export default function PayoutsPage() {
       {list?.map((p) => (
         <Card key={p.verification_id}>
           <div className="flex items-baseline justify-between">
-            <span className="text-lg font-bold">{yen(p.amount, lang)}</span>
+            <span className="text-lg font-bold">{yen(p.amount, lang, p.asset)}</span>
             <span className="text-sm text-slate-500">{STATUS_TEXT[lang][p.status]}</span>
           </div>
           <p className="mt-1 text-xs text-slate-500">{p.paid_at ? jstDate(p.paid_at, lang) : ""}</p>

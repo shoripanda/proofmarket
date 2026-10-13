@@ -1,7 +1,7 @@
 "use client";
 import { type ReactNode, useEffect, useState } from "react";
 import { LLink, useLang } from "@/lib/client/lang";
-import { yenHint } from "@/lib/client/rate";
+import { type DisplayAsset, yenHint } from "@/lib/client/rate";
 import { setSoundOn, soundOn } from "@/lib/client/sound";
 import { appendTranscript, speak, speechSupported, stopSpeaking, useSpeechInput } from "@/lib/client/speech";
 import { type Lang, pick } from "@/lib/lang";
@@ -212,8 +212,13 @@ export function SoundToggle() {
   );
 }
 
-/** "0.30 USDC（約 45 円）": the amount with a yen estimate, so no one has to know what USDC is worth. */
-export const yen = (usdc: string, lang: Lang = "ja") =>
-  pick(lang, `${usdc} USDC（${yenHint(usdc, lang)}）`, `${usdc} USDC (${yenHint(usdc, lang)})`);
+/**
+ * "0.30 USDC（約 45 円）": the amount with a yen estimate, so no one has to know what USDC is worth.
+ * A SOL reward (15 §3) reads "0.01 SOL" with no estimate.
+ */
+export const yen = (amount: string, lang: Lang = "ja", asset: DisplayAsset = "USDC") =>
+  asset === "SOL"
+    ? `${amount} SOL`
+    : pick(lang, `${amount} USDC（${yenHint(amount, lang)}）`, `${amount} USDC (${yenHint(amount, lang)})`);
 
 export { SAFETY_NOTES, safetyNotes } from "./safety";
