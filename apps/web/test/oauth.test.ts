@@ -158,10 +158,10 @@ describe("authorize", () => {
   it("consent page tells someone without a key where to get one, in a new tab", async () => {
     const params = authorizeParams("ocl_x");
     const ja = await consentPage({ clientName: "c", redirectUri: REDIRECT, params }).text();
-    expect(ja).toContain('href="/join?role=requester" target="_blank" rel="noopener"');
+    expect(ja).toContain('href="/connect" target="_blank" rel="noopener"');
     const en = await consentPage({ clientName: "c", redirectUri: REDIRECT, params, lang: "en" }).text();
-    expect(en).toContain('href="/en/join?role=requester"');
-    expect(en).not.toContain("starts with pm_test_");
+    expect(en).toContain('href="/en/connect"');
+    expect(en).not.toContain("受け取れます");
   });
 
   it("a wrong API key is refused", async () => {

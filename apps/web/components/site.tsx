@@ -17,6 +17,7 @@ export const siteNav = (lang: Lang): NavItem[] => [
   { href: "/stats", label: pick(lang, "実績", "Numbers") },
   { href: "/map", label: pick(lang, "地図", "Map") },
   { href: "/data", label: pick(lang, "データ", "Data") },
+  { href: "/connect", label: pick(lang, "エージェントをつなぐ", "Connect your agent") },
   { href: "/developers", label: pick(lang, "開発者向け", "Developers") },
   { href: "/pricing", label: pick(lang, "料金", "Pricing") },
   { href: "/workers", label: pick(lang, "worker 向け", "For workers") },
@@ -60,9 +61,16 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
             <LangSwitch />
             <Link
               href={h("/login")}
-              className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"
+              className="rounded-full px-4 py-2 text-base font-semibold text-teal-800 ring-1 ring-teal-700 hover:bg-teal-50"
             >
               {pick(lang, "worker ログイン", "Worker login")}
+            </Link>
+            {/* The one action the site asks of an agent builder, on every page (13 §7 /connect). */}
+            <Link
+              href={h("/connect")}
+              className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"
+            >
+              {pick(lang, "エージェントをつなぐ", "Connect your agent")}
             </Link>
           </div>
         </header>

@@ -82,12 +82,12 @@ export function consentPage(o: {
   )}</p>
 ${o.error ? `<p class="err">${esc(o.error)}</p>` : ""}
 <form method="post" action="/oauth/authorize">${hidden}
-<label for="k">${pick(lang, "API キー（/join で受け取った文字列）", "API key (the one you got at /join)")}</label>
+<label for="k">${pick(lang, "API キー（pm_test_ で始まる文字列）", "API key (starts with pm_test_)")}</label>
 <input id="k" name="api_key" type="password" autocomplete="off" required>
 <p class="hint">${pick(
     lang,
-    `キーをお持ちでなければ、<a href="/join?role=requester" target="_blank" rel="noopener">こちらで受け取れます</a>（その場で表示・試験用の 5 USDC つき）。受け取ったらこの画面に戻って貼ってください。`,
-    `No key yet? <a href="/en/join?role=requester" target="_blank" rel="noopener">Get one here</a> (shown at once, with 5 test USDC). Then come back to this page and paste it.`,
+    `キーをお持ちでなければ、<a href="/connect" target="_blank" rel="noopener">「エージェントをつなぐ」のページ</a>でその場に受け取れます（試験用の 5 USDC つき）。受け取ったらこの画面に戻って貼ってください。`,
+    `No key yet? Get one on the <a href="/en/connect" target="_blank" rel="noopener">Connect your agent</a> page (shown at once, with 5 test USDC). Then come back to this page and paste it.`,
   )}</p>
 <button type="submit">${pick(lang, "接続を許可する", "Allow the connection")}</button>
 </form>`;

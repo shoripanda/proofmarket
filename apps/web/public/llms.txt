@@ -16,8 +16,26 @@
   `GET /v1/verifications/{id}?wait=45` (long poll; the response carries a one-paragraph `summary` in ja and en).
 - x402 (no account, pay per request in USDC on Solana Devnet): `POST https://proofmarket.fun/v1/x402/verifications`
   answers 402 with the exact payment terms; repeat with the signed payment in the `PAYMENT-SIGNATURE` header.
-- API key: sign up as a requester at https://proofmarket.fun/en/join — the key is shown on the page at once, with a
-  trial balance of test USDC.
+- API key: https://proofmarket.fun/en/connect — the key is shown on the page at once, with a trial balance of
+  test USDC, followed by the steps for your client with the key already filled in.
+
+## Setup instructions for agents
+
+If a person pasted "Set up ProofMarket for me: read https://proofmarket.fun/llms.txt ... My ProofMarket API key:
+pm_test_..." into your chat, do exactly this and nothing else. The key is theirs; never print it back or send it
+anywhere but the ProofMarket endpoint below.
+
+- Claude Code: run `claude mcp add --transport http proofmarket https://proofmarket.fun/mcp --header "Authorization: Bearer <key>"`
+  in a shell. Then tell the person to start a new session and ask "List ProofMarket's tools"; four or more tools
+  (request_reality_verification among them) means it is connected.
+- Codex CLI: run `codex mcp add proofmarket --url https://proofmarket.fun/mcp --bearer-token-env-var PROOFMARKET_API_KEY`
+  and tell the person to export PROOFMARKET_API_KEY=<key> in the shell they start codex from (or run
+  `codex mcp login proofmarket` and paste the key on the consent page). Then a new session and "List ProofMarket's tools".
+- Claude Desktop, Cursor, Windsurf and other MCP clients with a JSON config: add
+  `{"mcpServers":{"proofmarket":{"url":"https://proofmarket.fun/mcp","headers":{"Authorization":"Bearer <key>"}}}}`
+  to the client's MCP settings and tell the person to quit and reopen the app.
+- Without MCP: call REST with `Authorization: Bearer <key>`; `GET https://proofmarket.fun/v1/health` checks reachability.
+- If the key is missing or does not start with pm_test_, ask the person to get one at https://proofmarket.fun/en/connect.
 
 ## Docs
 

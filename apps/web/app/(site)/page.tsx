@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Explainer } from "@/components/explainer";
 import { FeaturedResults } from "@/components/featured-results";
-import { FLOW_ICONS } from "@/components/flow-diagram";
 import { PageHero, Section } from "@/components/site";
 import { StatsHighlights } from "@/components/stats";
 import { Plain } from "@/lib/client/plain";
@@ -20,10 +19,12 @@ const ICONS = {
   camera: "M4 8h3l2-3h6l2 3h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",
   clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v4l3 2",
   grid: "M4 5h6v6H4zM14 5h6v6h-6zM4 13h6v6H4zM14 13h6v6h-6z",
-  check: FLOW_ICONS.check,
+  // Inlined: flow-diagram is a client module, so importing its constants here gives a client reference, not a
+  // string, and the check and chain tiles rendered blank.
+  check: "M4 12l5 5L20 6",
   agree:
     "M8 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM16 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM2 20a6 6 0 0 1 12 0M10 20a6 6 0 0 1 12 0",
-  chain: FLOW_ICONS.chain,
+  chain: "M9 15l-3 3a3 3 0 0 1-4-4l4-4a3 3 0 0 1 4 0M15 9l3-3a3 3 0 0 1 4 4l-4 4a3 3 0 0 1-4 0M9 15l6-6",
   terminal: "M4 5h16v14H4zM8 10l3 2-3 2M13 14h4",
   phone: "M8 3h8v18H8zM11 18h2",
   pin: "M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10zM12 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z",
@@ -100,9 +101,18 @@ const COPY = {
         "報酬は依頼のときにエスクローへ預け、結果が確定したら worker に払います。結果のハッシュと支払いは Solana に記録されるので、運営者を信じなくても確かめられます。",
       ],
     },
+    connect: {
+      title: "つなぐまでの 3 ステップ",
+      steps: [
+        { icon: "key", title: "キーを受け取る", text: "メールアドレスを入れると、その場に出ます" },
+        { icon: "terminal", title: "AI を選ぶ", text: "claude.ai・ChatGPT・Claude Code・Codex・自作" },
+        { icon: "check", title: "つながったか確かめる", text: "AI に 1 文送れば分かります" },
+      ] as { icon: IconKey; title: string; text: string }[],
+      cta: "3 ステップでつなぐ",
+    },
     roles: {
       title: "あなたはどちらですか",
-      dev: { icon: "terminal" as IconKey, title: "エージェントを作っている", link: "開発者向け" },
+      dev: { icon: "terminal" as IconKey, title: "エージェントを作っている", link: "エージェントをつなぐ" },
       worker: { icon: "phone" as IconKey, title: "スマホで依頼に応える", link: "worker 向け" },
     },
     example: {
@@ -175,9 +185,18 @@ const COPY = {
         "The bounty goes into escrow when the request is made and is paid to the worker once the result is final. The result hash and the payout are recorded on Solana, so no one has to trust the operator.",
       ],
     },
+    connect: {
+      title: "Connected in three steps",
+      steps: [
+        { icon: "key", title: "Get a key", text: "Enter your email and it appears on the page" },
+        { icon: "terminal", title: "Pick your AI", text: "claude.ai, ChatGPT, Claude Code, Codex, your own" },
+        { icon: "check", title: "Check it is connected", text: "One message to your AI tells you" },
+      ] as { icon: IconKey; title: string; text: string }[],
+      cta: "Connect in three steps",
+    },
     roles: {
       title: "Which one are you?",
-      dev: { icon: "terminal" as IconKey, title: "Building an agent", link: "For developers" },
+      dev: { icon: "terminal" as IconKey, title: "Building an agent", link: "Connect your agent" },
       worker: { icon: "phone" as IconKey, title: "Answering requests on your phone", link: "For workers" },
     },
     example: {
@@ -239,7 +258,7 @@ export default async function Home() {
             {c.ctaTry}
           </Link>
           <Link
-            href={h("/developers")}
+            href={h("/connect")}
             className="flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-teal-700 ring-1 ring-teal-700 hover:bg-teal-50"
           >
             <Icon k="terminal" className="h-5 w-5" />
@@ -249,6 +268,35 @@ export default async function Home() {
       </PageHero>
 
       <Explainer />
+
+      <Section title={c.connect.title}>
+        <ol className="grid gap-3 sm:grid-cols-3">
+          {c.connect.steps.map((st, i) => (
+            <li key={st.title} className="relative rounded-2xl border border-slate-200 p-4 pt-5 sm:p-5">
+              <span className="absolute -top-3 left-4 rounded-full bg-teal-700 px-3 py-0.5 text-xs font-bold text-white">
+                {i + 1}
+              </span>
+              <div className="flex items-center gap-3 sm:flex-col sm:items-start">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-50">
+                  <Icon k={st.icon} className="h-7 w-7" />
+                </div>
+                <div>
+                  <h3 className="font-bold leading-snug">{st.title}</h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    <Plain>{st.text}</Plain>
+                  </p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <Link
+          href={h("/connect")}
+          className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-6 py-3 text-base font-bold text-white hover:bg-teal-800"
+        >
+          {c.connect.cta} <span aria-hidden="true">→</span>
+        </Link>
+      </Section>
 
       <Section title={c.sizes.title}>
         <div className="grid grid-cols-3 gap-3">
@@ -301,7 +349,7 @@ export default async function Home() {
       <Section title={c.roles.title}>
         <div className="grid gap-4 sm:grid-cols-2">
           {[
-            { ...c.roles.dev, href: "/developers" },
+            { ...c.roles.dev, href: "/connect" },
             { ...c.roles.worker, href: "/workers" },
           ].map((r) => (
             <Link

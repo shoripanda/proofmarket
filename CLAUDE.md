@@ -71,3 +71,5 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-11 [wSOL の払い出し設計] 証人に wSOL を渡して画面で SOL に戻させる案 → 証人の財布は最初 SOL が 0 で、戻す手数料を払えない → settle で vault を task 口座へ閉じ、プログラムが task 口座から財布へ SOL を直接移す（15 §3.1）
 - 2026-10-11 [localnet / web3.js] airdrop を confirmed で待っただけの財布から `sendAndConfirmTransaction(…, { commitment: "finalized" })` を送る → preflight も finalized で走り、まだ確定していない airdrop が見えず「Attempt to debit an account but found no record of a prior credit」で落ちる → `preflightCommitment: "confirmed"` を併せて渡す。確定を待つのは送った後だけでよい
 
+- 2026-10-13 [手元 / 新しい worktree の dev:local] `pnpm dev:local` を初めて動かした worktree で申し込み API が 500（`relation "rate_limit_counters" does not exist`）。`DATABASE_URL=pglite:… pnpm db:migrate` も drizzle-kit が pglite を扱えず失敗 → 先に `pnpm --filter @proofmarket/scripts run run dev-seed.ts` を 1 回流す（`apps/web/.data/pglite` を作って移行を当てる）。サーバーは止めてから
+- 2026-10-13 [Next.js / "use client" の定数] クライアント部品（flow-diagram.tsx）が export する文字列の定数 `FLOW_ICONS` をサーバー部品（トップ）で import して `<path d>` に渡した → 届くのは文字列ではなくクライアント参照で、check と chain の絵が本番でも空白だった → 定数は共有するなら "use client" の無いファイルに置くか、使う側に書き写す
