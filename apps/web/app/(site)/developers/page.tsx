@@ -27,8 +27,6 @@ async function baseUrl() {
   return `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? "<your-app>"}`;
 }
 
-type Client = { name: string; checked: boolean; steps: string[]; note?: string };
-
 const answerChoices = (sep: string) =>
   Object.entries(TASK_TYPE_ANSWERS)
     .map(([t, v]) => `${t}: ${v?.join(sep)}`)
@@ -42,10 +40,13 @@ const COPY = {
       "店の様子を見に行く、紙の資料を書き起こす、実物を確かめる、電話で問い合わせる。MCP のツールを足すか REST API を呼べば、こうした作業を人に頼めます。人を探す、連絡する、支払うといった手間は ProofMarket が引き受けます。",
     intro2:
       "返ってくるのは答えだけではありません。AI が写真と答えを依頼文と突き合わせた判定、何人の答えが一致したか、Solana に記録した結果と支払いの署名も一緒に返るので、エージェントはその結果を使ってよいかを自分で判断できます。",
+    start: {
+      text: "はじめてなら、3 ステップのページで。キーの受け取りから確認まで 1 ページで終わります。",
+      cta: "エージェントをつなぐ",
+    },
     ways: {
       title: "つなぎ方は3通りあります",
-      lead: "どれを選んでも、使えるキーと上限は同じです。API キー（pm_test_ で始まる）は、申し込むとその場で画面に出ます。",
-      applyKey: "API キーを申し込む",
+      lead: "どれを選んでも、使えるキーと上限は同じです。API キー（pm_test_ で始まる）は「エージェントをつなぐ」のページでその場に出ます。",
       console: "依頼者の画面（履歴・残高）",
       remote: "claude.ai などのリモート MCP",
       remoteBody:
@@ -55,75 +56,6 @@ const COPY = {
       rest: "REST API",
       restBody:
         "依頼の作成には Idempotency-Key ヘッダーが要ります。同じキーで送り直しても、依頼は1件しかできません。",
-    },
-    clients: {
-      title: "各 AI からつなぐ",
-      lead: "同じ MCP の窓口に、それぞれのやり方でつなぎます。「確認済み」は、運営者がこの本番の窓口に実際につないで結果を読めたものです。",
-      checked: "確認済み",
-      unchecked: "手順のみ（未確認）",
-      troubleBefore: "つながらないときは、画面に出た文言をそのまま",
-      troubleLink: "申し込みフォーム",
-      troubleAfter: "から送ってください。OAuth の窓口は ",
-      troubleEnd: " で確かめられます。",
-      items: [
-        {
-          name: "Claude Code",
-          checked: true,
-          steps: [
-            'ターミナルで claude mcp add --transport http proofmarket <URL>/mcp --header "Authorization: Bearer <API キー>" を実行する',
-            "claude を起動し、「ProofMarket の道具を一覧して」と頼む。4つ以上の道具が出れば接続できている",
-          ],
-          note: "キーをチャットに貼らない。--header の値はこの端末の設定にだけ残る",
-        },
-        {
-          name: "claude.ai（ブラウザ・アプリ）",
-          checked: true,
-          steps: [
-            "設定 → コネクタ → 「カスタムコネクタを追加」を開く",
-            "名前に ProofMarket、URL に <URL>/mcp を入れて追加する",
-            "「接続」を押すと ProofMarket の許可画面が開く。API キーを貼って許可する",
-            "新しい会話で ProofMarket を有効にし、依頼を出す",
-          ],
-          note: "OAuth 2.1（動的クライアント登録・PKCE）で接続する。キーは ProofMarket 側にだけ渡る",
-        },
-        {
-          name: "Codex CLI（OpenAI）",
-          checked: true,
-          steps: [
-            "ターミナルで codex mcp add proofmarket --url <URL>/mcp --bearer-token-env-var PROOFMARKET_API_KEY を実行し、環境変数 PROOFMARKET_API_KEY に API キーを入れる",
-            "codex を起動し、「ProofMarket の道具を一覧して」と頼む。道具の名前が出れば接続できている",
-            "キーを環境変数に置きたくなければ、codex mcp add proofmarket --url <URL>/mcp のあと codex mcp login proofmarket を実行し、開いた許可画面にキーを貼る（OAuth）",
-          ],
-          note: "Codex CLI 0.145 で確認済み。設定は ~/.codex/config.toml に残る",
-        },
-        {
-          name: "ChatGPT",
-          checked: false,
-          steps: [
-            "設定 → アプリ（コネクタ）→ 詳細設定 で「開発者モード」をオンにする（Plus 以上）",
-            "「作成」（カスタムコネクタを追加）で、名前に ProofMarket、MCP サーバーの URL に <URL>/mcp、認証に OAuth を選んで作る",
-            "「接続」を押すと ProofMarket の許可画面が開く。API キーを貼って許可する",
-            "新しい会話で ProofMarket を有効にし、「この店が開いているか確かめて」のように頼む",
-          ],
-          note: "OAuth 2.1（動的クライアント登録・PKCE・iss 付きの応答）。ChatGPT の固定の戻り先（chatgpt.com/connector_platform_oauth_redirect）にも、接続ごとの戻り先にも応じる",
-        },
-        {
-          name: "Cursor・Windsurf などの MCP 対応エディタ",
-          checked: false,
-          steps: [
-            'MCP の設定に { "url": "<URL>/mcp", "headers": { "Authorization": "Bearer <API キー>" } } の形で足す',
-            "OAuth に対応したクライアントなら headers を省き、接続時に出る許可画面でキーを貼る",
-          ],
-        },
-        {
-          name: "自作のエージェント（REST・SDK）",
-          checked: true,
-          steps: [
-            "Authorization: Bearer <API キー> を付けて REST API を呼ぶ。依頼の作成には Idempotency-Key が要る",
-            "TypeScript なら packages/sdk の ProofMarketClient を使う。MCP サーバーもこの SDK の上に載っている",
-          ],
-        },
-      ] as Client[],
     },
     x402: {
       title: "登録なしで使う（x402）",
@@ -366,10 +298,13 @@ const COPY = {
       "Go and look at a shop, transcribe a paper document, inspect a physical item, phone and ask. Add the MCP tools or call the REST API and your agent can ask a person to do these things. Finding, contacting and paying people is ProofMarket's job.",
     intro2:
       "You get more than an answer: the AI's verdict on whether the photo and answer match the request, how many people agreed, and the Solana signature of the recorded result and payout, so the agent can decide for itself whether to rely on the result.",
+    start: {
+      text: "First time? The three-step page takes you from getting a key to a connected agent on one page.",
+      cta: "Connect your agent",
+    },
     ways: {
       title: "Three ways in",
-      lead: "Whichever you choose, the keys and the limits are the same. An API key (starting with pm_test_) appears on the page as soon as you apply.",
-      applyKey: "Request an API key",
+      lead: "Whichever you choose, the keys and the limits are the same. An API key (starting with pm_test_) is issued on the spot on the Connect page.",
       console: "Requester console (history, balance)",
       remote: "Remote MCP from claude.ai and similar",
       remoteBody:
@@ -379,75 +314,6 @@ const COPY = {
       rest: "REST API",
       restBody:
         "Creating a request needs an Idempotency-Key header. Resending with the same key never creates a second request.",
-    },
-    clients: {
-      title: "Connecting from each AI",
-      lead: "Each client connects to the same MCP endpoint in its own way. “Verified” means the operator actually connected it to this production endpoint and read results.",
-      checked: "Verified",
-      unchecked: "Steps only (not verified)",
-      troubleBefore: "If it will not connect, send the exact message you saw through the ",
-      troubleLink: "application form",
-      troubleAfter: ". The OAuth endpoint can be inspected at ",
-      troubleEnd: ".",
-      items: [
-        {
-          name: "Claude Code",
-          checked: true,
-          steps: [
-            'In a terminal, run claude mcp add --transport http proofmarket <URL>/mcp --header "Authorization: Bearer <API key>"',
-            "Start claude and ask it to list ProofMarket's tools. Four or more tools means you are connected",
-          ],
-          note: "Never paste the key into the chat. The --header value stays in this machine's settings only",
-        },
-        {
-          name: "claude.ai (browser and apps)",
-          checked: true,
-          steps: [
-            "Open Settings → Connectors → “Add custom connector”",
-            "Enter ProofMarket as the name and <URL>/mcp as the URL, then add it",
-            "Press “Connect”; ProofMarket's consent page opens. Paste the API key and allow",
-            "Enable ProofMarket in a new conversation and send a request",
-          ],
-          note: "Connects over OAuth 2.1 (dynamic client registration, PKCE). The key goes to ProofMarket only",
-        },
-        {
-          name: "Codex CLI (OpenAI)",
-          checked: true,
-          steps: [
-            "In a terminal, run codex mcp add proofmarket --url <URL>/mcp --bearer-token-env-var PROOFMARKET_API_KEY, and put the API key in the PROOFMARKET_API_KEY environment variable",
-            "Start codex and ask it to list the ProofMarket tools. Tool names mean the connection works",
-            "To keep the key out of the environment, run codex mcp add proofmarket --url <URL>/mcp and then codex mcp login proofmarket; paste the key on the consent page that opens (OAuth)",
-          ],
-          note: "Checked with Codex CLI 0.145. The setting lives in ~/.codex/config.toml",
-        },
-        {
-          name: "ChatGPT",
-          checked: false,
-          steps: [
-            "Turn on Developer mode under Settings → Apps (Connectors) → Advanced (Plus or above)",
-            "“Create” (add a custom connector): name ProofMarket, MCP server URL <URL>/mcp, authentication OAuth",
-            "Press “Connect”; ProofMarket's consent page opens. Paste the API key and allow",
-            "Enable ProofMarket in a new conversation and ask, for example, whether a shop is open",
-          ],
-          note: "OAuth 2.1 (dynamic client registration, PKCE, iss in every response). Both ChatGPT's stable redirect (chatgpt.com/connector_platform_oauth_redirect) and the per-connection one are accepted",
-        },
-        {
-          name: "Cursor, Windsurf and other MCP-capable editors",
-          checked: false,
-          steps: [
-            'Add { "url": "<URL>/mcp", "headers": { "Authorization": "Bearer <API key>" } } to the MCP settings',
-            "With an OAuth-capable client, leave out headers and paste the key on the consent page that opens on connect",
-          ],
-        },
-        {
-          name: "Your own agent (REST, SDK)",
-          checked: true,
-          steps: [
-            "Call the REST API with Authorization: Bearer <API key>. Creating a request needs an Idempotency-Key",
-            "In TypeScript, use ProofMarketClient from packages/sdk. The MCP server itself is built on this SDK",
-          ],
-        },
-      ] as Client[],
     },
     x402: {
       title: "No sign-up: x402",
@@ -708,6 +574,15 @@ export default async function DevelopersPage() {
       <PageHero eyebrow={c.eyebrow} title={c.title}>
         <p>{c.intro1}</p>
         <p className="mt-3">{c.intro2}</p>
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 ring-1 ring-teal-200">
+          <p className="text-sm font-semibold text-slate-800">{c.start.text}</p>
+          <Link
+            href={h("/connect")}
+            className="rounded-full bg-teal-700 px-5 py-2 text-sm font-bold text-white hover:bg-teal-800"
+          >
+            {c.start.cta} →
+          </Link>
+        </div>
       </PageHero>
 
       <Section
@@ -715,10 +590,7 @@ export default async function DevelopersPage() {
         lead={
           <>
             {c.ways.lead}
-            <a href={h("/join?role=requester")} className="ml-1 font-semibold text-teal-700 underline">
-              {c.ways.applyKey}
-            </a>
-            <a href={h("/console")} className="ml-3 font-semibold text-teal-700 underline">
+            <a href={h("/console")} className="ml-1 font-semibold text-teal-700 underline">
               {c.ways.console}
             </a>
           </>
@@ -754,38 +626,6 @@ export default async function DevelopersPage() {
             </div>
           </div>
         </div>
-      </Section>
-
-      <Section title={c.clients.title} lead={c.clients.lead}>
-        <ul className="grid gap-4 md:grid-cols-2">
-          {c.clients.items.map((cl) => (
-            <li key={cl.name} className="rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-bold">{cl.name}</h3>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${cl.checked ? "bg-teal-50 text-teal-800 ring-1 ring-teal-600" : "bg-slate-100 text-slate-600"}`}
-                >
-                  {cl.checked ? c.clients.checked : c.clients.unchecked}
-                </span>
-              </div>
-              <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
-                {cl.steps.map((s) => (
-                  <li key={s}>{s.replaceAll("<URL>", base)}</li>
-                ))}
-              </ol>
-              {cl.note ? <p className="mt-2 text-xs leading-relaxed text-slate-500">{cl.note}</p> : null}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-600">
-          {c.clients.troubleBefore}
-          <a href={h("/join?role=requester")} className="mx-1 text-teal-700 underline">
-            {c.clients.troubleLink}
-          </a>
-          {c.clients.troubleAfter}
-          <code className="font-mono">{base}/.well-known/oauth-authorization-server</code>
-          {c.clients.troubleEnd}
-        </p>
       </Section>
 
       <Section title={c.x402.title} lead={c.x402.lead}>

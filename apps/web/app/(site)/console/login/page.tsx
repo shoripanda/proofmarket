@@ -32,14 +32,11 @@ export default async function ConsoleLoginPage() {
       <Section title={pick(lang, "ログイン", "Sign in")}>
         <ConsoleLoginForm />
         <p className="mt-6 text-sm text-slate-600">
-          {pick(lang, "API キーを持っていない方は", "No API key yet? ")}
-          <Link
-            href={langHref(lang, "/join?role=requester")}
-            className="font-semibold text-teal-700 underline"
-          >
-            {pick(lang, "こちらから申し込み", "Apply here")}
+          {pick(lang, "API キーを持っていない方は、", "No API key yet? Get one on the ")}
+          <Link href={langHref(lang, "/connect")} className="font-semibold text-teal-700 underline">
+            {pick(lang, "「エージェントをつなぐ」のページ", "Connect your agent")}
           </Link>
-          {pick(lang, "てください。", ".")}
+          {pick(lang, "でその場に受け取れます。", " page; it is issued on the spot.")}
         </p>
       </Section>
     </>
