@@ -105,7 +105,7 @@ genesis hash は実際の RPC に問い合わせて確かめる（いまと同�
 
 ### 4.4 プログラムの配置
 
-- 配置の費用: いまの .so（291,720 B）で、プログラムの口座に約 2.03 SOL。配置中はバッファにも同じくらい要り、終われば戻る。手元に 4.5 SOL ほど用意する。
+- 配置の費用: v1.2 の .so（318,120 B、2026-10-13 のビルド）で、プログラムの口座に約 2.21 SOL。配置中はバッファにも同じくらい要り、終われば戻る。手元に 4.5 SOL ほど用意する。
 - 手順は Devnet と同じ（`cargo build-sbf --tools-version v1.57` → `cargo test -p proofmarket` → `solana program deploy`）。メインネットでは新しいプログラム ID になる。
 - 配置後に `initialize_config`・`add_mint`（USDC と wSOL）を admin で実行する。
 - 第三者の監査は受けていない。2026-10-13 に運営者が v1.2 を読み直し、結果を `docs/security/program-review-2026-10-13.md` に残した。資金の量が増える前に外部の監査を受ける。

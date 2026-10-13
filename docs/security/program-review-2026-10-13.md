@@ -6,7 +6,7 @@
 
 - `src/lib.rs`・`state.rs`・`constants.rs`・`error.rs`・`events.rs`・`instructions.rs`
 - 命令 7 つ: `initialize_config`・`update_config`・`add_mint`／`remove_mint`・`initialize_task`・`finalize_verification`・`settle`・`refund`
-- LiteSVM のテスト `tests/program_tests.rs`（25 本。P-INIT-01〜03、P-FIN-01〜04、P-SET-01〜05、P-REF-01〜03、P-OVF-01、P-CFG-01、P-MINT-01〜05 ほか）。`cargo test -p proofmarket` は 2026-10-11 に 23/23、v1.2 の追加後に全件通過
+- LiteSVM のテスト `tests/program_tests.rs`（23 本。P-INIT-01〜03、P-FIN-01〜04、P-SET-01〜05、P-REF-01〜03、P-OVF-01、P-CFG-01、P-MINT-01〜05）。配置用の .so（`cargo build-sbf --tools-version v1.57`、318,120 B、SBPF v0）で 2026-10-13 に 23/23 通過
 
 ## 資金が動く経路と、守られていること
 

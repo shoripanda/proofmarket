@@ -186,7 +186,7 @@ v1.2 より前のサーバーは v1.2 のプログラムでそのまま動くの
 |---|---|
 | 鍵 | メインネット用の admin・operator・verifier を新しく作り、`~/.config/proofmarket/mainnet/` に置く。Devnet の鍵と同じ公開鍵だと門で止まる |
 | admin の置き場 | ハードウェア財布か Squads のマルチシグ。サーバーには置かない。プログラムの更新権限も同じ鍵にする |
-| SOL | admin に 4.5 SOL（配置に約 2.03 SOL ＋ 配置中のバッファ）、operator に 1 SOL（手数料とレント） |
+| SOL | admin に 4.5 SOL（配置に約 2.21 SOL ＋ 配置中のバッファ。v1.2 の .so は 318,120 B）、operator に 1 SOL（手数料とレント） |
 | USDC | treasury に最初の支払い見込みぶん。上限（15 §6）は決めてから入れる |
 | RPC | 有料の RPC のメインネット URL。比較の結果（`docs/ops/rpc-mainnet-2026-10-13.md`）は Helius の Developer（$49／月）。公開 RPC は上限が低く、tick が毎分呼ぶには足りない。URL は API キーを含むので秘密 |
 | 法務の文書 | 確認結果を `docs/legal/<日付>-signoff.md` に置く。それが無いうちは、オーナーの決定文書 `docs/legal/2026-10-13-owner-decision.md`。`LEGAL_SIGNOFF` にその場所を入れる |
