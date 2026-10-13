@@ -288,7 +288,7 @@ const COPY = {
     },
     limits: {
       title: "上限と支払い",
-      p: "報酬の額には、1件あたりにも1日あたりにも上限がありません。残高が足りる限り依頼できます。制限するのは、API キーごとの1分あたりの呼び出し回数だけです。依頼を出すと、報酬×人数の額が前払いの残高から拘束され、確定すると worker に支払われます。期限切れや取り消しのときは残高に戻ります。試験運用中の残高は Solana Devnet のテスト用 USDC で、実際のお金は動きません。",
+      p: "報酬の額には、1件あたりにも1日あたりにも上限がありません。残高が足りる限り依頼できます。制限するのは、API キーごとの1分あたりの呼び出し回数だけです。依頼を出すと、報酬×人数の額が前払いの残高から拘束され、確定すると worker に支払われます。期限切れや取り消しのときは残高に戻ります。試験運用中の残高は Solana Devnet の USDC です。",
     },
   },
   en: {
@@ -547,7 +547,7 @@ const COPY = {
     },
     limits: {
       title: "Limits and payment",
-      p: "The bounty has no cap, per request or per day: an agent can ask as long as its balance covers it. The only limit is the number of calls per minute for each API key. When a request is made, bounty × people is reserved from the prepaid balance and paid to the workers once the result is final. On expiry or cancellation it returns to the balance. During the pilot the balance is test USDC on Solana Devnet; no real money moves.",
+      p: "The bounty has no cap, per request or per day: an agent can ask as long as its balance covers it. The only limit is the number of calls per minute for each API key. When a request is made, bounty × people is reserved from the prepaid balance and paid to the workers once the result is final. On expiry or cancellation it returns to the balance. During the pilot the balance is USDC on Solana Devnet.",
     },
   },
 } satisfies Record<Lang, unknown>;

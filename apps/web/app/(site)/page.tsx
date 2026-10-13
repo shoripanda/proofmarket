@@ -129,7 +129,7 @@ const COPY = {
       items: [
         { icon: "pin", text: "現地の確認は地図上のどこでも。場所を問わない作業も" },
         { icon: "key", text: "worker は招待コードを受け取った人だけ" },
-        { icon: "coin", text: "報酬はテスト用の USDC。本物のお金は動きません" },
+        { icon: "coin", text: "報酬は USDC で、Solana Devnet に記録" },
       ] as { icon: IconKey; text: string }[],
       loginBefore: "招待を受けた worker の方は、",
       login: "こちらからログイン",
@@ -213,7 +213,7 @@ const COPY = {
       items: [
         { icon: "pin", text: "On-site checks anywhere on the map; tasks with no particular place too" },
         { icon: "key", text: "Workers join with an invite code" },
-        { icon: "coin", text: "Rewards are test USDC. No real money moves" },
+        { icon: "coin", text: "Rewards in USDC, recorded on Solana Devnet" },
       ] as { icon: IconKey; text: string }[],
       loginBefore: "Have an invite? ",
       login: "Sign in here",

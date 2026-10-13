@@ -44,8 +44,8 @@ export default async function OperatorPage() {
             <dd>
               {pick(
                 lang,
-                "試験運用中です。法人は設立していません。報酬と残高は Solana Devnet のテスト用資産で、実際のお金は動きません。",
-                "A pilot run by an individual; no company has been incorporated. Bounties and balances are test assets on Solana Devnet, and no real money moves.",
+                "試験運用中です。法人は設立していません。報酬と残高は Solana Devnet の資産です。",
+                "A pilot run by an individual; no company has been incorporated. Bounties and balances are assets on Solana Devnet.",
               )}
             </dd>
           </div>

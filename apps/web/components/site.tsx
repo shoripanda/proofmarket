@@ -105,8 +105,8 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
             <p>
               {pick(
                 lang,
-                "東京で試験運用中です。決済は Solana Devnet のテスト資産で行い、実際のお金は動きません。",
-                "Pilot in Tokyo. Payments use test assets on Solana Devnet; no real money moves.",
+                "東京で試験運用中です。決済は Solana Devnet で行います。",
+                "Pilot in Tokyo. Payments are settled on Solana Devnet.",
               )}
             </p>
           </div>
