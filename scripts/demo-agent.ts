@@ -24,7 +24,11 @@ const created = await client.createVerification(
     freshness: { max_age_seconds: 300 },
     evidence_requirements: { photo: true, task_nonce: true },
     assurance: { required_witnesses: witnesses, quorum: witnesses },
-    bounty: { asset: "USDC", amount: a.bounty ?? "0.50", network: a.network ?? "solana-devnet" },
+    bounty: {
+      asset: "USDC",
+      amount: a.bounty ?? "0.50",
+      network: a.network === "solana" ? "solana" : "solana-devnet",
+    },
     principal_ref: need(a, "principal"),
   },
   a.idem ?? `demo-${Date.now()}`,

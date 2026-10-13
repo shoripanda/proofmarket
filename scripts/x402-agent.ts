@@ -107,7 +107,11 @@ const body = {
   freshness: { max_age_seconds: 300 },
   evidence_requirements: { photo: true, task_nonce: true },
   assurance: { required_witnesses: 1, quorum: 1 },
-  bounty: { asset: "USDC", amount: a.bounty ?? "0.10", network: a.network ?? "solana-devnet" },
+  bounty: {
+    asset: "USDC",
+    amount: a.bounty ?? "0.10",
+    network: a.network === "solana" ? "solana" : "solana-devnet",
+  },
   // Puts the question, place, answer and time on the public map for others to use (01 §4.22).
   ...(a.publish ? { publish: true } : {}),
 };
