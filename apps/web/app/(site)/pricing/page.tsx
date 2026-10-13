@@ -65,7 +65,7 @@ const COPY = {
     },
     pilot: {
       title: "試験運用中の支払い",
-      body: "残高と報酬は Solana Devnet のテスト用 USDC です。実際のお金は動かず、請求も発生しません。本番のお金で動かすのは、資金の預かりや送金にかかわる法律の確認を終えてからにします。",
+      body: "残高と報酬は Solana Devnet の USDC で、請求は発生しません。メインネットでの決済は、資金の預かりや送金にかかわる法律の確認を終えてから始めます。",
       cta: "API キーを申し込む",
     },
   },
@@ -128,7 +128,7 @@ const COPY = {
     },
     pilot: {
       title: "Payments during the pilot",
-      body: "Balances and bounties are test USDC on Solana Devnet. No real money moves and nothing is invoiced. Real money will follow once the legal review of holding and transferring funds is complete.",
+      body: "Balances and bounties are USDC on Solana Devnet, and nothing is invoiced. Settlement on mainnet will follow once the legal review of holding and transferring funds is complete.",
       cta: "Request an API key",
     },
   },

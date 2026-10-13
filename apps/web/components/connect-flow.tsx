@@ -149,8 +149,8 @@ export function ConnectFlow({ base }: { base: string }) {
               )}
               note={pick(
                 lang,
-                "試験用の残高から払われます。本物のお金は動きません。worker が答えると、AI が結果と証明のリンクを伝えます。",
-                "It is paid from the trial balance; no real money moves. When a worker answers, the AI relays the result and a proof link.",
+                "試験用の残高から払われます。worker が答えると、AI が結果と証明のリンクを伝えます。",
+                "It is paid from the trial balance. When a worker answers, the AI relays the result and a proof link.",
               )}
             />
           </>

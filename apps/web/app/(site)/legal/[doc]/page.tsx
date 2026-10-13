@@ -34,8 +34,8 @@ export default async function LegalDocPage({ params }: { params: Promise<{ doc: 
         <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900 ring-1 ring-amber-200">
           {pick(
             lang,
-            "これは試験運用のための下書きで、弁護士による確認をまだ受けていません。本番のお金を扱う前に見直します。",
-            "This is a draft for the pilot and has not yet been reviewed by a lawyer. It will be revised before real money is handled.",
+            "これは試験運用のための下書きで、弁護士による確認をまだ受けていません。メインネットで決済を始める前に見直します。",
+            "This is a draft for the pilot and has not yet been reviewed by a lawyer. It will be revised before settlement moves to mainnet.",
           )}
         </p>
       </div>
