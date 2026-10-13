@@ -76,8 +76,8 @@ export function JoinForm() {
         <p className="mt-1 text-sm leading-relaxed">
           {pick(
             lang,
-            "運営者が内容を確かめて、入力したメールアドレスに招待コードを送ります。試験運用中のため、すぐにはお返事できないことがあります。",
-            "The operator will review your application and email an invite code to the address you entered. During the pilot, a reply may take a little while.",
+            "運営者が内容を確かめて、入力したメールアドレスに招待コードを送ります。すぐにはお返事できないことがあります。",
+            "The operator will review your application and email an invite code to the address you entered. A reply may take a little while.",
           )}
         </p>
       </div>

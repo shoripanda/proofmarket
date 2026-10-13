@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";
+import { clusterText } from "@/lib/cluster-public";
 import { langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -11,6 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = "force-dynamic";
 
 export default async function OperatorPage() {
+  const ct = clusterText();
   const lang = await getLang();
   const name = process.env.OPERATOR_NAME;
   const email = process.env.OPERATOR_CONTACT_EMAIL;
@@ -44,8 +46,8 @@ export default async function OperatorPage() {
             <dd>
               {pick(
                 lang,
-                "試験運用中です。法人は設立していません。報酬と残高は Solana Devnet のテスト用資産で、実際のお金は動きません。",
-                "A pilot run by an individual; no company has been incorporated. Bounties and balances are test assets on Solana Devnet, and no real money moves.",
+                `個人で運営しています。法人は設立していません。報酬と残高は ${ct.chain} の資産です。`,
+                `Run by an individual; no company has been incorporated. Bounties and balances are assets on ${ct.chain}.`,
               )}
             </dd>
           </div>

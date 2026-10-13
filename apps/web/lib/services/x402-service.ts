@@ -18,6 +18,7 @@ import {
 } from "@proofmarket/solana";
 import { eq } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
+import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { createPrincipal, issueApiKey, topUp } from "./admin-service";
 import { requestHash } from "./idempotency";
@@ -27,7 +28,7 @@ import { type CreateResult, createdBody, createVerification } from "./requester-
 export const X402_LIMITS = { maxTaskAmount: "5", dailySpendLimit: "20", rateLimitPerMin: 30 } as const;
 /** About twice a blockhash lifetime: a PENDING row older than this is abandoned and may be retried. */
 const PENDING_STALE_MS = 120_000;
-const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+const explorer = (sig: string) => clusterText().explorerTx(sig);
 
 export function parseX402Body(raw: unknown): CreateVerificationRequest {
   // principal_ref is not needed (the wallet is the principal); accept and drop it so SDK bodies work as is.

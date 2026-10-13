@@ -39,6 +39,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
       webhookPepper: "test-pepper-test-pepper",
       risingBountyEnabled: true,
       solEnabled: true,
+      cluster: "devnet",
     },
   };
   const principalId = await createPrincipal(db, { displayName: "Test Agent Co", type: "organization" });

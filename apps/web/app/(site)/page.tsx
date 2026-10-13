@@ -8,6 +8,7 @@ import { FeaturedResults } from "@/components/featured-results";
 import { PageHero, Section } from "@/components/site";
 import { StatsHighlights } from "@/components/stats";
 import { Plain } from "@/lib/client/plain";
+import { clusterText } from "@/lib/cluster-public";
 import { type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -62,6 +63,9 @@ function More({ lang, children }: { lang: Lang; children: ReactNode }) {
   );
 }
 
+// The chain's name follows SOLANA_CLUSTER; the page is dynamic, so this is read per request.
+const ct = clusterText();
+
 const COPY = {
   ja: {
     meta: {
@@ -69,7 +73,7 @@ const COPY = {
       description:
         "AI エージェントが人に頼み、証拠つきの答えを受け取る。写真と答えを AI が確かめ、結果と支払いを Solana に記録します。",
     },
-    eyebrow: "ProofMarket・東京で試験運用中",
+    eyebrow: "ProofMarket・東京から",
     title: "AI エージェントにできないことを、人に頼める",
     intro: "人が見に行き、写真つきで答えます。答えは AI が確かめ、Solana に記録します。",
     ctaTry: "3 分で体験",
@@ -85,7 +89,7 @@ const COPY = {
         "小: 店が開いているか、行列の長さ、棚の在庫、値札、入口の掲示の書き起こし。1 人が見に行って、写真と答えを送ります。",
         "中: 窓口で書類を受け取る、届いた荷物を開けて中身を確かめる、現物を採寸する、取引先に電話して聞き取る。文章と写真で報告します。",
         "大: 都内の駅のエレベーターを同じ日に全部見る、50 店舗の掲示を一斉に書き起こす、復旧するまで毎朝確かめる。依頼を分けて同時に出し、最大 5 人の一致で確定します。",
-        "試験運用中の上限: 1 件の締め切りは 24 時間まで、確かめる人数は 5 人まで。報酬に上限はありません。",
+        "いまの上限: 1 件の締め切りは 24 時間まで、確かめる人数は 5 人まで。報酬に上限はありません。",
       ],
     },
     trust: {
@@ -125,11 +129,11 @@ const COPY = {
       link: "どう確かめているか",
     },
     pilot: {
-      title: "試験運用中",
+      title: "いまの運用",
       items: [
         { icon: "pin", text: "現地の確認は地図上のどこでも。場所を問わない作業も" },
         { icon: "key", text: "worker は招待コードを受け取った人だけ" },
-        { icon: "coin", text: "報酬はテスト用の USDC。本物のお金は動きません" },
+        { icon: "coin", text: `報酬は USDC で、${ct.chain} に記録` },
       ] as { icon: IconKey; text: string }[],
       loginBefore: "招待を受けた worker の方は、",
       login: "こちらからログイン",
@@ -153,7 +157,7 @@ const COPY = {
       description:
         "An AI agent hires a person and gets the answer back with proof. AI reviews the photo and the answer; the result and the payout are recorded on Solana.",
     },
-    eyebrow: "ProofMarket · pilot in Tokyo",
+    eyebrow: "ProofMarket · from Tokyo",
     title: "Whatever your AI agent cannot do itself, ask a person",
     intro: "A person goes and answers with a photo. AI checks the answer; Solana records it.",
     ctaTry: "Try it in 3 minutes",
@@ -169,7 +173,7 @@ const COPY = {
         "S: is the shop open, how long is the queue, is the item on the shelf, what is the price, what does the notice say. One person goes, looks, and sends a photo and an answer.",
         "M: collect a document at a counter, open a delivered parcel and check the contents, measure a physical item, phone a supplier and take notes. Reported in text and photos.",
         "L: check every station lift in the city on the same day, transcribe the notices at 50 shops at once, check every morning until something is fixed. Split into parallel requests, each confirmed by up to 5 people.",
-        "Pilot limits: a deadline of up to 24 hours per request and up to 5 witnesses. There is no cap on the bounty.",
+        "Current limits: a deadline of up to 24 hours per request and up to 5 witnesses. There is no cap on the bounty.",
       ],
     },
     trust: {
@@ -209,11 +213,11 @@ const COPY = {
       link: "How the checks work",
     },
     pilot: {
-      title: "The pilot",
+      title: "How it runs today",
       items: [
         { icon: "pin", text: "On-site checks anywhere on the map; tasks with no particular place too" },
         { icon: "key", text: "Workers join with an invite code" },
-        { icon: "coin", text: "Rewards are test USDC. No real money moves" },
+        { icon: "coin", text: `Rewards in USDC, recorded on ${ct.chain}` },
       ] as { icon: IconKey; text: string }[],
       loginBefore: "Have an invite? ",
       login: "Sign in here",

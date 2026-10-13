@@ -78,7 +78,7 @@ API の金額は、USDC と SOL のどちらも小数 6 桁までの文字列で
 メインネットで起動する条件は 3 つで、1 つでも欠ければ起動時に止まる（REQ-X-P-105 の「コードで禁止」を、条件つきの許可に置き換える）。
 
 1. `REAL_FUNDS_ENABLED=true`
-2. `LEGAL_SIGNOFF` に、法務の確認結果を記した文書の場所が入っている（例: `docs/legal/2026-xx-signoff.md`）。中身は読まないが、空なら止まる
+2. `LEGAL_SIGNOFF` に、法務の確認結果を記した文書の場所が入っている（例: `docs/legal/2026-xx-signoff.md`）。中身は読まないが、空なら止まる。**2026-10-13 の注記**: オーナーが確認を待たずに切り替えると決めたため、当面はオーナーの決定文書 `docs/legal/2026-10-13-owner-decision.md` を指す。門のコードは変えていない
 3. 鍵がメインネット用であること。Devnet で使った operator・verifier の公開鍵と同じなら止まる（08 §2「Mainnet で同じ鍵を使わない」）
 
 genesis hash は実際の RPC に問い合わせて確かめる（いまと同じ）。`SOLANA_CLUSTER` と RPC の向き先が食い違えば止まる。
@@ -108,16 +108,17 @@ genesis hash は実際の RPC に問い合わせて確かめる（いまと同�
 - 配置の費用: いまの .so（291,720 B）で、プログラムの口座に約 2.03 SOL。配置中はバッファにも同じくらい要り、終われば戻る。手元に 4.5 SOL ほど用意する。
 - 手順は Devnet と同じ（`cargo build-sbf --tools-version v1.57` → `cargo test -p proofmarket` → `solana program deploy`）。メインネットでは新しいプログラム ID になる。
 - 配置後に `initialize_config`・`add_mint`（USDC と wSOL）を admin で実行する。
-- 第三者の監査は受けていない。実際のお金を入れる前に、少なくとも v1.2 の差分を外部の目で見てもらう。
+- 第三者の監査は受けていない。2026-10-13 に運営者が v1.2 を読み直し、結果を `docs/security/program-review-2026-10-13.md` に残した。資金の量が増える前に外部の監査を受ける。
+- 配置後の設定は `scripts/mainnet-setup.ts`（12 §10.2）。
 
-### 4.5 切り替えの手順（法務の確認が済んだ日）
+### 4.5 切り替えの手順（2026-10-13、オーナーの決定で前倒し）
 
 1. メインネット用の operator・verifier の鍵を作る（`~/.config/proofmarket/mainnet/`、リポジトリに入れない）
 2. プログラムを配置し、config と mint を登録する
 3. Vercel の Production に `SOLANA_CLUSTER=mainnet-beta`・`SOLANA_RPC_URL`（有料の RPC）・`PROGRAM_ID`・鍵・`REAL_FUNDS_ENABLED`・`LEGAL_SIGNOFF` を入れる
-4. 試験用の残高（/join の 5 USDC）を止める。メインネットでは配らない
+4. 試験用の残高は `SOLANA_CLUSTER=mainnet-beta` なら自動で 0（`trialBalanceFor`）。メインネットでは配らない
 5. 運営者自身が少額（0.10 USDC と 0.001 SOL）で依頼から支払いまでを一周し、Solscan で確かめる
-6. 料金ページと利用規約の「試験運用」の文言を直す
+6. 画面の文言はクラスタで切り替わる（`lib/cluster-public.ts` の `clusterText()`、2026-10-13）。「試験運用」の表記は消した
 
 ## 5. 作業の順番
 
@@ -129,13 +130,13 @@ genesis hash は実際の RPC に問い合わせて確かめる（いまと同�
 | 4 | プログラム v1.2（3.1）とテスト。Devnet へ配置し、wSOL を登録 | Devnet だけ | なし |
 | 5 | 証人の画面に SOL の報酬を出す（払いは 4 のネイティブ払いで済む）。Devnet で `SOL_ENABLED=true` | Devnet だけ | なし |
 | 6 | 入金の検出（4.3）。画面に入金先を出し、tick が残高に入れる | Devnet だけ | `deposits` の表と参照の列（0028） |
-| 7 | メインネットの手順書（4.4・4.5）を `12-deploy-runbook.md` に足す | 動かない | なし |
+| 7 | メインネットの手順書（4.4・4.5）を `12-deploy-runbook.md` §10 に足した。Devnet を v1.2 に上げる手順は §9 | 動かない | なし |
 
 提出の前日なので、PR 2 以降は既定値で本番の動きが変わらないことを確かめてからマージする。
 
 ## 6. まだ決めていないこと
 
 - treasury に置く額の上限（4.2）
-- メインネットの RPC の契約先（Helius・Triton など。無料の公開 RPC は上限が低く、本番には向かない）
+- ~~メインネットの RPC の契約先~~ → 2026-10-13 に比較し、Helius の Developer（$49／月）に決めた（`docs/ops/rpc-mainnet-2026-10-13.md`）
 - 証人への支払いを、労働法規と源泉徴収の面でどう扱うか（`legal-checklist.md` §1・§7）
 - 手数料を取るか、取るならどの通貨で取るか（`docs/pitch/08-revenue-model.md`）

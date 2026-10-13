@@ -540,7 +540,8 @@
                       "network": {
                         "type": "string",
                         "enum": [
-                          "solana-devnet"
+                          "solana-devnet",
+                          "solana"
                         ]
                       },
                       "max_amount": {
@@ -1281,7 +1282,8 @@
                           "network": {
                             "type": "string",
                             "enum": [
-                              "solana-devnet"
+                              "solana-devnet",
+                              "solana"
                             ]
                           },
                           "max_amount": {
@@ -2062,7 +2064,8 @@
                       "network": {
                         "type": "string",
                         "enum": [
-                          "solana-devnet"
+                          "solana-devnet",
+                          "solana"
                         ]
                       },
                       "max_amount": {
@@ -2887,7 +2890,8 @@
                         "network": {
                           "type": "string",
                           "enum": [
-                            "solana-devnet"
+                            "solana-devnet",
+                            "solana"
                           ]
                         },
                         "max_amount": {
@@ -3310,7 +3314,8 @@
                             "network": {
                               "type": "string",
                               "enum": [
-                                "solana-devnet"
+                                "solana-devnet",
+                                "solana"
                               ]
                             },
                             "signature": {
@@ -4098,7 +4103,8 @@
                         "network": {
                           "type": "string",
                           "enum": [
-                            "solana-devnet"
+                            "solana-devnet",
+                            "solana"
                           ]
                         },
                         "max_amount": {
@@ -4521,7 +4527,8 @@
                             "network": {
                               "type": "string",
                               "enum": [
-                                "solana-devnet"
+                                "solana-devnet",
+                                "solana"
                               ]
                             },
                             "signature": {
@@ -5770,7 +5777,8 @@
                           "network": {
                             "type": "string",
                             "enum": [
-                              "solana-devnet"
+                              "solana-devnet",
+                              "solana"
                             ]
                           },
                           "max_amount": {
@@ -10759,7 +10767,8 @@
                         "network": {
                           "type": "string",
                           "enum": [
-                            "solana-devnet"
+                            "solana-devnet",
+                            "solana"
                           ]
                         },
                         "signature": {
@@ -11067,7 +11076,8 @@
                     "network": {
                       "type": "string",
                       "enum": [
-                        "solana-devnet"
+                        "solana-devnet",
+                        "solana"
                       ]
                     },
                     "program_id": {
@@ -11292,7 +11302,8 @@
                         "network": {
                           "type": "string",
                           "enum": [
-                            "solana-devnet"
+                            "solana-devnet",
+                            "solana"
                           ]
                         }
                       },
@@ -11944,7 +11955,8 @@
                               "network": {
                                 "type": "string",
                                 "enum": [
-                                  "solana-devnet"
+                                  "solana-devnet",
+                                  "solana"
                                 ]
                               },
                               "signature": {

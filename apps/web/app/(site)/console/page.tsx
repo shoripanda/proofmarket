@@ -11,6 +11,7 @@ import {
 } from "@/components/console-actions";
 import { Section } from "@/components/site";
 import { answerLabel } from "@/lib/answers";
+import { clusterText } from "@/lib/cluster-public";
 import { appContext } from "@/lib/context";
 import { dateLocale, type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
@@ -72,6 +73,7 @@ function Stat({ label, value, unit }: { label: string; value: string; unit?: str
 export default async function ConsolePage() {
   const lang = await getLang();
   const app = appContext();
+  const ct = clusterText(app.config.cluster);
   const auth = await consoleAuth(app, (await cookies()).get(CONSOLE_COOKIE)?.value);
   if (!auth) redirect(langHref(lang, "/console/login"));
   const d = await dashboard(app, auth);
@@ -108,8 +110,8 @@ export default async function ConsolePage() {
         title={pick(lang, "入金", "Deposits")}
         lead={pick(
           lang,
-          "USDC か SOL を Devnet で送ると、確定（finalized）してから 1〜2 分で残高に入ります。送金には必ず下の参照（reference）を付けてください。Solana Pay のリンクを使えば自動で付きます。",
-          "Send USDC or SOL on Devnet; it reaches your balance one to two minutes after the transfer is finalized. Every transfer must carry the reference below; the Solana Pay links add it for you.",
+          `USDC か SOL を ${ct.chain} で送ると、確定（finalized）してから 1〜2 分で残高に入ります。送金には必ず下の参照（reference）を付けてください。Solana Pay のリンクを使えば自動で付きます。`,
+          `Send USDC or SOL on ${ct.chain}; it reaches your balance one to two minutes after the transfer is finalized. Every transfer must carry the reference below; the Solana Pay links add it for you.`,
         )}
       >
         {d.deposit.reference && d.deposit.addresses && d.deposit.solana_pay ? (
@@ -160,7 +162,7 @@ export default async function ConsolePage() {
                   {jst(x.credited_at, lang)}
                   {sep}
                   <a
-                    href={`https://solscan.io/tx/${x.signature}?cluster=devnet`}
+                    href={ct.solscanTx(x.signature)}
                     target="_blank"
                     rel="noopener"
                     className="font-mono underline"

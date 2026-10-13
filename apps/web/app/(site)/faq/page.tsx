@@ -3,6 +3,7 @@ import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";
+import { clusterText } from "@/lib/cluster-public";
 import { type Lang, langHref } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -10,6 +11,8 @@ type QA = { q: string; a: string; more?: [string, string] };
 
 const claimMin = LIMITS.claimTtlS / 60;
 const evidenceMin = LIMITS.evidenceUrlTtlS / 60;
+
+const ct = clusterText();
 
 const COPY = {
   ja: {
@@ -37,7 +40,7 @@ const COPY = {
       },
       {
         q: "報酬はいつ、どこに届きますか",
-        a: "依頼が確定し、Solana 上での支払いが終わったときに、ログインで作られた口座に届きます。アプリの「報酬」画面で状態と取引の記録を見られます。試験運用中はテスト用 USDC なので換金はできません。",
+        a: `依頼が確定し、Solana 上での支払いが終わったときに、ログインで作られた口座に届きます。アプリの「報酬」画面で状態と取引の記録を見られます。${ct.cluster === "devnet" ? "いまは Devnet の USDC です。" : ""}`,
       },
       {
         q: "「信頼」や「制限中」とは何ですか",
@@ -56,7 +59,7 @@ const COPY = {
       },
       {
         q: "どの場所でも頼めますか",
-        a: "どこでも頼めます。現地で見て確かめる依頼は緯度・経度で場所を指定し、本や紙の資料・実物・電話などの作業は場所を指定せずに頼めます。試験運用中の worker は東京都心にいるので、それ以外の場所は引き受け手が見つからないことがあります。",
+        a: "どこでも頼めます。現地で見て確かめる依頼は緯度・経度で場所を指定し、本や紙の資料・実物・電話などの作業は場所を指定せずに頼めます。いまの worker は東京都心に多いので、それ以外の場所は引き受け手が見つからないことがあります。",
         more: ["/rules", "依頼と撮影の決まり"],
       },
       {
@@ -108,7 +111,7 @@ const COPY = {
       },
       {
         q: "When and where does the pay arrive?",
-        a: "Once the request is final and the payout on Solana has gone through, it lands in the account created at sign-in. The app's Earnings screen shows the status and the transaction record. During the pilot it is test USDC and cannot be cashed out.",
+        a: `Once the request is final and the payout on Solana has gone through, it lands in the account created at sign-in. The app's Earnings screen shows the status and the transaction record. ${ct.cluster === "devnet" ? "For now it is USDC on Devnet." : ""}`,
       },
       {
         q: "What do “trusted” and “restricted” mean?",
@@ -127,7 +130,7 @@ const COPY = {
       },
       {
         q: "Can I ask about any place?",
-        a: "Yes. On-site requests name a latitude and longitude; tasks involving books, paper documents, physical items or phone calls need no place at all. During the pilot, workers are in central Tokyo, so requests elsewhere may find no taker.",
+        a: "Yes. On-site requests name a latitude and longitude; tasks involving books, paper documents, physical items or phone calls need no place at all. Most workers are in central Tokyo for now, so requests elsewhere may find no taker.",
         more: ["/rules", "Rules for requests and photos"],
       },
       {

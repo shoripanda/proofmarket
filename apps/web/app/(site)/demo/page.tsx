@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { OnchainCheck } from "@/components/onchain-check";
 import { PageHero, Section } from "@/components/site";
+import { clusterText } from "@/lib/cluster-public";
 import { appContext } from "@/lib/context";
 import { env, isDev } from "@/lib/env";
 import { langHref, pick } from "@/lib/lang";
@@ -36,6 +37,7 @@ function Field({ name, value, children }: { name: string; value: string; childre
 }
 
 export default async function DemoPage() {
+  const ct = clusterText();
   const lang = await getLang();
   const r = await newest();
   const e = env();
@@ -58,11 +60,7 @@ export default async function DemoPage() {
       {!r ? (
         <Section
           title={pick(lang, "まだ掲載している結果がありません", "No featured result yet")}
-          lead={pick(
-            lang,
-            "試験運用で最初の結果が出たら、ここに表示します。",
-            "The first result from the pilot will appear here.",
-          )}
+          lead={pick(lang, "最初の結果が出たら、ここに表示します。", "The first result will appear here.")}
         />
       ) : (
         <>
@@ -159,6 +157,8 @@ export default async function DemoPage() {
           >
             {r.attestation?.task_account && programId ? (
               <OnchainCheck
+                rpc={ct.publicRpc}
+                chain={ct.chain}
                 verificationId={r.verification_id}
                 status={r.status}
                 evidenceRoot={r.evidence_root}

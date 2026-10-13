@@ -24,7 +24,7 @@ Every verified answer ends in **one Solana transaction** that records the hash o
 ## Three ways in
 
 1. **MCP** — a remote MCP server with OAuth 2.1 (dynamic client registration + PKCE). Works as a custom connector in claude.ai and ChatGPT, and with `claude mcp add` in Claude Code. Eight tools: `request_reality_verification`, `request_reality_verifications_batch`, `get_reality_verification`, `cancel_…`, `dispute_…`, `watch_…`, `list_…_watches`, `stop_…_watch`.
-2. **x402** — `POST /v1/x402/verifications`, no sign-up, paid per request with Devnet USDC.
+2. **x402** — `POST /v1/x402/verifications`, no sign-up, paid per request in USDC.
 3. **REST** — `POST /v1/verifications` with an API key; OpenAPI at [`packages/core/openapi.json`](packages/core/openapi.json).
 
 Seventeen request types, from "at a place, choose an answer" (shop status, queue length, crowd, parking, stock) through "at a place, number / text" (price, sign transcription, site report) to "anywhere" (document transcription, document Q&A, product inspection, phone inquiry, measurement, custom tasks).

@@ -6,6 +6,8 @@ import { ApiError, newId, PARTICIPATION_AREAS, PARTICIPATION_ROLES } from "@proo
 import { type Db, schema } from "@proofmarket/db";
 import { eq, lte } from "drizzle-orm";
 import { z } from "zod";
+import type { Cluster } from "../cluster";
+import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { log } from "../log";
 import { createPrincipal, issueApiKey, topUp } from "./admin-service";
@@ -20,9 +22,13 @@ export const PARTICIPATION_RETENTION_DAYS = 90;
  * A key issued from /join (01 §4.28). Anyone can get one at once, so the starting balance is a trial amount
  * (10 requests at the usual 0.5 USDC), and one network can get at most KEYS_PER_IP_PER_DAY a day. The two
  * limits are stored on the credential but are no longer enforced (bounty caps were dropped); the balance is
- * what bounds it. The pilot runs on Devnet, so the balance is test USDC.
+ * what bounds it. On Devnet the balance is test USDC; on mainnet there is no trial balance (15 §4.5).
  */
 export const SIGNUP_KEY = { maxTaskAmount: "5", dailySpendLimit: "20", trialBalance: "5" } as const;
+
+/** 15 §4.5: the trial balance exists on Devnet only. On mainnet a new key starts at 0 and is topped up by deposit. */
+export const trialBalanceFor = (cluster: Cluster) =>
+  cluster === "mainnet-beta" ? "0" : SIGNUP_KEY.trialBalance;
 export const KEYS_PER_IP_PER_DAY = 3;
 
 const BodySchema = z
@@ -92,7 +98,8 @@ export async function createParticipationRequest(
       dailySpendLimit: SIGNUP_KEY.dailySpendLimit,
       operator: "signup",
     });
-    await topUp(tx, issued.credentialId, SIGNUP_KEY.trialBalance);
+    const trial = trialBalanceFor(app.config.cluster);
+    if (trial !== "0") await topUp(tx, issued.credentialId, trial);
     await tx
       .insert(schema.participationRequests)
       .values({ id, ...row, status: "contacted", credentialId: issued.credentialId });
@@ -101,7 +108,16 @@ export async function createParticipationRequest(
   // The key is shown on the page; the email is a copy. A failed send never takes the key back.
   let emailed = false;
   if (app.mailer) {
-    const sent = await app.mailer.send({ to: email, ...keyMail(b.lang ?? "ja", apiKey, principalId) });
+    const sent = await app.mailer.send({
+      to: email,
+      ...keyMail(
+        b.lang ?? "ja",
+        apiKey,
+        principalId,
+        trialBalanceFor(app.config.cluster),
+        app.config.cluster,
+      ),
+    });
     emailed = sent.ok;
     if (!sent.ok) log("warn", "participation.key_not_sent", { reason: sent.reason });
   }
@@ -110,7 +126,7 @@ export async function createParticipationRequest(
     delivery: "screen",
     api_key: apiKey,
     principal_ref: principalId,
-    trial_balance: SIGNUP_KEY.trialBalance,
+    trial_balance: trialBalanceFor(app.config.cluster),
     emailed,
   };
 }
@@ -121,7 +137,13 @@ function contactHash(app: AppContext, email: string): Buffer {
 
 const BASE_URL = () => process.env.NEXT_PUBLIC_BASE_URL ?? "https://proofmarket.fun";
 
-function keyMail(lang: "ja" | "en", apiKey: string, principalRef: string): { subject: string; text: string } {
+function keyMail(
+  lang: "ja" | "en",
+  apiKey: string,
+  principalId: string,
+  trial: string,
+  cluster: Cluster,
+): { subject: string; text: string } {
   const base = BASE_URL();
   const add = `claude mcp add --transport http proofmarket ${base}/mcp --header "Authorization: Bearer ${apiKey}"`;
   if (lang === "en") {
@@ -132,10 +154,10 @@ function keyMail(lang: "ja" | "en", apiKey: string, principalRef: string): { sub
         "",
         apiKey,
         "",
-        `principal_ref (put it in REST request bodies; MCP fills it in for you): ${principalRef}`,
+        `principal_ref (put it in REST request bodies; MCP fills it in for you): ${principalId}`,
         "",
         "We store only a hash of it, so we cannot show it again. Keep it somewhere safe.",
-        `Starting balance: ${SIGNUP_KEY.trialBalance} USDC (Devnet test USDC, no real money).`,
+        `Starting balance: ${trial} USDC (${clusterText(cluster).chain}).`,
         "",
         "Connect Claude Code:",
         add,
@@ -153,10 +175,10 @@ function keyMail(lang: "ja" | "en", apiKey: string, principalRef: string): { sub
       "",
       apiKey,
       "",
-      `principal_ref（REST で依頼を作るときに本文に入れる ID。MCP では自動で入ります）：${principalRef}`,
+      `principal_ref（REST で依頼を作るときに本文に入れる ID。MCP では自動で入ります）：${principalId}`,
       "",
       "運営者の側にはキーそのものが残っていないので、もう一度は表示できません。なくさないように保管してください。",
-      `最初の残高：${SIGNUP_KEY.trialBalance} USDC（Devnet の試験用 USDC で、本物のお金ではありません）`,
+      `最初の残高：${trial} USDC（${clusterText(cluster).chain}）`,
       "",
       "Claude Code につなぐ：",
       add,

@@ -11,6 +11,7 @@ import { HourglassPicture } from "@/components/hourglass-picture";
 import { LedgerPicture } from "@/components/ledger-picture";
 import { OnchainCheck } from "@/components/onchain-check";
 import { LangProvider } from "@/lib/client/lang";
+import { clusterText } from "@/lib/cluster-public";
 import { appContext } from "@/lib/context";
 import { env, isDev } from "@/lib/env";
 import { type Lang, langHref, pick } from "@/lib/lang";
@@ -67,6 +68,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function PublicResultPage({ params }: { params: Promise<{ id: string }> }) {
   const lang = await getLang();
+  const ct = clusterText();
   const { id } = await params;
   const r = await load(id);
   const facts = r ? await loadOnchain(id) : null;
@@ -217,8 +219,8 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
               <h2 className="font-bold">
                 {pick(
                   lang,
-                  "書き換えられない記録（Solana Devnet）",
-                  "A record that cannot be rewritten (Solana Devnet)",
+                  `書き換えられない記録（${ct.chain}）`,
+                  `A record that cannot be rewritten (${ct.chain})`,
                 )}
               </h2>
               <p className="leading-relaxed text-slate-600">
@@ -249,6 +251,8 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
               {r.attestation?.task_account && programId ? (
                 <div className="pt-2">
                   <OnchainCheck
+                    rpc={ct.publicRpc}
+                    chain={ct.chain}
                     verificationId={id}
                     status={r.status}
                     evidenceRoot={r.evidence_root}

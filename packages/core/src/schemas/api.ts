@@ -46,6 +46,9 @@ const Amount = z
   .refine((v) => Number(v) > 0, "must be > 0");
 /** What a reward is paid in (15 §3). SOL is accepted only while SOL_ENABLED is on. */
 export const AssetSchema = z.enum(["USDC", "SOL"]);
+/** The chain a request settles on (15 §4.1): Devnet during the pilot, "solana" on mainnet. */
+export const NetworkSchema = z.enum(["solana-devnet", "solana"]);
+export type Network = z.infer<typeof NetworkSchema>;
 export type Asset = z.infer<typeof AssetSchema>;
 const Sha256Hex = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 const SolanaSignature = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{64,88}$/);
@@ -270,7 +273,7 @@ export const CreateVerificationRequestSchema = z
       .object({
         asset: AssetSchema,
         amount: Amount, // per witness (D-07)
-        network: z.literal("solana-devnet"),
+        network: NetworkSchema,
         /**
          * Rising bounty (13 §1): the reward climbs in a straight line from `amount` to this ceiling until someone
          * claims; the amount at the first claim is what every witness is paid. `max_amount × witnesses` is reserved.
@@ -440,7 +443,7 @@ export const VerificationResultSchema = z.object({
   result_hash: Sha256Hex,
   attestation: z
     .object({
-      network: z.literal("solana-devnet"),
+      network: NetworkSchema,
       signature: SolanaSignature,
       task_account: z.string(),
       explorer_url: z.url(),
@@ -503,7 +506,7 @@ export const GetVerificationResponseSchema = z.object({
   bounty: z.object({
     asset: AssetSchema,
     amount: Amount,
-    network: z.literal("solana-devnet"),
+    network: NetworkSchema,
     /** Rising bounty (13 §1); null when the reward is fixed. */
     max_amount: Amount.nullable(),
     ramp_minutes: z.number().int().nullable(),
@@ -573,7 +576,7 @@ export const PublicVerificationResultSchema = VerificationResultSchema.omit({
  */
 export const PublicOnchainSchema = z.object({
   verification_id: VerificationIdSchema,
-  network: z.literal("solana-devnet"),
+  network: NetworkSchema,
   program_id: z.string(),
   /** PDA ["task", sha256("proofmarket:task:v1:" + verification_id)]. */
   task_account: z.string(),
@@ -633,7 +636,7 @@ export const PublicDatasetRowSchema = z.object({
   evidence_root: Sha256Hex,
   result_hash: Sha256Hex,
   attestation: z
-    .object({ network: z.literal("solana-devnet"), signature: SolanaSignature, explorer_url: z.url() })
+    .object({ network: NetworkSchema, signature: SolanaSignature, explorer_url: z.url() })
     .nullable(),
   proof_url: z.url(),
 });
@@ -659,7 +662,7 @@ export const PublicStatsSchema = z.object({
   paid_to_workers: z.object({
     asset: z.literal("USDC"),
     amount: z.string().regex(/^\d+(\.\d{1,6})?$/),
-    network: z.literal("solana-devnet"),
+    network: NetworkSchema,
   }),
   paid_by_asset: z.array(z.object({ asset: AssetSchema, amount: z.string().regex(/^\d+(\.\d{1,6})?$/) })),
   median_seconds_to_result: z.number().int().nullable(),

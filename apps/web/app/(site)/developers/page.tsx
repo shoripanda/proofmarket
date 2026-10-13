@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { Code, PageHero, Section } from "@/components/site";
 import { taskTypeText } from "@/lib/answers";
+import { clusterText } from "@/lib/cluster-public";
 import { type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -31,6 +32,8 @@ const answerChoices = (sep: string) =>
   Object.entries(TASK_TYPE_ANSWERS)
     .map(([t, v]) => `${t}: ${v?.join(sep)}`)
     .join(", ");
+
+const ct = clusterText();
 
 const COPY = {
   ja: {
@@ -66,7 +69,7 @@ const COPY = {
           "POST /v1/x402/verifications",
           "に送ります。中身は request.json と同じで、principal_ref は要りません。",
         ],
-        "402 が返ります。PAYMENT-REQUIRED ヘッダーに、払う額（報酬×人数）、宛先、通貨（Devnet の USDC）、手数料を持つ側の公開鍵が入っています。中身に問題がある依頼は、払う前に 400 などで断ります。",
+        `402 が返ります。PAYMENT-REQUIRED ヘッダーに、払う額（報酬×人数）、宛先、通貨（${ct.chain} の USDC）、手数料を持つ側の公開鍵が入っています。中身に問題がある依頼は、払う前に 400 などで断ります。`,
         "指定どおりの USDC の送金取引を作り、自分の鍵で署名します。手数料は ProofMarket が持つので、ウォレットに SOL は要りません。",
         "同じ依頼を PAYMENT-SIGNATURE ヘッダー付きで送り直します。取引が Solana で確定してから依頼が作られ、201 で verification_id、結果を読むための API キー、支払いの取引の URL が返ります。",
       ] as (string | [string, string, string])[],
@@ -81,7 +84,7 @@ const COPY = {
         `--type CUSTOM_CHOICE --choices "はい,いいえ" --question "この駅のエレベーターは今動いていますか"`,
         `--type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`,
       ],
-      note: "同じ取引を2回送っても、依頼は1件しかできません。2回目は同じ verification_id を返し、API キーは付けません。報酬に上限はありません。テスト用の USDC は Circle の faucet（Solana Devnet）で受け取れます。",
+      note: `同じ取引を2回送っても、依頼は1件しかできません。2回目は同じ verification_id を返し、API キーは付けません。報酬に上限はありません。${ct.cluster === "devnet" ? "テスト用の USDC は Circle の faucet（Solana Devnet）で受け取れます。" : ""}`,
     },
     proof: {
       title: "結果を利用者に見せる（証明のリンク）",
@@ -195,7 +198,7 @@ const COPY = {
             "assurance",
             `何人に確かめてもらうか（required_witnesses、最大${LIMITS.witnesses.max}人）と、何人の答えがそろえば確定か（quorum）。{ "level": "fast" | "standard" | "high" } と書けば、それぞれ1人・2人一致・3人中2人になる`,
           ],
-          ["bounty", "1人あたりの報酬。試験運用中は Solana Devnet のテスト用 USDC"],
+          ["bounty", `1人あたりの報酬。${ct.chain} の USDC`],
           [
             "bounty.max_amount・ramp_minutes（任意）",
             "報酬の上限と、上がりきるまでの分数（10〜1440、既定は締切まで）。報酬は amount から直線で上がり、最初に誰かが引き受けた時点の額で全員分が決まる。作成時に max_amount × 人数を引き当て、使わない分はその時点で残高に戻る。x402 では使えない",
@@ -229,7 +232,7 @@ const COPY = {
     },
     reuse: {
       title: "少し前の結果があれば、それを受け取る",
-      lead: "依頼に reuse を付けると、同じ店について少し前に確定した結果を探し、あれば人を出さずにその場で返します。待ち時間がなく、試験運用中は費用もかかりません。",
+      lead: "依頼に reuse を付けると、同じ店について少し前に確定した結果を探し、あれば人を出さずにその場で返します。待ち時間がなく、費用もかかりません。",
       code: `"reuse": { "max_age_seconds": 600 },   // 10分以内の結果があれば使う
 "allow_reuse": true                     // 自分の結果をほかの依頼者に使わせてよい`,
       p: "使われるのは、元の依頼者が allow_reuse を付けた結果だけです。店・種類・答えの選択肢が同じで、VERIFIED のものに限ります。見つかれば 200 で reused: true と結果そのものが返り、新しい依頼は作られません。NOTICE_POSTED は質問ごとに見る掲示が違うので対象外です。",
@@ -288,7 +291,7 @@ const COPY = {
     },
     limits: {
       title: "上限と支払い",
-      p: "報酬の額には、1件あたりにも1日あたりにも上限がありません。残高が足りる限り依頼できます。制限するのは、API キーごとの1分あたりの呼び出し回数だけです。依頼を出すと、報酬×人数の額が前払いの残高から拘束され、確定すると worker に支払われます。期限切れや取り消しのときは残高に戻ります。試験運用中の残高は Solana Devnet のテスト用 USDC で、実際のお金は動きません。",
+      p: `報酬の額には、1件あたりにも1日あたりにも上限がありません。残高が足りる限り依頼できます。制限するのは、API キーごとの1分あたりの呼び出し回数だけです。依頼を出すと、報酬×人数の額が前払いの残高から拘束され、確定すると worker に支払われます。期限切れや取り消しのときは残高に戻ります。残高は ${ct.chain} の USDC です。`,
     },
   },
   en: {
@@ -324,7 +327,7 @@ const COPY = {
           "POST /v1/x402/verifications",
           ". The body is the same as request.json; principal_ref is not needed.",
         ],
-        "You get a 402. The PAYMENT-REQUIRED header carries the amount (bounty × people), the destination, the asset (USDC on Devnet) and the fee payer's public key. A request with a bad body is refused with 400 or similar before any payment.",
+        `You get a 402. The PAYMENT-REQUIRED header carries the amount (bounty × people), the destination, the asset (USDC on ${ct.chain}) and the fee payer's public key. A request with a bad body is refused with 400 or similar before any payment.`,
         "Build the USDC transfer exactly as specified and sign it with your key. ProofMarket pays the network fee, so the wallet needs no SOL.",
         "Resend the same request with a PAYMENT-SIGNATURE header. Once the transaction is confirmed on Solana the request is created, and a 201 returns the verification_id, an API key for reading the result, and the Explorer URL of the payment.",
       ] as (string | [string, string, string])[],
@@ -340,7 +343,7 @@ const COPY = {
         `--type CUSTOM_CHOICE --choices "yes,no" --question "Is the lift at this station running right now?"`,
         `--type PLACE_STATUS_VERIFICATION --lat 35.6595 --lng 139.7005`,
       ],
-      note: "Sending the same transaction twice never creates two requests: the second call returns the same verification_id without an API key. There is no cap on the bounty. Test USDC is available from Circle's faucet (Solana Devnet).",
+      note: `Sending the same transaction twice never creates two requests: the second call returns the same verification_id without an API key. There is no cap on the bounty.${ct.cluster === "devnet" ? " Test USDC can be had from Circle's faucet (Solana Devnet)." : ""}`,
     },
     proof: {
       title: "Show the result to your user (proof link)",
@@ -454,7 +457,7 @@ const COPY = {
             "assurance",
             `How many people should check (required_witnesses, up to ${LIMITS.witnesses.max}) and how many must agree (quorum). { "level": "fast" | "standard" | "high" } means one person, two agreeing, or two of three`,
           ],
-          ["bounty", "Per person. Test USDC on Solana Devnet during the pilot"],
+          ["bounty", `Per person, in USDC on ${ct.chain}`],
           [
             "bounty.max_amount / ramp_minutes (optional)",
             "A ceiling for the reward and the minutes it takes to get there (10-1440, default: until the deadline). The reward climbs in a straight line from amount, and the amount when the first person claims is what everyone is paid. max_amount × people is reserved at creation; the unused part returns to the balance at that moment. Not available over x402",
@@ -488,7 +491,7 @@ const COPY = {
     },
     reuse: {
       title: "Reuse a recent result",
-      lead: "Add reuse to a request and ProofMarket looks for a recent final result about the same shop. If there is one, it is returned on the spot without sending anyone, with no wait and, during the pilot, no cost.",
+      lead: "Add reuse to a request and ProofMarket looks for a recent final result about the same shop. If there is one, it is returned on the spot without sending anyone, with no wait and no cost.",
       code: `"reuse": { "max_age_seconds": 600 },   // use a result from the last 10 minutes if there is one
 "allow_reuse": true                     // let other requesters reuse my result`,
       p: "Only results whose original requester set allow_reuse are used, and only VERIFIED ones for the same shop, type and answer choices. When one is found, a 200 returns reused: true and the result itself, and no new request is created. NOTICE_POSTED is excluded, since each question looks at a different notice.",
@@ -547,7 +550,7 @@ const COPY = {
     },
     limits: {
       title: "Limits and payment",
-      p: "The bounty has no cap, per request or per day: an agent can ask as long as its balance covers it. The only limit is the number of calls per minute for each API key. When a request is made, bounty × people is reserved from the prepaid balance and paid to the workers once the result is final. On expiry or cancellation it returns to the balance. During the pilot the balance is test USDC on Solana Devnet; no real money moves.",
+      p: `The bounty has no cap, per request or per day: an agent can ask as long as its balance covers it. The only limit is the number of calls per minute for each API key. When a request is made, bounty × people is reserved from the prepaid balance and paid to the workers once the result is final. On expiry or cancellation it returns to the balance. The balance is USDC on ${ct.chain}.`,
     },
   },
 } satisfies Record<Lang, unknown>;
@@ -566,7 +569,7 @@ export default async function DevelopersPage() {
   "deadline": "2026-10-12T12:00:00+09:00",
   "evidence_requirements": { "photo": true, "task_nonce": true },
   "assurance": { "level": "standard" },
-  "bounty": { "asset": "USDC", "amount": "0.5", "network": "solana-devnet" },
+  "bounty": { "asset": "USDC", "amount": "0.5", "network": "${ct.network}" },
   "principal_ref": "prn_..."
 }`;
   return (

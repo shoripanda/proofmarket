@@ -16,6 +16,7 @@ import { schema } from "@proofmarket/db";
 import { explorerAccountUrl, PROOFMARKET_PROGRAM_ID, taskPda } from "@proofmarket/sdk/onchain";
 import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
+import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { howToRead, ONCHAIN_OUTCOME } from "../onchain-facts";
 import { attestationOf } from "./attestation";
@@ -77,7 +78,7 @@ export async function publicOnchain(app: AppContext, rawId: string) {
   const hex = (b: Buffer) => `sha256:${b.toString("hex")}`;
   return {
     verification_id: id,
-    network: "solana-devnet" as const,
+    network: clusterText().network,
     program_id: programId,
     task_account: taskAccount,
     recorded,
@@ -159,9 +160,7 @@ export async function workerPayouts(app: AppContext, workerId: string) {
             ? ("FAILED_RETRYING" as const)
             : ("PENDING" as const),
       explorer_url:
-        p.status === "CONFIRMED" && p.lastSignature
-          ? `https://explorer.solana.com/tx/${p.lastSignature}?cluster=devnet`
-          : null,
+        p.status === "CONFIRMED" && p.lastSignature ? clusterText().explorerTx(p.lastSignature) : null,
       paid_at: p.confirmedAt?.toISOString() ?? null,
     });
   }

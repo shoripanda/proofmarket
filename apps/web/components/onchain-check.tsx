@@ -1,14 +1,15 @@
 "use client";
-// S-07 「Solana で確かめる」: reads the Task account from public Devnet in the visitor's browser and compares it
+// S-07 「Solana で確かめる」: reads the Task account from a public RPC in the visitor's browser and compares it
 // with what this page shows, so the check does not depend on trusting ProofMarket's server.
 import { useState } from "react";
 import { useLang } from "@/lib/client/lang";
 import { type CheckItem, compare, fetchAccount } from "@/lib/client/onchain-check";
 import { pick } from "@/lib/lang";
 
-const PUBLIC_DEVNET_RPC = "https://api.devnet.solana.com";
-
 export function OnchainCheck(p: {
+  /** The public RPC of the cluster the record lives on, and its name (lib/cluster-public.ts). */
+  rpc: string;
+  chain: string;
   verificationId: string;
   status: string;
   evidenceRoot: string;
@@ -23,7 +24,7 @@ export function OnchainCheck(p: {
   async function run() {
     setState("busy");
     try {
-      const acc = await fetchAccount(PUBLIC_DEVNET_RPC, p.taskAccount);
+      const acc = await fetchAccount(p.rpc, p.taskAccount);
       setItems(await compare(p, acc, p.programId, lang));
       setState("idle");
     } catch {
@@ -47,8 +48,8 @@ export function OnchainCheck(p: {
       <p className="text-xs leading-relaxed text-slate-500">
         {pick(
           lang,
-          `このブラウザから公開の Devnet（${PUBLIC_DEVNET_RPC}）に直接問い合わせます。ProofMarket のサーバーは通りません。`,
-          `Your browser queries the public Devnet (${PUBLIC_DEVNET_RPC}) directly. ProofMarket's server is not involved.`,
+          `このブラウザから ${p.chain} の公開 RPC（${p.rpc}）に直接問い合わせます。ProofMarket のサーバーは通りません。`,
+          `Your browser queries a public ${p.chain} RPC (${p.rpc}) directly. ProofMarket's server is not involved.`,
         )}
       </p>
       {state === "error" ? (

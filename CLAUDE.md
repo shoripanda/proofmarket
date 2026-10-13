@@ -73,3 +73,4 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 
 - 2026-10-13 [手元 / 新しい worktree の dev:local] `pnpm dev:local` を初めて動かした worktree で申し込み API が 500（`relation "rate_limit_counters" does not exist`）。`DATABASE_URL=pglite:… pnpm db:migrate` も drizzle-kit が pglite を扱えず失敗 → 先に `pnpm --filter @proofmarket/scripts run run dev-seed.ts` を 1 回流す（`apps/web/.data/pglite` を作って移行を当てる）。サーバーは止めてから
 - 2026-10-13 [Next.js / "use client" の定数] クライアント部品（flow-diagram.tsx）が export する文字列の定数 `FLOW_ICONS` をサーバー部品（トップ）で import して `<path d>` に渡した → 届くのは文字列ではなくクライアント参照で、check と chain の絵が本番でも空白だった → 定数は共有するなら "use client" の無いファイルに置くか、使う側に書き写す
+- 2026-10-13 [CI / typecheck] `pnpm --filter @proofmarket/web typecheck` だけ流して push → CI の `pnpm typecheck` は scripts パッケージも見るので、scripts/*.ts の型エラーで落ちた → push の前はルートで `pnpm typecheck`（全パッケージ）を流す

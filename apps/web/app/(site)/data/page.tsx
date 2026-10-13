@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Code, PageHero, Section } from "@/components/site";
+import { clusterText } from "@/lib/cluster-public";
 import { appContext } from "@/lib/context";
 import { langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
@@ -26,6 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = "force-dynamic";
 
 export default async function DataPage() {
+  const ct = clusterText();
   const lang = await getLang();
   const d = await cachedPublicDataset(appContext()).catch(() => null);
   const sample = d?.rows[0] ?? null;
@@ -110,7 +112,7 @@ curl https://proofmarket.fun/v1/public/dataset.jsonl`,
   "witnesses": 2,
   "verified_at": "2026-10-07T03:00:00.000Z",
   "evidence_root": "…", "result_hash": "…",
-  "attestation": { "network": "solana-devnet", "signature": "…", "explorer_url": "…" },
+  "attestation": { "network": "${ct.network}", "signature": "…", "explorer_url": "…" },
   "proof_url": "https://proofmarket.fun/r/ver_…"
 }`}
           </Code>

@@ -211,7 +211,7 @@ export function ResultCard({
       {/* money moving: escrow -> worker */}
       <div className="mt-3 rounded-xl bg-white p-3">
         <p className="text-[11px] text-slate-500">
-          {pick(lang, "Solana Devnet・記録と支払い", "Solana Devnet · record and payout")}
+          {pick(lang, "Solana・記録と支払い", "Solana · record and payout")}
         </p>
         <svg viewBox="0 0 320 60" className="mt-1 w-full" role="img" aria-label={flowTitle}>
           <title>{flowTitle}</title>

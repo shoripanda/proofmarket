@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PageHero, Section } from "@/components/site";
 import { BigNumber, duration, loadStats, usdc } from "@/components/stats";
 import { taskTypeText } from "@/lib/answers";
+import { clusterText } from "@/lib/cluster-public";
 import { dateLocale, type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -28,6 +29,7 @@ const n = (lang: Lang, count: number, ja: string, en: string, enPlural = `${en}s
 
 export default async function StatsPage() {
   const lang = await getLang();
+  const ct = clusterText();
   const s = await loadStats();
   const types = taskTypeText(lang);
   return (
@@ -43,8 +45,8 @@ export default async function StatsPage() {
         <p>
           {pick(
             lang,
-            "試験運用で実際に動いた依頼を、データベースから集計しています。1分ごとに更新します。報酬の支払いは Solana Devnet に記録されているので、下の一覧から1件ずつ Explorer で確かめられます。",
-            "Aggregated from the database over the requests that actually ran during the pilot, refreshed every minute. Payouts are recorded on Solana Devnet, so each one in the list below can be checked in the Explorer.",
+            `実際に動いた依頼を、データベースから集計しています。1分ごとに更新します。報酬の支払いは ${ct.chain} に記録されているので、下の一覧から1件ずつ Explorer で確かめられます。`,
+            `Aggregated from the database over the requests that actually ran, refreshed every minute. Payouts are recorded on ${ct.chain}, so each one in the list below can be checked in the Explorer.`,
           )}
         </p>
       </PageHero>
@@ -76,8 +78,8 @@ export default async function StatsPage() {
                 label={pick(lang, "worker に支払った報酬", "paid to workers")}
                 note={pick(
                   lang,
-                  "支払いが確定した分だけ。Devnet のテスト用 USDC",
-                  "Settled payouts only. Test USDC on Devnet",
+                  `支払いが確定した分だけ。${ct.chain} の USDC`,
+                  `Settled payouts only. USDC on ${ct.chain}`,
                 )}
               />
               <BigNumber

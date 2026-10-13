@@ -7,10 +7,13 @@ import { safetyNotes } from "@/components/safety";
 import { PageHero, Section } from "@/components/site";
 import { ListenButton } from "@/components/ui";
 import { Plain } from "@/lib/client/plain";
+import { clusterText } from "@/lib/cluster-public";
 import { type Lang, langHref } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
 const claimMin = LIMITS.claimTtlS / 60;
+
+const ct = clusterText();
 
 const COPY = {
   ja: {
@@ -57,13 +60,13 @@ const COPY = {
       items: [
         "カメラが使えるスマートフォン。現地へ行く依頼では位置情報も使います。アプリのインストールは要らず、ブラウザで開きます。",
         "メールアドレスか Google アカウント。報酬を受け取る口座はログインのときに自動で作られます。",
-        "招待コード。試験運用中は、申し込んだ人に運営者から送ります。",
+        "招待コード。申し込んだ人に運営者から送ります。",
       ],
       note: "暗号資産やウォレットの知識は要りません。手数料に使う SOL を用意する必要もありません。",
     },
     pay: {
       title: "報酬",
-      lead: "1件の報酬は依頼ごとに決まり、引き受ける前に表示されます。試験運用中は Solana Devnet のテスト用 USDC で払うため、換金はできません。",
+      lead: `1件の報酬は依頼ごとに決まり、引き受ける前に表示されます。${ct.chain} の USDC で払います。`,
     },
     safety: {
       title: "安全のための決まり",
@@ -128,13 +131,13 @@ const COPY = {
       items: [
         "A smartphone with a camera. On-site requests also use location. Nothing to install; it runs in the browser.",
         "An email address or a Google account. The account that receives your pay is created automatically when you sign in.",
-        "An invite code. During the pilot, the operator sends one to people who apply.",
+        "An invite code. The operator sends one to people who apply.",
       ],
       note: "No knowledge of crypto or wallets needed, and no SOL for fees.",
     },
     pay: {
       title: "Pay",
-      lead: "Each request sets its own bounty, shown before you claim. During the pilot, pay is test USDC on Solana Devnet and cannot be cashed out.",
+      lead: `Each request sets its own bounty, shown before you claim. Pay is USDC on ${ct.chain}.`,
     },
     safety: {
       title: "Safety rules",

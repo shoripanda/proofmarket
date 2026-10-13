@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { ConnectFlow } from "@/components/connect-flow";
 import { PageHero } from "@/components/site";
 import { Plain } from "@/lib/client/plain";
+import { publicCluster } from "@/lib/cluster-public";
 import { pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -47,7 +48,7 @@ export default async function ConnectPage() {
         </p>
       </PageHero>
       <div className="mx-auto max-w-5xl px-4 py-10">
-        <ConnectFlow base={await baseUrl()} />
+        <ConnectFlow base={await baseUrl()} cluster={publicCluster()} />
       </div>
     </>
   );
