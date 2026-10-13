@@ -1,6 +1,7 @@
 // Track-record blocks shared by /stats and the top page (05 §4.1). Server components only.
 import type { PublicStats } from "@proofmarket/core/schemas/api";
 import Link from "next/link";
+import { clusterText } from "@/lib/cluster-public";
 import { appContext } from "@/lib/context";
 import { type Lang, langHref, pick } from "@/lib/lang";
 import { cachedPublicStats } from "@/lib/services/stats-service";
@@ -53,8 +54,8 @@ export async function StatsHighlights({ lang = "ja" }: { lang?: Lang }) {
       title={pick(lang, "実績", "Track record")}
       lead={pick(
         lang,
-        "試験運用の数字です。データベースから集計し、1分ごとに更新しています。",
-        "Numbers from the pilot, aggregated from the database and refreshed every minute.",
+        "実際の数字です。データベースから集計し、1分ごとに更新しています。",
+        "Live numbers, aggregated from the database and refreshed every minute.",
       )}
     >
       <div className="grid gap-4 sm:grid-cols-3">
@@ -65,7 +66,7 @@ export async function StatsHighlights({ lang = "ja" }: { lang?: Lang }) {
         <BigNumber
           value={usdc(s.paid_to_workers.amount)}
           label={pick(lang, "worker に支払った報酬", "paid to workers")}
-          note="Solana Devnet"
+          note={clusterText().chain}
         />
         <BigNumber
           value={duration(s.median_seconds_to_result, lang)}

@@ -3,7 +3,7 @@
 > A marketplace where AI agents pay people to check things in the real world: look at a place, read a printed
 > page, inspect an object, make a phone call. A person nearby does it, sends photos and an answer, the work is
 > checked (location, photo freshness, duplicates, an AI review against the request), and the result and payment
-> are recorded on Solana. Pilot: Solana Devnet, test USDC, Japan.
+> are recorded on Solana. Based in Japan.
 
 ## Ways in
 
@@ -14,10 +14,10 @@
   connector with OAuth; paste the API key on the consent page.
 - REST: `POST https://proofmarket.fun/v1/verifications` with `Authorization: Bearer <API key>`; read the result with
   `GET /v1/verifications/{id}?wait=45` (long poll; the response carries a one-paragraph `summary` in ja and en).
-- x402 (no account, pay per request in USDC on Solana Devnet): `POST https://proofmarket.fun/v1/x402/verifications`
+- x402 (no account, pay per request in USDC on Solana): `POST https://proofmarket.fun/v1/x402/verifications`
   answers 402 with the exact payment terms; repeat with the signed payment in the `PAYMENT-SIGNATURE` header.
-- API key: https://proofmarket.fun/en/connect — the key is shown on the page at once, with a trial balance of
-  test USDC, followed by the steps for your client with the key already filled in.
+- API key: https://proofmarket.fun/en/connect — the key is shown on the page at once, followed by the steps
+  for your client with the key already filled in.
 
 ## Setup instructions for agents
 
@@ -41,7 +41,7 @@ anywhere but the ProofMarket endpoint below.
 
 - Developer guide: https://proofmarket.fun/en/developers
 - OpenAPI: https://raw.githubusercontent.com/shoripanda/proofmarket/main/packages/core/openapi.json
-- Pricing: https://proofmarket.fun/en/pricing — bounty per person × people asked; no platform fee during the pilot;
+- Pricing: https://proofmarket.fun/en/pricing — bounty per person × people asked; no platform fee at present;
   no cap on the bounty, only the prepaid balance.
 - How it works: https://proofmarket.fun/en/how-it-works
 - Public results and proof pages: https://proofmarket.fun/en/map, https://proofmarket.fun/en/stats

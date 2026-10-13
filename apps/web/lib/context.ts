@@ -25,7 +25,7 @@ import { createPrivyIdentity } from "./adapters/privy";
 import { createResendMailer } from "./adapters/resend-mailer";
 import { createSupabaseStorage } from "./adapters/supabase-storage";
 import { createWebPushSender } from "./adapters/web-push";
-import { checkClusterGate } from "./cluster";
+import { type Cluster, checkClusterGate } from "./cluster";
 import { env, isDev } from "./env";
 import type { EvidenceStorage, IdentityProvider, Mailer, PushSender, SubmissionReviewer } from "./ports";
 
@@ -62,6 +62,8 @@ export interface AppConfig {
   solEnabled: boolean;
   /** PROGRAM_ID; unset in DEV_MODE (13 §2 then falls back to the Devnet program). */
   programId?: string;
+  /** 15 §4.1: which chain the server settles on. DEV_MODE is always devnet. */
+  cluster: Cluster;
 }
 
 export const DEV_DATA_DIR = join(process.cwd(), ".data");
@@ -89,6 +91,7 @@ function buildContext(): AppContext {
     risingBountyEnabled: e.RISING_BOUNTY_ENABLED,
     solEnabled: e.SOL_ENABLED,
     ...(isDev(e) ? {} : { programId: e.PROGRAM_ID }),
+    cluster: isDev(e) ? "devnet" : e.SOLANA_CLUSTER,
   };
   if (isDev(e)) {
     assertDevAllowed(e.APP_ENV);

@@ -176,9 +176,9 @@ curl -X POST https://<app>/v1/admin/flags -H "authorization: Bearer $ADMIN_TOKEN
 
 v1.2 より前のサーバーは v1.2 のプログラムでそのまま動くので、2 と 5 の間が空いても困らない（15 §3.1）。
 
-## 10. メインネットへ切り替える（手順だけ。法務の確認が済むまで実行しない）
+## 10. メインネットへ切り替える（2026-10-13、オーナーの決定で実行）
 
-15 §4 の設計を手順に直したもの。実行の条件は `legal-checklist.md` §1・§3・§7 の確認が終わり、D-05（資金の預かり）の結論が文書になっていること。それまでは、サーバーが起動時の門（`apps/web/lib/cluster.ts`）で止まる。
+15 §4 の設計を手順に直したもの。もともとの条件は `legal-checklist.md` §1・§3・§7 の確認が終わり、D-05（資金の預かり）の結論が文書になっていることだった。2026-10-13 にオーナーが**確認を待たずに切り替える**と決め、その決定を `docs/legal/2026-10-13-owner-decision.md` に残した。起動の門（`apps/web/lib/cluster.ts`）は変えていない。`LEGAL_SIGNOFF` にはこの決定文書の場所を入れ、弁護士の確認が取れたら確認結果の文書に差し替える。
 
 ### 10.1 用意するもの
 
@@ -188,9 +188,9 @@ v1.2 より前のサーバーは v1.2 のプログラムでそのまま動くの
 | admin の置き場 | ハードウェア財布か Squads のマルチシグ。サーバーには置かない。プログラムの更新権限も同じ鍵にする |
 | SOL | admin に 4.5 SOL（配置に約 2.03 SOL ＋ 配置中のバッファ）、operator に 1 SOL（手数料とレント） |
 | USDC | treasury に最初の支払い見込みぶん。上限（15 §6）は決めてから入れる |
-| RPC | 有料の RPC（Helius か Triton）のメインネット URL。公開 RPC は上限が低く、tick が毎分呼ぶには足りない |
-| 法務の文書 | 確認結果を `docs/legal/<日付>-signoff.md` に置く。`LEGAL_SIGNOFF` にその場所を入れる |
-| 監査 | v1.2 の差分を外部の目で見てもらった記録。これが無いうちは実行しない |
+| RPC | 有料の RPC のメインネット URL。比較の結果（`docs/ops/rpc-mainnet-2026-10-13.md`）は Helius の Developer（$49／月）。公開 RPC は上限が低く、tick が毎分呼ぶには足りない。URL は API キーを含むので秘密 |
+| 法務の文書 | 確認結果を `docs/legal/<日付>-signoff.md` に置く。それが無いうちは、オーナーの決定文書 `docs/legal/2026-10-13-owner-decision.md`。`LEGAL_SIGNOFF` にその場所を入れる |
+| 点検の記録 | 第三者の監査は受けていない。代わりに運営者の点検 `docs/security/program-review-2026-10-13.md`。資金の量が増える前に外部の監査を受ける |
 
 ### 10.2 プログラムを置く
 
@@ -203,7 +203,14 @@ solana program deploy target/deploy/proofmarket.so \
   --keypair <admin のハードウェア財布> -u mainnet-beta
 ```
 
-続けて `initialize_config`（operator・verifier・`bounty_mint` = `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`）と `add_mint`（wSOL）を admin で実行する。`devnet-setup.ts` はメインネットを拒むように書いてあるので、そのまま使えない。実行の日に `mainnet-setup.ts` を足し、genesis hash が `5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d` のときだけ、かつ `--i-have-legal-signoff <文書の場所>` を受けたときだけ動くようにする。配置の直後に実行し、Config の admin・operator・verifier が自分の鍵かを確かめる（横取りされていたら新しい ID で作り直す。06 §3）。
+続けて `scripts/mainnet-setup.ts` を配置の直後に実行する。`devnet-setup.ts` はメインネットを拒むので使えない。
+
+```bash
+pnpm --filter @proofmarket/scripts run run mainnet-setup.ts \
+  --url <有料 RPC の URL> --decision-doc docs/legal/2026-10-13-owner-decision.md --allow-wsol
+```
+
+この script は genesis hash が `5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d` のときだけ、`--decision-doc` の文書が存在するときだけ動く。公開 RPC の URL と Devnet の鍵は拒む。admin・operator・verifier は `~/.config/proofmarket/mainnet/` から読み、operator と verifier は無ければ作る（admin はハードウェア財布なら `--admin-keypair` で一度だけ渡す）。admin に 0.5 SOL・operator に 0.2 SOL 以上が要る（airdrop はしない）。やることは、operator の USDC 口座（treasury）を作る → `initialize_config`（`bounty_mint` = `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`）→ Config の admin・operator・verifier が自分の鍵かを確かめる（横取りされていたら新しい ID で作り直す。06 §3）→ `--allow-wsol` なら `add_mint`（wSOL）→ `~/.config/proofmarket/env.mainnet-beta` に 10.3 の値を書き出す。
 
 ### 10.3 サーバーの設定
 
@@ -224,12 +231,13 @@ Vercel の Production で次を入れ替える。ほかの変数は 5 節のま�
 
 ### 10.4 切り替えの日にやること
 
-1. 試験用の残高（`/join` の 5 USDC）を配る処理を止める。メインネットでは配らない
+1. 試験用の残高は `SOLANA_CLUSTER=mainnet-beta` なら 0 になる（`participation-service.ts` の `trialBalanceFor`）。配る処理を手で止める必要は無い。キーのメールにも残高の行は出ない
 2. 10.2・10.3 を済ませ、`/v1/health/ready` が 200 を返すのを見る
 3. 運営者自身が 0.10 USDC × 1 人と 0.001 SOL × 1 人の依頼を 1 件ずつ出し、依頼から支払いまでを一周して Solscan で確かめる
-4. 料金ページ・利用規約・トップの「試験運用」「テスト用 USDC」の文言を直す（`apps/web/app/(site)/pricing`・`/legal`・`page.tsx`）
+4. 画面の文言は済んでいる。「試験運用」「テスト用 USDC」の表記は 2026-10-13 に消し、鎖の名前・explorer のリンク・API の `network`（`solana-devnet`／`solana`）は `apps/web/lib/cluster-public.ts` の `clusterText()` がクラスタで切り替える。手で直す箇所は無い
 5. 08 §5 の警告のしきい値（operator の SOL 残高）をメインネット用に上げる
-6. 入金（15 §4.3）は Devnet と同じ仕組みで動く。`/console` の案内文から「Devnet」を消す
+6. 入金（15 §4.3）は Devnet と同じ仕組みで動く。`/console` の案内文もクラスタで切り替わる
+7. agent の script（`demo-agent.ts`・`x402-agent.ts`）と公開 API の利用者は、依頼の `bounty.network` に `solana` を入れる。`solana-devnet` のままだと VALIDATION_FAILED（`wrong_network`）で拒まれる
 
 ### 10.5 戻し方
 

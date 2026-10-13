@@ -4,7 +4,7 @@
 //
 //   pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url https://<app> \
 //     [--type DOCUMENT_QA] [--question "..."] [--lat 35.6595 --lng 139.7005 --radius 80] \
-//     [--choices "A,B,C"] [--unit cm] [--bounty 0.10] [--deadline-min 45] [--publish]
+//     [--choices "A,B,C"] [--unit cm] [--bounty 0.10] [--deadline-min 45] [--publish] [--network solana]
 //   pnpm --filter @proofmarket/scripts run run x402-agent.ts --list-types
 //   add --dry-run to print the request body without sending or paying
 //
@@ -107,7 +107,7 @@ const body = {
   freshness: { max_age_seconds: 300 },
   evidence_requirements: { photo: true, task_nonce: true },
   assurance: { required_witnesses: 1, quorum: 1 },
-  bounty: { asset: "USDC", amount: a.bounty ?? "0.10", network: "solana-devnet" },
+  bounty: { asset: "USDC", amount: a.bounty ?? "0.10", network: a.network ?? "solana-devnet" },
   // Puts the question, place, answer and time on the public map for others to use (01 §4.22).
   ...(a.publish ? { publish: true } : {}),
 };

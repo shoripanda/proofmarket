@@ -6,6 +6,7 @@ import { fromMicro, type TaskType, toMicro } from "@proofmarket/core";
 import type { Asset, PublicStats } from "@proofmarket/core/schemas/api";
 import { schema } from "@proofmarket/db";
 import { and, count, countDistinct, desc, eq, isNotNull } from "drizzle-orm";
+import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import type { SettleRecipients } from "./views";
 
@@ -13,7 +14,7 @@ const COMPLETED = ["VERIFIED", "SETTLED"];
 const DAYS = 14;
 const RECENT = 10;
 const JST_MS = 9 * 3600_000;
-const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+const explorer = (sig: string) => clusterText().explorerTx(sig);
 const jstDate = (d: Date) => new Date(d.getTime() + JST_MS).toISOString().slice(0, 10);
 
 function median(xs: number[]): number | null {
@@ -119,7 +120,7 @@ export async function publicStats(app: AppContext): Promise<PublicStats> {
     verifications: { total: byType.reduce((a, t) => a + t.total, 0), completed },
     workers_with_valid_submission: Number(workers?.n ?? 0),
     requesters: Number(requesters?.n ?? 0),
-    paid_to_workers: { asset: "USDC", amount: fromMicro(paid), network: "solana-devnet" },
+    paid_to_workers: { asset: "USDC", amount: fromMicro(paid), network: clusterText().network },
     paid_by_asset: [...paidBy].map(([asset, v]) => ({ asset: asset as Asset, amount: fromMicro(v) })),
     median_seconds_to_result: median(durations),
     ai_review: { pass: reviews("pass"), fail: reviews("fail"), uncertain: reviews("warning") },

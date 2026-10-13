@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";
 import { Plain, Term } from "@/lib/client/plain";
+import { clusterText } from "@/lib/cluster-public";
 import { type Lang, langHref } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
@@ -11,13 +12,15 @@ const EXAMPLE_BOUNTY = 0.5;
 
 type Level = { name: string; level: string; n: number; q: number; when: string };
 
+const ct = clusterText();
+
 const COPY = {
   ja: {
     meta: { title: "料金 | ProofMarket" },
     eyebrow: "料金",
     title: "払うのは、確かめてくれた人への報酬だけです",
     intro:
-      "1件の費用は「1人あたりの報酬 × 確かめてもらう人数」です。試験運用中は ProofMarket の手数料をいただきません。手数料の料率は、試験運用で worker の手間と待ち時間を測ってから決めます。",
+      "1件の費用は「1人あたりの報酬 × 確かめてもらう人数」です。いまは ProofMarket の手数料をいただきません。料率を決めるときは、事前に案内します。",
     levels: {
       title: "確かめてもらう人数を選べます",
       lead: `人数を増やすほど答えは確かになり、費用と待ち時間が増えます。API では assurance に level を書くだけで選べ、人数を直接書くこともできます。最大 ${LIMITS.witnesses.max} 人まで頼めます。下の金額は、1人あたり ${EXAMPLE_BOUNTY} USDC にした場合の例です。`,
@@ -44,7 +47,7 @@ const COPY = {
           when: "1人が違う答えでも確定できる。迷いやすい場所に向く",
         },
       ] as Level[],
-      note: "結果が出るまでの時間は、近くに worker がいるかどうかで大きく変わります。目安の数字は試験運用で測ってから載せます。",
+      note: "結果が出るまでの時間は、近くに worker がいるかどうかで大きく変わります。目安の数字は、実績がたまりしだい載せます。",
     },
     money: {
       title: "お金の流れ",
@@ -64,8 +67,11 @@ const COPY = {
       note: "少数派の答えや「わからない（UNCLEAR）」にも報酬を払うのは、多数派に合わせようとする動機をなくすためです。確認に落ちた写真には払いません。",
     },
     pilot: {
-      title: "試験運用中の支払い",
-      body: "残高と報酬は Solana Devnet の USDC で、請求は発生しません。メインネットでの決済は、資金の預かりや送金にかかわる法律の確認を終えてから始めます。",
+      title: "支払いについて",
+      body:
+        ct.cluster === "devnet"
+          ? "残高と報酬は Solana Devnet の USDC です。メインネットへの切り替えを進めています。"
+          : "残高と報酬は Solana の USDC で、請求は発生しません。入金は依頼者の画面から行います。",
       cta: "API キーを申し込む",
     },
   },
@@ -74,7 +80,7 @@ const COPY = {
     eyebrow: "Pricing",
     title: "You pay only the people who checked",
     intro:
-      "A request costs the bounty per person times the number of people asked. During the pilot, ProofMarket takes no fee. The fee rate will be set once the pilot has measured workers' effort and waiting times.",
+      "A request costs the bounty per person times the number of people asked. ProofMarket takes no fee at present. You will be told in advance before a fee rate is introduced.",
     levels: {
       title: "Choose how many people check",
       lead: `More people make the answer more certain, and cost more and take longer. In the API, set a level under assurance, or give the numbers directly. Up to ${LIMITS.witnesses.max} people per request. The amounts below assume ${EXAMPLE_BOUNTY} USDC per person.`,
@@ -101,7 +107,7 @@ const COPY = {
           when: "Final even if one person disagrees. Suits places that are easy to misjudge",
         },
       ] as Level[],
-      note: "Time to result depends mostly on whether a worker is nearby. Typical figures will be published once the pilot has measured them.",
+      note: "Time to result depends mostly on whether a worker is nearby. Typical figures will be published as results accumulate.",
     },
     money: {
       title: "Where the money goes",
@@ -127,8 +133,11 @@ const COPY = {
       note: "Minority answers and “can't tell” (UNCLEAR) are paid too, so nobody has a reason to guess what the majority will say. Photos that fail the checks are not paid.",
     },
     pilot: {
-      title: "Payments during the pilot",
-      body: "Balances and bounties are USDC on Solana Devnet, and nothing is invoiced. Settlement on mainnet will follow once the legal review of holding and transferring funds is complete.",
+      title: "About payments",
+      body:
+        ct.cluster === "devnet"
+          ? "Balances and bounties are USDC on Solana Devnet. The move to mainnet is under way."
+          : "Balances and bounties are USDC on Solana, and nothing is invoiced. Top up from the requester console.",
       cta: "Request an API key",
     },
   },

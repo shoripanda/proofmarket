@@ -22,6 +22,7 @@ import {
 } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { clusterText } from "../cluster-public";
 import { proofLinks } from "../proof";
 import { aggregateOf } from "./aggregate";
 import { attestationOf } from "./attestation";
@@ -33,7 +34,7 @@ import type { TaskRow } from "./task-engine";
 import { taskLocation } from "./task-location";
 import { resultRow } from "./verification-service";
 
-const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+const explorer = (sig: string) => clusterText().explorerTx(sig);
 const hex = (b: Buffer) => `sha256:${b.toString("hex")}` as const;
 
 /** Shape stored in payment_records.recipients for FINALIZE_AND_SETTLE (written by the settle job, PR-11). */
@@ -182,7 +183,7 @@ export async function buildResult(
     attestation:
       settle?.status === "CONFIRMED" && settle.lastSignature
         ? {
-            network: "solana-devnet",
+            network: clusterText().network,
             signature: settle.lastSignature,
             task_account: settleInfo?.task_account ?? "",
             explorer_url: explorer(settle.lastSignature),
@@ -359,7 +360,7 @@ export async function buildVerificationView(
     bounty: {
       asset: task.bountyAsset as Asset,
       amount: fromMicro(toMicro(task.bountyAmount)),
-      network: "solana-devnet",
+      network: clusterText().network,
       max_amount: task.bountyMaxAmount === null ? null : fromMicro(toMicro(task.bountyMaxAmount)),
       ramp_minutes: task.bountyRampMinutes,
       current_amount: currentBounty(bountyOf(task), now),

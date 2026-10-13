@@ -53,11 +53,7 @@ export default function LoginPage() {
         </Button>
       )}
       <p className="text-xs text-slate-500">
-        {pick(
-          lang,
-          "招待された方だけが参加できるテスト運用です。",
-          "This is a pilot; only invited people can take part.",
-        )}
+        {pick(lang, "招待された方だけが参加できます。", "Only invited people can take part.")}
       </p>
     </div>
   );

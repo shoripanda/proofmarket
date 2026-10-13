@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LangSwitch } from "@/components/lang-switch";
 import { PlainProvider, PlainToggle } from "@/lib/client/plain";
+import { clusterText } from "@/lib/cluster-public";
 import { type Lang, langHref, pick } from "@/lib/lang";
 
 type NavItem = { href: string; label: string };
@@ -38,6 +39,7 @@ export const headerNav = (lang: Lang): NavItem[] => [
 
 export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode }) {
   const h = (href: string) => langHref(lang, href);
+  const ct = clusterText();
   return (
     <PlainProvider>
       <div className="min-h-dvh bg-white">
@@ -105,8 +107,8 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
             <p>
               {pick(
                 lang,
-                "東京で試験運用中です。決済は Solana Devnet で行います。",
-                "Pilot in Tokyo. Payments are settled on Solana Devnet.",
+                `拠点は東京。決済は ${ct.chain} で行います。`,
+                `Based in Tokyo. Payments are settled on ${ct.chain}.`,
               )}
             </p>
           </div>

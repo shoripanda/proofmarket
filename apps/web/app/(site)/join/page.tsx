@@ -29,8 +29,8 @@ export default async function JoinPage({ searchParams }: { searchParams: Promise
           <Plain>
             {pick(
               lang,
-              "招待コードは、人数を絞って進めているため、運営者から順番にお送りします。",
-              "Invite codes are sent by the operator in turn, as numbers are kept small during the pilot.",
+              "招待コードは、運営者から順番にお送りします。",
+              "Invite codes are sent by the operator in turn.",
             )}
           </Plain>
         </p>

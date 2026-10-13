@@ -1,6 +1,7 @@
 // Demo agent (REQ-X-D-101): ask whether a place is open, wait for a real witness, branch on the answer.
 //   PROOFMARKET_API_KEY=pm_test_... pnpm --filter @proofmarket/scripts run run demo-agent.ts \
-//     --base-url https://<app> --principal prn_... --lat 35.6595 --lng 139.7005 [--witnesses 1] [--deadline-min 45]
+//     --base-url https://<app> --principal prn_... --lat 35.6595 --lng 139.7005 [--witnesses 1] [--deadline-min 45] [--network solana]
+//   --network: solana-devnet (default) or solana; it must match the server's cluster (15 §4.1).
 import { ProofMarketClient } from "@proofmarket/sdk";
 import { args, need } from "./lib.ts";
 
@@ -23,7 +24,7 @@ const created = await client.createVerification(
     freshness: { max_age_seconds: 300 },
     evidence_requirements: { photo: true, task_nonce: true },
     assurance: { required_witnesses: witnesses, quorum: witnesses },
-    bounty: { asset: "USDC", amount: a.bounty ?? "0.50", network: "solana-devnet" },
+    bounty: { asset: "USDC", amount: a.bounty ?? "0.50", network: a.network ?? "solana-devnet" },
     principal_ref: need(a, "principal"),
   },
   a.idem ?? `demo-${Date.now()}`,

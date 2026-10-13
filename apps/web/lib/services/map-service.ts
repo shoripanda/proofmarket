@@ -6,6 +6,7 @@ import { LIMITS, publicLocation, type TaskType } from "@proofmarket/core";
 import type { PublicDataset, PublicMap } from "@proofmarket/core/schemas/api";
 import { schema } from "@proofmarket/db";
 import { and, desc, eq, gt } from "drizzle-orm";
+import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { proofLinks } from "../proof";
 
@@ -58,7 +59,7 @@ export async function publicMap(app: AppContext): Promise<PublicMap> {
   return { generated_at: now.toISOString(), max_age_hours: LIMITS.publicMap.maxAgeHours, items };
 }
 
-const explorer = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+const explorer = (sig: string) => clusterText().explorerTx(sig);
 const hex = (b: Buffer | Uint8Array) => Buffer.from(b).toString("hex");
 
 /**
@@ -98,7 +99,7 @@ export async function publicDataset(app: AppContext, limit = 1000): Promise<Publ
       result_hash: hex(r.resultHash),
       attestation:
         payStatus === "CONFIRMED" && sig
-          ? { network: "solana-devnet", signature: sig, explorer_url: explorer(sig) }
+          ? { network: clusterText().network, signature: sig, explorer_url: explorer(sig) }
           : null,
       proof_url: proofLinks(task.id).url,
     });

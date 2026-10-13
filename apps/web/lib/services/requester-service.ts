@@ -31,6 +31,7 @@ import {
 import { type Db, schema } from "@proofmarket/db";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
+import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
 import { bountyOf, reservedMicro } from "./bounty";
@@ -193,6 +194,15 @@ export async function createVerification(
   if (!(await flagEnabled(tx, "tasks_create_enabled"))) throw new ApiError("FEATURE_DISABLED");
   if (!auth.allowedTaskTypes.includes(body.type)) throw new ApiError("UNSUPPORTED_TASK_TYPE");
   if (body.principal_ref !== auth.principalId) throw new ApiError("PRINCIPAL_MISMATCH");
+  // 15 §4.1: a request names the chain it expects; a body written for Devnet must not spend mainnet funds.
+  const expectedNetwork = clusterText(app.config.cluster).network;
+  if (body.bounty.network !== expectedNetwork) {
+    throw new ApiError("VALIDATION_FAILED", {
+      field: "bounty.network",
+      reason: "wrong_network",
+      expected: expectedNetwork,
+    });
+  }
   validateAnswerSchema(body.type, body.answer_schema);
   const loc = body.location ?? null;
   if (!loc && locationRequired(body.type)) {

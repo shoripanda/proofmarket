@@ -139,8 +139,7 @@ const TEXT = {
     payouts: "支払い履歴",
     received: "受け取り済み",
     viewTx: "取引記録を見る（Solana Explorer）",
-    endNote:
-      "体験はここまでです。本番では、この取引が Solana Devnet に記録され、Explorer で誰でも見られます。",
+    endNote: "体験はここまでです。本番では、この取引が Solana に記録され、Explorer で誰でも見られます。",
     checks: [
       "この依頼のために撮られた写真か（合言葉）",
       "いま撮られた写真か（受付時間）",
@@ -263,7 +262,7 @@ const TEXT = {
     received: "Received",
     viewTx: "View the transaction (Solana Explorer)",
     endNote:
-      "That is the end of the demo. In production this transaction is recorded on Solana Devnet, where anyone can see it in the Explorer.",
+      "That is the end of the demo. In production this transaction is recorded on Solana, where anyone can see it in the Explorer.",
     checks: [
       "Taken for this request? (nonce)",
       "Taken just now? (capture window)",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { PageHero, Section } from "@/components/site";
 import { BigNumber, duration, loadStats } from "@/components/stats";
+import { clusterText } from "@/lib/cluster-public";
 import { env, isDev } from "@/lib/env";
 
 export const metadata: Metadata = {
@@ -54,13 +55,14 @@ const STEPS = [
 ];
 
 export default async function EnHome() {
+  const ct = clusterText();
   const s = await loadStats();
   const e = env();
   const programId = isDev(e) ? null : e.PROGRAM_ID;
   return (
     <>
       <PageHero
-        eyebrow="ProofMarket · pilot running in Tokyo"
+        eyebrow="ProofMarket · from Tokyo"
         title="Whatever your AI agent cannot do itself, ask a person."
       >
         <p>
@@ -125,8 +127,8 @@ export default async function EnHome() {
           ))}
         </div>
         <p className="mt-4 text-xs text-slate-500">
-          Pilot limits: a request runs up to 24 hours, with up to 5 witnesses. There is no cap on the bounty.
-          Larger jobs are split into several requests.
+          Current limits: a request runs up to 24 hours, with up to 5 witnesses. There is no cap on the
+          bounty. Larger jobs are split into several requests.
         </p>
       </Section>
 
@@ -138,7 +140,7 @@ export default async function EnHome() {
 
       <Section
         title="What is live today"
-        lead="Everything on this page is deployed and running against Solana Devnet. Numbers come from the database and refresh every minute."
+        lead={`Everything on this page is deployed and running against ${ct.chain}. Numbers come from the database and refresh every minute.`}
       >
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <BigNumber
@@ -148,7 +150,7 @@ export default async function EnHome() {
           <BigNumber
             value={s ? `${s.paid_to_workers.amount} USDC` : "—"}
             label="paid to workers"
-            note="Solana Devnet"
+            note={ct.chain}
           />
           <BigNumber
             value={s ? duration(s.median_seconds_to_result, "en") : "—"}
@@ -245,7 +247,7 @@ export default async function EnHome() {
   "reviews": [{ "verdict": "pass", "reason": "…", "model": "claude-opus-5-5" }],
   "evidence_root": "…", "result_hash": "…",
   "attestation": {
-    "network": "solana-devnet",
+    "network": "${ct.network}",
     "signature": "…", "explorer_url": "https://explorer.solana.com/tx/…"
   },
   "settlement": { "status": "SETTLED" },
@@ -342,7 +344,7 @@ export default async function EnHome() {
           </Link>
         </div>
         <p className="mt-6 text-sm text-slate-600">
-          Pilot limits: workers join by invitation; bounties are test USDC on Devnet. Source code and the full
+          Workers join by invitation; bounties are paid in USDC on {ct.chain}. Source code and the full
           specification set are public at{" "}
           <a
             href="https://github.com/shoripanda/proofmarket"

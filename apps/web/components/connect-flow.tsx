@@ -13,7 +13,8 @@ type Step = { text: string; copy?: string; note?: string };
 
 const KEY_PLACEHOLDER = "pm_test_...";
 
-export function ConnectFlow({ base }: { base: string }) {
+export function ConnectFlow({ base, cluster }: { base: string; cluster: "devnet" | "mainnet-beta" }) {
+  const devnet = cluster === "devnet";
   const lang = useLang();
   const [issued, setIssued] = useState<Issued | null>(null);
   const [pasted, setPasted] = useState("");
@@ -38,8 +39,12 @@ export function ConnectFlow({ base }: { base: string }) {
             <Plain>
               {pick(
                 lang,
-                "メールアドレスを入れると、キーがその場に出ます。試験用の残高（Devnet の USDC）もついてきます。",
-                "Enter your email address and the key appears right here, with a trial balance of Devnet test USDC.",
+                devnet
+                  ? "メールアドレスを入れると、キーがその場に出ます。試験用の残高（Devnet の USDC）もついてきます。"
+                  : "メールアドレスを入れると、キーがその場に出ます。依頼を出す前に、依頼者の画面から USDC か SOL を入金します。",
+                devnet
+                  ? "Enter your email address and the key appears right here, with a trial balance of Devnet test USDC."
+                  : "Enter your email address and the key appears right here. Top up USDC or SOL from the requester console before your first request.",
               )}
             </Plain>
           </p>
@@ -149,8 +154,12 @@ export function ConnectFlow({ base }: { base: string }) {
               )}
               note={pick(
                 lang,
-                "試験用の残高から払われます。worker が答えると、AI が結果と証明のリンクを伝えます。",
-                "It is paid from the trial balance. When a worker answers, the AI relays the result and a proof link.",
+                devnet
+                  ? "試験用の残高から払われます。worker が答えると、AI が結果と証明のリンクを伝えます。"
+                  : "残高から払われます（先に依頼者の画面で入金してください）。worker が答えると、AI が結果と証明のリンクを伝えます。",
+                devnet
+                  ? "It is paid from the trial balance. When a worker answers, the AI relays the result and a proof link."
+                  : "It is paid from your balance (top up in the requester console first). When a worker answers, the AI relays the result and a proof link.",
               )}
             />
           </>
@@ -211,8 +220,8 @@ export function ConnectFlow({ base }: { base: string }) {
               t: pick(lang, "料金", "Pricing"),
               s: pick(
                 lang,
-                "1 人あたりの報酬 × 人数。試験運用中は手数料なし",
-                "Bounty per person × people asked. No fee during the pilot",
+                "1 人あたりの報酬 × 人数。いまは手数料なし",
+                "Bounty per person × people asked. No fee at present",
               ),
             },
             {
@@ -408,8 +417,12 @@ function IssuedNotice({ lang, issued }: { lang: Lang; issued: Issued }) {
         <p className="mt-1 text-sm leading-relaxed">
           {pick(
             lang,
-            `表示されるのは今だけです。運営者の側にもキーそのものは残らないので、コピーして保管してください。残高は ${issued.trial} USDC（Devnet の試験用）から始まります。`,
-            `This is the only time it is shown; we keep only a hash of it, so copy it and keep it safe. Your balance starts at ${issued.trial} USDC (Devnet test USDC).`,
+            issued.trial !== "0"
+              ? `表示されるのは今だけです。運営者の側にもキーそのものは残らないので、コピーして保管してください。残高は ${issued.trial} USDC（Devnet の試験用）から始まります。`
+              : "表示されるのは今だけです。運営者の側にもキーそのものは残らないので、コピーして保管してください。残高は 0 から始まります。依頼者の画面から入金してください。",
+            issued.trial !== "0"
+              ? `This is the only time it is shown; we keep only a hash of it, so copy it and keep it safe. Your balance starts at ${issued.trial} USDC (Devnet test USDC).`
+              : "This is the only time it is shown; we keep only a hash of it, so copy it and keep it safe. Your balance starts at 0: top up from the requester console.",
           )}
           {issued.emailed
             ? pick(
@@ -790,11 +803,11 @@ const TROUBLE: { ja: { q: string; a: string }; en: { q: string; a: string } }[] 
   {
     ja: {
       q: "依頼を出したのに何も起きない",
-      a: "worker が近くにいないと、依頼は締め切りまで待ちます。試験運用中は worker の数が少ないため、昼間の渋谷・新宿のあたりがいちばん答えが付きやすいです。依頼者の画面で状態を確かめられます。",
+      a: "worker が近くにいないと、依頼は締め切りまで待ちます。worker はまだ多くないため、昼間の渋谷・新宿のあたりがいちばん答えが付きやすいです。依頼者の画面で状態を確かめられます。",
     },
     en: {
       q: "I sent a request and nothing happens",
-      a: "If no worker is nearby, the request waits until its deadline. During the pilot workers are few, so daytime requests around Shibuya and Shinjuku get answered soonest. The requester console shows the state.",
+      a: "If no worker is nearby, the request waits until its deadline. Workers are still few, so daytime requests around Shibuya and Shinjuku get answered soonest. The requester console shows the state.",
     },
   },
 ];

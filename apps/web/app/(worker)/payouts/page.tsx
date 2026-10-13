@@ -81,7 +81,7 @@ function downloadCsv(rows: Payout[], month: string, lang: Lang) {
         p.paid_at ? jstDate(p.paid_at, lang) : "",
         p.verification_id,
         p.amount,
-        pick(lang, "USDC（テスト用）", "USDC (test)"),
+        "USDC",
         STATUS_TEXT[lang][p.status],
         p.explorer_url ?? "",
       ]
@@ -208,8 +208,8 @@ export default function PayoutsPage() {
                 )
               : pick(
                   lang,
-                  "いまは Solana のテスト用 USDC だけで払っています。円で受け取りたい方は登録してください。法律の確認が済みしだい、先にご案内します。口座番号などはまだ聞きません。",
-                  "Right now we pay only in test USDC on Solana. Register your interest if you would like to be paid in yen; once the legal review is done, you will hear first. No bank details are asked for yet.",
+                  "いまは USDC で払っています。円で受け取りたい方は登録してください。始められるようになったら、先にご案内します。口座番号などはまだ聞きません。",
+                  "Right now we pay in USDC. Register your interest if you would like to be paid in yen; you will hear first when it becomes available. No bank details are asked for yet.",
                 )}
           </p>
           <div className="mt-3">
