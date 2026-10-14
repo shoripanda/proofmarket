@@ -82,6 +82,7 @@ type Housekeeping = {
   oauthCodes: number;
   oauthTokens: number;
   quotes: number;
+  tickRuns: number;
 };
 
 const DAY_MS = 86_400_000;
@@ -115,11 +116,17 @@ export async function purgeBookkeeping(db: Db, now: Date): Promise<Housekeeping>
     .delete(schema.verificationQuotes)
     .where(lt(schema.verificationQuotes.createdAt, expired))
     .returning({ id: schema.verificationQuotes.id });
+  // Tick timings are for the operator's last look, not history (06 §4.3): a week is plenty.
+  const tickRuns = await db
+    .delete(schema.tickRuns)
+    .where(lt(schema.tickRuns.startedAt, new Date(now.getTime() - 7 * DAY_MS)))
+    .returning({ id: schema.tickRuns.id });
   return {
     rateLimits: rateLimits.length,
     idempotency: idempotency.length,
     oauthCodes: oauthCodes.length,
     oauthTokens: oauthTokens.length,
     quotes: quotes.length,
+    tickRuns: tickRuns.length,
   };
 }

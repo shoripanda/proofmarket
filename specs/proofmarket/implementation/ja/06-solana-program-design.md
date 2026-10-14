@@ -229,6 +229,10 @@ treasury のトークン残高 = Σ 全 requester の台帳残高 + Σ 資金拘
 
 tick の中で 1 時間に 1 回照合し、ずれたら警告する（P1）。
 
+### 5.x 署名の境界（2026-10-15 追加）
+
+`docs/architecture/` 05 §4.1。アダプタは `Keypair` を持たず、`Signer { publicKey, sign(message) }` を受け取る（`createAnchorAdapter({ operator, verifier })`。互換のため `operatorSecretKey` / `verifierSecretKey` も受け、`keypairSigner` で包む）。送信は組み立てた取引のメッセージを `sign` に渡し、返った 64 バイトを `addSignature` で付ける。`packages/solana/test/send.test.ts` が、`keypairSigner` の署名と `tx.sign` の署名がバイト列まで一致することを固定している。KMS や MPC のバックエンドは、この型を満たす実装を足すだけで差し込める。
+
 ## 6. 報酬資産
 
 2026-10-14 追記: v1.2 で `AllowedMint` による複数の mint（15 §3.1）、v1.3 で Token-2022 の mint（16 §5）を扱えるようにした。どの通貨を受けるかはオフチェーンの台帳（16 §3）と `add_mint` で決める。以下は最初の USDC だけの時期の記述である。

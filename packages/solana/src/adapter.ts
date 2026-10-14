@@ -5,6 +5,7 @@
 import type { Outcome } from "@proofmarket/core";
 import { createAnchorAdapter } from "./anchor-adapter.ts";
 import type { ChainDeposit, DepositAddresses } from "./deposits.ts";
+import type { Signer } from "./signer.ts";
 
 export type OnChainTaskStatus = "Funded" | "Finalized" | "Settled" | "Refunded";
 export type OnChainOutcome = "None" | "Verified" | "NoConsensus" | "InsufficientWitnesses";
@@ -112,8 +113,11 @@ export function createSettlementAdapter(cfg: {
   expectedGenesisHash: string;
   programId: string;
   bountyMint: string;
-  operatorSecretKey: Uint8Array;
-  verifierSecretKey: Uint8Array;
+  /** The signing boundary (docs/architecture 05 §4.1). Either the Signers or the raw secret keys. */
+  operator?: Signer;
+  verifier?: Signer;
+  operatorSecretKey?: Uint8Array;
+  verifierSecretKey?: Uint8Array;
   priorityMaxMicroLamports?: number;
   /** The enabled assets, for deposits (16 §6). Default: USDC (BOUNTY_MINT) and SOL. */
   assets?: ChainAsset[];

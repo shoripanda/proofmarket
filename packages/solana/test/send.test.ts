@@ -8,6 +8,7 @@ import {
   type SendConnection,
   sendAndConfirm,
 } from "../src/send.ts";
+import { keypairSigner, type Signer, signTransaction } from "../src/signer.ts";
 
 describe("fee and limit", () => {
   it("takes the 75th percentile of recent fees within the floor and ceiling", () => {
@@ -104,7 +105,7 @@ describe("sendAndConfirm", () => {
       conn,
       payer.publicKey,
       [ix],
-      [payer],
+      [keypairSigner(payer)],
       async (s) => {
         recorded.push(s);
         expect(calls.sends).toBe(0);
@@ -124,7 +125,7 @@ describe("sendAndConfirm", () => {
       conn,
       payer.publicKey,
       [ix],
-      [payer],
+      [keypairSigner(payer)],
       async () => undefined,
       opts(clock(), "confirmed"),
     );
@@ -142,7 +143,7 @@ describe("sendAndConfirm", () => {
       conn,
       payer.publicKey,
       [ix],
-      [payer],
+      [keypairSigner(payer)],
       async () => {
         recorded = true;
       },
@@ -161,7 +162,7 @@ describe("sendAndConfirm", () => {
       conn,
       payer.publicKey,
       [ix],
-      [payer],
+      [keypairSigner(payer)],
       async () => undefined,
       opts(clock()),
     );
@@ -174,7 +175,7 @@ describe("sendAndConfirm", () => {
       conn,
       payer.publicKey,
       [ix],
-      [payer],
+      [keypairSigner(payer)],
       async () => undefined,
       opts(clock()),
     );
@@ -190,7 +191,7 @@ describe("sendAndConfirm", () => {
       conn,
       payer.publicKey,
       [ix],
-      [payer],
+      [keypairSigner(payer)],
       async () => undefined,
       opts(clock()),
     );
@@ -203,7 +204,14 @@ describe("sendAndConfirm", () => {
       units: 40_000,
       fees: [0, 20_000, 30_000, 70_000],
     });
-    await sendAndConfirm(conn, payer.publicKey, [ix], [payer], async () => undefined, opts(clock()));
+    await sendAndConfirm(
+      conn,
+      payer.publicKey,
+      [ix],
+      [keypairSigner(payer)],
+      async () => undefined,
+      opts(clock()),
+    );
     const { VersionedTransaction } = await import("@solana/web3.js");
     const sent = VersionedTransaction.deserialize(calls.sent[0] as Uint8Array);
     const budget = sent.message.compiledInstructions.slice(0, 2).map((c) => Buffer.from(c.data));
@@ -211,5 +219,35 @@ describe("sendAndConfirm", () => {
     expect(budget[0]?.readUInt32LE(1)).toBe(49_000);
     expect(budget[1]?.readUInt8(0)).toBe(3); // SetComputeUnitPrice
     expect(Number(budget[1]?.readBigUInt64LE(1))).toBe(70_000);
+  });
+});
+
+describe("Signer boundary (docs/architecture 05 §4.1)", () => {
+  it("keypairSigner signs exactly what tx.sign would, and a recording signer gets the same bytes", async () => {
+    const { Keypair: KP, TransactionMessage, VersionedTransaction } = await import("@solana/web3.js");
+    const kp = KP.generate();
+    const msg = new TransactionMessage({
+      payerKey: kp.publicKey,
+      recentBlockhash: "GfVcyD4kkTrj4bKc7WA9sZCin9JDbdT4Zkd3EittNR1W",
+      instructions: [
+        SystemProgram.transfer({ fromPubkey: kp.publicKey, toPubkey: payer.publicKey, lamports: 1 }),
+      ],
+    }).compileToV0Message();
+    const viaKeypair = new VersionedTransaction(msg);
+    viaKeypair.sign([kp]);
+    const viaSigner = new VersionedTransaction(msg);
+    const seen: Uint8Array[] = [];
+    const recording: Signer = {
+      publicKey: kp.publicKey,
+      sign: async (m) => {
+        seen.push(m);
+        return keypairSigner(kp).sign(m);
+      },
+    };
+    await signTransaction(viaSigner, [recording]);
+    expect(Buffer.from(viaSigner.serialize())).toEqual(Buffer.from(viaKeypair.serialize()));
+    // the signer saw the compiled message, not the whole transaction, and the message was not changed
+    expect(seen).toHaveLength(1);
+    expect(Buffer.from(seen[0] ?? new Uint8Array())).toEqual(Buffer.from(msg.serialize()));
   });
 });

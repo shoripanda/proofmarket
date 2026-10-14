@@ -4,7 +4,7 @@ import "server-only";
 
 import { LIMITS, OUTBOX_RETRY, type OutboxJobKind, type WebhookEvent } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
 import { runOptimistic } from "./challenge-service";
@@ -13,7 +13,13 @@ import { releaseStaleReviews } from "./evidence-service";
 import { runNotifyWorkers } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
 import { runDueSchedules } from "./schedule-service";
-import { type JobOutcome, runFinalizeAndSettle, runFundTask, runRefund } from "./settlement-jobs";
+import {
+  type JobOutcome,
+  reconcileSettlements,
+  runFinalizeAndSettle,
+  runFundTask,
+  runRefund,
+} from "./settlement-jobs";
 import { lockTask } from "./task-engine";
 import { handleDeadline } from "./verification-service";
 import { type DeliverDeps, deliverWebhook } from "./webhook-service";
@@ -75,6 +81,11 @@ const HANDLERS: Record<OutboxJobKind, Handler> = {
   },
   NOTIFY_WORKERS: async (app, p) => {
     await runNotifyWorkers(app, String(p.verification_id));
+    return { kind: "done" };
+  },
+  RECONCILE_SETTLEMENTS: async (app) => {
+    const r = await reconcileSettlements(app);
+    log("info", "reconcile_settlements", { ...r });
     return { kind: "done" };
   },
 };
@@ -173,60 +184,108 @@ export async function drainJobs(app: AppContext, maxJobs: number, concurrency: n
  * One step of the tick. A step that throws is logged and skipped, so a broken query in one step never stops the
  * deadlines, the claim expiry or the job drain (settlement!) that come after it. The names come back in `failed`.
  */
-async function step(failed: string[], name: string, fn: () => Promise<unknown>): Promise<void> {
+/** Milliseconds per step, in the order the steps ran (docs/architecture 06 §4.3). */
+export type TickSteps = Record<string, number>;
+
+async function step(
+  failed: string[],
+  name: string,
+  fn: () => Promise<unknown>,
+  steps?: TickSteps,
+): Promise<void> {
+  const t0 = Date.now();
   try {
     await fn();
   } catch (e) {
     failed.push(name);
     log("error", "tick_step_failed", { step: name, error: String(e) });
+  } finally {
+    if (steps) steps[name] = Date.now() - t0;
   }
 }
 
-export async function tick(
-  app: AppContext,
-  maxJobs = TICK_MAX_JOBS,
-): Promise<{ deadlines: number; jobsRun: number; failed: string[]; warnings: TickWarnings | null }> {
+export type TickResult = {
+  deadlines: number;
+  jobsRun: number;
+  failed: string[];
+  warnings: TickWarnings | null;
+  /** Wall-clock time of the whole tick and of each step; also written to tick_runs. */
+  duration_ms: number;
+  steps: TickSteps;
+};
+
+export async function tick(app: AppContext, maxJobs = TICK_MAX_JOBS): Promise<TickResult> {
   const now = app.now();
+  const t0 = Date.now();
   const failed: string[] = [];
+  const steps: TickSteps = {};
   // 0. Submissions the outside reviewer never answered pass with a warning (01 §4.17), so they still count below.
-  await step(failed, "stale_reviews", () => releaseStaleReviews(app));
+  await step(failed, "stale_reviews", () => releaseStaleReviews(app), steps);
   // 1. Optimistic answers (13 §3): close windows that passed, settle challenges whose recheck is final.
-  await step(failed, "optimistic", () => runOptimistic(app));
+  await step(failed, "optimistic", () => runOptimistic(app), steps);
   // 2. Task deadlines (T08 / T11 / T12), one transaction per task. A provisional answer waits for its
   // challenge window instead (runOptimistic finalizes it).
+  const tDeadlines = Date.now();
   const deadlines = await runDeadlines(app, now, failed);
+  steps.deadlines = Date.now() - tDeadlines;
   // 3. Claims past their TTL, challenges past expiry, uploads never finalized.
-  await step(failed, "expiry", () => runExpiry(app, now));
-  // 4. Daily purge job (dedupe per JST-agnostic UTC day).
-  await step(failed, "purge_job", () =>
-    app.db
-      .insert(schema.outboxJobs)
-      .values({
-        kind: "PURGE_EVIDENCE",
-        dedupeKey: `PURGE_EVIDENCE:${now.toISOString().slice(0, 10)}`,
-        payload: {},
-        state: "PENDING",
-        runAfter: now,
-        updatedAt: now,
-      })
-      .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey }),
+  await step(failed, "expiry", () => runExpiry(app, now), steps);
+  // 4. Daily jobs (dedupe per UTC day): the purge, and the settlement reconciliation (06 §4.2).
+  await step(
+    failed,
+    "purge_job",
+    () =>
+      app.db
+        .insert(schema.outboxJobs)
+        .values(
+          (["PURGE_EVIDENCE", "RECONCILE_SETTLEMENTS"] as const).map((kind) => ({
+            kind,
+            dedupeKey: `${kind}:${now.toISOString().slice(0, 10)}`,
+            payload: {},
+            state: "PENDING",
+            runAfter: now,
+            updatedAt: now,
+          })),
+        )
+        .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey }),
+    steps,
   );
   // 5. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
-  await step(failed, "schedules", () => runDueSchedules(app));
+  await step(failed, "schedules", () => runDueSchedules(app), steps);
   // 6. Deposits (15 §4.3): credit finalized transfers that carry a requester's reference, before the jobs
   // below so a task created against the new balance can be funded in the same tick.
-  await step(failed, "deposits", () => runDeposits(app));
+  await step(failed, "deposits", () => runDeposits(app), steps);
   // 7. Drain jobs, several at once (16 §7.2).
+  const tJobs = Date.now();
   const jobsRun = await drainJobs(app, maxJobs, app.config.jobConcurrency);
+  steps.jobs = Date.now() - tJobs;
   // 8. 08 §5: count what needs an operator and warn in the log; the counts also come back to the caller.
   let warnings: TickWarnings | null = null;
-  await step(failed, "warnings", async () => {
-    warnings = await tickWarnings(app, now);
-  });
-  return { deadlines, jobsRun, failed, warnings };
+  await step(
+    failed,
+    "warnings",
+    async () => {
+      warnings = await tickWarnings(app, now);
+    },
+    steps,
+  );
+  const duration_ms = Date.now() - t0;
+  // 9. Record the run so /v1/health/ready can show how long ticks take (06 §4.3). Never fails the tick.
+  await step(failed, "record", () =>
+    app.db
+      .insert(schema.tickRuns)
+      .values({ startedAt: now, durationMs: duration_ms, steps, jobsRun, failed }),
+  );
+  return { deadlines, jobsRun, failed, warnings, duration_ms, steps };
 }
 
-export type TickWarnings = { dead_jobs: number; stuck_payments: number; operator_sol_low: boolean };
+export type TickWarnings = {
+  dead_jobs: number;
+  stuck_payments: number;
+  operator_sol_low: boolean;
+  /** 15 §4.2: the operator wallet holds over 1.5× TREASURY_MAX_USDC / TREASURY_MAX_SOL; move the surplus. */
+  treasury_over_cap: boolean;
+};
 
 /** Payments still PENDING/SUBMITTED after this long need a look (08 §5). */
 const STUCK_PAYMENT_MS = 10 * 60_000;
@@ -247,17 +306,21 @@ async function tickWarnings(app: AppContext, now: Date): Promise<TickWarnings> {
       ),
     );
   // The operator pays every fee; the chain read may fail on its own without failing the tick.
-  const sol = await app
+  const bal = await app
     .settlement()
     .balances()
-    .then((b) => b.operatorLamports)
     .catch(() => null);
+  const sol = bal?.operatorLamports ?? null;
+  const cap = app.config.treasuryMax;
+  const over = (v: bigint | null, max: bigint | null) => v !== null && max !== null && v * 2n > max * 3n;
   const w: TickWarnings = {
     dead_jobs: Number(jobs?.n ?? 0),
     stuck_payments: Number(pay?.n ?? 0),
     operator_sol_low: sol !== null && sol < BigInt(LIMITS.operatorMinSolBalance) * LAMPORTS_PER_SOL,
+    treasury_over_cap: over(bal?.treasuryAmount ?? null, cap.usdcMicro) || over(sol, cap.lamports),
   };
-  if (w.dead_jobs || w.stuck_payments || w.operator_sol_low) log("warn", "tick_needs_operator", { ...w });
+  if (w.dead_jobs || w.stuck_payments || w.operator_sol_low || w.treasury_over_cap)
+    log("warn", "tick_needs_operator", { ...w });
   return w;
 }
 
@@ -330,7 +393,21 @@ async function runExpiry(app: AppContext, now: Date): Promise<void> {
  * tick is read from its backlog: jobs due for over 5 minutes, or deadlines passed for longer than the review
  * grace plus 10 minutes. DEAD jobs need an operator (`requeue`). Only booleans leave the server.
  */
-export async function readiness(app: AppContext): Promise<{ ok: boolean; checks: Record<string, boolean> }> {
+export type LastTick = {
+  started_at: string;
+  duration_ms: number;
+  steps: TickSteps;
+  jobs_run: number;
+  failed: string[];
+};
+
+/**
+ * ok / checks drive the 200 / 503; last_tick is information for the operator (06 §4.3): a tick that runs past
+ * TICK_BUDGET_MS is slow but not down, so it does not flip the status.
+ */
+export async function readiness(
+  app: AppContext,
+): Promise<{ ok: boolean; checks: Record<string, boolean>; last_tick: LastTick | null }> {
   const now = app.now().getTime();
   const [jobs] = await app.db
     .select({
@@ -354,5 +431,20 @@ export async function readiness(app: AppContext): Promise<{ ok: boolean; checks:
     deadlines_on_time: Number(late?.n ?? 0) === 0,
     no_dead_jobs: Number(jobs?.dead ?? 0) === 0,
   };
-  return { ok: Object.values(checks).every(Boolean), checks };
+  const [run] = await app.db.select().from(schema.tickRuns).orderBy(desc(schema.tickRuns.id)).limit(1);
+  const last_tick: LastTick | null = run
+    ? {
+        started_at: run.startedAt.toISOString(),
+        duration_ms: run.durationMs,
+        steps: run.steps as TickSteps,
+        jobs_run: run.jobsRun,
+        failed: run.failed,
+      }
+    : null;
+  if (last_tick && last_tick.duration_ms > TICK_BUDGET_MS)
+    log("warn", "tick_over_budget", { duration_ms: last_tick.duration_ms, steps: last_tick.steps });
+  return { ok: Object.values(checks).every(Boolean), checks, last_tick };
 }
+
+/** 16 §7.2: a tick stops taking new jobs at 200 s so it ends inside the route's 300 s. Longer is a warning. */
+export const TICK_BUDGET_MS = 200_000;

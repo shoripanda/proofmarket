@@ -11,12 +11,14 @@ import {
   OUTBOX_RETRY,
   settledPerWitnessMicro,
   toBaseUnits,
+  toMicro,
 } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
 import type { ChainResult, OnChainOutcome } from "@proofmarket/solana";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
+import { appendAudit } from "./audit";
 import { bountyOf, fundedMicro, reservedMicro } from "./bounty";
 import { sha256, witnessRef } from "./crypto";
 import { applyTaskEvent, lockTask, type TaskRow } from "./task-engine";
@@ -335,4 +337,79 @@ export async function runRefund(app: AppContext, verificationId: string): Promis
     });
   });
   return { kind: "done" };
+}
+
+// ---------- daily reconciliation (docs/architecture 06 §4.2) ----------
+
+export type ReconcileReport = { checked: number; mismatched: string[]; unreadable: string[] };
+
+/**
+ * Every settlement confirmed in the last day is read back from its Task account: the amount the program paid
+ * and the recipients must be what payment_records says. A difference is logged and written to audit_events as
+ * `reconciliation_mismatch` (nothing is corrected automatically; the operator looks). One RPC read per task.
+ */
+export async function reconcileSettlements(app: AppContext, now = app.now()): Promise<ReconcileReport> {
+  const since = new Date(now.getTime() - 25 * 3600_000);
+  const rows = await app.db
+    .select({ pay: schema.paymentRecords, task: schema.verificationRequests })
+    .from(schema.paymentRecords)
+    .innerJoin(
+      schema.verificationRequests,
+      eq(schema.verificationRequests.id, schema.paymentRecords.verificationId),
+    )
+    .where(
+      and(
+        eq(schema.paymentRecords.kind, "FINALIZE_AND_SETTLE"),
+        eq(schema.paymentRecords.status, "CONFIRMED"),
+        gte(schema.paymentRecords.confirmedAt, since),
+        lt(schema.paymentRecords.confirmedAt, now),
+      ),
+    );
+  const report: ReconcileReport = { checked: 0, mismatched: [], unreadable: [] };
+  for (const { pay, task } of rows) {
+    const onChain = await app
+      .settlement()
+      .readTask(task.taskIdHash)
+      .catch(() => null);
+    if (!onChain) {
+      report.unreadable.push(task.id);
+      continue;
+    }
+    report.checked++;
+    const paid = (pay.recipients as SettleRecipients | null)?.paid ?? [];
+    const expectedTotal = paid.reduce((sum, p) => sum + toBaseUnits(toMicro(p.amount), task.bountyAsset), 0n);
+    const expectedRecipients = [...paid.map((p) => p.pubkey)].sort();
+    const actualRecipients = [...onChain.recipients].sort();
+    const same =
+      onChain.status === "Settled" &&
+      onChain.paidTotal === expectedTotal &&
+      expectedRecipients.join() === actualRecipients.join();
+    if (same) continue;
+    report.mismatched.push(task.id);
+    const detail = {
+      task_account: onChain.address,
+      onchain: {
+        status: onChain.status,
+        paid_total: onChain.paidTotal.toString(),
+        recipients: actualRecipients,
+      },
+      db: {
+        paid_total: expectedTotal.toString(),
+        recipients: expectedRecipients,
+        signature: pay.lastSignature,
+      },
+    };
+    log("error", "reconciliation_mismatch", { verification_id: task.id, ...detail });
+    await appendAudit(app.db, {
+      verificationId: task.id,
+      actorType: "system",
+      actorRef: null,
+      eventType: "reconciliation_mismatch",
+      beforeState: task.status,
+      afterState: task.status,
+      correlationId: task.id,
+      metadata: detail,
+    });
+  }
+  return report;
 }

@@ -666,6 +666,19 @@ create table console_sessions (
 | consumed_at | timestamptz NULL | 確定に使われた時刻。1 度だけ |
 | verification_id | text FK NULL | 確定でできた依頼 |
 
+### 3.29 tick_runs（tick の所要時間、2026-10-15 追加）
+
+`docs/architecture/` 06 §4.3。移行は 0031（同じ移行で `outbox_jobs.kind` に `RECONCILE_SETTLEMENTS` を足す）。RLS を有効にする。tick が終わるたびに 1 行書き、`GET /v1/health/ready` が最新の行を `last_tick` として返す。7 日で消す。
+
+| 列 | 型 | 説明 |
+|---|---|---|
+| id | bigserial PK | |
+| started_at | timestamptz | tick の開始（アプリの時計） |
+| duration_ms | integer | 全体の所要時間 |
+| steps | jsonb | `{ 段の名前: ミリ秒 }` を走った順に |
+| jobs_run | integer | 流した outbox ジョブの数 |
+| failed | text[] | 落ちた段の名前 |
+
 ## 4. 保持期間と削除
 
 | 保持区分 | 対象 | 期間 | 削除のしかた |
@@ -677,6 +690,8 @@ create table console_sessions (
 | audit | audit_events | 1 年 | 同上 |
 | participation | participation_requests | 90 日 | 行を消す |
 | removal | removal_requests | 1 年 | 行を消す |
+| quotes | verification_quotes | 1 日 | 行を消す（5 分で失効するので記録だけ） |
+| tick_runs | tick_runs | 7 日 | 行を消す |
 
 削除は outbox の `PURGE_EVIDENCE` ジョブが 1 日 1 回行い、件数を audit_events に残す。
 

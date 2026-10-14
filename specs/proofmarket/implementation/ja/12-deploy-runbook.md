@@ -242,6 +242,7 @@ Vercel の Production で次を入れ替える。ほかの変数は 5 節のま�
 | `LEGAL_SIGNOFF` | 法務の文書の場所 |
 | `ASSETS_ENABLED` | 10.2 の `--assets` で開いた通貨（例 `USDC,SOL,USDT,PYUSD`）。書かなければ USDC だけ |
 | `JOB_CONCURRENCY`、`PRIORITY_MAX_MICROLAMPORTS` | 省略してよい（既定は 6 と 1,000,000）。混雑で取り込みが遅れるなら後者を上げる（16 §7） |
+| `TREASURY_MAX_USDC`、`TREASURY_MAX_SOL` | operator の財布に置く額の上限（15 §4.2）。どちらかの 1.5 倍を超えると tick が `treasury_over_cap` で警告する。超えた分は admin の財布へ手で移す。省略すると警告しない |
 
 1 つでも欠けると、最初のリクエストで門が止めてサーバーは応答しない（REQ-X-P-105）。Devnet の値が 1 つでも残っていても同じ。
 

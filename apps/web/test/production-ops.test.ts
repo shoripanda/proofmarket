@@ -42,7 +42,27 @@ describe("readiness", () => {
     expect(await readiness(t.app)).toEqual({
       ok: true,
       checks: { database: true, jobs_draining: true, deadlines_on_time: true, no_dead_jobs: true },
+      last_tick: null,
     });
+  });
+
+  it("reports how long the last tick took, step by step (docs/architecture 06 §4.3)", async () => {
+    const r = await tick(t.app);
+    expect(Object.keys(r.steps)).toEqual([
+      "stale_reviews",
+      "optimistic",
+      "deadlines",
+      "expiry",
+      "purge_job",
+      "schedules",
+      "deposits",
+      "jobs",
+      "warnings",
+    ]);
+    const { last_tick } = await readiness(t.app);
+    expect(last_tick).toMatchObject({ jobs_run: expect.any(Number), failed: [], steps: r.steps });
+    expect(last_tick?.duration_ms).toBeGreaterThanOrEqual(0);
+    expect(last_tick?.started_at).toBe(t.app.now().toISOString());
   });
 
   it("flags jobs left undrained and deadlines left unhandled when the tick stops", async () => {
@@ -80,6 +100,7 @@ describe("tick warnings (08 §5)", () => {
       dead_jobs: 0,
       stuck_payments: 0,
       operator_sol_low: false,
+      treasury_over_cap: false,
     });
     await t.db
       .insert(schema.outboxJobs)
@@ -103,6 +124,17 @@ describe("tick warnings (08 §5)", () => {
       dead_jobs: 1,
       stuck_payments: 1,
       operator_sol_low: false,
+      treasury_over_cap: false,
     });
+  });
+
+  it("warns when the operator wallet holds over 1.5x TREASURY_MAX_USDC or TREASURY_MAX_SOL (15 §4.2)", async () => {
+    // the fake chain reports 1,000 USDC in the treasury and 5 SOL in the operator wallet
+    t.app.config.treasuryMax = { usdcMicro: 600_000_000n, lamports: null }; // 1,000 > 1.5 × 600
+    expect((await tick(t.app)).warnings?.treasury_over_cap).toBe(true);
+    t.app.config.treasuryMax = { usdcMicro: 1_000_000_000n, lamports: 2_000_000_000n }; // 5 SOL > 1.5 × 2
+    expect((await tick(t.app)).warnings?.treasury_over_cap).toBe(true);
+    t.app.config.treasuryMax = { usdcMicro: 1_000_000_000n, lamports: 5_000_000_000n }; // exactly at cap
+    expect((await tick(t.app)).warnings?.treasury_over_cap).toBe(false);
   });
 });

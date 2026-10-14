@@ -66,6 +66,8 @@ export interface AppConfig {
   cluster: Cluster;
   /** 16 §7.2: outbox jobs one tick runs at once. */
   jobConcurrency: number;
+  /** 15 §4.2: ceilings for what the operator wallet holds (micro USDC, lamports); null = no warning. */
+  treasuryMax: { usdcMicro: bigint | null; lamports: bigint | null };
 }
 
 export const DEV_DATA_DIR = join(process.cwd(), ".data");
@@ -101,6 +103,10 @@ function buildContext(): AppContext {
     ...(isDev(e) ? {} : { programId: e.PROGRAM_ID }),
     cluster: isDev(e) ? "devnet" : e.SOLANA_CLUSTER,
     jobConcurrency: e.JOB_CONCURRENCY,
+    treasuryMax: {
+      usdcMicro: e.TREASURY_MAX_USDC === undefined ? null : BigInt(Math.round(e.TREASURY_MAX_USDC * 1e6)),
+      lamports: e.TREASURY_MAX_SOL === undefined ? null : BigInt(Math.round(e.TREASURY_MAX_SOL * 1e9)),
+    },
   };
   if (isDev(e)) {
     assertDevAllowed(e.APP_ENV);
