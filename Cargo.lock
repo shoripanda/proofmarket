@@ -2021,6 +2021,7 @@ dependencies = [
  "solana-signer",
  "solana-transaction",
  "solana-transaction-error",
+ "spl-pod",
 ]
 
 [[package]]

@@ -166,7 +166,7 @@ operator は Funded のタスクをいつでもキャンセル扱いで返金で
 
 ### 3.6 エラーコード
 
-`Paused`、`Unauthorized`、`InvalidMint`、`InvalidTreasury`、`InvalidAmount`、`InvalidWitnessConfig`、`DeadlineInPast`、`AmountOverflow`、`InvalidStatus`、`InvalidRoot`、`InvalidRecipients`、`RecipientCountMismatch`、`RecipientAccountMismatch`、`InsufficientVaultBalance`、`NotExpired`
+`Paused`、`Unauthorized`、`InvalidMint`、`InvalidTreasury`、`InvalidAmount`、`InvalidWitnessConfig`、`DeadlineInPast`、`AmountOverflow`、`InvalidStatus`、`InvalidRoot`、`InvalidRecipients`、`RecipientCountMismatch`、`RecipientAccountMismatch`、`InsufficientVaultBalance`、`NotExpired`、`AmountIncrease`（v1.1）、`PayoutBelowRent`（v1.2）、`UnsupportedMintExtension`（v1.3、16 §5.2）
 
 専用のコードを足さず、既存のコードで返すものは次のとおり。
 
@@ -230,6 +230,8 @@ treasury のトークン残高 = Σ 全 requester の台帳残高 + Σ 資金拘
 tick の中で 1 時間に 1 回照合し、ずれたら警告する（P1）。
 
 ## 6. 報酬資産
+
+2026-10-14 追記: v1.2 で `AllowedMint` による複数の mint（15 §3.1）、v1.3 で Token-2022 の mint（16 §5）を扱えるようにした。どの通貨を受けるかはオフチェーンの台帳（16 §3）と `add_mint` で決める。以下は最初の USDC だけの時期の記述である。
 
 既定は Circle の Devnet USDC（mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`、小数 6 桁）。faucet（`https://faucet.circle.com`）から operator の ATA に入れる。
 

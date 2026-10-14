@@ -35,6 +35,8 @@ solana-keypair = "3.1.2"
 solana-account = "4.3.0"
 solana-transaction-error = "3.3.1"
 base64 = "0.22.1"
+# 16 §5: builds Token-2022 mints and accounts with extensions in the tests (same version as the lock file).
+spl-pod = "0.7.4"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

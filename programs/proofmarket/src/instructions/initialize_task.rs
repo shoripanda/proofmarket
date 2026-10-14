@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
 
 use crate::{
     constants::*,
     error::ProofMarketError,
     events::TaskInitialized,
+    instructions::check_mint_extensions,
     state::{AllowedMint, Config, Outcome, RefundReason, Task, TaskStatus},
 };
 
@@ -34,11 +35,13 @@ pub struct InitializeTask<'info> {
         bump
     )]
     pub task: Account<'info, Task>,
-    /// Config.bounty_mint, or a mint whose AllowedMint is passed as `allowed_mint` (15 §3.1).
+    /// Config.bounty_mint, or a mint whose AllowedMint is passed as `allowed_mint` (15 §3.1). SPL Token or
+    /// Token-2022 (16 §5); the token program passed must be the one that owns it.
     #[account(
-        constraint = mint.key() == config.bounty_mint || allowed_mint.is_some() @ ProofMarketError::InvalidMint
+        constraint = mint.key() == config.bounty_mint || allowed_mint.is_some() @ ProofMarketError::InvalidMint,
+        constraint = *mint.to_account_info().owner == token_program.key() @ ProofMarketError::InvalidMint
     )]
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
     #[account(
         init,
         payer = operator,
@@ -46,8 +49,9 @@ pub struct InitializeTask<'info> {
         bump,
         token::mint = mint,
         token::authority = task,
+        token::token_program = token_program,
     )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault: InterfaceAccount<'info, TokenAccount>,
     /// Config.treasury for Config.bounty_mint; for an allowed mint, an operator-owned account of that mint.
     #[account(
         mut,
@@ -55,8 +59,8 @@ pub struct InitializeTask<'info> {
         constraint = (mint.key() == config.bounty_mint && treasury.key() == config.treasury)
             || (mint.key() != config.bounty_mint && treasury.owner == config.operator) @ ProofMarketError::InvalidTreasury
     )]
-    pub treasury: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
+    pub treasury: InterfaceAccount<'info, TokenAccount>,
+    pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     /// Last and optional so clients from before v1.2 may leave it out (allow-missing-optionals).
     #[account(seeds = [MINT_SEED, mint.key().as_ref()], bump = allowed_mint.bump)]
@@ -87,17 +91,21 @@ pub fn handle_initialize_task(
         .amount_per_witness
         .checked_mul(u64::from(args.required_witnesses))
         .ok_or(ProofMarketError::AmountOverflow)?;
+    // 16 §5.2: the fee and the hook of a Token-2022 mint can change after add_mint; look again.
+    check_mint_extensions(&ctx.accounts.mint.to_account_info())?;
 
-    token::transfer(
+    token_interface::transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.key(),
-            Transfer {
+            TransferChecked {
                 from: ctx.accounts.treasury.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
                 to: ctx.accounts.vault.to_account_info(),
                 authority: ctx.accounts.operator.to_account_info(),
             },
         ),
         amount_total,
+        ctx.accounts.mint.decimals,
     )?;
 
     let task_key = ctx.accounts.task.key();

@@ -327,6 +327,8 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           vault: vaultPda(programId, task)[0],
           treasury: treasuryOf(refundMint, prog),
           tokenProgram: prog,
+          // v1.3 (16 §5.1) needs it for transfer_checked; v1.2 ignores a trailing extra account
+          mint: refundMint,
         })
         .instruction();
       const r = await send([ix], [operator], onSigned);

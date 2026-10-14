@@ -2,6 +2,8 @@
 // owner's decision document named, and never airdrops or mints anything.
 //   run mainnet-setup.ts --url <paid rpc> --decision-doc docs/legal/2026-10-13-owner-decision.md
 //                        [--admin-keypair <path>] [--max-witnesses 5] [--allow-wsol]
+//                        [--assets SOL,USDT,PYUSD]   (16 §3: add_mint and an operator account per registry token;
+//                                                     Token-2022 ones need program v1.3. Run check-assets.ts first.)
 // Keys: ~/.config/proofmarket/mainnet/{admin,operator,verifier}.json. admin may instead be a hardware wallet
 // (then export its keypair file for this one run, or pass --admin-keypair). operator and verifier are created
 // if missing (mode 0600) and must differ from the Devnet keys (the server refuses them otherwise, 15 §4.1).
@@ -10,12 +12,15 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { AnchorProvider, Program, Wallet } from "@anchor-lang/core";
+import { assetInfo } from "@proofmarket/core";
 import { allowedMintPda, configPda } from "@proofmarket/solana";
 import idl from "@proofmarket/solana/idl" with { type: "json" };
 import {
   createAssociatedTokenAccountIdempotent,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
@@ -153,6 +158,44 @@ if (a["allow-wsol"] === "true") {
   }
 }
 
+// 16 §3: every other token the server will accept. Idempotent: an allowed mint or an existing account is kept.
+const enabled = ["USDC"];
+for (const symbol of String(a.assets ?? "")
+  .split(",")
+  .map((x) => x.trim())
+  .filter(Boolean)) {
+  const info = assetInfo(symbol);
+  if (!info?.mainnetMint) {
+    console.error(`--assets: ${symbol} is not in the asset registry`);
+    process.exit(2);
+  }
+  if (symbol === "USDC") continue;
+  const m = new PublicKey(info.mainnetMint);
+  const tokenProgram = info.tokenProgram === "token-2022" ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+  const [allowed] = allowedMintPda(programId, m);
+  if (await conn.getAccountInfo(allowed)) console.error(`${symbol} already allowed (${allowed.toBase58()})`);
+  else {
+    const sig = await program.methods
+      .addMint()
+      .accountsPartial({ admin: admin.publicKey, config, mint: m, allowedMint: allowed })
+      .rpc();
+    console.error(`add_mint ${symbol}: ${sig}`);
+  }
+  // The operator's account receives deposits and funds tasks; SOL arrives in the wallet itself.
+  if (!info.native) {
+    const ata = await createAssociatedTokenAccountIdempotent(
+      conn,
+      admin,
+      m,
+      operator.publicKey,
+      { commitment: "confirmed" },
+      tokenProgram,
+    );
+    console.error(`${symbol} operator account ${ata.toBase58()}`);
+  }
+  enabled.push(symbol);
+}
+
 const envFile = join(homedir(), ".config", "proofmarket", "env.mainnet-beta");
 writeFileSync(
   envFile,
@@ -165,6 +208,7 @@ writeFileSync(
     `OPERATOR_SECRET_KEY=${bs58.encode(operator.secretKey)}`,
     `VERIFIER_SECRET_KEY=${bs58.encode(verifier.secretKey)}`,
     "REAL_FUNDS_ENABLED=true",
+    `ASSETS_ENABLED=${enabled.join(",")}`,
     `LEGAL_SIGNOFF=${decisionDoc}`,
     "",
   ].join("\n"),

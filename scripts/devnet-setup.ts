@@ -1,6 +1,8 @@
 // Devnet (or localnet) setup for the ProofMarket program (06 §7 steps 5-6, §6).
 //   run devnet-setup.ts --url <rpc> [--own-mint] [--mint <pubkey>] [--allow-localnet] [--fund-treasury 100]
 //                       [--allow-wsol]   (program v1.2: allow tasks in wSOL = rewards in SOL, 15 §3.1)
+//                       [--test-mints]   (program v1.3: an SPL Token mint standing in for USDT and a Token-2022
+//                                         mint with PYUSD's extensions, both allowed and funded, 16 §3.3)
 // Keys live in ~/.config/proofmarket/{admin,operator,verifier}.json (created if missing, mode 0600).
 // Writes ~/.config/proofmarket/env.<cluster> with the server env values (contains secrets; never commit).
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -11,12 +13,29 @@ import { allowedMintPda, configPda } from "@proofmarket/solana";
 import idl from "@proofmarket/solana/idl" with { type: "json" };
 import {
   createAssociatedTokenAccountIdempotent,
+  createInitializeMetadataPointerInstruction,
+  createInitializeMintInstruction,
+  createInitializePermanentDelegateInstruction,
+  createInitializeTransferFeeConfigInstruction,
+  createInitializeTransferHookInstruction,
   createMint,
+  ExtensionType,
   getAssociatedTokenAddressSync,
+  getMintLen,
   mintTo,
   NATIVE_MINT,
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  sendAndConfirmTransaction,
+  Transaction,
+} from "@solana/web3.js";
 import bs58 from "bs58";
 import type { Proofmarket } from "../packages/solana/idl/proofmarket.ts";
 import { args, need } from "./lib.ts";
@@ -129,6 +148,75 @@ if (a["allow-wsol"] === "true") {
   }
 }
 
+// 16 §3.3: two test mints so Devnet and localnet exercise both token programs. New ones on every run.
+const testMints: Record<string, string> = {};
+if (a["test-mints"] === "true") {
+  const units = BigInt(Math.round(Number(a["fund-treasury"] ?? 100) * 1e6));
+  const allow = async (m: PublicKey, tokenProgram: PublicKey, symbol: string) => {
+    const ata = await createAssociatedTokenAccountIdempotent(
+      conn,
+      admin,
+      m,
+      operator.publicKey,
+      { commitment: "confirmed" },
+      tokenProgram,
+    );
+    await mintTo(conn, admin, m, ata, admin, units, [], { commitment: "confirmed" }, tokenProgram);
+    const sig = await program.methods
+      .addMint()
+      .accountsPartial({
+        admin: admin.publicKey,
+        config,
+        mint: m,
+        allowedMint: allowedMintPda(programId, m)[0],
+      })
+      .rpc();
+    console.error(`${symbol} test mint ${m.toBase58()} allowed (${sig}); treasury ${ata.toBase58()} funded`);
+    testMints[symbol] = m.toBase58();
+  };
+  const usdt = await createMint(conn, admin, admin.publicKey, null, 6, undefined, {
+    commitment: "confirmed",
+  });
+  await allow(usdt, TOKEN_PROGRAM_ID, "USDT");
+  // PYUSD on mainnet (2026-10-14): permanent delegate, a zero transfer fee, an empty hook, a metadata pointer
+  const kp = Keypair.generate();
+  const exts = [
+    ExtensionType.PermanentDelegate,
+    ExtensionType.TransferFeeConfig,
+    ExtensionType.TransferHook,
+    ExtensionType.MetadataPointer,
+  ];
+  const space = getMintLen(exts);
+  const p22 = TOKEN_2022_PROGRAM_ID;
+  await sendAndConfirmTransaction(
+    conn,
+    new Transaction().add(
+      SystemProgram.createAccount({
+        fromPubkey: admin.publicKey,
+        newAccountPubkey: kp.publicKey,
+        space,
+        lamports: await conn.getMinimumBalanceForRentExemption(space),
+        programId: p22,
+      }),
+      createInitializePermanentDelegateInstruction(kp.publicKey, admin.publicKey, p22),
+      createInitializeTransferFeeConfigInstruction(
+        kp.publicKey,
+        admin.publicKey,
+        admin.publicKey,
+        0,
+        0n,
+        p22,
+      ),
+      createInitializeTransferHookInstruction(kp.publicKey, admin.publicKey, PublicKey.default, p22),
+      createInitializeMetadataPointerInstruction(kp.publicKey, admin.publicKey, null, p22),
+      createInitializeMintInstruction(kp.publicKey, 6, admin.publicKey, null, p22),
+    ),
+    [admin, kp],
+    { commitment: "confirmed" },
+  );
+  await allow(kp.publicKey, p22, "PYUSD");
+}
+
 const envFile = join(DIR, `env.${cluster}`);
 writeFileSync(
   envFile,
@@ -138,6 +226,7 @@ writeFileSync(
     `SOLANA_EXPECTED_GENESIS_HASH=${genesis}`,
     `OPERATOR_SECRET_KEY=${bs58.encode(operator.secretKey)}`,
     `VERIFIER_SECRET_KEY=${bs58.encode(verifier.secretKey)}`,
+    ...Object.entries(testMints).map(([sym, m]) => `ASSET_MINT_${sym}=${m}`),
     "",
   ].join("\n"),
   { mode: 0o600 },

@@ -176,6 +176,16 @@ curl -X POST https://<app>/v1/admin/flags -H "authorization: Bearer $ADMIN_TOKEN
 
 v1.2 より前のサーバーは v1.2 のプログラムでそのまま動くので、2 と 5 の間が空いても困らない（15 §3.1）。
 
+## 9a. プログラムを v1.3 に上げて他のトークンを開く（Devnet、2026-10-14 追加）
+
+16 §5 の Token-2022 対応は、9 節と同じ順番で進める。v1.3 は v1.2 のクライアントもそのまま受け付けるので、プログラムを先に上げても、サーバーを先に上げても、USDC と SOL の依頼は止まらない。
+
+1. main で `cargo build-sbf --tools-version v1.57 --manifest-path programs/proofmarket/Cargo.toml` と `cargo test -p proofmarket`（29 本）を通す
+2. 9 節の 2 と同じく `solana program deploy`。.so は 348,808 B で v1.2 より約 30 KB 大きい。CLI 4.x は領域を自動で広げる
+3. `pnpm --filter @proofmarket/scripts run run devnet-setup.ts --url https://api.devnet.solana.com --test-mints`。USDT の代わりの SPL Token の mint と、PYUSD と同じ拡張を持つ Token-2022 の mint を作り、`add_mint` と operator の口座への入金まで済ませる。作った mint は `env.devnet` に `ASSET_MINT_USDT`・`ASSET_MINT_PYUSD` として書き出される。走らせるたびに新しい mint ができるので、1 回だけ実行する
+4. Vercel の Preview に `ASSETS_ENABLED=USDC,SOL,USDT,PYUSD` と 3 の `ASSET_MINT_*` を入れ、`GET /v1/public/assets` に 4 通貨が出ることを確かめる
+5. 運営者の鍵で USDT と PYUSD の依頼を 1 件ずつ出し、証人の財布にそれぞれの口座ができて届くことを確かめてから、Production にも同じ値を入れる
+
 ## 10. メインネットへ切り替える（2026-10-13、オーナーの決定で実行）
 
 15 §4 の設計を手順に直したもの。もともとの条件は `legal-checklist.md` §1・§3・§7 の確認が終わり、D-05（資金の預かり）の結論が文書になっていることだった。2026-10-13 にオーナーが**確認を待たずに切り替える**と決め、その決定を `docs/legal/2026-10-13-owner-decision.md` に残した。起動の門（`apps/web/lib/cluster.ts`）は変えていない。`LEGAL_SIGNOFF` にはこの決定文書の場所を入れ、弁護士の確認が取れたら確認結果の文書に差し替える。
@@ -186,7 +196,7 @@ v1.2 より前のサーバーは v1.2 のプログラムでそのまま動くの
 |---|---|
 | 鍵 | メインネット用の admin・operator・verifier を新しく作り、`~/.config/proofmarket/mainnet/` に置く。Devnet の鍵と同じ公開鍵だと門で止まる |
 | admin の置き場 | ハードウェア財布か Squads のマルチシグ。サーバーには置かない。プログラムの更新権限も同じ鍵にする |
-| SOL | admin に 4.5 SOL（配置に約 2.03 SOL ＋ 配置中のバッファ）、operator に 1 SOL（手数料とレント） |
+| SOL | admin に 4.5 SOL（配置に約 2.43 SOL ＋ 配置中のバッファ。v1.3 の .so は 348,808 B）、operator に 1 SOL（手数料とレント）。開く通貨 1 つにつき admin が約 0.004 SOL（`AllowedMint` と operator の口座のレント）を払う |
 | USDC | treasury に最初の支払い見込みぶん。上限（15 §6）は決めてから入れる |
 | RPC | 有料の RPC のメインネット URL。比較の結果（`docs/ops/rpc-mainnet-2026-10-13.md`）は Helius の Developer（$49／月）。公開 RPC は上限が低く、tick が毎分呼ぶには足りない。URL は API キーを含むので秘密 |
 | 法務の文書 | 確認結果を `docs/legal/<日付>-signoff.md` に置く。それが無いうちは、オーナーの決定文書 `docs/legal/2026-10-13-owner-decision.md`。`LEGAL_SIGNOFF` にその場所を入れる |
@@ -196,8 +206,9 @@ v1.2 より前のサーバーは v1.2 のプログラムでそのまま動くの
 
 ```bash
 solana-keygen new -o ~/.config/proofmarket/mainnet/program-keypair.json   # 新しいプログラム ID
+pnpm --filter @proofmarket/scripts run run check-assets.ts   # 台帳とメインネットの mint を突き合わせる（16 §3.1）
 cargo build-sbf --tools-version v1.57 --manifest-path programs/proofmarket/Cargo.toml
-cargo test -p proofmarket
+cargo test -p proofmarket   # v1.3、29 本
 solana program deploy target/deploy/proofmarket.so \
   --program-id ~/.config/proofmarket/mainnet/program-keypair.json \
   --keypair <admin のハードウェア財布> -u mainnet-beta
@@ -207,8 +218,11 @@ solana program deploy target/deploy/proofmarket.so \
 
 ```bash
 pnpm --filter @proofmarket/scripts run run mainnet-setup.ts \
-  --url <有料 RPC の URL> --decision-doc docs/legal/2026-10-13-owner-decision.md --allow-wsol
+  --url <有料 RPC の URL> --decision-doc docs/legal/2026-10-13-owner-decision.md --allow-wsol \
+  --assets SOL,USDT,PYUSD
 ```
+
+`--assets` には、最初に開く通貨を台帳の記号で書く（16 §9 の案は SOL・USDT・PYUSD）。通貨ごとに `add_mint` と operator の口座づくりを行い、`env.mainnet-beta` に `ASSETS_ENABLED` を書き出す。あとから通貨を足すときも、同じコマンドを足したい記号で走らせればよい（済んだものは飛ばす）。
 
 この script は genesis hash が `5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d` のときだけ、`--decision-doc` の文書が存在するときだけ動く。公開 RPC の URL と Devnet の鍵は拒む。admin・operator・verifier は `~/.config/proofmarket/mainnet/` から読み、operator と verifier は無ければ作る（admin はハードウェア財布なら `--admin-keypair` で一度だけ渡す）。admin に 0.5 SOL・operator に 0.2 SOL 以上が要る（airdrop はしない）。やることは、operator の USDC 口座（treasury）を作る → `initialize_config`（`bounty_mint` = `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`）→ Config の admin・operator・verifier が自分の鍵かを確かめる（横取りされていたら新しい ID で作り直す。06 §3）→ `--allow-wsol` なら `add_mint`（wSOL）→ `~/.config/proofmarket/env.mainnet-beta` に 10.3 の値を書き出す。
 
@@ -226,6 +240,8 @@ Vercel の Production で次を入れ替える。ほかの変数は 5 節のま�
 | `OPERATOR_SECRET_KEY`、`VERIFIER_SECRET_KEY` | メインネット用の鍵 |
 | `REAL_FUNDS_ENABLED` | `true` |
 | `LEGAL_SIGNOFF` | 法務の文書の場所 |
+| `ASSETS_ENABLED` | 10.2 の `--assets` で開いた通貨（例 `USDC,SOL,USDT,PYUSD`）。書かなければ USDC だけ |
+| `JOB_CONCURRENCY`、`PRIORITY_MAX_MICROLAMPORTS` | 省略してよい（既定は 6 と 1,000,000）。混雑で取り込みが遅れるなら後者を上げる（16 §7） |
 
 1 つでも欠けると、最初のリクエストで門が止めてサーバーは応答しない（REQ-X-P-105）。Devnet の値が 1 つでも残っていても同じ。
 

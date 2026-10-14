@@ -13,6 +13,8 @@ import {
   getAssociatedTokenAddressSync,
   mintTo,
   NATIVE_MINT,
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
   Connection,
@@ -179,7 +181,7 @@ describe.skipIf(!enabled)("anchor adapter on localnet", () => {
           taskIdHash: h,
           requesterRefHash: randomBytes(32),
           amountPerWitness: lamports,
-          asset: "SOL",
+          asset: { symbol: "SOL", mint: NATIVE_MINT.toBase58(), tokenProgram: "spl-token", native: true },
           requiredWitnesses: 2,
           quorum: 2,
           deadline: new Date(Date.now() + 3_600_000),
@@ -235,10 +237,17 @@ describe.skipIf(!enabled)("anchor adapter on localnet", () => {
     await mintTo(conn, admin, mint, payerAta, admin, 3_000_000n);
 
     const a = adapter.depositAddresses();
+    // the adapter was built without `assets`, so USDC (BOUNTY_MINT) and SOL (16 §6)
     expect(a).toEqual({
       wallet: operator.publicKey.toBase58(),
-      usdcAccount: getAssociatedTokenAddressSync(mint, operator.publicKey).toBase58(),
-      usdcMint: mint.toBase58(),
+      accounts: [
+        {
+          asset: "USDC",
+          mint: mint.toBase58(),
+          account: getAssociatedTokenAddressSync(mint, operator.publicKey).toBase58(),
+        },
+        { asset: "SOL", mint: NATIVE_MINT.toBase58(), account: operator.publicKey.toBase58() },
+      ],
     });
     const reference = Keypair.generate().publicKey;
     const withRef = (ix: TransactionInstruction) => {
@@ -258,7 +267,7 @@ describe.skipIf(!enabled)("anchor adapter on localnet", () => {
         createTransferCheckedInstruction(
           payerAta,
           mint,
-          new PublicKey(a.usdcAccount),
+          new PublicKey(a.accounts.find((x) => x.asset === "USDC")?.account ?? ""),
           payer.publicKey,
           1_250_000n,
           6,
@@ -278,4 +287,74 @@ describe.skipIf(!enabled)("anchor adapter on localnet", () => {
     expect((await adapter.findDeposits(reference.toBase58(), s1)).map((d) => d.signature)).toEqual([s2]);
     expect(await adapter.findDeposits(reference.toBase58(), s2)).toEqual([]);
   }, 120_000);
+
+  // 16 §5: program v1.3 and `devnet-setup.ts --test-mints` (ASSET_MINT_USDT on SPL Token, ASSET_MINT_PYUSD on
+  // Token-2022 with PYUSD's extensions). Fresh wallets: the adapter creates their ATAs under the right program.
+  for (const [symbol, tokenProgram] of [
+    ["USDT", "spl-token"],
+    ["PYUSD", "token-2022"],
+  ] as const) {
+    it.skipIf(!env[`ASSET_MINT_${symbol}`])(
+      `${symbol} (${tokenProgram}): fund -> settle to fresh wallets -> remainder back; refund too`,
+      async () => {
+        const m = new PublicKey(env[`ASSET_MINT_${symbol}`] ?? "");
+        const prog = tokenProgram === "token-2022" ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+        const asset = { symbol, mint: m.toBase58(), tokenProgram, native: false };
+        const op = Keypair.fromSecretKey(bs58.decode(env.OPERATOR_SECRET_KEY ?? "")).publicKey;
+        const bal = async (owner: PublicKey) =>
+          BigInt(
+            (
+              await conn
+                .getTokenAccountBalance(getAssociatedTokenAddressSync(m, owner, false, prog))
+                .catch(() => null)
+            )?.value.amount ?? "0",
+          );
+        const fundIn = (h: Uint8Array) =>
+          adapter.fundTask(
+            {
+              verificationId: `ver_${symbol}`,
+              taskIdHash: h,
+              requesterRefHash: randomBytes(32),
+              amountPerWitness: 300_000n,
+              asset,
+              requiredWitnesses: 3,
+              quorum: 2,
+              deadline: new Date(Date.now() + 3_600_000),
+            },
+            onSigned,
+          );
+        const before = await bal(op);
+        const h = randomBytes(32);
+        expect(await fundIn(h)).toMatchObject({ kind: "confirmed", alreadyDone: false });
+        expect(await adapter.readTask(h)).toMatchObject({ status: "Funded", mint: m.toBase58() });
+        expect(await bal(op)).toBe(before - 900_000n);
+        const workers = [Keypair.generate().publicKey, Keypair.generate().publicKey];
+        const s = await adapter.finalizeAndSettle(
+          {
+            verificationId: `ver_${symbol}`,
+            taskIdHash: h,
+            outcome: "VERIFIED",
+            evidenceRoot: randomBytes(32),
+            resultHash: randomBytes(32),
+            recipients: workers.map((w) => w.toBase58()),
+          },
+          onSigned,
+        );
+        expect(s).toMatchObject({ kind: "confirmed", alreadyDone: false });
+        for (const w of workers) expect(await bal(w)).toBe(300_000n);
+        expect(await bal(op)).toBe(before - 600_000n); // the third slot came back
+
+        const h2 = randomBytes(32);
+        await fundIn(h2);
+        expect(
+          await adapter.refund(
+            { verificationId: `ver_${symbol}2`, taskIdHash: h2, reason: "Cancelled" },
+            onSigned,
+          ),
+        ).toMatchObject({ kind: "confirmed", alreadyDone: false });
+        expect(await bal(op)).toBe(before - 600_000n);
+      },
+      120_000,
+    );
+  }
 });

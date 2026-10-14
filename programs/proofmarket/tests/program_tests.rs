@@ -13,7 +13,24 @@ use anchor_lang::{
     },
     AccountDeserialize, AnchorDeserialize, Discriminator, InstructionData, ToAccountMetas,
 };
-use anchor_spl::{associated_token::get_associated_token_address, token::spl_token};
+use anchor_spl::{
+    associated_token::{get_associated_token_address, get_associated_token_address_with_program_id},
+    token::spl_token,
+    token_2022::spl_token_2022::{
+        self,
+        extension::{
+            metadata_pointer::MetadataPointer,
+            non_transferable::{NonTransferable, NonTransferableAccount},
+            pausable::PausableAccount,
+            permanent_delegate::PermanentDelegate,
+            transfer_fee::{TransferFee, TransferFeeAmount, TransferFeeConfig},
+            transfer_hook::{TransferHook, TransferHookAccount},
+            BaseStateWithExtensions, BaseStateWithExtensionsMut, ExtensionType, StateWithExtensions,
+            StateWithExtensionsMut,
+        },
+    },
+};
+use spl_pod::optional_keys::OptionalNonZeroPubkey;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use litesvm::{types::TransactionResult, LiteSVM};
 use proofmarket::{
@@ -278,9 +295,16 @@ impl Env {
 
     fn token_balance(&self, address: &Pubkey) -> u64 {
         let account = self.svm.get_account(address).expect("token account exists");
-        spl_token::state::Account::unpack(&account.data)
+        // the base layout is the same under both programs; Token-2022 may append extensions
+        StateWithExtensions::<spl_token_2022::state::Account>::unpack(&account.data)
             .unwrap()
+            .base
             .amount
+    }
+
+    /// The token program that owns `mint` (SPL Token or Token-2022, 16 §5).
+    fn program_of(&self, mint: &Pubkey) -> Pubkey {
+        self.svm.get_account(mint).expect("mint exists").owner
     }
 
     fn is_closed(&self, address: &Pubkey) -> bool {
@@ -412,6 +436,7 @@ impl Env {
                 vault: vault_pda(task),
                 treasury: self.treasury,
                 token_program: spl_token::ID,
+                mint: Some(self.mint),
             }
             .to_account_metas(None),
             data: proofmarket::instruction::Refund { reason }.data(),
@@ -1391,7 +1416,7 @@ impl Env {
                 mint: *mint,
                 vault: vault_pda(&task),
                 treasury: *treasury,
-                token_program: spl_token::ID,
+                token_program: self.program_of(mint),
                 system_program: anchor_lang::system_program::ID,
                 allowed_mint: allowed.then(|| allowed_mint_pda(mint)),
             }
@@ -1408,7 +1433,7 @@ impl Env {
             mint: *mint,
             vault: vault_pda(task),
             treasury: *treasury,
-            token_program: spl_token::ID,
+            token_program: self.program_of(mint),
         }
         .to_account_metas(None);
         accounts.extend(recipient_atas.iter().map(|a| AccountMeta::new(*a, false)));
@@ -1416,6 +1441,7 @@ impl Env {
     }
 
     fn ix_refund_in(&self, task: &Pubkey, treasury: &Pubkey, reason: RefundReason) -> Instruction {
+        let mint = self.task(task).mint;
         Instruction {
             program_id: proofmarket::ID,
             accounts: proofmarket::accounts::Refund {
@@ -1424,7 +1450,8 @@ impl Env {
                 task: *task,
                 vault: vault_pda(task),
                 treasury: *treasury,
-                token_program: spl_token::ID,
+                token_program: self.program_of(&mint),
+                mint: Some(mint),
             }
             .to_account_metas(None),
             data: proofmarket::instruction::Refund { reason }.data(),
@@ -1656,3 +1683,279 @@ fn p_mint_05_wsol_settle_checks_wallets() {
     assert_err(env.as_operator(ix), ProofMarketError::PayoutBelowRent);
 }
 
+
+#[test]
+fn p_mint_06_clients_from_before_v1_3_still_refund_spl_token_tasks() {
+    let mut env = Env::new();
+    let task = env.fund(task_args(91));
+    // The v1.2 account list has no trailing mint.
+    let mut ix = env.ix_refund(&task, RefundReason::Cancelled);
+    let last = ix.accounts.pop().expect("mint");
+    assert_eq!(last.pubkey, env.mint);
+    assert_ok(env.as_operator(ix));
+    assert_eq!(env.task(&task).status, TaskStatus::Refunded);
+    assert_eq!(env.token_balance(&env.treasury.clone()), TREASURY_START);
+}
+
+// ---------------------------------------------------------------------------------------------
+// 16 §5: Token-2022 mints (program v1.3)
+// ---------------------------------------------------------------------------------------------
+
+/// Mint extensions a test can ask for.
+#[derive(Clone, Copy)]
+enum Ext {
+    /// Transfer fee in basis points, the same in both epochs.
+    Fee(u16),
+    /// Transfer hook naming this program, or none.
+    Hook(Option<Pubkey>),
+    Delegate,
+    NonTransferable,
+    Metadata,
+}
+
+impl Env {
+    /// A 6-decimal Token-2022 mint with `exts`, written straight into the bank.
+    fn new_mint_2022(&mut self, exts: &[Ext]) -> Pubkey {
+        let types: Vec<ExtensionType> = exts
+            .iter()
+            .map(|e| match e {
+                Ext::Fee(_) => ExtensionType::TransferFeeConfig,
+                Ext::Hook(_) => ExtensionType::TransferHook,
+                Ext::Delegate => ExtensionType::PermanentDelegate,
+                Ext::NonTransferable => ExtensionType::NonTransferable,
+                Ext::Metadata => ExtensionType::MetadataPointer,
+            })
+            .collect();
+        let len = ExtensionType::try_calculate_account_len::<spl_token_2022::state::Mint>(&types).unwrap();
+        let mut data = vec![0u8; len];
+        let admin = self.admin.pubkey();
+        {
+            let mut st =
+                StateWithExtensionsMut::<spl_token_2022::state::Mint>::unpack_uninitialized(&mut data).unwrap();
+            for e in exts {
+                match *e {
+                    Ext::Fee(bps) => {
+                        let c = st.init_extension::<TransferFeeConfig>(true).unwrap();
+                        let fee = TransferFee {
+                            epoch: 0.into(),
+                            maximum_fee: (if bps > 0 { u64::MAX } else { 0 }).into(),
+                            transfer_fee_basis_points: bps.into(),
+                        };
+                        c.older_transfer_fee = fee;
+                        c.newer_transfer_fee = fee;
+                    }
+                    Ext::Hook(program) => {
+                        let h = st.init_extension::<TransferHook>(true).unwrap();
+                        h.program_id = OptionalNonZeroPubkey::try_from(program).unwrap();
+                    }
+                    Ext::Delegate => {
+                        let d = st.init_extension::<PermanentDelegate>(true).unwrap();
+                        d.delegate = OptionalNonZeroPubkey::try_from(Some(admin)).unwrap();
+                    }
+                    Ext::NonTransferable => {
+                        st.init_extension::<NonTransferable>(true).unwrap();
+                    }
+                    Ext::Metadata => {
+                        st.init_extension::<MetadataPointer>(true).unwrap();
+                    }
+                }
+            }
+            st.base = spl_token_2022::state::Mint {
+                mint_authority: COption::Some(admin),
+                supply: u64::MAX / 2,
+                decimals: 6,
+                is_initialized: true,
+                freeze_authority: COption::None,
+            };
+            st.pack_base();
+            st.init_account_type().unwrap();
+        }
+        let mint = Pubkey::new_unique();
+        self.put_owned(mint, data, spl_token_2022::ID);
+        mint
+    }
+
+    /// A Token-2022 account of `mint` at its ATA, carrying the extensions the mint requires of accounts.
+    fn new_ata_2022(&mut self, owner: &Pubkey, mint: &Pubkey, amount: u64) -> Pubkey {
+        let mint_data = self.svm.get_account(mint).unwrap().data;
+        let mint_types = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&mint_data)
+            .unwrap()
+            .get_extension_types()
+            .unwrap();
+        let types = ExtensionType::get_required_init_account_extensions(&mint_types);
+        let len = ExtensionType::try_calculate_account_len::<spl_token_2022::state::Account>(&types).unwrap();
+        let mut data = vec![0u8; len];
+        {
+            let mut st =
+                StateWithExtensionsMut::<spl_token_2022::state::Account>::unpack_uninitialized(&mut data).unwrap();
+            for t in &types {
+                match t {
+                    ExtensionType::TransferFeeAmount => {
+                        st.init_extension::<TransferFeeAmount>(true).unwrap();
+                    }
+                    ExtensionType::TransferHookAccount => {
+                        st.init_extension::<TransferHookAccount>(true).unwrap();
+                    }
+                    ExtensionType::NonTransferableAccount => {
+                        st.init_extension::<NonTransferableAccount>(true).unwrap();
+                    }
+                    ExtensionType::PausableAccount => {
+                        st.init_extension::<PausableAccount>(true).unwrap();
+                    }
+                    other => panic!("test helper does not build {other:?}"),
+                }
+            }
+            st.base = spl_token_2022::state::Account {
+                mint: *mint,
+                owner: *owner,
+                amount,
+                state: spl_token_2022::state::AccountState::Initialized,
+                ..Default::default()
+            };
+            st.pack_base();
+            st.init_account_type().unwrap();
+        }
+        let ata = get_associated_token_address_with_program_id(owner, mint, &spl_token_2022::ID);
+        self.put_owned(ata, data, spl_token_2022::ID);
+        ata
+    }
+
+    fn put_owned(&mut self, address: Pubkey, data: Vec<u8>, owner: Pubkey) {
+        let lamports = self.svm.minimum_balance_for_rent_exemption(data.len());
+        self.svm
+            .set_account(address, SolanaAccount { lamports, data, owner, executable: false, rent_epoch: 0 })
+            .unwrap();
+    }
+
+    /// A Token-2022 mint with `exts`, allowed by the admin, and the operator's treasury of it.
+    fn allowed_mint_2022(&mut self, exts: &[Ext]) -> (Pubkey, Pubkey) {
+        let mint = self.new_mint_2022(exts);
+        let operator = self.operator.pubkey();
+        let treasury = self.new_ata_2022(&operator, &mint, TREASURY_START);
+        let admin = self.admin.pubkey();
+        let ix = self.ix_add_mint(&admin, &mint);
+        assert_ok(self.as_admin(ix));
+        (mint, treasury)
+    }
+
+    /// Fund N=3 (Q=2) in `mint`, finalize with two fresh wallets, settle. Returns (task, recipient ATAs).
+    fn settle_2022(&mut self, mint: &Pubkey, treasury: &Pubkey, seed: u8) -> (Pubkey, Vec<Pubkey>) {
+        let args = task_args(seed);
+        let task = task_pda(&args.task_id_hash);
+        let ix = self.ix_initialize_task_in(mint, treasury, true, args);
+        assert_ok(self.as_operator(ix));
+        assert_eq!(self.svm.get_account(&vault_pda(&task)).unwrap().owner, spl_token_2022::ID);
+        let wallets: Vec<Pubkey> = (0..2).map(|_| Pubkey::new_unique()).collect();
+        let atas: Vec<Pubkey> = wallets.iter().map(|w| self.new_ata_2022(w, mint, 0)).collect();
+        self.finalize(&task, Outcome::Verified, &wallets);
+        let ix = self.ix_settle_in(&task, mint, treasury, &atas);
+        assert_ok(self.as_operator(ix));
+        (task, atas)
+    }
+}
+
+/// PYUSD and USDG on mainnet (2026-10-14): permanent delegate, a zero transfer fee, an empty hook, metadata.
+const PYUSD_LIKE: [Ext; 4] = [Ext::Delegate, Ext::Fee(0), Ext::Hook(None), Ext::Metadata];
+
+#[test]
+fn p_t22_01_plain_token_2022_mint_funds_settles_and_refunds() {
+    let mut env = Env::new();
+    let (mint, treasury) = env.allowed_mint_2022(&[Ext::Metadata]);
+    let (task, atas) = env.settle_2022(&mint, &treasury, 101);
+    for a in &atas {
+        assert_eq!(env.token_balance(a), AMOUNT);
+    }
+    assert_eq!(env.token_balance(&treasury), TREASURY_START - 2 * AMOUNT);
+    assert!(env.is_closed(&vault_pda(&task)));
+    assert_eq!(env.task(&task).status, TaskStatus::Settled);
+
+    let args = task_args(102);
+    let task = task_pda(&args.task_id_hash);
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, args);
+    assert_ok(env.as_operator(ix));
+    let ix = env.ix_refund_in(&task, &treasury, RefundReason::Cancelled);
+    assert_ok(env.as_operator(ix));
+    assert_eq!(env.token_balance(&treasury), TREASURY_START - 2 * AMOUNT);
+    assert_eq!(env.task(&task).status, TaskStatus::Refunded);
+}
+
+#[test]
+fn p_t22_02_pyusd_like_mint_settles_and_needs_the_mint_to_refund() {
+    let mut env = Env::new();
+    let (mint, treasury) = env.allowed_mint_2022(&PYUSD_LIKE);
+    let (_, atas) = env.settle_2022(&mint, &treasury, 111);
+    for a in &atas {
+        assert_eq!(env.token_balance(a), AMOUNT, "a zero fee pays the full amount");
+    }
+
+    let args = task_args(112);
+    let task = task_pda(&args.task_id_hash);
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, args);
+    assert_ok(env.as_operator(ix));
+    // without the trailing mint (a v1.2 client) a Token-2022 refund is refused, not half-done
+    let mut ix = env.ix_refund_in(&task, &treasury, RefundReason::Cancelled);
+    ix.accounts.pop();
+    assert_err(env.as_operator(ix), ProofMarketError::InvalidMint);
+    assert_eq!(env.task(&task).status, TaskStatus::Funded);
+    let ix = env.ix_refund_in(&task, &treasury, RefundReason::Cancelled);
+    assert_ok(env.as_operator(ix));
+    assert_eq!(env.token_balance(&treasury), TREASURY_START - 2 * AMOUNT);
+}
+
+#[test]
+fn p_t22_03_add_mint_refuses_extensions_that_could_hold_funds_back() {
+    let mut env = Env::new();
+    let admin = env.admin.pubkey();
+    for exts in [
+        vec![Ext::NonTransferable],
+        vec![Ext::Hook(Some(Pubkey::new_unique()))],
+        vec![Ext::Fee(50)],
+        vec![Ext::Metadata, Ext::Fee(1)],
+    ] {
+        let mint = env.new_mint_2022(&exts);
+        let ix = env.ix_add_mint(&admin, &mint);
+        assert_err(env.as_admin(ix), ProofMarketError::UnsupportedMintExtension);
+    }
+}
+
+#[test]
+fn p_t22_04_initialize_task_checks_the_fee_again() {
+    let mut env = Env::new();
+    let (mint, treasury) = env.allowed_mint_2022(&PYUSD_LIKE);
+    // the issuer raises the fee after the mint was allowed
+    let mut account = env.svm.get_account(&mint).unwrap();
+    {
+        let mut st = StateWithExtensionsMut::<spl_token_2022::state::Mint>::unpack(&mut account.data).unwrap();
+        let c = st.get_extension_mut::<TransferFeeConfig>().unwrap();
+        c.newer_transfer_fee.transfer_fee_basis_points = 25.into();
+        c.newer_transfer_fee.maximum_fee = u64::MAX.into();
+    }
+    env.svm.set_account(mint, account).unwrap();
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, task_args(121));
+    assert_err(env.as_operator(ix), ProofMarketError::UnsupportedMintExtension);
+}
+
+#[test]
+fn p_t22_05_the_token_program_and_the_recipient_accounts_must_match_the_mint() {
+    let mut env = Env::new();
+    let (mint, treasury) = env.allowed_mint_2022(&[Ext::Metadata]);
+
+    // SPL Token named for a Token-2022 mint
+    let mut ix = env.ix_initialize_task_in(&mint, &treasury, true, task_args(131));
+    let tp = ix.accounts.iter().position(|m| m.pubkey == spl_token_2022::ID).unwrap();
+    ix.accounts[tp].pubkey = spl_token::ID;
+    assert!(env.as_operator(ix).is_err());
+
+    // a recipient account that is the SPL Token ATA of the same wallet is refused
+    let args = task_args(132);
+    let task = task_pda(&args.task_id_hash);
+    let ix = env.ix_initialize_task_in(&mint, &treasury, true, args);
+    assert_ok(env.as_operator(ix));
+    let wallets = [Pubkey::new_unique(), Pubkey::new_unique()];
+    env.finalize(&task, Outcome::Verified, &wallets);
+    let good = env.new_ata_2022(&wallets[0], &mint, 0);
+    let wrong = get_associated_token_address(&wallets[1], &mint);
+    env.put_token_account(wrong, &mint, &wallets[1], 0);
+    let ix = env.ix_settle_in(&task, &mint, &treasury, &[good, wrong]);
+    assert_err(env.as_operator(ix), ProofMarketError::RecipientAccountMismatch);
+}
