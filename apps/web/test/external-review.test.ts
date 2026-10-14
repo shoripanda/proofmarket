@@ -3,7 +3,7 @@ import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleGet } from "../lib/handlers/requester";
-import { handleClaimDetail } from "../lib/handlers/worker";
+import { handleClaimDetail, handleTaskDetail } from "../lib/handlers/worker";
 import { setFlag } from "../lib/services/admin-service";
 import { applyReview, listPendingReviews } from "../lib/services/evidence-service";
 import { tick } from "../lib/services/jobs";
@@ -150,5 +150,70 @@ describe("outside AI review", () => {
     const id = await transcription();
     expect((await witness(t, alice, id, { answer: "書き起こし" })).body.state).toBe("VALID");
     expect((await listPendingReviews(t.app)).reviews).toEqual([]);
+  });
+});
+
+describe("operator review by reward (docs/architecture 07 §4.2, 01 §4.30)", () => {
+  const big = () =>
+    openTask(t, {
+      type: "DOCUMENT_TRANSCRIPTION",
+      question: "本の書名と、どこかのページの最初の1文を書き起こしてください",
+      answer_schema: { type: "text" },
+      location: undefined,
+      bounty: { asset: "USDC", amount: "5", network: "solana-devnet" },
+    }); // total 5 (one witness)
+  const detail = async (id: string) =>
+    (await (
+      await call(
+        (r) => handleTaskDetail(t.app, r, id),
+        jsonReq("GET", `/v1/worker/tasks/${id}`, { key: alice }),
+      )
+    ).json()) as { operator_review: boolean };
+
+  it("at or above the threshold: held with the flag off, not released at 30 minutes, paid after the operator's pass", async () => {
+    await setFlag(t.db, "external_review_enabled", false, "test");
+    t.app.config.humanReviewMin = { USDC: 5_000_000n };
+    const id = await big();
+    expect((await detail(id)).operator_review).toBe(true);
+    const first = await witness(t, alice, id, { answer: "会社の作り方の本。" });
+    expect(first.body).toMatchObject({ state: "CHECKING", claim_state: "ACTIVE" });
+    // the 30-minute release does not apply
+    t.advance(31 * 60_000);
+    await tick(t.app);
+    expect((await listPendingReviews(t.app)).reviews).toHaveLength(1);
+    expect((await view(id)).status).not.toBe("VERIFIED");
+    // the operator's verdict pays it, and the record says who judged
+    await applyReview(t.app, first.body.submission_id as string, {
+      verdict: "pass",
+      reason: "依頼どおりです",
+      observed: "書名が写っている",
+      model: "claude-code",
+    });
+    expect((await view(id)).status).toBe("VERIFIED");
+    const [check] = await t.db
+      .select()
+      .from(schema.evidenceChecks)
+      .where(eq(schema.evidenceChecks.checkType, "vision_consistency"));
+    expect(check?.machineDetails).toMatchObject({ reviewer: "operator-mac", model: "claude-code" });
+  });
+
+  it("below the threshold nothing changes: not held with the flag off, operator_review false", async () => {
+    await setFlag(t.db, "external_review_enabled", false, "test");
+    t.app.config.humanReviewMin = { USDC: 5_000_000n };
+    const id = await transcription(); // total 0.5
+    expect((await detail(id)).operator_review).toBe(false);
+    expect((await witness(t, alice, id, { answer: "書き起こし" })).body.state).toBe("VALID");
+  });
+
+  it("a timeout release records reviewer=timeout", async () => {
+    const id = await transcription();
+    await witness(t, alice, id, { answer: "書き起こし" });
+    t.advance(31 * 60_000);
+    await tick(t.app);
+    const [check] = await t.db
+      .select()
+      .from(schema.evidenceChecks)
+      .where(eq(schema.evidenceChecks.checkType, "vision_consistency"));
+    expect(check?.machineDetails).toMatchObject({ reviewer: "timeout", verdict: "unavailable" });
   });
 });

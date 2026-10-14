@@ -243,6 +243,7 @@ Vercel の Production で次を入れ替える。ほかの変数は 5 節のま�
 | `ASSETS_ENABLED` | 10.2 の `--assets` で開いた通貨（例 `USDC,SOL,USDT,PYUSD`）。書かなければ USDC だけ |
 | `JOB_CONCURRENCY`、`PRIORITY_MAX_MICROLAMPORTS` | 省略してよい（既定は 6 と 1,000,000）。混雑で取り込みが遅れるなら後者を上げる（16 §7） |
 | `TREASURY_MAX_USDC`、`TREASURY_MAX_SOL` | operator の財布に置く額の上限（15 §4.2）。どちらかの 1.5 倍を超えると tick が `treasury_over_cap` で警告する。超えた分は admin の財布へ手で移す。省略すると警告しない |
+| `HUMAN_REVIEW_MIN_TOTAL`、`HUMAN_REVIEW_MIN_TOTAL_<記号>` | 運営者の審査を必須にする依頼の総額（01 §4.30）。USDC は既定 5。**閾値以上の依頼は運営者の Mac の review-runner が動いていないと支払われない**ので、launchd の登録（9 章）を先に確かめる |
 
 1 つでも欠けると、最初のリクエストで門が止めてサーバーは応答しない（REQ-X-P-105）。Devnet の値が 1 つでも残っていても同じ。
 
