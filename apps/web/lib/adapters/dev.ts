@@ -109,7 +109,13 @@ export function devChain(): SettlementAdapter {
       return { operatorLamports: 10n ** 10n, treasuryAmount: 10n ** 9n };
     },
     depositAddresses() {
-      return { wallet: "DevOperatorWallet", usdcAccount: "DevTreasuryUsdc", usdcMint: "DevUsdcMint" };
+      return {
+        wallet: "DevOperatorWallet",
+        accounts: [
+          { asset: "USDC", mint: "DevUsdcMint", account: "DevTreasuryUsdc" },
+          { asset: "SOL", mint: "So11111111111111111111111111111111111111112", account: "DevOperatorWallet" },
+        ],
+      };
     },
     async findDeposits() {
       return [];
@@ -132,7 +138,7 @@ export function devChain(): SettlementAdapter {
         resultHash: new Uint8Array(32),
         recipients: [],
         paidTotal: 0n,
-        mint: i.asset === "SOL" ? "So11111111111111111111111111111111111111112" : "DevUsdcMint",
+        mint: i.asset?.mint ?? "DevUsdcMint",
       });
       return ok(s, addr);
     },

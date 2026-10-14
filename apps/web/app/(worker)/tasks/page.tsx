@@ -22,7 +22,7 @@ interface Task {
   question: string;
   distance_m: number | null;
   /** 13 §1: `max` and `rises_until` are set while the reward is still rising. */
-  reward: { amount: string; max: string | null; rises_until: string | null };
+  reward: { asset: string; amount: string; max: string | null; rises_until: string | null };
   deadline: string;
   open_slots: number;
 }
@@ -219,7 +219,7 @@ export default function TasksPage() {
           <Card>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold text-teal-700">
-                {yen(t.reward.amount, lang)}
+                {yen(t.reward.amount, lang, t.reward.asset)}
                 {t.reward.max && t.reward.rises_until ? (
                   <span
                     className="ml-2 inline-flex items-center gap-1 align-middle text-sm font-semibold text-amber-600"

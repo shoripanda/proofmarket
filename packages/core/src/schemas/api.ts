@@ -3,6 +3,7 @@
 // Specs: api-contract.md, implementation/ja/05-api-design.md.
 
 import { z } from "zod";
+import { ASSET_SYMBOLS } from "../domain/assets.ts";
 import {
   ANSWER_KINDS,
   API_SETTLEMENT_STATUSES,
@@ -44,8 +45,8 @@ const Amount = z
   .string()
   .regex(/^(0|[1-9]\d{0,11})(\.\d{1,6})?$/, "decimal string with up to 6 decimals")
   .refine((v) => Number(v) > 0, "must be > 0");
-/** What a reward is paid in (15 §3). SOL is accepted only while SOL_ENABLED is on. */
-export const AssetSchema = z.enum(["USDC", "SOL"]);
+/** What a reward is paid in (16 §3): a symbol from the asset registry. Which ones a server accepts is ASSETS_ENABLED. */
+export const AssetSchema = z.enum(ASSET_SYMBOLS);
 /** The chain a request settles on (15 §4.1): Devnet during the pilot, "solana" on mainnet. */
 export const NetworkSchema = z.enum(["solana-devnet", "solana"]);
 export type Network = z.infer<typeof NetworkSchema>;
@@ -648,6 +649,27 @@ export const PublicDatasetSchema = z.object({
   rows: z.array(PublicDatasetRowSchema),
 });
 export type PublicDataset = z.infer<typeof PublicDatasetSchema>;
+
+/** GET /v1/public/assets (16 §3.2): what this server accepts as a reward, in registry order. */
+export const PublicAssetsSchema = z.object({
+  network: NetworkSchema,
+  assets: z.array(
+    z.object({
+      symbol: AssetSchema,
+      name: z.string(),
+      mint: z.string(),
+      token_program: z.enum(["spl-token", "token-2022"]),
+      decimals: z.number().int(),
+      /** Fraction digits `bounty.amount` may have in this asset: min(6, decimals). */
+      amount_decimals: z.number().int(),
+      min_bounty: z.string().nullable(),
+      /** The value moves with the market (SOL, JUP, BONK ...). */
+      volatile: z.boolean(),
+      x402: z.boolean(),
+    }),
+  ),
+});
+export type PublicAssets = z.infer<typeof PublicAssetsSchema>;
 
 /**
  * Public track record (05 §4.1): aggregates only. No question, answer, location, worker or payout address.

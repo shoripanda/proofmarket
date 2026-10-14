@@ -237,6 +237,19 @@ const COPY = {
 "allow_reuse": true                     // 自分の結果をほかの依頼者に使わせてよい`,
       p: "使われるのは、元の依頼者が allow_reuse を付けた結果だけです。店・種類・答えの選択肢が同じで、VERIFIED のものに限ります。見つかれば 200 で reused: true と結果そのものが返り、新しい依頼は作られません。NOTICE_POSTED は質問ごとに見る掲示が違うので対象外です。",
     },
+    assets: {
+      title: "報酬の通貨",
+      lead: "報酬は USDC のほか、この下の一覧にある Solana のトークンでも払えます。bounty.asset に記号を書き、bounty.amount はその通貨の額で書きます。前払いの残高は通貨ごとに分かれていて、依頼の報酬は同じ通貨の残高から引かれます。証人も同じ通貨で受け取ります。通貨の両替はしません。",
+      code: `GET /v1/public/assets      // 認証なし。MCP では list_reward_assets
+{
+  "network": "solana",
+  "assets": [
+    { "symbol": "USDC", "mint": "EPjF...Dt1v", "decimals": 6, "amount_decimals": 6, "volatile": false, ... },
+    { "symbol": "SOL",  "mint": "So11...1112", "decimals": 9, "amount_decimals": 6, "min_bounty": "0.001", ... },
+    { "symbol": "BONK", "decimals": 5, "amount_decimals": 5, "volatile": true, ... }
+  ]
+}`,
+    },
     batch: {
       title: "同じ依頼を、多くの場所へ一度に",
       lead: "棚の確認を50店舗へ、同じ値段の質問を街じゅうへ、1つの場所に違う質問をいくつも。1回の呼び出しで最大50件の依頼を作れます。",
@@ -496,6 +509,19 @@ const COPY = {
 "allow_reuse": true                     // let other requesters reuse my result`,
       p: "Only results whose original requester set allow_reuse are used, and only VERIFIED ones for the same shop, type and answer choices. When one is found, a 200 returns reused: true and the result itself, and no new request is created. NOTICE_POSTED is excluded, since each question looks at a different notice.",
     },
+    assets: {
+      title: "Reward tokens",
+      lead: "Besides USDC, a reward can be paid in any Solana token listed below. Put its symbol in bounty.asset and the amount in that token in bounty.amount. Each token is its own prepaid balance, and a reward is taken from the balance in its token; the witness is paid in the same token. Nothing is converted.",
+      code: `GET /v1/public/assets      // no auth; MCP tool list_reward_assets
+{
+  "network": "solana",
+  "assets": [
+    { "symbol": "USDC", "mint": "EPjF...Dt1v", "decimals": 6, "amount_decimals": 6, "volatile": false, ... },
+    { "symbol": "SOL",  "mint": "So11...1112", "decimals": 9, "amount_decimals": 6, "min_bounty": "0.001", ... },
+    { "symbol": "BONK", "decimals": 5, "amount_decimals": 5, "volatile": true, ... }
+  ]
+}`,
+    },
     batch: {
       title: "The same request at many places, at once",
       lead: "A shelf check at 50 shops, the same price question across a city, several different questions about one site. One call creates up to 50 requests.",
@@ -629,6 +655,10 @@ export default async function DevelopersPage() {
             </div>
           </div>
         </div>
+      </Section>
+
+      <Section title={c.assets.title} lead={c.assets.lead}>
+        <Code>{c.assets.code}</Code>
       </Section>
 
       <Section title={c.x402.title} lead={c.x402.lead}>

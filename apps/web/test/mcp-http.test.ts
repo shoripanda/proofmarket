@@ -46,7 +46,7 @@ describe("POST /mcp", () => {
   it("request without principal_ref -> owner's principal; retry is idempotent; cancel kicks the refund", async () => {
     const mcp = await connect(t.apiKey);
     const { tools } = await mcp.listTools();
-    expect(tools).toHaveLength(8);
+    expect(tools).toHaveLength(9);
 
     const { principal_ref: _p, ...args } = createBody(t.principalId);
     type Created = { structuredContent: { verification_id: string; replayed: boolean } };
@@ -115,6 +115,9 @@ describe("POST /mcp", () => {
 
     const stopped = await callTool("stop_reality_verification_watch", { schedule_id: w.schedule_id });
     expect(stopped).toMatchObject({ active: false });
+
+    const assets = (await callTool("list_reward_assets", {})) as { assets: { symbol: string }[] };
+    expect(assets.assets.map((a) => a.symbol)).toContain("USDC");
   });
 
   it("a path with no row is reported as an internal error, not as an unknown verification", async () => {

@@ -43,7 +43,14 @@ export class FakeChain implements SettlementAdapter {
   deposits = new Map<string, ChainDeposit[]>();
   depositCalls: { reference: string; until?: string }[] = [];
   depositAddresses() {
-    return { wallet: "FakeOperatorWallet", usdcAccount: "FakeTreasuryUsdc", usdcMint: "TestUsdcMint" };
+    return {
+      wallet: "FakeOperatorWallet",
+      accounts: [
+        { asset: "USDC", mint: "TestUsdcMint", account: "FakeTreasuryUsdc" },
+        { asset: "SOL", mint: "So11111111111111111111111111111111111111112", account: "FakeOperatorWallet" },
+        { asset: "BONK", mint: "TestBonkMint", account: "FakeTreasuryBonk" },
+      ],
+    };
   }
   async findDeposits(reference: string, until?: string) {
     this.depositCalls.push({ reference, until });
@@ -89,7 +96,7 @@ export class FakeChain implements SettlementAdapter {
       resultHash: new Uint8Array(32),
       recipients: [],
       paidTotal: 0n,
-      mint: i.asset === "SOL" ? "So11111111111111111111111111111111111111112" : "TestUsdcMint",
+      mint: i.asset?.mint ?? "TestUsdcMint",
     });
     if (m === "land-but-timeout") return { kind: "retry", signature: s, error: "not finalized in 60s" };
     return { kind: "confirmed", signature: s, alreadyDone: false, taskAccount };

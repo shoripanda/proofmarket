@@ -3,8 +3,11 @@ import "server-only";
 
 import {
   ApiError,
+  amountDecimals,
   answerSchemaOf,
+  type EnabledAsset,
   evaluateQuestion,
+  fractionDigits,
   fromMicro,
   fundedPerWitnessMicro,
   haversineM,
@@ -255,16 +258,7 @@ export async function createVerification(
       ? null
       : (body.bounty.ramp_minutes ??
         Math.min(1440, Math.max(10, Math.floor((deadline.getTime() - now.getTime()) / 60_000))));
-  if (body.bounty.asset === "SOL") {
-    if (!app.config.solEnabled) throw new ApiError("UNSUPPORTED_ASSET", { field: "bounty.asset" });
-    if (toMicro(body.bounty.amount) < toMicro(LIMITS.minSolBounty)) {
-      throw new ApiError("VALIDATION_FAILED", {
-        field: "bounty.amount",
-        reason: "below_min",
-        min: LIMITS.minSolBounty,
-      });
-    }
-  }
+  checkBountyAsset(app, body.bounty);
   const policy = evaluateQuestion(body.question);
   if (!policy.ok) throw new ApiError("TASK_POLICY_VIOLATION", { rule_id: policy.ruleId });
 
@@ -521,4 +515,32 @@ export async function disputeVerification(app: AppContext, auth: RequesterAuth, 
     });
     return { verification_id: orig.id, recheck_verification_id: recheckId };
   });
+}
+
+/**
+ * 16 §3.2 / §4: the asset must be enabled here, its amounts may not be finer than the asset allows (BONK:
+ * 5 decimals), and an asset with a technical floor (SOL, 15 §3.2) must reach it.
+ */
+export function checkBountyAsset(
+  app: AppContext,
+  bounty: { asset: string; amount: string; max_amount?: string | null | undefined },
+): EnabledAsset {
+  const a = app.config.assets.find((x) => x.symbol === bounty.asset);
+  if (!a) throw new ApiError("UNSUPPORTED_ASSET", { field: "bounty.asset" });
+  const digits = amountDecimals(a.symbol);
+  for (const [field, v] of [
+    ["bounty.amount", bounty.amount],
+    ["bounty.max_amount", bounty.max_amount],
+  ] as const) {
+    if (v != null && fractionDigits(v) > digits)
+      throw new ApiError("VALIDATION_FAILED", { field, reason: "too_many_decimals", max_decimals: digits });
+  }
+  if (a.minBounty && toMicro(bounty.amount) < toMicro(a.minBounty)) {
+    throw new ApiError("VALIDATION_FAILED", {
+      field: "bounty.amount",
+      reason: "below_min",
+      min: a.minBounty,
+    });
+  }
+  return a;
 }

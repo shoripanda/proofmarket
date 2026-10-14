@@ -56,6 +56,7 @@ export const REQUEST_TOOL = {
     "deadline is within 24 h for work at a place and up to 7 days without one. " +
     "For text answers, result.answers holds every accepted text and result.answer is the SHA-256 of the first. " +
     "An API key may allow only some types. " +
+    "bounty.asset is USDC by default; list_reward_assets tells which other tokens (SOL, USDT, PYUSD ...) are accepted. " +
     "bounty.max_amount and ramp_minutes raise the reward from amount toward max_amount until someone takes the task " +
     "(the amount at the first claim is what every witness is paid; max_amount × witnesses is reserved). " +
     "publish: true puts the verified result on the public map for 72 hours so other people can use it too; this makes " +
@@ -160,6 +161,17 @@ export const WATCH_TOOL = {
       })
       .strict(),
   },
+} as const;
+
+export const ASSETS_TOOL = {
+  name: "list_reward_assets",
+  title: "List the tokens a reward can be paid in",
+  description:
+    "The tokens this server accepts as bounty.asset, with mint, decimals and how many fraction digits an amount may " +
+    "have (amount_decimals). Each token is its own prepaid balance: a reward is paid from the balance in its asset, " +
+    "and the witness is paid in the same asset. No currency conversion happens. volatile: true marks tokens whose " +
+    "value moves with the market (SOL, JUP, BONK ...). x402 (paying without an API key) takes USDC only.",
+  inputSchema: {},
 } as const;
 
 export const LIST_WATCHES_TOOL = {

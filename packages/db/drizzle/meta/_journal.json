@@ -204,6 +204,13 @@
       "when": 1791800200000,
       "tag": "0028_deposits",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791800300000,
+      "tag": "0029_deposits_any_asset",
+      "breakpoints": true
     }
   ]
 }

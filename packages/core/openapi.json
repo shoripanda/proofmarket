@@ -530,7 +530,16 @@
                         "type": "string",
                         "enum": [
                           "USDC",
-                          "SOL"
+                          "SOL",
+                          "USDT",
+                          "PYUSD",
+                          "USDG",
+                          "EURC",
+                          "JUP",
+                          "BONK",
+                          "JitoSOL",
+                          "mSOL",
+                          "cbBTC"
                         ]
                       },
                       "amount": {
@@ -1272,7 +1281,16 @@
                             "type": "string",
                             "enum": [
                               "USDC",
-                              "SOL"
+                              "SOL",
+                              "USDT",
+                              "PYUSD",
+                              "USDG",
+                              "EURC",
+                              "JUP",
+                              "BONK",
+                              "JitoSOL",
+                              "mSOL",
+                              "cbBTC"
                             ]
                           },
                           "amount": {
@@ -2054,7 +2072,16 @@
                         "type": "string",
                         "enum": [
                           "USDC",
-                          "SOL"
+                          "SOL",
+                          "USDT",
+                          "PYUSD",
+                          "USDG",
+                          "EURC",
+                          "JUP",
+                          "BONK",
+                          "JitoSOL",
+                          "mSOL",
+                          "cbBTC"
                         ]
                       },
                       "amount": {
@@ -2880,7 +2907,16 @@
                           "type": "string",
                           "enum": [
                             "USDC",
-                            "SOL"
+                            "SOL",
+                            "USDT",
+                            "PYUSD",
+                            "USDG",
+                            "EURC",
+                            "JUP",
+                            "BONK",
+                            "JitoSOL",
+                            "mSOL",
+                            "cbBTC"
                           ]
                         },
                         "amount": {
@@ -4093,7 +4129,16 @@
                           "type": "string",
                           "enum": [
                             "USDC",
-                            "SOL"
+                            "SOL",
+                            "USDT",
+                            "PYUSD",
+                            "USDG",
+                            "EURC",
+                            "JUP",
+                            "BONK",
+                            "JitoSOL",
+                            "mSOL",
+                            "cbBTC"
                           ]
                         },
                         "amount": {
@@ -5161,7 +5206,16 @@
                           "type": "string",
                           "enum": [
                             "USDC",
-                            "SOL"
+                            "SOL",
+                            "USDT",
+                            "PYUSD",
+                            "USDG",
+                            "EURC",
+                            "JUP",
+                            "BONK",
+                            "JitoSOL",
+                            "mSOL",
+                            "cbBTC"
                           ]
                         },
                         "amount": {
@@ -5767,7 +5821,16 @@
                             "type": "string",
                             "enum": [
                               "USDC",
-                              "SOL"
+                              "SOL",
+                              "USDT",
+                              "PYUSD",
+                              "USDG",
+                              "EURC",
+                              "JUP",
+                              "BONK",
+                              "JitoSOL",
+                              "mSOL",
+                              "cbBTC"
                             ]
                           },
                           "amount": {
@@ -7668,7 +7731,16 @@
                                 "type": "string",
                                 "enum": [
                                   "USDC",
-                                  "SOL"
+                                  "SOL",
+                                  "USDT",
+                                  "PYUSD",
+                                  "USDG",
+                                  "EURC",
+                                  "JUP",
+                                  "BONK",
+                                  "JitoSOL",
+                                  "mSOL",
+                                  "cbBTC"
                                 ]
                               },
                               "amount": {
@@ -8254,7 +8326,16 @@
                           "type": "string",
                           "enum": [
                             "USDC",
-                            "SOL"
+                            "SOL",
+                            "USDT",
+                            "PYUSD",
+                            "USDG",
+                            "EURC",
+                            "JUP",
+                            "BONK",
+                            "JitoSOL",
+                            "mSOL",
+                            "cbBTC"
                           ]
                         },
                         "amount": {
@@ -10419,7 +10500,16 @@
                             "type": "string",
                             "enum": [
                               "USDC",
-                              "SOL"
+                              "SOL",
+                              "USDT",
+                              "PYUSD",
+                              "USDG",
+                              "EURC",
+                              "JUP",
+                              "BONK",
+                              "JitoSOL",
+                              "mSOL",
+                              "cbBTC"
                             ]
                           },
                           "status": {
@@ -11238,6 +11328,192 @@
         }
       }
     },
+    "/v1/public/assets": {
+      "get": {
+        "summary": "Tokens accepted as a reward on this server, with mint and decimals (16 §3.2)",
+        "x-priority": "P1",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "network": {
+                      "type": "string",
+                      "enum": [
+                        "solana-devnet",
+                        "solana"
+                      ]
+                    },
+                    "assets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "symbol": {
+                            "type": "string",
+                            "enum": [
+                              "USDC",
+                              "SOL",
+                              "USDT",
+                              "PYUSD",
+                              "USDG",
+                              "EURC",
+                              "JUP",
+                              "BONK",
+                              "JitoSOL",
+                              "mSOL",
+                              "cbBTC"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "mint": {
+                            "type": "string"
+                          },
+                          "token_program": {
+                            "type": "string",
+                            "enum": [
+                              "spl-token",
+                              "token-2022"
+                            ]
+                          },
+                          "decimals": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "amount_decimals": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "min_bounty": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "volatile": {
+                            "type": "boolean"
+                          },
+                          "x402": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "symbol",
+                          "name",
+                          "mint",
+                          "token_program",
+                          "decimals",
+                          "amount_decimals",
+                          "min_bounty",
+                          "volatile",
+                          "x402"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "network",
+                    "assets"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/public/stats": {
       "get": {
         "summary": "Public track record (aggregates only)",
@@ -11322,7 +11598,16 @@
                             "type": "string",
                             "enum": [
                               "USDC",
-                              "SOL"
+                              "SOL",
+                              "USDT",
+                              "PYUSD",
+                              "USDG",
+                              "EURC",
+                              "JUP",
+                              "BONK",
+                              "JitoSOL",
+                              "mSOL",
+                              "cbBTC"
                             ]
                           },
                           "amount": {

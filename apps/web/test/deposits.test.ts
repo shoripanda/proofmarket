@@ -85,7 +85,10 @@ describe("deposits", () => {
     ]);
     expect(await runDeposits(t.app)).toBe(2);
     let d = await dashboard(t.app, auth);
-    expect(d.balances).toEqual({ USDC: "15", SOL: "0.25" });
+    expect(Object.fromEntries(d.balances.map((b) => [b.asset, b.amount]))).toMatchObject({
+      USDC: "15",
+      SOL: "0.25",
+    });
     expect(d.deposit.deposits.map((x) => [x.signature, x.asset, x.amount])).toEqual([
       ["sigB", "SOL", "0.25"],
       ["sigA", "USDC", "5"],
@@ -95,7 +98,10 @@ describe("deposits", () => {
     expect(await runDeposits(t.app)).toBe(0);
     expect(t.chain.depositCalls.at(-1)?.until).toBe("sigB");
     d = await dashboard(t.app, auth);
-    expect(d.balances).toEqual({ USDC: "15", SOL: "0.25" });
+    expect(Object.fromEntries(d.balances.map((b) => [b.asset, b.amount]))).toMatchObject({
+      USDC: "15",
+      SOL: "0.25",
+    });
 
     // The RPC repeating an old signature (e.g. `until` pruned) is still counted once.
     t.chain.deposits.set(reference, [
@@ -105,7 +111,10 @@ describe("deposits", () => {
     const res = await tick(t.app);
     expect(res.failed).toEqual([]);
     d = await dashboard(t.app, auth);
-    expect(d.balances).toEqual({ USDC: "16.5", SOL: "0.25" });
+    expect(Object.fromEntries(d.balances.map((b) => [b.asset, b.amount]))).toMatchObject({
+      USDC: "16.5",
+      SOL: "0.25",
+    });
   });
 
   it("a failing lookup for one requester does not stop the others", async () => {

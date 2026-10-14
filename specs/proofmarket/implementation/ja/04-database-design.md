@@ -637,14 +637,16 @@ create table console_sessions (
 
 ### 3.27 deposits（依頼者の入金、2026-10-11 追加）
 
-15 §4.3。移行は 0028。RLS を有効にする。treasury への送金のうち、依頼者の参照が付いて確定（finalized）したものを 1 取引 1 行で持つ。同じトランザクションで `requester_ledger` に TOPUP を書くので、残高に二度入ることはない。
+15 §4.3。移行は 0028。RLS を有効にする。treasury への送金のうち、依頼者の参照が付いて確定（finalized）したものを、1 取引の 1 通貨ごとに 1 行で持つ。同じトランザクションで `requester_ledger` に TOPUP を書くので、残高に二度入ることはない。
+
+2026-10-14（16 §6、移行 0029）: 主キーを `signature` だけから（`signature`, `asset`）に変えた。1 つの取引で SOL と USDC を同時に送ると、0028 の主キーでは 2 通貨目が記録されなかった。`asset` の制約も、記号の形（英数字 2〜10 字）を見るだけにした。どの通貨を受けるかはアプリが台帳で決める。
 
 | 列 | 型 | 説明 |
 |---|---|---|
-| signature | text PK | 取引 ID。二重計上を防ぐ鍵 |
+| signature | text PK（asset と組） | 取引 ID。二重計上を防ぐ鍵 |
 | credential_id | text FK → requester_credentials | 参照の持ち主 |
-| asset | text | `USDC` か `SOL` |
-| amount | numeric(20,6) | 残高に入れた額。SOL は lamports を 10^-6 SOL に切り捨て、0 になる端数は記録しない |
+| asset | text PK（signature と組） | 台帳の記号（16 §3） |
+| amount | numeric(20,6) | 残高に入れた額。桁が 6 を超える通貨（SOL など）は 10^-6 に切り捨て、0 になる端数は記録しない |
 | slot | bigint | 取引のスロット。次に探すときの起点（`until`）を決める |
 | from_pubkey | text NULL | 送り主（取引の最初の署名者） |
 | created_at | timestamptz | 残高に入れた時刻 |

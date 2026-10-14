@@ -26,8 +26,8 @@ const create = (body: unknown) =>
 const code = async (res: Response) => ((await res.json()) as { error?: { code: string } }).error?.code;
 
 describe("SOL rewards", () => {
-  it("are refused while SOL_ENABLED is off", async () => {
-    t.app.config.solEnabled = false;
+  it("are refused while SOL is not enabled", async () => {
+    t.app.config.assets = t.app.config.assets.filter((a) => a.symbol !== "SOL");
     await topUp(t.db, t.credentialId, "1", "SOL");
     const res = await create(sol());
     expect(res.status).toBe(400);
@@ -46,7 +46,12 @@ describe("SOL rewards", () => {
       .where(eq(schema.requesterLedger.verificationId, verification_id));
     expect(reserve).toMatchObject({ entryType: "RESERVE", asset: "SOL" });
     const d = await dashboard(t.app, await authenticateApiKey(t.app, t.apiKey));
-    expect(d.balances).toEqual({ USDC: "10", SOL: "0.48" });
+    expect(d.balances.map((b) => [b.asset, b.amount])).toEqual([
+      ["USDC", "10"],
+      ["SOL", "0.48"],
+      ["PYUSD", "0"],
+      ["BONK", "0"],
+    ]);
     expect(d).toMatchObject({ balance: "10", spent_today: "0" });
   });
 

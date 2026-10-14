@@ -73,7 +73,7 @@ export async function topUp(
   db: Db,
   credentialId: string,
   amount: string,
-  asset: "USDC" | "SOL" = "USDC",
+  asset: string = "USDC",
 ): Promise<void> {
   await db.insert(schema.requesterLedger).values({ credentialId, entryType: "TOPUP", amount, asset });
 }

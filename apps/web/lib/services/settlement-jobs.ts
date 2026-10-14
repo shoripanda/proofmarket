@@ -4,6 +4,7 @@ import "server-only";
 // adapter reports a finalized confirmation.
 
 import {
+  type EnabledAsset,
   fromMicro,
   fundedPerWitnessMicro,
   newId,
@@ -87,10 +88,14 @@ async function paymentRecord(
   return row;
 }
 
-/** USDC or SOL (15 §3); any other value in the column is a bug, so it fails loudly. */
-function assetOf(task: TaskRow): "USDC" | "SOL" {
-  if (task.bountyAsset === "USDC" || task.bountyAsset === "SOL") return task.bountyAsset;
-  throw new Error(`unknown bounty asset ${task.bountyAsset}`);
+/**
+ * The task's asset as enabled here (16 §3). A task keeps settling after its asset is closed to new requests,
+ * so this looks only for the mint; an asset that was never enabled on this server is a bug and fails loudly.
+ */
+function assetOf(app: AppContext, task: TaskRow): EnabledAsset {
+  const a = app.config.assets.find((x) => x.symbol === task.bountyAsset);
+  if (!a) throw new Error(`asset ${task.bountyAsset} is not enabled on this server (ASSETS_ENABLED)`);
+  return a;
 }
 
 // ---------- FUND_TASK ----------
@@ -102,8 +107,8 @@ export async function runFundTask(
 ): Promise<JobOutcome> {
   const task = await loadTask(app.db, verificationId);
   if (task?.status !== "CREATED") return { kind: "done" }; // already funded or cancelled (T14)
-  // SOL is escrowed as wSOL; it needs program v1.2 with wSOL allowed (15 §3.1), which SOL_ENABLED waits for.
-  const asset = assetOf(task);
+  // Every asset but Config.bounty_mint needs its AllowedMint on chain (15 §3.1, 16 §5).
+  const asset = assetOf(app, task);
   const pay = await paymentRecord(app.db, task, "FUND", fundedMicro(task));
   const adapter = app.settlement();
   const r = await adapter.fundTask(
@@ -112,7 +117,7 @@ export async function runFundTask(
       taskIdHash: task.taskIdHash,
       requesterRefHash: sha256(task.credentialId), // 06 §2.2: SHA-256(credential_id)
       // the ceiling for a rising bounty (13 §1), in the asset's base units (SOL: lamports, 15 §3.2)
-      amountPerWitness: toBaseUnits(fundedPerWitnessMicro(bountyOf(task)), asset),
+      amountPerWitness: toBaseUnits(fundedPerWitnessMicro(bountyOf(task)), asset.symbol),
       asset,
       requiredWitnesses: task.requiredWitnesses,
       quorum: task.quorum,
@@ -240,7 +245,7 @@ export async function runFinalizeAndSettle(app: AppContext, verificationId: stri
       evidenceRoot: result.evidenceRoot,
       resultHash: result.resultHash,
       recipients: valid.map((v) => v.pubkey),
-      ...(task.bountyMaxAmount !== null ? { amountPerWitness: toBaseUnits(per, assetOf(task)) } : {}),
+      ...(task.bountyMaxAmount !== null ? { amountPerWitness: toBaseUnits(per, task.bountyAsset) } : {}),
     },
     recordSignature(app, pay.id),
   );

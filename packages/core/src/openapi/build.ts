@@ -231,6 +231,14 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "get",
+    path: "/v1/public/assets",
+    auth: "none",
+    priority: "P1",
+    summary: "Tokens accepted as a reward on this server, with mint and decimals (16 §3.2)",
+    ok: { status: 200, schema: S.PublicAssetsSchema },
+  },
+  {
+    method: "get",
     path: "/v1/public/stats",
     auth: "none",
     priority: "P1",

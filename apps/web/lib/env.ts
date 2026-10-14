@@ -20,14 +20,19 @@ const Common = {
   // without them, sign-ups are only stored for the operator (scripts/list-participation.ts), as before.
   RESEND_API_KEY: z.string().min(1).optional(),
   MAIL_FROM: z.string().min(3).optional(),
-  /** Rising bounty (13 §1). Off until program v1.1 is deployed; while off, `bounty.max_amount` is refused. */
-  /** Rewards in SOL (15 §3). Off until program v1.2 with wSOL is deployed; while off, asset SOL is refused. */
   /** 16 §7.2: outbox jobs one tick runs at once. */
   JOB_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(6),
+  /**
+   * 16 §3.2: rewards accepted here, comma separated registry symbols (default USDC). Off-mainnet mints come
+   * from ASSET_MINT_<SYMBOL>. A symbol not in the registry or without a mint stops the server from starting.
+   */
+  ASSETS_ENABLED: z.string().optional(),
+  /** Rewards in SOL (15 §3). The same as adding SOL to ASSETS_ENABLED; kept so existing env keeps working. */
   SOL_ENABLED: z
     .enum(["true", "false", "1", "0"])
     .optional()
     .transform((v) => v === "true" || v === "1"),
+  /** Rising bounty (13 §1). Off until program v1.1 is deployed; while off, `bounty.max_amount` is refused. */
   RISING_BOUNTY_ENABLED: z
     .enum(["true", "false", "1", "0"])
     .optional()
