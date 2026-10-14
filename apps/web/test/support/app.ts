@@ -56,8 +56,9 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
   const { credentialId, apiKey } = await issueApiKey(db, {
     principalId,
     requesterName: "test-agent",
-    maxTaskAmount: "5",
-    dailySpendLimit: "20",
+    // No ceiling by default (docs/architecture 04 §4.3); requester-api.test.ts issues a capped key where it matters.
+    maxTaskAmount: null,
+    dailySpendLimit: null,
     operator: "test",
   });
   await topUp(db, credentialId, "10");

@@ -76,7 +76,13 @@ export async function purgeExpiredEvidence(
   return { evidence: due.length, locations: locs.length, participation, removal, housekeeping };
 }
 
-type Housekeeping = { rateLimits: number; idempotency: number; oauthCodes: number; oauthTokens: number };
+type Housekeeping = {
+  rateLimits: number;
+  idempotency: number;
+  oauthCodes: number;
+  oauthTokens: number;
+  quotes: number;
+};
 
 const DAY_MS = 86_400_000;
 
@@ -104,10 +110,16 @@ export async function purgeBookkeeping(db: Db, now: Date): Promise<Housekeeping>
     .delete(schema.oauthTokens)
     .where(lt(schema.oauthTokens.expiresAt, expired))
     .returning({ c: schema.oauthTokens.clientId });
+  // Quotes expire after five minutes (docs/architecture 04 §4.2); a day-old row is only audit noise.
+  const quotes = await db
+    .delete(schema.verificationQuotes)
+    .where(lt(schema.verificationQuotes.createdAt, expired))
+    .returning({ id: schema.verificationQuotes.id });
   return {
     rateLimits: rateLimits.length,
     idempotency: idempotency.length,
     oauthCodes: oauthCodes.length,
     oauthTokens: oauthTokens.length,
+    quotes: quotes.length,
   };
 }

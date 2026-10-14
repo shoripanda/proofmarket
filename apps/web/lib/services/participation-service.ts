@@ -24,7 +24,8 @@ export const PARTICIPATION_RETENTION_DAYS = 90;
  * limits are stored on the credential but are no longer enforced (bounty caps were dropped); the balance is
  * what bounds it. On Devnet the balance is test USDC; on mainnet there is no trial balance (15 §4.5).
  */
-export const SIGNUP_KEY = { maxTaskAmount: "5", dailySpendLimit: "20", trialBalance: "5" } as const;
+/** No ceiling on a sign-up key (owner's decision, 2026-10-15): the trial balance is the only bound. */
+export const SIGNUP_KEY = { maxTaskAmount: null, dailySpendLimit: null, trialBalance: "5" } as const;
 
 /** 15 §4.5: the trial balance exists on Devnet only. On mainnet a new key starts at 0 and is topped up by deposit. */
 export const trialBalanceFor = (cluster: Cluster) =>

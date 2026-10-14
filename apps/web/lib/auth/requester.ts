@@ -12,8 +12,9 @@ export interface RequesterAuth {
   keyPrefix: string;
   allowedTaskTypes: string[];
   limits: {
-    maxTaskAmount: string;
-    dailySpendLimit: string;
+    /** Spend policy (docs/architecture 04 §4.3): null means no ceiling. */
+    maxTaskAmount: string | null;
+    dailySpendLimit: string | null;
     rateLimitPerMin: number;
     allowedBbox: number[] | null;
   };

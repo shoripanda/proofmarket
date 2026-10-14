@@ -93,8 +93,9 @@ export const requesterCredentials = pgTable(
       .array()
       .notNull()
       .default(sql`'{PLACE_STATUS_VERIFICATION}'`),
-    maxTaskAmount: money("max_task_amount").notNull(),
-    dailySpendLimit: money("daily_spend_limit").notNull(),
+    /** Spend policy (docs/architecture 04 §4.3): per-request and per-day ceilings; null means no ceiling. */
+    maxTaskAmount: money("max_task_amount"),
+    dailySpendLimit: money("daily_spend_limit"),
     rateLimitPerMin: integer("rate_limit_per_min").notNull().default(30),
     allowedBbox: doublePrecision("allowed_bbox").array(),
     status: text("status").notNull().default("active"),
@@ -289,6 +290,8 @@ export const verificationRequests = pgTable(
     check("vr_settlement_chk", oneOf("settlement_status", SETTLEMENT_STATUSES)),
     unique("vr_idempotency_uq").on(t.credentialId, t.idempotencyKeyHash),
     index("vr_status_deadline_idx").on(t.status, t.deadline),
+    // GET /v1/verifications: newest first per credential (docs/architecture 04 §4.1)
+    index("vr_credential_created_idx").on(t.credentialId, t.createdAt.desc()),
   ],
 );
 
@@ -915,4 +918,31 @@ export const x402Payments = pgTable(
     updatedAt: tsz("updated_at").notNull().defaultNow(),
   },
   (_t) => [check("x402_payments_state_chk", oneOf("state", ["PENDING", "CONFIRMED", "FAILED"]))],
+);
+
+// ---------- 3.28 verification_quotes (docs/architecture 04 §4.2) ----------
+/**
+ * The cost of a request, quoted before anything is reserved and consumed by the create that names it. Holds the
+ * RFC 8785 hash of the body (never the body), so a confirm with a different body is refused. Rows expire after
+ * five minutes and are deleted after a day.
+ */
+export const verificationQuotes = pgTable(
+  "verification_quotes",
+  {
+    id: text("id").primaryKey(),
+    credentialId: text("credential_id")
+      .notNull()
+      .references(() => requesterCredentials.id),
+    requestHash: bytea("request_hash").notNull(),
+    asset: text("asset").notNull(),
+    total: money("total").notNull(),
+    createdAt: tsz("created_at").notNull(),
+    expiresAt: tsz("expires_at").notNull(),
+    consumedAt: tsz("consumed_at"),
+    verificationId: text("verification_id").references(() => verificationRequests.id),
+  },
+  (t) => [
+    check("vq_total_chk", sql`total > 0`),
+    index("vq_credential_created_idx").on(t.credentialId, t.createdAt),
+  ],
 );

@@ -1,6 +1,7 @@
 // POST /v1/verifications — 05 §2.1 (P0). Auth: requester. Idempotency-Key required.
+// GET /v1/verifications — the requester's own verifications, newest first (docs/architecture 04 §4.1).
 import { appContext } from "@/lib/context";
-import { handleCreate } from "@/lib/handlers/requester";
+import { handleCreate, handleList } from "@/lib/handlers/requester";
 import { route } from "@/lib/http";
 import { kickAfter } from "@/lib/kick";
 
@@ -13,3 +14,5 @@ export const POST = route(async (req) => {
   }
   return res;
 });
+
+export const GET = route(async (req) => handleList(appContext(), req));

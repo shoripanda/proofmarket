@@ -67,7 +67,7 @@ describe("requester console", () => {
     const id = await openTask(t);
     const auth = await authenticateApiKey(t.app, t.apiKey);
     const d = await dashboard(t.app, auth);
-    expect(d).toMatchObject({ balance: "9.5", spent_today: "0.5", key: { max_task_amount: "5" } });
+    expect(d).toMatchObject({ balance: "9.5", spent_today: "0.5", key: { max_task_amount: null } });
     expect(d.tasks.map((x) => x.verification_id)).toEqual([id]);
     const { deadline: _d, ...request } = createBody(t.principalId);
     const s = await createSchedule(t.app, auth, {

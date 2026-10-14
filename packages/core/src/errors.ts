@@ -122,6 +122,13 @@ export const ERROR_CATALOG = {
   ANSWER_INVALID: { http: 400, retryable: false, message: "The answer is not one of the allowed values." },
   MEDIA_TYPE_UNSUPPORTED: { http: 415, retryable: false, message: "Only image/jpeg is accepted." },
   MEDIA_TOO_LARGE: { http: 413, retryable: false, message: "The file exceeds the maximum size." },
+  QUOTE_NOT_FOUND: { http: 404, retryable: false, message: "The quote was not found for this API key." },
+  QUOTE_MISMATCH: {
+    http: 409,
+    retryable: false,
+    message: "The request body differs from the one that was quoted.",
+  },
+  QUOTE_EXPIRED: { http: 409, retryable: false, message: "The quote has expired; ask for a new one." },
   FEATURE_DISABLED: {
     http: 503,
     retryable: true,

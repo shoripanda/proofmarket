@@ -12,6 +12,8 @@
 |---|---|---|---|---|
 | POST | `/v1/verifications` | requester | P0 | Idempotency-Key 必須 |
 | POST | `/v1/verifications/batch` | requester | P2 | 追加（2026-10-08）。1 つの本文で最大 50 件。全件成功か 0 件か（01 §4.25）。Idempotency-Key 必須 |
+| POST | `/v1/verifications/quote` | requester | P2 | 追加（2026-10-15）。依頼の費用と検査の結果だけを返し、何も引き当てない（2.1b、01 §4.29） |
+| GET | `/v1/verifications` | requester | P2 | 追加（2026-10-15）。その API キーの依頼の一覧（2.2a） |
 | GET | `/v1/verifications/{id}` | requester | P0 | |
 | POST | `/v1/verifications/{id}/cancel` | requester | P0 | |
 | GET | `/v1/verifications/{id}/evidence` | requester | P1 | 追加。派生画像の署名 URL |
@@ -60,6 +62,8 @@
 | cron | `X-Internal-Secret: <INTERNAL_CRON_SECRET>` | 定数時間比較 |
 
 Solana の秘密鍵や署名を API の認証には使わない（`api-contract.md` Authentication）。
+
+**支出上限（2026-10-15）**: `requester_credentials` の `max_task_amount`（1 依頼）と `daily_spend_limit`（Asia/Tokyo の 1 日）は、null なら上限なし（既定。オーナーの決定）。値があれば 2.1 の残高検査の前に検査し、超過は 403 `TASK_AMOUNT_LIMIT_EXCEEDED` / `DAILY_SPEND_LIMIT_EXCEEDED`。1 日の累計は RESERVE から、同じ日に戻った RELEASE / REFUND を引いた額で、通貨ごとに数える（01 §4.29）。
 
 ### 1.3 共通ヘッダー（追加）
 
@@ -146,6 +150,18 @@ Solana の秘密鍵や署名を API の認証には使わない（`api-contract.
 ### 2.1a POST /v1/verifications/batch（2026-10-08 追加）
 
 本文は `{ "template": {...}, "items": [{ "location": {...}, "question": "..." }, ...] }`。`template` は 2.1 の本文から `question` と `location` を省いたもの（どちらも書いてよい。件ごとの値が上書きする）。`items` は 1〜50 件。件ごとに template と重ねて 2.1 の検査を順に行い、1 件でも落ちれば全体を 400 等で返して何も作らない（`details.index` に何件目かを入れる）。冪等キーは 1 つ受け取り、件ごとに `<key>#<番号>` を内部の冪等キーにする。応答は 201 で `{ "verifications": [2.1 の応答, ...] }`（`items` の順）。
+
+### 2.1b POST /v1/verifications/quote（2026-10-15 追加）
+
+本文は 2.1 と同じ（`quote_id` は除く）。Idempotency-Key は要らない。2.1 の検査（種類・ネットワーク・答えの形・場所・締め切り・方針・支出上限）をすべて行い、残高の引き当てと依頼の作成はせずに戻す。断られる本文は 2.1 と同じエラーで断る。
+
+応答は 200 `{ quote_id, bounty: { asset, amount, required_witnesses }, total, balance, balance_after, policy: { checked: [...], ok: true }, reuse, expires_at }`。`total` は `amount × required_witnesses`（上がる報酬なら `max_amount` で計算した上限）。`reuse` は、共有された結果が無料で返せるときにその `verification_id`、それ以外は null。見積もりは 5 分で失効する。
+
+確定は 2.1 の本文に `quote_id` を付けて送る。本文（`quote_id` を除く）の RFC 8785 のハッシュが見積もりのときと違えば 409 `QUOTE_MISMATCH`、他の鍵の見積もりなら 404 `QUOTE_NOT_FOUND`、失効か使用済みなら 409 `QUOTE_EXPIRED`。見積もりを付けなくても 2.1 はこれまでどおり通る。MCP では `request_reality_verification` の `confirm: false` が見積もりに当たる（6 節）。
+
+### 2.2a GET /v1/verifications（2026-10-15 追加）
+
+その API キーで作った依頼を新しい順に返す。引数は `status`（タスクの状態をコンマ区切り）、`created_after`、`limit`（既定 50、最大 200）、`cursor`（前のページの `next_cursor`）。応答は `{ verifications: [要約], next_cursor }` で、要約は `verification_id`・`type`・`status`・`funding_status`・`settlement_status`・`result_status`（結果が出ていれば）・`bounty`・`required_witnesses`・`recheck_of`・`deadline`・`created_at`・`updated_at`。写真の URL も自由記述の答えも含めない。同じ principal の別の鍵の依頼は出ない（横断は requester 用画面が担う）。
 
 ### 2.2 GET /v1/verifications/{id}
 

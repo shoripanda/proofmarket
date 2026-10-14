@@ -14,6 +14,7 @@ import {
   OUTCOME_REASONS,
   OUTCOMES,
   PLATFORM_FLAGS,
+  SETTLEMENT_STATUSES,
   STORE_REPORT_STATUSES,
   SUBMISSION_STATES,
   TASK_STATUSES,
@@ -31,6 +32,7 @@ const id = (prefix: string) =>
   z.string().regex(new RegExp(`^${prefix}_[0-9A-HJKMNP-TV-Z]{26}$`), `must be a ${prefix}_ ULID`);
 
 export const VerificationIdSchema = id("ver");
+export const QuoteIdSchema = id("qte");
 export const ClaimIdSchema = id("clm");
 export const ChallengeIdSchema = id("chl");
 export const UploadIdSchema = id("upl");
@@ -314,14 +316,42 @@ export const CreateVerificationRequestSchema = z
       .object({ max_age_seconds: z.number().int().min(60).max(3600) })
       .strict()
       .optional(),
+    /**
+     * Confirm a quote from POST /v1/verifications/quote (docs/architecture 04 §4.2). The body must match the
+     * quoted one (409 QUOTE_MISMATCH otherwise); the quote lasts five minutes. Without it, the request is
+     * created and its cost reserved at once, as before.
+     */
+    quote_id: QuoteIdSchema.optional(),
   })
   .strict();
 export type CreateVerificationRequest = z.infer<typeof CreateVerificationRequestSchema>;
 
-/** POST /v1/x402/verifications (01 §4.19): the payer's wallet stands in for the principal. */
+/** POST /v1/verifications/quote: the same body, minus the quote it would confirm. */
+export const QuoteVerificationRequestSchema = CreateVerificationRequestSchema.omit({ quote_id: true });
+
+/** POST /v1/x402/verifications (01 §4.19): the payer's wallet stands in for the principal; 402 is the quote. */
 export const X402CreateVerificationRequestSchema = CreateVerificationRequestSchema.omit({
   principal_ref: true,
+  quote_id: true,
 });
+
+/**
+ * What a request would cost, before anything is reserved (docs/architecture 04 §4.2). `policy.ok` is true when
+ * the same body would be accepted right now; the checks are the ones POST /v1/verifications runs, in order.
+ */
+export const QuoteResponseSchema = z.object({
+  quote_id: QuoteIdSchema,
+  bounty: z.object({ asset: AssetSchema, amount: Amount, required_witnesses: z.number().int() }),
+  /** `amount × required_witnesses` (the ceiling for a rising bounty), in the bounty's asset. */
+  total: Amount,
+  balance: Amount.or(z.literal("0")),
+  balance_after: z.string(),
+  policy: z.object({ checked: z.array(z.string()), ok: z.literal(true) }),
+  /** A recent shared result would be returned for free instead of sending someone (01 §4.9). */
+  reuse: z.object({ verification_id: VerificationIdSchema }).nullable(),
+  expires_at: IsoDateTime,
+});
+export type QuoteResponse = z.infer<typeof QuoteResponseSchema>;
 
 export const CreateVerificationResponseSchema = z.object({
   verification_id: VerificationIdSchema,
@@ -339,7 +369,10 @@ export const CreateVerificationResponseSchema = z.object({
  */
 export const CreateVerificationBatchRequestSchema = z
   .object({
-    template: CreateVerificationRequestSchema.partial({ question: true, location: true }),
+    template: CreateVerificationRequestSchema.omit({ quote_id: true }).partial({
+      question: true,
+      location: true,
+    }),
     items: z
       .array(
         z
@@ -938,7 +971,7 @@ export type StopWhen = z.infer<typeof StopWhenSchema>;
 
 export const CreateScheduleRequestSchema = z
   .object({
-    request: CreateVerificationRequestSchema.omit({ deadline: true }),
+    request: CreateVerificationRequestSchema.omit({ deadline: true, quote_id: true }),
     deadline_minutes: z.number().int().min(10).max(1440),
     /** Fixed times mode: both are required together. */
     times_jst: z.array(HhmmSchema).min(1).max(24).optional(),
@@ -1008,6 +1041,39 @@ export const DisputeResponseSchema = z.object({
   verification_id: VerificationIdSchema,
   recheck_verification_id: VerificationIdSchema,
 });
+
+// ---------- GET /v1/verifications (docs/architecture 04 §4.1) ----------
+export const ListVerificationsQuerySchema = z.object({
+  /** Comma separated task statuses; all when omitted. */
+  status: z.string().optional(),
+  created_after: IsoDateTime.optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  /** The `next_cursor` of the previous page. */
+  cursor: VerificationIdSchema.optional(),
+});
+/** One row of the list: enough to pick a verification and see where it stands. No photos, no free text. */
+export const VerificationSummarySchema = z.object({
+  verification_id: VerificationIdSchema,
+  type: z.enum(TASK_TYPES),
+  status: z.enum(TASK_STATUSES),
+  funding_status: z.enum(FUNDING_STATUSES),
+  settlement_status: z.enum(SETTLEMENT_STATUSES),
+  /** The outcome once there is a result; null while the work is in progress. */
+  result_status: z.enum(OUTCOMES).nullable(),
+  bounty: z.object({ asset: AssetSchema, amount: Amount, network: NetworkSchema }),
+  required_witnesses: z.number().int(),
+  recheck_of: VerificationIdSchema.nullable(),
+  deadline: IsoDateTime,
+  created_at: IsoDateTime,
+  updated_at: IsoDateTime,
+});
+export const ListVerificationsResponseSchema = z.object({
+  verifications: z.array(VerificationSummarySchema),
+  next_cursor: VerificationIdSchema.nullable(),
+});
+export type VerificationSummary = z.infer<typeof VerificationSummarySchema>;
+export type ListVerificationsQuery = z.infer<typeof ListVerificationsQuerySchema>;
+export type ListVerificationsResponse = z.infer<typeof ListVerificationsResponseSchema>;
 
 // ---------- challenges of an optimistic answer (13 §3). "Objection" here: `challenge` is the photo nonce ----------
 export const ObjectionRequestSchema = z.object({ reason: z.string().trim().max(500).optional() }).strict();

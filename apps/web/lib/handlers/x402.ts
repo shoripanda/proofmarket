@@ -2,9 +2,11 @@ import "server-only";
 // POST /v1/x402/verifications (01 §4.19, 05 §2.9). x402 v2 HTTP transport: PAYMENT-REQUIRED (402),
 // PAYMENT-SIGNATURE (request), PAYMENT-RESPONSE (result). No API key: the payment authorizes the request.
 
+import { ApiError } from "@proofmarket/core";
 import { encodeHeader } from "@proofmarket/solana";
 import type { AppContext } from "../context";
 import { readJson } from "../http";
+import { flagEnabled } from "../services/flags";
 import { clientIp } from "../services/oauth-service";
 import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
 import { createWithPayment, X402_LIMITS } from "../services/x402-service";
@@ -15,6 +17,8 @@ export async function handleX402Create(
   app: AppContext,
   req: Request,
 ): Promise<{ res: Response; created: string | null }> {
+  // The window can be stopped on its own (08 §6): no terms are offered while it is off.
+  if (!(await flagEnabled(app.db, "x402_enabled"))) throw new ApiError("FEATURE_DISABLED");
   const rl = await consumeRateLimit(app, `x402:${clientIp(req)}`, X402_LIMITS.rateLimitPerMin);
   const out = await createWithPayment(
     app,
