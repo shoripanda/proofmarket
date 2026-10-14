@@ -16,6 +16,7 @@ import {
   STOP_WATCH_TOOL,
   WATCH_TOOL,
 } from "./tools.ts";
+import { WIDGET_HTML, WIDGET_META, WIDGET_MIME, WIDGET_URI } from "./widget.ts";
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
@@ -50,6 +51,13 @@ export function createServer(
 ): McpServer {
   const sleep = opts.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const server = new McpServer({ name: "proofmarket", version: "0.1.0" });
+  // ChatGPT renders this after the request / get tools (Apps SDK); other clients ignore it (02 §4.3).
+  server.registerResource(
+    "verification-widget",
+    WIDGET_URI,
+    { title: "ProofMarket verification", mimeType: WIDGET_MIME },
+    async () => ({ contents: [{ uri: WIDGET_URI, mimeType: WIDGET_MIME, text: WIDGET_HTML }] }),
+  );
   const { name: rName, ...rDef } = REQUEST_TOOL;
   const { name: bName, ...bDef } = BATCH_TOOL;
   const { name: gName, ...gDef } = GET_TOOL;
@@ -80,7 +88,7 @@ export function createServer(
     "wait_seconds=45 while they wait and repeat `summary` to them whenever it changes; when the result lands, give " +
     "them the answer, the AI review's verdict and reason, and the proof link without being asked.";
 
-  server.registerTool(rName, rDef, async (args) => {
+  server.registerTool(rName, { ...rDef, _meta: WIDGET_META }, async (args) => {
     try {
       const { idempotency_key, principal_ref, wait_seconds, confirm, ...rest } = args;
       const body = { ...rest, principal_ref: principal_ref ?? opts.principalRef };
@@ -132,7 +140,7 @@ export function createServer(
     }
   });
 
-  server.registerTool(gName, gDef, async ({ verification_id, wait_seconds }) => {
+  server.registerTool(gName, { ...gDef, _meta: WIDGET_META }, async ({ verification_id, wait_seconds }) => {
     try {
       const v = await awaitChange(verification_id, wait_seconds ?? 0);
       const decided = v.result !== null && !v.result.provisional;

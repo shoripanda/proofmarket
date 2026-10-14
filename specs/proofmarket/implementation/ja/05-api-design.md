@@ -438,6 +438,7 @@ stdio 版は、動かす人の手元でしか使えない。他人の PC やス�
 - ツールは stdio 版と同じ3つ。中では REST のハンドラを同じプロセスで呼ぶので、判定の規則は REST と一か所にまとまる
 - `get_reality_verification` は最大20秒待つので、この関数の実行時間の上限は60秒にする
 - Claude や ChatGPT のスマホアプリは API キーを書く欄が無く、OAuth で接続する。これは 6.2 で足す
+- 2026-10-15 追加（`docs/architecture/` 02 §4.3、オーナーの決定）: ChatGPT の Apps SDK 向けに、リソース `ui://widget/verification.html`（`text/html+skybridge`）を公開し、`request_reality_verification` と `get_reality_verification` の `_meta` に `openai/outputTemplate` でそれを指す。ChatGPT はこの HTML を iframe で描き、`window.openai.toolOutput`（道具の `structuredContent`）から状態・要約・答え・AI の照合・証明のリンクを出す。HTML は外部の script や画像を読まない。claude.ai など他のクライアントは `_meta` を無視して JSON をそのまま使う
 
 ### 6.2 スマホの AI アプリ向けの OAuth（2026-10-03 追加）
 
