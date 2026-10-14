@@ -140,7 +140,35 @@ async function pendingReviewSince(db: Db, verificationId: string): Promise<numbe
   return row?.at ? new Date(row.at).getTime() : Number.NEGATIVE_INFINITY;
 }
 
-/** /api/internal/tick: expire what is due, then drain up to maxJobs jobs. */
+/** Jobs one tick may run, and how long into the tick it still starts new ones (16 §7.2). */
+export const TICK_MAX_JOBS = 60;
+export const TICK_LEASE_BUDGET_MS = 200_000;
+
+/**
+ * Run up to `maxJobs` jobs with `concurrency` workers. Each worker leases one job, runs it, then leases the
+ * next (`for update skip locked` keeps two workers off the same job). No new job is leased once
+ * TICK_LEASE_BUDGET_MS has passed, so jobs already running (two chain waits of 60 s at most) still end
+ * inside the route's 300 s.
+ */
+export async function drainJobs(app: AppContext, maxJobs: number, concurrency: number): Promise<number> {
+  const runner = `tick:${crypto.randomUUID()}`;
+  const started = Date.now();
+  let leased = 0;
+  const worker = async () => {
+    while (leased < maxJobs && Date.now() - started < TICK_LEASE_BUDGET_MS) {
+      leased++;
+      const job = await leaseNextJob(app, runner);
+      if (!job) {
+        leased--;
+        return;
+      }
+      await runLeased(app, job, runner);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, concurrency) }, worker));
+  return leased;
+}
+
 /**
  * One step of the tick. A step that throws is logged and skipped, so a broken query in one step never stops the
  * deadlines, the claim expiry or the job drain (settlement!) that come after it. The names come back in `failed`.
@@ -156,7 +184,7 @@ async function step(failed: string[], name: string, fn: () => Promise<unknown>):
 
 export async function tick(
   app: AppContext,
-  maxJobs = 20,
+  maxJobs = TICK_MAX_JOBS,
 ): Promise<{ deadlines: number; jobsRun: number; failed: string[]; warnings: TickWarnings | null }> {
   const now = app.now();
   const failed: string[] = [];
@@ -188,14 +216,8 @@ export async function tick(
   // 6. Deposits (15 §4.3): credit finalized transfers that carry a requester's reference, before the jobs
   // below so a task created against the new balance can be funded in the same tick.
   await step(failed, "deposits", () => runDeposits(app));
-  // 7. Drain jobs.
-  const runner = `tick:${crypto.randomUUID()}`;
-  let jobsRun = 0;
-  for (; jobsRun < maxJobs; jobsRun++) {
-    const job = await leaseNextJob(app, runner);
-    if (!job) break;
-    await runLeased(app, job, runner);
-  }
+  // 7. Drain jobs, several at once (16 §7.2).
+  const jobsRun = await drainJobs(app, maxJobs, app.config.jobConcurrency);
   // 8. 08 §5: count what needs an operator and warn in the log; the counts also come back to the caller.
   let warnings: TickWarnings | null = null;
   await step(failed, "warnings", async () => {

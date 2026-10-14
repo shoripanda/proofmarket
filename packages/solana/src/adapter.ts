@@ -102,6 +102,7 @@ export function createSettlementAdapter(cfg: {
   bountyMint: string;
   operatorSecretKey: Uint8Array;
   verifierSecretKey: Uint8Array;
+  priorityMaxMicroLamports?: number;
 }): SettlementAdapter {
   return createAnchorAdapter(cfg);
 }
