@@ -1,5 +1,11 @@
+// token_interface::transfer: the v1.2 path for a refund sent without the mint.
+#![allow(deprecated)]
+
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, CloseAccount, Token, TokenAccount, Transfer};
+use anchor_spl::{
+    token::spl_token,
+    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface, Transfer, TransferChecked},
+};
 
 use crate::{
     constants::*,
@@ -25,8 +31,12 @@ pub struct Refund<'info> {
         mut,
         constraint = is_treasury_for(&treasury, treasury.key(), &config, task.mint) @ ProofMarketError::InvalidTreasury
     )]
-    pub treasury: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
+    pub treasury: InterfaceAccount<'info, TokenAccount>,
+    pub token_program: Interface<'info, TokenInterface>,
+    /// v1.3 (16 §5.1): the task's mint, for transfer_checked. Last and optional so a v1.2 client may leave it
+    /// out for an SPL Token task; a Token-2022 task cannot be refunded without it.
+    #[account(address = task.mint @ ProofMarketError::InvalidMint)]
+    pub mint: Option<InterfaceAccount<'info, Mint>>,
 }
 
 /// 06 §3.5:
@@ -61,20 +71,40 @@ pub fn handle_refund(ctx: Context<Refund>, reason: RefundReason) -> Result<()> {
     let vault = ctx.accounts.vault.to_account_info();
     let authority = ctx.accounts.task.to_account_info();
     if amount > 0 {
-        token::transfer(
-            CpiContext::new_with_signer(
-                token_program,
-                Transfer {
-                    from: vault.clone(),
-                    to: ctx.accounts.treasury.to_account_info(),
-                    authority: authority.clone(),
-                },
-                signer,
-            ),
-            amount,
-        )?;
+        let treasury = ctx.accounts.treasury.to_account_info();
+        match &ctx.accounts.mint {
+            Some(mint) => token_interface::transfer_checked(
+                CpiContext::new_with_signer(
+                    token_program,
+                    TransferChecked {
+                        from: vault.clone(),
+                        mint: mint.to_account_info(),
+                        to: treasury,
+                        authority: authority.clone(),
+                    },
+                    signer,
+                ),
+                amount,
+                mint.decimals,
+            )?,
+            None => {
+                require_keys_eq!(token_program, spl_token::ID, ProofMarketError::InvalidMint);
+                token_interface::transfer(
+                    CpiContext::new_with_signer(
+                        token_program,
+                        Transfer {
+                            from: vault.clone(),
+                            to: treasury,
+                            authority: authority.clone(),
+                        },
+                        signer,
+                    ),
+                    amount,
+                )?
+            }
+        }
     }
-    token::close_account(CpiContext::new_with_signer(
+    token_interface::close_account(CpiContext::new_with_signer(
         token_program,
         CloseAccount {
             account: vault,

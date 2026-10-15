@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    associated_token::get_associated_token_address,
-    token::{self, spl_token::native_mint, CloseAccount, Mint, Token, TokenAccount, Transfer},
+    associated_token::get_associated_token_address_with_program_id,
+    token::spl_token::native_mint,
+    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
 use crate::{
@@ -21,8 +22,12 @@ pub struct Settle<'info> {
     pub config: Account<'info, Config>,
     #[account(mut, seeds = [TASK_SEED, task.task_id_hash.as_ref()], bump = task.bump)]
     pub task: Account<'info, Task>,
-    #[account(address = task.mint @ ProofMarketError::InvalidMint)]
-    pub mint: Account<'info, Mint>,
+    /// SPL Token or Token-2022 (16 §5); the token program passed must be the one that owns it.
+    #[account(
+        address = task.mint @ ProofMarketError::InvalidMint,
+        constraint = *mint.to_account_info().owner == token_program.key() @ ProofMarketError::InvalidMint
+    )]
+    pub mint: InterfaceAccount<'info, Mint>,
     /// Read only after the status check, so a settle after the vault was closed fails with InvalidStatus (D8, D10).
     /// CHECK: address pinned by seeds; owner and layout are checked by `load_vault`.
     #[account(mut, seeds = [VAULT_SEED, task.key().as_ref()], bump = task.vault_bump)]
@@ -31,15 +36,15 @@ pub struct Settle<'info> {
         mut,
         constraint = is_treasury_for(&treasury, treasury.key(), &config, task.mint) @ ProofMarketError::InvalidTreasury
     )]
-    pub treasury: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
+    pub treasury: InterfaceAccount<'info, TokenAccount>,
+    pub token_program: Interface<'info, TokenInterface>,
     // remaining_accounts: recipients' ATAs (writable), same order as task.recipients[..recipient_count]
 }
 
 /// 06 §3.4:
 /// - status == Finalized (else InvalidStatus) — Settled/Refunded can never be settled again (D8, D10)
 /// - remaining_accounts.len() == recipient_count (RecipientCountMismatch)
-/// - each account == get_associated_token_address(recipients[i], mint), is owned by the token program, is
+/// - each account == the ATA of recipients[i] for the mint under its token program, is owned by it, is
 ///   writable, and its mint and owner match (RecipientAccountMismatch). All are checked before any transfer.
 /// - amount_per_witness * recipient_count <= vault.amount; pay each, remainder -> treasury, close vault -> operator
 /// - status = Settled, paid_total, closed_at; emit TaskSettled
@@ -83,13 +88,14 @@ pub fn handle_settle<'info>(ctx: Context<'info, Settle<'info>>) -> Result<()> {
             }
             continue;
         }
+        let token_program = ctx.accounts.token_program.key();
         require_keys_eq!(
             account.key(),
-            get_associated_token_address(recipient, &task.mint),
+            get_associated_token_address_with_program_id(recipient, &task.mint, &token_program),
             ProofMarketError::RecipientAccountMismatch
         );
         require!(
-            *account.owner == token::ID && account.is_writable,
+            *account.owner == token_program && account.is_writable,
             ProofMarketError::RecipientAccountMismatch
         );
         let data = account.try_borrow_data()?;
@@ -123,35 +129,41 @@ pub fn handle_settle<'info>(ctx: Context<'info, Settle<'info>>) -> Result<()> {
     if native {
         return settle_native(ctx, paid_total, remainder);
     }
+    let mint = ctx.accounts.mint.to_account_info();
+    let decimals = ctx.accounts.mint.decimals;
     for account in recipient_accounts {
-        token::transfer(
+        token_interface::transfer_checked(
             CpiContext::new_with_signer(
                 token_program,
-                Transfer {
+                TransferChecked {
                     from: vault.clone(),
+                    mint: mint.clone(),
                     to: account.clone(),
                     authority: authority.clone(),
                 },
                 signer,
             ),
             amount_per_witness,
+            decimals,
         )?;
     }
     if remainder > 0 {
-        token::transfer(
+        token_interface::transfer_checked(
             CpiContext::new_with_signer(
                 token_program,
-                Transfer {
+                TransferChecked {
                     from: vault.clone(),
+                    mint: mint.clone(),
                     to: ctx.accounts.treasury.to_account_info(),
                     authority: authority.clone(),
                 },
                 signer,
             ),
             remainder,
+            decimals,
         )?;
     }
-    token::close_account(CpiContext::new_with_signer(
+    token_interface::close_account(CpiContext::new_with_signer(
         token_program,
         CloseAccount {
             account: vault,
@@ -188,17 +200,19 @@ fn settle_native<'info>(ctx: Context<'info, Settle<'info>>, paid_total: u64, rem
     let task_info = ctx.accounts.task.to_account_info();
 
     if remainder > 0 {
-        token::transfer(
+        token_interface::transfer_checked(
             CpiContext::new_with_signer(
                 token_program,
-                Transfer {
+                TransferChecked {
                     from: vault.clone(),
+                    mint: ctx.accounts.mint.to_account_info(),
                     to: ctx.accounts.treasury.to_account_info(),
                     authority: task_info.clone(),
                 },
                 signer,
             ),
             remainder,
+            ctx.accounts.mint.decimals,
         )?;
     }
     // A native token account may be closed with a balance: all its lamports (rent + paid_total) go to the task.
@@ -206,7 +220,7 @@ fn settle_native<'info>(ctx: Context<'info, Settle<'info>>, paid_total: u64, rem
     let vault_rent = vault_lamports
         .checked_sub(paid_total)
         .ok_or(ProofMarketError::InsufficientVaultBalance)?;
-    token::close_account(CpiContext::new_with_signer(
+    token_interface::close_account(CpiContext::new_with_signer(
         token_program,
         CloseAccount {
             account: vault,

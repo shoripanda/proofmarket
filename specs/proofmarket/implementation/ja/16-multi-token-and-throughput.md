@@ -108,12 +108,15 @@ API と DB の金額は、これまでどおり小数の文字列と `numeric(20
 
 ### 5.1 変えるところ
 
-`Task` と `Config` と `AllowedMint` のレイアウトは変えない。命令の口座の並びも変えない。v1.2 向けのクライアントは、そのまま v1.3 でも動く。
+`Task` と `Config` と `AllowedMint` のレイアウトは変えない。命令の口座で増えるのは refund の末尾の `mint` だけで、省略できる口座にした。v1.2 向けのクライアントは、そのまま v1.3 でも動く。
+
+- refund は `transfer_checked` に mint を渡す必要がある。末尾の `mint` を省いた呼び出しは、旧来の SPL Token の依頼なら v1.2 と同じ `transfer` で返す。Token-2022 の依頼では `InvalidMint` で断り、何も動かさない（テスト p_mint_06・p_t22_02）
+- initialize_task と settle は、渡されたトークンプログラムが mint の持ち主と違えば `InvalidMint` で断る
 
 - 口座の型を `InterfaceAccount<Mint>`・`InterfaceAccount<TokenAccount>`・`Interface<TokenInterface>` にする。旧来の SPL Token と Token-2022 のどちらの mint も通る。
 - 送金はすべて `transfer_checked` にする。Token-2022 では必須で、旧来の SPL Token でも桁の確認が 1 つ増えるだけで害は無い。
 - 証人の口座の検査は `get_associated_token_address_with_program_id` で、mint の持ち主のプログラムに合わせる。
-- vault は、mint の拡張が求める分だけ大きく作る（送金手数料の設定がある mint には `TransferFeeAmount` など）。Anchor の `init` が拡張の大きさを数えない場合は、`create_account` と `initialize_account3` を自前で呼ぶ。どちらになるかは実装時に LiteSVM で確かめる。
+- vault は、mint の拡張が求める分だけ大きく作る（送金手数料の設定がある mint には `TransferFeeAmount` など）。Anchor 1.2 の `init` は `token::token_program` を渡すと、mint の拡張から必要な大きさを数える（`generate_get_token_account_space`）。自前で口座を作る必要は無かった。
 - `Config.bounty_mint`（USDC）の扱いはこれまでと同じ。
 
 ### 5.2 どの拡張を受け入れるか
@@ -195,14 +198,12 @@ RPC の呼び出しは並列数に比例して増える。Helius Developer の�
 
 | PR | 中身 | お金 | 移行 |
 |---|---|---|---|
-| 1 | この設計書 | 動かない | なし |
-| 2 | 決済の処理量（7 章）。並列数の既定 6 | 動かない（流れ方だけ変わる） | なし |
-| 3 | 通貨の台帳と金額の桁（3・4 章）、`GET /v1/public/assets`、`check-assets.ts`。`ASSETS_ENABLED` の既定は USDC だけ | 動かない | なし |
-| 4 | オフチェーンの多通貨化（6 章）。入金・画面・決済ジョブ・アダプタ | 動かない | 0029 |
-| 5 | プログラム v1.3（5 章）とテスト。Devnet へ配置し、試験用の mint 2 つを登録して一周する | Devnet だけ | なし |
-| 6 | 手順書。12 §9・§10 を v1.3 と多通貨に合わせ、`mainnet-setup.ts` が受付中の全通貨を `add_mint` する | 動かない | なし |
+| #39 | この設計書 | 動かない | なし |
+| #40 | 決済の処理量（7 章）。並列数の既定 6 | 動かない（流れ方だけ変わる） | なし |
+| #41 | 通貨の台帳と金額の桁（3・4 章）、`GET /v1/public/assets`、`check-assets.ts`、オフチェーンの多通貨化（6 章）。`ASSETS_ENABLED` の既定は USDC だけ。#31（証人の画面の SOL 表示）はこれに含めた | 動かない | 0029 |
+| 次の PR | プログラム v1.3（5 章）とテスト、`devnet-setup.ts --test-mints`、`mainnet-setup.ts --assets`、手順書 12 §9a・§10 | Devnet だけ（配置はオーナー） | なし |
 
-PR 2〜4 は、既定値のままなら本番の動きが変わらないことを確かめてからマージする。PR 4 の移行 0029 は、コードより先に本番へ当てる。
+設計の PR 3 と 4 は 1 本にまとめた。台帳だけを先に入れても、決済ジョブとアダプタが 2 通貨のままでは使い道が無いからである。PR は前の PR の上に積んであるので、#39 から順にマージする。#41 の移行 0029 は、コードより先に本番へ当てる。
 
 ## 9. まだ決めていないこと
 

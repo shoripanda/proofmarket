@@ -37,4 +37,6 @@ pub enum ProofMarketError {
     AmountIncrease,
     #[msg("A SOL payout to an empty wallet must cover its rent-exempt minimum")]
     PayoutBelowRent,
+    #[msg("Mint has a Token-2022 extension the escrow does not accept, a non-zero transfer fee or a transfer hook")]
+    UnsupportedMintExtension,
 }

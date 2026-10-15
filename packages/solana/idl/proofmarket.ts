@@ -199,7 +199,10 @@ export type Proofmarket = {
         },
         {
           name: "mint";
-          docs: ["Config.bounty_mint, or a mint whose AllowedMint is passed as `allowed_mint` (15 §3.1)."];
+          docs: [
+            "Config.bounty_mint, or a mint whose AllowedMint is passed as `allowed_mint` (15 §3.1). SPL Token or",
+            "Token-2022 (16 §5); the token program passed must be the one that owns it.",
+          ];
         },
         {
           name: "vault";
@@ -226,7 +229,6 @@ export type Proofmarket = {
         },
         {
           name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
         },
         {
           name: "systemProgram";
@@ -324,7 +326,14 @@ export type Proofmarket = {
         },
         {
           name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+        },
+        {
+          name: "mint";
+          docs: [
+            "v1.3 (16 §5.1): the task's mint, for transfer_checked. Last and optional so a v1.2 client may leave it",
+            "out for an SPL Token task; a Token-2022 task cannot be refunded without it.",
+          ];
+          optional: true;
         },
       ];
       args: [
@@ -423,6 +432,7 @@ export type Proofmarket = {
         },
         {
           name: "mint";
+          docs: ["SPL Token or Token-2022 (16 §5); the token program passed must be the one that owns it."];
         },
         {
           name: "vault";
@@ -449,7 +459,6 @@ export type Proofmarket = {
         },
         {
           name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
         },
       ];
       args: [];
@@ -608,6 +617,11 @@ export type Proofmarket = {
       code: 6016;
       name: "payoutBelowRent";
       msg: "A SOL payout to an empty wallet must cover its rent-exempt minimum";
+    },
+    {
+      code: 6017;
+      name: "unsupportedMintExtension";
+      msg: "Mint has a Token-2022 extension the escrow does not accept, a non-zero transfer fee or a transfer hook";
     },
   ];
   types: [

@@ -1,20 +1,22 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
+use anchor_spl::token_interface::Mint;
 
 use crate::{
     constants::*,
     error::ProofMarketError,
+    instructions::check_mint_extensions,
     state::{AllowedMint, Config},
 };
 
-/// admin: allow tasks in `mint` (15 §3.1). `init` fails if it is already allowed.
+/// admin: allow tasks in `mint` (15 §3.1), under SPL Token or Token-2022 (16 §5). `init` fails if it is
+/// already allowed; a Token-2022 mint with an extension outside the allow-list fails (16 §5.2).
 #[derive(Accounts)]
 pub struct AddMint<'info> {
     #[account(mut, address = config.admin @ ProofMarketError::Unauthorized)]
     pub admin: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Account<'info, Config>,
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
     #[account(
         init,
         payer = admin,
@@ -27,6 +29,7 @@ pub struct AddMint<'info> {
 }
 
 pub fn handle_add_mint(ctx: Context<AddMint>) -> Result<()> {
+    check_mint_extensions(&ctx.accounts.mint.to_account_info())?;
     let a = &mut ctx.accounts.allowed_mint;
     a.mint = ctx.accounts.mint.key();
     a.bump = ctx.bumps.allowed_mint;
