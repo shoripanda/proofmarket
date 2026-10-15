@@ -29,7 +29,6 @@ import { appendAudit } from "./audit";
 import { bountyOf, reservedMicro } from "./bounty";
 import { randomToken, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
-import { needsOperatorReview } from "./review-policy";
 import { applyTaskEvent, lockTask, microToDecimal, type TaskRow, taskCounts } from "./task-engine";
 import { taskLocation } from "./task-location";
 
@@ -203,13 +202,7 @@ const taskGate = (t: TaskRow) => ({
 
 // ---------- tasks ----------
 
-function workerTaskView(
-  app: Pick<AppContext, "config">,
-  t: TaskRow,
-  distanceM: number | null,
-  slots: number,
-  now: Date,
-) {
+function workerTaskView(t: TaskRow, distanceM: number | null, slots: number, now: Date) {
   const location = taskLocation(t);
   const bounty = bountyOf(t);
   const current = currentBounty(bounty, now);
@@ -242,8 +235,6 @@ function workerTaskView(
     requirements: location
       ? (["photo", "location", "task_nonce"] as const)
       : (["photo", "task_nonce"] as const),
-    // docs/architecture 07 §4.2: told before taking the task, because payment waits for the operator.
-    operator_review: needsOperatorReview(app, t),
     safety_notes_version: SAFETY_NOTES_VERSION,
   };
 }
@@ -286,7 +277,7 @@ export async function listTasks(
     if (d !== null && d > q.radius_km * 1000) continue;
     const c = await taskCounts(app.db, t.id);
     const slots = openSlots({ requiredWitnesses: t.requiredWitnesses, ...c });
-    if (slots > 0) out.push(workerTaskView(app, t, d, slots, now));
+    if (slots > 0) out.push(workerTaskView(t, d, slots, now));
   }
   // Nearest first; work with no place keeps the soonest deadline on top.
   out.sort(
@@ -305,7 +296,7 @@ export async function taskDetail(app: AppContext, verificationId: string) {
   if (!t || !(CLAIMABLE_STATUSES as readonly string[]).includes(t.status))
     throw new ApiError("VERIFICATION_NOT_FOUND");
   const c = await taskCounts(app.db, t.id);
-  return workerTaskView(app, t, null, openSlots({ requiredWitnesses: t.requiredWitnesses, ...c }), app.now());
+  return workerTaskView(t, null, openSlots({ requiredWitnesses: t.requiredWitnesses, ...c }), app.now());
 }
 
 // ---------- claims / challenges ----------

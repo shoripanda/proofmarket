@@ -828,8 +828,6 @@ export const WorkerTaskSchema = z.object({
   freshness_max_age_seconds: z.number().int(),
   open_slots: z.number().int(),
   requirements: z.array(z.enum(["photo", "location", "task_nonce"])),
-  /** docs/architecture 07 §4.2: the operator reviews every submission before it is paid, so payment is slower. */
-  operator_review: z.boolean(),
   safety_notes_version: z.string(),
 });
 export const WorkerTaskListResponseSchema = z.object({ tasks: z.array(WorkerTaskSchema) });

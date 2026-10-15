@@ -29,12 +29,6 @@ const Common = {
   TREASURY_MAX_USDC: z.coerce.number().positive().optional(),
   TREASURY_MAX_SOL: z.coerce.number().positive().optional(),
   /**
-   * docs/architecture 07 §4.2: a request whose total reward (amount × witnesses, in USDC) is at or above this
-   * waits for the operator's review before anything is paid, whatever external_review_enabled says. 0 turns it
-   * off. Other assets: HUMAN_REVIEW_MIN_TOTAL_<SYMBOL> (read in context.ts); unset means no hold for that asset.
-   */
-  HUMAN_REVIEW_MIN_TOTAL: z.coerce.number().nonnegative().default(5),
-  /**
    * 16 §3.2: rewards accepted here, comma separated registry symbols (default USDC). Off-mainnet mints come
    * from ASSET_MINT_<SYMBOL>. A symbol not in the registry or without a mint stops the server from starting.
    */

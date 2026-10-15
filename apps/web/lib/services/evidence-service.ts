@@ -32,7 +32,6 @@ import type { SubmissionReviewer } from "../ports";
 import { appendAudit } from "./audit";
 import { encryptBytes, encryptLocation, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
-import { needsOperatorReview } from "./review-policy";
 import { applyTaskEvent, enqueueJob, lockTask, type TaskRow, taskCounts } from "./task-engine";
 import { taskLocation } from "./task-location";
 import { evaluateConsensus } from "./verification-service";
@@ -58,14 +57,7 @@ async function reviewSubmission(
       answer,
       images,
     });
-    // Who judged (docs/architecture 07 §4.4): the inline API call here, the operator's machine in applyReview.
-    const details = {
-      verdict: r.verdict,
-      reason: r.reason,
-      observed: r.observed,
-      model: r.model,
-      reviewer: "claude-api",
-    };
+    const details = { verdict: r.verdict, reason: r.reason, observed: r.observed, model: r.model };
     if (r.verdict === "fail")
       return { type: "vision_consistency", status: "fail", reasonCode: "EVIDENCE_MISMATCH", details };
     return { type: "vision_consistency", status: r.verdict === "pass" ? "pass" : "warning", details };
@@ -371,12 +363,7 @@ export async function submitEvidence(
   // ---- outcome ----
   // 01 §4.17: with external review on (and no inline reviewer), a submission that passed every mechanical check
   // waits as CHECKING until the operator's reviewer (Claude Code) posts a verdict through applyReview.
-  // docs/architecture 07 §4.2: a reward at or above HUMAN_REVIEW_MIN_TOTAL always waits for the operator.
-  const hold =
-    !firstFailure(results) &&
-    allDerived &&
-    (needsOperatorReview(app, task) || (!app.reviewer && (await externalReviewEnabled(tx))));
-  if (hold) {
+  if (!firstFailure(results) && !app.reviewer && allDerived && (await externalReviewEnabled(tx))) {
     await appendAudit(tx, {
       verificationId,
       actorType: "system",
@@ -525,8 +512,6 @@ export interface ReviewVerdict {
   reason: string;
   observed: string;
   model: string;
-  /** Who judged (docs/architecture 07 §4.4): "operator-mac" by default; "timeout" when nobody did. */
-  reviewer?: "operator-mac" | "timeout";
 }
 
 /** Submissions held as CHECKING, oldest first, with short-lived URLs to the EXIF-free photos. */
@@ -593,12 +578,8 @@ export async function listPendingReviews(app: AppContext, limit = 20) {
 export async function releaseStaleReviews(app: AppContext): Promise<string[]> {
   const cutoff = new Date(app.now().getTime() - REVIEW_WAIT_MAX_MS);
   const stale = await app.db
-    .select({ id: schema.witnessSubmissions.id, task: schema.verificationRequests })
+    .select({ id: schema.witnessSubmissions.id })
     .from(schema.witnessSubmissions)
-    .innerJoin(
-      schema.verificationRequests,
-      eq(schema.verificationRequests.id, schema.witnessSubmissions.verificationId),
-    )
     .where(
       and(
         eq(schema.witnessSubmissions.state, "CHECKING"),
@@ -606,16 +587,13 @@ export async function releaseStaleReviews(app: AppContext): Promise<string[]> {
       ),
     );
   const released: string[] = [];
-  for (const { id, task } of stale) {
-    // docs/architecture 07 §4.2: a reward at or above the threshold is never paid on a timeout.
-    if (needsOperatorReview(app, task)) continue;
+  for (const { id } of stale) {
     try {
       await applyReview(app, id, {
         verdict: "unavailable",
         reason: "確認係から30分以内に判定が届かなかったため、内容の確認なしで受け付けました。",
         observed: "",
         model: "none",
-        reviewer: "timeout",
       });
       released.push(id);
     } catch (e) {
@@ -636,13 +614,7 @@ export async function applyReview(app: AppContext, submissionId: string, v: Revi
     const task = await lockTask(tx, sub.verificationId);
     const [claim] = await tx.select().from(schema.claims).where(eq(schema.claims.id, sub.claimId));
     if (!claim) throw new ApiError("SUBMISSION_NOT_PENDING");
-    const details = {
-      verdict: v.verdict,
-      reason: v.reason,
-      observed: v.observed,
-      model: v.model,
-      reviewer: v.reviewer ?? "operator-mac",
-    };
+    const details = { verdict: v.verdict, reason: v.reason, observed: v.observed, model: v.model };
     const review: CheckOutcome =
       v.verdict === "fail"
         ? { type: "vision_consistency", status: "fail", reasonCode: "EVIDENCE_MISMATCH", details }

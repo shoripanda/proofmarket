@@ -8962,9 +8962,6 @@
                               ]
                             }
                           },
-                          "operator_review": {
-                            "type": "boolean"
-                          },
                           "safety_notes_version": {
                             "type": "string"
                           }
@@ -8984,7 +8981,6 @@
                           "freshness_max_age_seconds",
                           "open_slots",
                           "requirements",
-                          "operator_review",
                           "safety_notes_version"
                         ]
                       }
@@ -9564,9 +9560,6 @@
                         ]
                       }
                     },
-                    "operator_review": {
-                      "type": "boolean"
-                    },
                     "safety_notes_version": {
                       "type": "string"
                     }
@@ -9586,7 +9579,6 @@
                     "freshness_max_age_seconds",
                     "open_slots",
                     "requirements",
-                    "operator_review",
                     "safety_notes_version"
                   ]
                 }

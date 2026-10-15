@@ -33,8 +33,6 @@ interface Task {
   reward: { asset: string; amount: string; max: string | null; rises_until: string | null };
   deadline: string;
   freshness_max_age_seconds: number;
-  /** The operator checks every submission before it is paid (docs/architecture 07 §4.2). */
-  operator_review?: boolean;
   open_slots: number;
 }
 
@@ -125,18 +123,6 @@ export default function TaskDetailPage() {
               )}
               <dt className="text-slate-500">{pick(lang, "締切まで", "Deadline in")}</dt>
               <dd className="text-right font-medium">{remaining(t.deadline, now, lang)}</dd>
-              {t.operator_review && (
-                <>
-                  <dt className="text-slate-500">{pick(lang, "支払い", "Payment")}</dt>
-                  <dd className="text-right text-xs leading-relaxed text-amber-700">
-                    {pick(
-                      lang,
-                      "報酬が大きいため、運営者が内容を確認してから支払います。確認まで支払いが遅れます",
-                      "A large reward: the operator checks the submission before paying, so payment is slower",
-                    )}
-                  </dd>
-                </>
-              )}
               <dt className="text-slate-500">{pick(lang, "場所", "Place")}</dt>
               <dd className="text-right font-medium">
                 {t.location
