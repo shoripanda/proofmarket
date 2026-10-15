@@ -7,6 +7,7 @@ import {
   answerSchemaOf,
   type EnabledAsset,
   evaluateQuestion,
+  type FundingStatus,
   fractionDigits,
   fromMicro,
   fundedPerWitnessMicro,
@@ -15,30 +16,41 @@ import {
   LIMITS,
   locationRequired,
   newId,
+  type Outcome,
   POLICY_RULE_VERSION,
+  type SettlementStatus,
   SPEND_LIMIT_TIMEZONE,
   settledPerWitnessMicro,
   storedAnswerKind,
   storedAnswerSpec,
+  TASK_STATUSES,
+  type TaskStatus,
+  type TaskType,
   taskIdHash,
   toMicro,
   validateAnswerSchema,
 } from "@proofmarket/core";
 import {
+  type Asset,
   type CreateVerificationBatchRequest,
   CreateVerificationBatchRequestSchema,
   type CreateVerificationRequest,
   CreateVerificationRequestSchema,
   DisputeRequestSchema,
+  type ListVerificationsQuery,
+  type ListVerificationsResponse,
+  type Network,
+  type QuoteResponse,
 } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
 import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
 import { bountyOf, reservedMicro } from "./bounty";
 import { sha256 } from "./crypto";
+import { flagEnabled } from "./flags";
 import { requestHash } from "./idempotency";
 import {
   applyTaskEvent,
@@ -72,11 +84,6 @@ export function parseBatchBody(raw: unknown): CreateVerificationRequest[] {
   }
   const { template, items }: CreateVerificationBatchRequest = r.data;
   return items.map((item, index) => parseCreateBody({ ...template, ...item }, index));
-}
-
-async function flagEnabled(db: Db, key: "tasks_create_enabled"): Promise<boolean> {
-  const [row] = await db.select().from(schema.platformFlags).where(eq(schema.platformFlags.key, key));
-  return row?.value ?? true;
 }
 
 /** Start of "today" in Asia/Tokyo (UTC+9, no DST) as a UTC instant (01 §4.7). */
@@ -268,18 +275,17 @@ export async function createVerification(
   // 15-17 under a credential row lock so parallel creates cannot overdraw (02 §4.2, I-RACE-03).
   await lockCredential(tx, auth.credentialId);
   // The ceiling is reserved and escrowed; the part not paid comes back at the first claim (13 §1).
-  // No per-request or daily ceiling on the reward: an agent may ask as much and as often as its balance allows.
   const total = fundedPerWitnessMicro({ amount: body.bounty.amount, maxAmount }) * BigInt(n);
-  const [bal] = await tx
-    .select({ s: sql<string>`coalesce(sum(amount), 0)` })
-    .from(schema.requesterLedger)
-    .where(
-      and(
-        eq(schema.requesterLedger.credentialId, auth.credentialId),
-        eq(schema.requesterLedger.asset, body.bounty.asset), // each asset is its own balance (15 §3.3)
-      ),
-    );
-  if (toMicro(String(bal?.s ?? "0")) < total) throw new ApiError("INSUFFICIENT_BALANCE");
+  // A quote names this body (without the quote_id itself) and this key, and is used once (04 §4.2).
+  if (body.quote_id) {
+    const { quote_id, ...quoted } = body;
+    await consumeQuote(tx, auth, quote_id, requestHash(quoted), now);
+  }
+  // Spend policy (docs/architecture 04 §4.3): the key's own ceilings, when the operator set any, then the balance.
+  await checkSpendPolicy(tx, auth, body.bounty.asset, total, now);
+  if ((await balanceMicro(tx, auth.credentialId, body.bounty.asset)) < total) {
+    throw new ApiError("INSUFFICIENT_BALANCE");
+  }
 
   const id = newId("verification");
   const [row] = await tx
@@ -343,6 +349,12 @@ export async function createVerification(
     status: "PENDING",
   });
   await enqueueJob(tx, "FUND_TASK", `FUND_TASK:${id}`, { verification_id: id }, now);
+  if (body.quote_id) {
+    await tx
+      .update(schema.verificationQuotes)
+      .set({ verificationId: id })
+      .where(eq(schema.verificationQuotes.id, body.quote_id));
+  }
   await appendAudit(tx, {
     verificationId: id,
     actorType: "requester",
@@ -351,9 +363,216 @@ export async function createVerification(
     beforeState: null,
     afterState: "CREATED",
     correlationId: id,
-    metadata: { place_id: placeId, total: fromMicro(total) },
+    metadata: {
+      place_id: placeId,
+      total: fromMicro(total),
+      ...(body.quote_id ? { quote_id: body.quote_id } : {}),
+    },
   });
   return { status: 201, body: createdBody(row) };
+}
+
+/** The balance of one asset, in micro units (each asset is its own balance, 15 §3.3). */
+async function balanceMicro(tx: Db, credentialId: string, asset: string): Promise<bigint> {
+  const [bal] = await tx
+    .select({ s: sql<string>`coalesce(sum(amount), 0)` })
+    .from(schema.requesterLedger)
+    .where(
+      and(eq(schema.requesterLedger.credentialId, credentialId), eq(schema.requesterLedger.asset, asset)),
+    );
+  return toMicro(String(bal?.s ?? "0"));
+}
+
+/**
+ * Spend policy (docs/architecture 04 §4.3, 08 §4.1). Both ceilings are per credential and null by default,
+ * which means no ceiling (the owner's decision of 2026-10-15; PR #14 had removed the checks). The limits are
+ * written in the bounty's asset units and compared without conversion, so a key with limits in USDC terms
+ * bounds every asset by the same number. The day is the spend-limit day (Asia/Tokyo, 01 §4.5).
+ */
+export async function checkSpendPolicy(
+  tx: Db,
+  auth: RequesterAuth,
+  asset: string,
+  total: bigint,
+  now: Date,
+): Promise<void> {
+  if (auth.limits.maxTaskAmount !== null && total > toMicro(auth.limits.maxTaskAmount)) {
+    throw new ApiError("TASK_AMOUNT_LIMIT_EXCEEDED", { max_task_amount: auth.limits.maxTaskAmount });
+  }
+  if (auth.limits.dailySpendLimit === null) return;
+  // Reserved today, net of what came back today (RELEASE / REFUND carry the task's id too).
+  const [today] = await tx
+    .select({ s: sql<string>`coalesce(sum(-amount), 0)` })
+    .from(schema.requesterLedger)
+    .where(
+      and(
+        eq(schema.requesterLedger.credentialId, auth.credentialId),
+        eq(schema.requesterLedger.asset, asset),
+        inArray(schema.requesterLedger.entryType, ["RESERVE", "RELEASE", "REFUND"]),
+        gte(schema.requesterLedger.createdAt, startOfSpendDay(now)),
+      ),
+    );
+  if (toMicro(String(today?.s ?? "0")) + total > toMicro(auth.limits.dailySpendLimit)) {
+    throw new ApiError("DAILY_SPEND_LIMIT_EXCEEDED", { daily_spend_limit: auth.limits.dailySpendLimit });
+  }
+}
+
+// ---------- quotes (docs/architecture 04 §4.2) ----------
+
+export const QUOTE_TTL_MS = 5 * 60_000;
+/** The checks POST /v1/verifications runs before reserving, in order; a quote means they all passed. */
+const QUOTE_CHECKS = [
+  "task_type",
+  "network",
+  "answer_schema",
+  "location",
+  "deadline",
+  "policy",
+  "spend_limit",
+];
+
+class Rollback extends Error {
+  constructor(readonly result: CreateResult) {
+    super("rollback");
+  }
+}
+
+/**
+ * Run the create inside a transaction that is always rolled back: every check runs, nothing is reserved. The
+ * x402 window does the same before it asks for money (01 §4.19).
+ */
+export async function dryRunCreate(
+  app: AppContext,
+  auth: RequesterAuth,
+  body: CreateVerificationRequest,
+): Promise<CreateResult> {
+  try {
+    await app.db.transaction(async (tx) => {
+      throw new Rollback(await createVerification(app, tx, auth, body, `dry-run:${newId("quote")}`));
+    });
+  } catch (e) {
+    if (e instanceof Rollback) return e.result;
+    throw e;
+  }
+  throw new Error("unreachable");
+}
+
+/**
+ * POST /v1/verifications/quote: what this body would cost and whether it would be accepted now. Nothing is
+ * reserved; the quote row holds the body's hash so the confirm must send the same body.
+ */
+export async function quoteVerification(
+  app: AppContext,
+  auth: RequesterAuth,
+  body: CreateVerificationRequest,
+): Promise<QuoteResponse> {
+  const now = app.now();
+  const preview = await dryRunCreate(app, auth, body);
+  const n = body.assurance.required_witnesses;
+  const total =
+    fundedPerWitnessMicro({ amount: body.bounty.amount, maxAmount: body.bounty.max_amount ?? null }) *
+    BigInt(n);
+  const balance = await balanceMicro(app.db, auth.credentialId, body.bounty.asset);
+  const id = newId("quote");
+  const expiresAt = new Date(now.getTime() + QUOTE_TTL_MS);
+  await app.db.insert(schema.verificationQuotes).values({
+    id,
+    credentialId: auth.credentialId,
+    requestHash: requestHash(body),
+    asset: body.bounty.asset,
+    total: fromMicro(total),
+    createdAt: now,
+    expiresAt,
+  });
+  return {
+    quote_id: id,
+    bounty: { asset: body.bounty.asset, amount: body.bounty.amount, required_witnesses: n },
+    total: fromMicro(total),
+    balance: fromMicro(balance),
+    balance_after: fromMicro(balance - total),
+    policy: { checked: QUOTE_CHECKS, ok: true },
+    reuse: preview.body.reused ? { verification_id: preview.body.verification_id } : null,
+    expires_at: expiresAt.toISOString(),
+  };
+}
+
+/** The quote must exist for this key, be unexpired, unused and quoted for this exact body. */
+async function consumeQuote(tx: Db, auth: RequesterAuth, quoteId: string, reqHash: Buffer, now: Date) {
+  const [q] = await tx
+    .select()
+    .from(schema.verificationQuotes)
+    .where(
+      and(
+        eq(schema.verificationQuotes.id, quoteId),
+        eq(schema.verificationQuotes.credentialId, auth.credentialId),
+      ),
+    )
+    .for("update");
+  if (!q) throw new ApiError("QUOTE_NOT_FOUND");
+  if (q.consumedAt) throw new ApiError("QUOTE_EXPIRED", { reason: "already_used" });
+  if (q.expiresAt.getTime() <= now.getTime()) throw new ApiError("QUOTE_EXPIRED");
+  if (!q.requestHash.equals(reqHash)) throw new ApiError("QUOTE_MISMATCH");
+  await tx
+    .update(schema.verificationQuotes)
+    .set({ consumedAt: now })
+    .where(eq(schema.verificationQuotes.id, quoteId));
+}
+
+// ---------- GET /v1/verifications (docs/architecture 04 §4.1) ----------
+
+export async function listVerifications(
+  app: AppContext,
+  auth: RequesterAuth,
+  q: ListVerificationsQuery,
+): Promise<ListVerificationsResponse> {
+  const statuses = q.status
+    ? q.status
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+  for (const s of statuses) {
+    if (!(TASK_STATUSES as readonly string[]).includes(s)) {
+      throw new ApiError("VALIDATION_FAILED", { field: "status", allowed: TASK_STATUSES });
+    }
+  }
+  const where = [eq(schema.verificationRequests.credentialId, auth.credentialId)];
+  if (statuses.length) where.push(inArray(schema.verificationRequests.status, statuses));
+  if (q.created_after) where.push(gte(schema.verificationRequests.createdAt, new Date(q.created_after)));
+  // IDs are ULIDs, so "older than the cursor" is "smaller than the cursor" (04 §1); the cursor itself is excluded.
+  if (q.cursor) where.push(lt(schema.verificationRequests.id, q.cursor));
+  const rows = await app.db
+    .select({ task: schema.verificationRequests, outcome: schema.verificationResults.outcome })
+    .from(schema.verificationRequests)
+    .leftJoin(
+      schema.verificationResults,
+      eq(schema.verificationResults.verificationId, schema.verificationRequests.id),
+    )
+    .where(and(...where))
+    .orderBy(desc(schema.verificationRequests.id))
+    .limit(q.limit + 1);
+  const page = rows.slice(0, q.limit);
+  return {
+    verifications: page.map(({ task, outcome }) => ({
+      verification_id: task.id,
+      type: task.type as TaskType,
+      status: task.status as TaskStatus,
+      funding_status: task.fundingStatus as FundingStatus,
+      settlement_status: task.settlementStatus as SettlementStatus,
+      result_status: (outcome as Outcome | null) ?? null,
+      bounty: {
+        asset: task.bountyAsset as Asset,
+        amount: task.bountyAmount,
+        network: task.bountyNetwork as Network,
+      },
+      required_witnesses: task.requiredWitnesses,
+      recheck_of: task.recheckOf,
+      deadline: task.deadline.toISOString(),
+      created_at: task.createdAt.toISOString(),
+      updated_at: task.updatedAt.toISOString(),
+    })),
+    next_cursor: rows.length > q.limit ? (page[page.length - 1]?.task.id ?? null) : null,
+  };
 }
 
 /**

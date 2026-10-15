@@ -651,6 +651,21 @@ create table console_sessions (
 | from_pubkey | text NULL | 送り主（取引の最初の署名者） |
 | created_at | timestamptz | 残高に入れた時刻 |
 
+### 3.28 verification_quotes（依頼の見積もり、2026-10-15 追加）
+
+05 §2.1b。移行は 0030（同じ移行で `requester_credentials.max_task_amount` と `daily_spend_limit` を NULL 可に変え、`platform_flags` に `x402_enabled` を足し、`verification_requests` に `(credential_id, created_at desc)` の索引を作る）。RLS を有効にする。本文そのものは持たず、RFC 8785 で正規化した本文の SHA-256 だけを持つ。5 分で失効し、1 日たった行は tick が消す。
+
+| 列 | 型 | 説明 |
+|---|---|---|
+| id | text PK | `qte_` + ULID |
+| credential_id | text FK → requester_credentials | 見積もりを求めた鍵。他の鍵からは使えない |
+| request_hash | bytea | 本文（`quote_id` を除く）のハッシュ。確定の本文と照合する |
+| asset | text | 報酬の通貨 |
+| total | numeric(20,6) > 0 | `amount × required_witnesses`（上がる報酬なら上限で） |
+| created_at / expires_at | timestamptz | 発行と失効（5 分後） |
+| consumed_at | timestamptz NULL | 確定に使われた時刻。1 度だけ |
+| verification_id | text FK NULL | 確定でできた依頼 |
+
 ## 4. 保持期間と削除
 
 | 保持区分 | 対象 | 期間 | 削除のしかた |

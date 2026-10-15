@@ -2,6 +2,7 @@ import "server-only";
 // Requester endpoint handlers (05 §2). Routes are thin wrappers so tests can call these with a test AppContext.
 
 import { ApiError, parseId } from "@proofmarket/core";
+import { ListVerificationsQuerySchema, QuoteVerificationRequestSchema } from "@proofmarket/core/schemas/api";
 import { authenticateRequester } from "../auth/requester";
 import type { AppContext } from "../context";
 import { readJson } from "../http";
@@ -15,8 +16,10 @@ import {
   createVerificationBatch,
   disputeVerification,
   getVerification,
+  listVerifications,
   parseBatchBody,
   parseCreateBody,
+  quoteVerification,
 } from "../services/requester-service";
 import { createSchedule, listSchedules, stopSchedule } from "../services/schedule-service";
 
@@ -40,6 +43,37 @@ export async function handleCreate(app: AppContext, req: Request): Promise<Respo
     status: out.status,
     headers: { ...rateLimitHeaders(rl), ...(out.replayed ? { "Idempotent-Replayed": "true" } : {}) },
   });
+}
+
+/**
+ * POST /v1/verifications/quote (docs/architecture 04 §4.2): the cost and the checks of a create, with nothing
+ * reserved. No Idempotency-Key: a quote has no side effect beyond its own row.
+ */
+export async function handleQuote(app: AppContext, req: Request): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  const rl = await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
+  const raw = await readJson(req);
+  const r = QuoteVerificationRequestSchema.safeParse(raw);
+  if (!r.success) {
+    throw new ApiError("VALIDATION_FAILED", {
+      issues: r.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+    });
+  }
+  const quote = await quoteVerification(app, auth, r.data);
+  return Response.json(quote, { status: 200, headers: rateLimitHeaders(rl) });
+}
+
+/** GET /v1/verifications?status=&created_after=&limit=&cursor= (docs/architecture 04 §4.1). */
+export async function handleList(app: AppContext, req: Request): Promise<Response> {
+  const auth = await authenticateRequester(app, req);
+  const rl = await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
+  const q = ListVerificationsQuerySchema.safeParse(Object.fromEntries(new URL(req.url).searchParams));
+  if (!q.success) {
+    throw new ApiError("VALIDATION_FAILED", {
+      issues: q.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+    });
+  }
+  return Response.json(await listVerifications(app, auth, q.data), { headers: rateLimitHeaders(rl) });
 }
 
 /** POST /v1/verifications/batch (01 §4.25). One Idempotency-Key for the whole batch. */

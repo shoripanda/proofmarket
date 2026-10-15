@@ -58,7 +58,7 @@ const COPY = {
       localBody: "同じ URL に、API キーをヘッダーで渡して登録します。",
       rest: "REST API",
       restBody:
-        "依頼の作成には Idempotency-Key ヘッダーが要ります。同じキーで送り直しても、依頼は1件しかできません。",
+        "依頼の作成には Idempotency-Key ヘッダーが要ります。同じキーで送り直しても、依頼は1件しかできません。費用（報酬×人数）は作成した時点で残高から引き当てます。先に費用だけ確かめるなら POST /v1/verifications/quote に同じ本文を送ると、何も引き当てずに quote_id と total と balance_after が返り、5 分以内に quote_id を本文に付けて作成すれば確定します。MCP では request_reality_verification の confirm: false が同じ働きをします。自分の依頼の一覧は GET /v1/verifications です。",
     },
     x402: {
       title: "登録なしで使う（x402）",
@@ -76,7 +76,8 @@ const COPY = {
       code1: `# 1回目: 402 と支払い条件`,
       code2: `# 2回目: 署名した取引を付けて送り直す`,
       code3a: "# 見本のエージェント（リポジトリの scripts/）。402 の受け取りから結果待ちまで通しで動く",
-      code3b: "# 17 種類どれでも出せる。種類の一覧は --list-types、送らずに中身を見るなら --dry-run",
+      code3b:
+        "# 17 種類どれでも出せる。種類の一覧は --list-types、送らずに中身を見るなら --dry-run。払う前に条件を見せて y/N を聞き、送る直前に条件を取り直して違えば払わない（--yes で問いだけ省ける）",
       samples: [
         `--type DOCUMENT_TRANSCRIPTION --question "届いた紙の請求書の合計金額の行を書き写してください"`,
         `--type PHONE_INQUIRY --question "この番号の病院に、今日の午後の外来の受付時間を聞いてください"`,
@@ -329,7 +330,7 @@ const COPY = {
       localBody: "Register the same URL, passing the API key in a header.",
       rest: "REST API",
       restBody:
-        "Creating a request needs an Idempotency-Key header. Resending with the same key never creates a second request.",
+        "Creating a request needs an Idempotency-Key header. Resending with the same key never creates a second request. The cost (bounty × people) is reserved from the balance the moment the request is created. To see the cost first, POST the same body to /v1/verifications/quote: nothing is reserved, you get quote_id, total and balance_after, and creating within 5 minutes with quote_id in the body confirms it. Over MCP, confirm: false on request_reality_verification does the same. GET /v1/verifications lists your own requests.",
     },
     x402: {
       title: "No sign-up: x402",
@@ -348,7 +349,8 @@ const COPY = {
       code2: "# 2nd call: resend with the signed transaction",
       code3a:
         "# Sample agent (scripts/ in the repository). Runs end to end, from the 402 to waiting for the result",
-      code3b: "# Any of the 17 types. --list-types lists them; --dry-run shows the body without sending",
+      code3b:
+        "# Any of the 17 types. --list-types lists them; --dry-run shows the body without sending. Before paying it shows the terms and asks y/N, then fetches the terms again and refuses to pay if they changed (--yes skips only the question)",
       samples: [
         `--type DOCUMENT_TRANSCRIPTION --question "Copy the total line of the paper invoice you received"`,
         `--type PHONE_INQUIRY --question "Call this clinic and ask for this afternoon's outpatient hours"`,

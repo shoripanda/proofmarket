@@ -102,6 +102,12 @@ export default async function ConsolePage() {
             value={String(d.key.rate_limit_per_min)}
             unit={pick(lang, "回", "calls")}
           />
+          {d.key.max_task_amount !== null && (
+            <Stat label={pick(lang, "1件の上限", "Per request")} value={d.key.max_task_amount} unit="USDC" />
+          )}
+          {d.key.daily_spend_limit !== null && (
+            <Stat label={pick(lang, "1日の上限", "Per day")} value={d.key.daily_spend_limit} unit="USDC" />
+          )}
         </div>
         <p className="mt-3 text-sm text-slate-600">
           {pick(lang, "使える種類: ", "Allowed types: ")}

@@ -135,13 +135,15 @@ export async function dashboard(app: AppContext, auth: RequesterAuth) {
         .limit(20)
     : [];
   const money = (s: string | undefined) => fromMicro(toMicro(String(s ?? "0")));
+  // Spend policy (docs/architecture 04 §4.3): null means no ceiling.
+  const limit = (s: string | null | undefined) => (s == null ? null : money(s));
   return {
     key: {
       prefix: cred?.keyPrefix ?? "",
       status: cred?.status ?? "",
       allowed_task_types: cred?.allowedTaskTypes ?? [],
-      max_task_amount: money(cred?.maxTaskAmount),
-      daily_spend_limit: money(cred?.dailySpendLimit),
+      max_task_amount: limit(cred?.maxTaskAmount),
+      daily_spend_limit: limit(cred?.dailySpendLimit),
       rate_limit_per_min: cred?.rateLimitPerMin ?? 0,
     },
     balance: money(bal?.s),

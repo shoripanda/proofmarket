@@ -32,6 +32,8 @@ export const ID_PREFIXES = {
   consoleSession: "cse",
   /** 13 §3: a challenge of an optimistic answer (`challenge` is the photo nonce). */
   objection: "obj",
+  /** docs/architecture 04 §4.2: the cost of a request, quoted before anything is reserved. */
+  quote: "qte",
   payoutAdjustment: "pad",
 } as const;
 

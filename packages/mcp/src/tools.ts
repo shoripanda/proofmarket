@@ -64,6 +64,10 @@ export const REQUEST_TOOL = {
     "in the question (needs a location and a choice or number answer). " +
     'location_privacy: "coarse" shows the place on public pages only to about 1 km (and hides the shop name); ' +
     "the requester still sees it exact. " +
+    "COST: calling this with confirm omitted or true reserves bounty.amount × required_witnesses from the prepaid " +
+    "balance at once. To let the person approve the cost first, call with confirm: false — nothing is reserved and " +
+    "you get a quote (quote_id, total, balance_after, expires in 5 minutes); show it, and once they agree call again " +
+    "with the same arguments plus quote_id. " +
     "Without an API key, any agent with a Solana wallet can make the same request over HTTP by paying in USDC with " +
     "x402: POST /v1/x402/verifications (same body without principal_ref) answers 402 with the payment terms.",
   inputSchema: {
@@ -71,6 +75,13 @@ export const REQUEST_TOOL = {
     principal_ref: CreateVerificationRequestSchema.shape.principal_ref
       .optional()
       .describe("Defaults to the principal bound to PROOFMARKET_API_KEY"),
+    confirm: z
+      .boolean()
+      .default(true)
+      .describe(
+        "false: only quote the cost (nothing reserved, no task). true (default): create the task and reserve its cost. " +
+          "Pass quote_id from a quote to confirm it; the arguments must be the same.",
+      ),
     idempotency_key: z
       .string()
       .min(1)
@@ -153,7 +164,7 @@ export const WATCH_TOOL = {
     "names the run that matched (read it with get_reality_verification). A verification.verified webhook also fires.",
   inputSchema: {
     ...CreateScheduleRequestSchema.shape,
-    request: CreateVerificationRequestSchema.omit({ deadline: true, principal_ref: true })
+    request: CreateVerificationRequestSchema.omit({ deadline: true, principal_ref: true, quote_id: true })
       .extend({
         principal_ref: CreateVerificationRequestSchema.shape.principal_ref
           .optional()
@@ -172,6 +183,25 @@ export const ASSETS_TOOL = {
     "and the witness is paid in the same asset. No currency conversion happens. volatile: true marks tokens whose " +
     "value moves with the market (SOL, JUP, BONK ...). x402 (paying without an API key) takes USDC only.",
   inputSchema: {},
+} as const;
+
+export const LIST_TOOL = {
+  name: "list_reality_verifications",
+  title: "List this API key's verifications",
+  description:
+    "The verifications made with this API key, newest first: id, type, status, funding and settlement status, " +
+    "result_status once there is a result, bounty and deadline. Filter with status (comma separated task statuses) " +
+    "or created_after; page with cursor = next_cursor of the previous page. No photos or answers: read one with " +
+    "get_reality_verification.",
+  inputSchema: {
+    status: z
+      .string()
+      .optional()
+      .describe("Comma separated: CREATED, OPEN, CLAIMED, SUBMITTED, VERIFIED, SETTLED ..."),
+    created_after: z.iso.datetime({ offset: true }).optional(),
+    limit: z.number().int().min(1).max(200).default(50),
+    cursor: VerificationIdSchema.optional(),
+  },
 } as const;
 
 export const LIST_WATCHES_TOOL = {

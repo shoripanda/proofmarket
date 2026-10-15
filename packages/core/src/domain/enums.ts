@@ -254,6 +254,8 @@ export const PLATFORM_FLAGS = [
   "public_evidence_enabled",
   /** Hold submissions for an outside reviewer (Claude Code on the operator's machine, 01 §4.17). Default off. */
   "external_review_enabled",
+  /** The x402 window (no API key) can be stopped on its own (docs/architecture 08 §4.3). Default on. */
+  "x402_enabled",
 ] as const;
 export type PlatformFlag = (typeof PLATFORM_FLAGS)[number];
 

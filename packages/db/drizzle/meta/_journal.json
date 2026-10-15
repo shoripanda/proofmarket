@@ -211,6 +211,13 @@
       "when": 1791800300000,
       "tag": "0029_deposits_any_asset",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791800400000,
+      "tag": "0030_spend_policy_quotes",
+      "breakpoints": true
     }
   ]
 }

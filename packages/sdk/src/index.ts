@@ -8,11 +8,27 @@ import type {
   CreateVerificationBatchRequest,
   CreateVerificationRequest,
   GetVerificationResponse,
+  ListVerificationsResponse,
   PublicAssets,
+  QuoteResponse,
   Schedule,
 } from "@proofmarket/core/schemas/api";
 
-export type { CreateVerificationBatchRequest, CreateVerificationRequest, GetVerificationResponse };
+export type {
+  CreateVerificationBatchRequest,
+  CreateVerificationRequest,
+  GetVerificationResponse,
+  ListVerificationsResponse,
+  QuoteResponse,
+};
+export type QuoteVerificationRequest = Omit<CreateVerificationRequest, "quote_id">;
+export interface ListVerificationsQueryInput {
+  /** Comma separated task statuses. */
+  status?: string;
+  created_after?: string;
+  limit?: number;
+  cursor?: string;
+}
 
 export interface ProofMarketClientOptions {
   baseUrl: string;
@@ -122,6 +138,20 @@ export class ProofMarketClient {
       { body, headers: { "idempotency-key": idempotencyKey } },
     );
     return { ...json, replayed: res.headers.get("idempotent-replayed") === "true" };
+  }
+
+  /** POST /v1/verifications/quote: cost and checks, nothing reserved (docs/architecture 04 §4.2). */
+  async quoteVerification(body: QuoteVerificationRequest): Promise<QuoteResponse> {
+    return (await this.request<QuoteResponse>("POST", "/v1/verifications/quote", { body })).json;
+  }
+
+  /** GET /v1/verifications: this key's verifications, newest first (docs/architecture 04 §4.1). */
+  async listVerifications(q: ListVerificationsQueryInput = {}): Promise<ListVerificationsResponse> {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(q)) if (v !== undefined) params.set(k, String(v));
+    const qs = params.toString();
+    return (await this.request<ListVerificationsResponse>("GET", `/v1/verifications${qs ? `?${qs}` : ""}`))
+      .json;
   }
 
   /** GET /v1/verifications/{id}. Side-effect free; safe to poll (REQ-N-005). */

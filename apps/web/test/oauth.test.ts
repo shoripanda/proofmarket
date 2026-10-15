@@ -205,7 +205,7 @@ describe("tokens", () => {
     });
     const mcp = new Client({ name: "phone-app", version: "1" });
     await mcp.connect(transport);
-    expect((await mcp.listTools()).tools).toHaveLength(9);
+    expect((await mcp.listTools()).tools).toHaveLength(10);
 
     t.advance(3601_000);
     const res = await handleMcp(

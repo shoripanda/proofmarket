@@ -1,6 +1,7 @@
 // MCP over HTTP (05 §6.1): Bearer API key, principal filled from the key, same REST rules, follow-up jobs kicked.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { schema } from "@proofmarket/db";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleMcp } from "../lib/mcp-http";
 import { createBody, createTestApp, SHOP } from "./support/app";
@@ -46,7 +47,7 @@ describe("POST /mcp", () => {
   it("request without principal_ref -> owner's principal; retry is idempotent; cancel kicks the refund", async () => {
     const mcp = await connect(t.apiKey);
     const { tools } = await mcp.listTools();
-    expect(tools).toHaveLength(9);
+    expect(tools).toHaveLength(10);
 
     const { principal_ref: _p, ...args } = createBody(t.principalId);
     type Created = { structuredContent: { verification_id: string; replayed: boolean } };
@@ -118,6 +119,35 @@ describe("POST /mcp", () => {
 
     const assets = (await callTool("list_reward_assets", {})) as { assets: { symbol: string }[] };
     expect(assets.assets.map((a) => a.symbol)).toContain("USDC");
+
+    const listed = (await callTool("list_reality_verifications", { limit: 10 })) as {
+      verifications: { verification_id: string }[];
+    };
+    expect(listed.verifications.map((v) => v.verification_id).sort()).toEqual(
+      batch.verifications.map((v) => v.verification_id).sort(),
+    );
+  });
+
+  it("confirm: false quotes without reserving; quote_id then confirms (docs/architecture 04 §4.2)", async () => {
+    const mcp = await connect(t.apiKey);
+    const { principal_ref: _p, ...args } = createBody(t.principalId);
+    type Quote = {
+      structuredContent: { quote_id: string; total: string; balance_after: string; note: string };
+    };
+    const q = (await mcp.callTool({
+      name: "request_reality_verification",
+      arguments: { ...args, confirm: false },
+    })) as unknown as Quote;
+    expect(q.structuredContent).toMatchObject({ total: "0.5", balance_after: "9.5" });
+    expect(q.structuredContent.note).toContain(q.structuredContent.quote_id);
+    expect(kicked).toEqual([]);
+    expect(await t.db.select().from(schema.verificationRequests)).toHaveLength(0);
+
+    const r = (await mcp.callTool({
+      name: "request_reality_verification",
+      arguments: { ...args, quote_id: q.structuredContent.quote_id },
+    })) as unknown as { structuredContent: { verification_id: string } };
+    expect(kicked).toContain(`FUND_TASK:${r.structuredContent.verification_id}`);
   });
 
   it("a path with no row is reported as an internal error, not as an unknown verification", async () => {

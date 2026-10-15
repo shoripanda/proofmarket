@@ -275,3 +275,16 @@ describe("POST /v1/x402/verifications", () => {
     expect((await post(body(), header)).status).toBe(201);
   });
 });
+
+describe("x402_enabled flag (08 §6)", () => {
+  it("off: the window answers 503 FEATURE_DISABLED and offers no terms; on again: 402 as usual", async () => {
+    const { setFlag } = await import("../lib/services/admin-service");
+    await setFlag(t.db, "x402_enabled", false, "test");
+    const off = await post(body());
+    expect(off.status).toBe(503);
+    expect(((await off.json()) as { error: { code: string } }).error.code).toBe("FEATURE_DISABLED");
+    expect(off.headers.get("payment-required")).toBeNull();
+    await setFlag(t.db, "x402_enabled", true, "test");
+    expect((await post(body())).status).toBe(402);
+  });
+});

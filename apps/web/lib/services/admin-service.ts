@@ -31,8 +31,9 @@ export async function issueApiKey(
   o: {
     principalId: string;
     requesterName: string;
-    maxTaskAmount: string;
-    dailySpendLimit: string;
+    /** Spend policy (docs/architecture 04 §4.3). null: no ceiling, which is the default the owner chose. */
+    maxTaskAmount: string | null;
+    dailySpendLimit: string | null;
     rateLimitPerMin?: number;
     /** Defaults to every type (01 §4.15). */
     allowedTaskTypes?: TaskType[];

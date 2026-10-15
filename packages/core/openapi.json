@@ -615,6 +615,10 @@
                       "max_age_seconds"
                     ],
                     "additionalProperties": false
+                  },
+                  "quote_id": {
+                    "type": "string",
+                    "pattern": "^qte_[0-9A-HJKMNP-TV-Z]{26}$"
                   }
                 },
                 "required": [
@@ -743,6 +747,326 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List this API key's verifications, newest first (docs/architecture 04 §4.1)",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "created_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verifications": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "verification_id": {
+                            "type": "string",
+                            "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "PLACE_STATUS_VERIFICATION",
+                              "QUEUE_LENGTH",
+                              "NOTICE_POSTED",
+                              "CROWD_LEVEL",
+                              "SEAT_AVAILABILITY",
+                              "PARKING_AVAILABILITY",
+                              "STOCK_CHECK",
+                              "PRICE_CHECK",
+                              "SIGN_TRANSCRIPTION",
+                              "SITE_REPORT",
+                              "DOCUMENT_TRANSCRIPTION",
+                              "DOCUMENT_QA",
+                              "PRODUCT_INSPECTION",
+                              "PHONE_INQUIRY",
+                              "MEASUREMENT",
+                              "CUSTOM_CHOICE",
+                              "CUSTOM_TASK"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "CREATED",
+                              "FUNDED",
+                              "OPEN",
+                              "CLAIMED",
+                              "SUBMITTED",
+                              "VERIFYING",
+                              "VERIFIED",
+                              "SETTLED",
+                              "REJECTED",
+                              "EXPIRED",
+                              "CANCELLED",
+                              "REFUNDED"
+                            ]
+                          },
+                          "funding_status": {
+                            "type": "string",
+                            "enum": [
+                              "NONE",
+                              "PENDING",
+                              "SUBMITTED",
+                              "CONFIRMED",
+                              "FAILED",
+                              "ABANDONED"
+                            ]
+                          },
+                          "settlement_status": {
+                            "type": "string",
+                            "enum": [
+                              "NONE",
+                              "PENDING",
+                              "SUBMITTED",
+                              "CONFIRMED",
+                              "FAILED"
+                            ]
+                          },
+                          "result_status": {
+                            "nullable": true,
+                            "type": "string",
+                            "enum": [
+                              "VERIFIED",
+                              "REJECTED",
+                              "EXPIRED"
+                            ]
+                          },
+                          "bounty": {
+                            "type": "object",
+                            "properties": {
+                              "asset": {
+                                "type": "string",
+                                "enum": [
+                                  "USDC",
+                                  "SOL",
+                                  "USDT",
+                                  "PYUSD",
+                                  "USDG",
+                                  "EURC",
+                                  "JUP",
+                                  "BONK",
+                                  "JitoSOL",
+                                  "mSOL",
+                                  "cbBTC"
+                                ]
+                              },
+                              "amount": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                              },
+                              "network": {
+                                "type": "string",
+                                "enum": [
+                                  "solana-devnet",
+                                  "solana"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "asset",
+                              "amount",
+                              "network"
+                            ]
+                          },
+                          "required_witnesses": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "recheck_of": {
+                            "nullable": true,
+                            "type": "string",
+                            "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                          },
+                          "deadline": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "verification_id",
+                          "type",
+                          "status",
+                          "funding_status",
+                          "settlement_status",
+                          "result_status",
+                          "bounty",
+                          "required_witnesses",
+                          "recheck_of",
+                          "deadline",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      }
+                    },
+                    "next_cursor": {
+                      "nullable": true,
+                      "type": "string",
+                      "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                    }
+                  },
+                  "required": [
+                    "verifications",
+                    "next_cursor"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -1552,6 +1876,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -2315,6 +2642,814 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verifications/quote": {
+      "post": {
+        "summary": "Quote a verification: its cost and whether it would be accepted, with nothing reserved (docs/architecture 04 §4.2)",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PLACE_STATUS_VERIFICATION",
+                      "QUEUE_LENGTH",
+                      "NOTICE_POSTED",
+                      "CROWD_LEVEL",
+                      "SEAT_AVAILABILITY",
+                      "PARKING_AVAILABILITY",
+                      "STOCK_CHECK",
+                      "PRICE_CHECK",
+                      "SIGN_TRANSCRIPTION",
+                      "SITE_REPORT",
+                      "DOCUMENT_TRANSCRIPTION",
+                      "DOCUMENT_QA",
+                      "PRODUCT_INSPECTION",
+                      "PHONE_INQUIRY",
+                      "MEASUREMENT",
+                      "CUSTOM_CHOICE",
+                      "CUSTOM_TASK"
+                    ]
+                  },
+                  "question": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "answer_schema": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "enum"
+                            ]
+                          },
+                          "values": {
+                            "minItems": 2,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 40
+                            }
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "values"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "number"
+                            ]
+                          },
+                          "unit": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 16
+                          },
+                          "min": {
+                            "type": "number"
+                          },
+                          "max": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "text"
+                            ]
+                          },
+                          "max_chars": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4000
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "form"
+                            ]
+                          },
+                          "fields": {
+                            "minItems": 1,
+                            "maxItems": 8,
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "enum"
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    },
+                                    "values": {
+                                      "minItems": 2,
+                                      "maxItems": 6,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 40
+                                      }
+                                    },
+                                    "required": {
+                                      "default": true,
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "key",
+                                    "label",
+                                    "values"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "number"
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    },
+                                    "unit": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 16
+                                    },
+                                    "min": {
+                                      "type": "number"
+                                    },
+                                    "max": {
+                                      "type": "number"
+                                    },
+                                    "required": {
+                                      "default": true,
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "key",
+                                    "label"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "text"
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    },
+                                    "max_chars": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 4000
+                                    },
+                                    "required": {
+                                      "default": true,
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "key",
+                                    "label"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "scale"
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    },
+                                    "min": {
+                                      "default": 1,
+                                      "type": "number",
+                                      "enum": [
+                                        1
+                                      ]
+                                    },
+                                    "max": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "labels": {
+                                      "type": "array",
+                                      "items": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 20
+                                          },
+                                          {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 20
+                                          }
+                                        ]
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    },
+                                    "required": {
+                                      "default": true,
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "key",
+                                    "label",
+                                    "max",
+                                    "labels"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "fields"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "acceptance_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "attestation": {
+                    "type": "object",
+                    "properties": {
+                      "subject": {
+                        "type": "string",
+                        "enum": [
+                          "agent_action"
+                        ]
+                      },
+                      "description": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "required": [
+                      "subject",
+                      "description"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lng": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "radius_m": {
+                        "type": "integer",
+                        "minimum": 25,
+                        "maximum": 500
+                      }
+                    },
+                    "required": [
+                      "lat",
+                      "lng",
+                      "radius_m"
+                    ]
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "freshness": {
+                    "default": {
+                      "max_age_seconds": 300
+                    },
+                    "type": "object",
+                    "properties": {
+                      "max_age_seconds": {
+                        "default": 300,
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 3600
+                      }
+                    }
+                  },
+                  "evidence_requirements": {
+                    "type": "object",
+                    "properties": {
+                      "photo": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "task_nonce": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      }
+                    },
+                    "required": [
+                      "photo",
+                      "task_nonce"
+                    ]
+                  },
+                  "assurance": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "required_witnesses": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                              },
+                              "quorum": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                              }
+                            },
+                            "required": [
+                              "required_witnesses",
+                              "quorum"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "level": {
+                                "type": "string",
+                                "enum": [
+                                  "fast",
+                                  "standard",
+                                  "high"
+                                ],
+                                "description": "fast = 1 witness, standard = 2 agreeing, high = 2 of 3"
+                              }
+                            },
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "optimistic"
+                            ]
+                          },
+                          "challenge_minutes": {
+                            "default": 30,
+                            "type": "integer",
+                            "minimum": 10,
+                            "maximum": 120
+                          }
+                        },
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "bounty": {
+                    "type": "object",
+                    "properties": {
+                      "asset": {
+                        "type": "string",
+                        "enum": [
+                          "USDC",
+                          "SOL",
+                          "USDT",
+                          "PYUSD",
+                          "USDG",
+                          "EURC",
+                          "JUP",
+                          "BONK",
+                          "JitoSOL",
+                          "mSOL",
+                          "cbBTC"
+                        ]
+                      },
+                      "amount": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                      },
+                      "network": {
+                        "type": "string",
+                        "enum": [
+                          "solana-devnet",
+                          "solana"
+                        ]
+                      },
+                      "max_amount": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                      },
+                      "ramp_minutes": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 1440
+                      }
+                    },
+                    "required": [
+                      "asset",
+                      "amount",
+                      "network"
+                    ]
+                  },
+                  "principal_ref": {
+                    "type": "string",
+                    "pattern": "^prn_[0-9A-HJKMNP-TV-Z]{26}$"
+                  },
+                  "worker_requirements": {
+                    "type": "object",
+                    "properties": {
+                      "min_tier": {
+                        "type": "string",
+                        "enum": [
+                          "standard",
+                          "trusted"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "min_tier"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "allow_reuse": {
+                    "type": "boolean"
+                  },
+                  "publish": {
+                    "type": "boolean"
+                  },
+                  "location_privacy": {
+                    "type": "string",
+                    "enum": [
+                      "exact",
+                      "coarse"
+                    ]
+                  },
+                  "reuse": {
+                    "type": "object",
+                    "properties": {
+                      "max_age_seconds": {
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 3600
+                      }
+                    },
+                    "required": [
+                      "max_age_seconds"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "question",
+                  "answer_schema",
+                  "deadline",
+                  "evidence_requirements",
+                  "assurance",
+                  "bounty",
+                  "principal_ref"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "quote_id": {
+                      "type": "string",
+                      "pattern": "^qte_[0-9A-HJKMNP-TV-Z]{26}$"
+                    },
+                    "bounty": {
+                      "type": "object",
+                      "properties": {
+                        "asset": {
+                          "type": "string",
+                          "enum": [
+                            "USDC",
+                            "SOL",
+                            "USDT",
+                            "PYUSD",
+                            "USDG",
+                            "EURC",
+                            "JUP",
+                            "BONK",
+                            "JitoSOL",
+                            "mSOL",
+                            "cbBTC"
+                          ]
+                        },
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        },
+                        "required_witnesses": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "asset",
+                        "amount",
+                        "required_witnesses"
+                      ]
+                    },
+                    "total": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                    },
+                    "balance": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "0"
+                          ]
+                        }
+                      ]
+                    },
+                    "balance_after": {
+                      "type": "string"
+                    },
+                    "policy": {
+                      "type": "object",
+                      "properties": {
+                        "checked": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "ok": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      },
+                      "required": [
+                        "checked",
+                        "ok"
+                      ]
+                    },
+                    "reuse": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "verification_id": {
+                          "type": "string",
+                          "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+                        }
+                      },
+                      "required": [
+                        "verification_id"
+                      ]
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    }
+                  },
+                  "required": [
+                    "quote_id",
+                    "bounty",
+                    "total",
+                    "balance",
+                    "balance_after",
+                    "policy",
+                    "reuse",
+                    "expires_at"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -3537,6 +4672,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -4759,6 +5897,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -4907,6 +6048,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -5103,6 +6247,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -5299,6 +6446,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -6255,6 +7405,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -6536,6 +7689,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -6817,6 +7973,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -7013,6 +8172,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -7250,6 +8412,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -7882,6 +9047,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -8471,6 +9639,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -8635,6 +9806,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -8773,6 +9947,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -8950,6 +10127,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -9245,6 +10425,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -9838,6 +11021,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -10431,6 +11617,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -10606,6 +11795,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -11102,6 +12294,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -11294,6 +12489,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -11480,6 +12678,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -11846,6 +13047,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -12073,6 +13277,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -12349,6 +13556,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -12407,7 +13617,8 @@
                       "claims_enabled",
                       "settlement_enabled",
                       "public_evidence_enabled",
-                      "external_review_enabled"
+                      "external_review_enabled",
+                      "x402_enabled"
                     ]
                   },
                   "value": {
@@ -12481,6 +13692,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -12592,6 +13806,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -12703,6 +13920,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -12814,6 +14034,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -12925,6 +14148,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"
@@ -13036,6 +14262,9 @@
                             "ANSWER_INVALID",
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
                             "NOT_IMPLEMENTED",
                             "INTERNAL_ERROR"

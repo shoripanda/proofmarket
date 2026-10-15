@@ -24,8 +24,8 @@ import { createPrincipal, issueApiKey, topUp } from "./admin-service";
 import { requestHash } from "./idempotency";
 import { type CreateResult, createdBody, createVerification } from "./requester-service";
 
-/** Values stored on the credential each payment gets. The amounts are not enforced: the reward has no ceiling. */
-export const X402_LIMITS = { maxTaskAmount: "5", dailySpendLimit: "20", rateLimitPerMin: 30 } as const;
+/** Values stored on the credential each payment gets. No ceiling: the payment itself is the bound (owner, 2026-10-15). */
+export const X402_LIMITS = { maxTaskAmount: null, dailySpendLimit: null, rateLimitPerMin: 30 } as const;
 /** About twice a blockhash lifetime: a PENDING row older than this is abandoned and may be retried. */
 const PENDING_STALE_MS = 120_000;
 const explorer = (sig: string) => clusterText().explorerTx(sig);

@@ -52,6 +52,25 @@ const ENDPOINTS: Endpoint[] = [
     ok: { status: 201, schema: S.X402CreateVerificationResponseSchema },
   },
   {
+    method: "post",
+    path: "/v1/verifications/quote",
+    auth: "requester",
+    priority: "Stretch",
+    summary:
+      "Quote a verification: its cost and whether it would be accepted, with nothing reserved (docs/architecture 04 §4.2)",
+    body: S.QuoteVerificationRequestSchema,
+    ok: { status: 200, schema: S.QuoteResponseSchema },
+  },
+  {
+    method: "get",
+    path: "/v1/verifications",
+    auth: "requester",
+    priority: "Stretch",
+    summary: "List this API key's verifications, newest first (docs/architecture 04 §4.1)",
+    query: S.ListVerificationsQuerySchema,
+    ok: { status: 200, schema: S.ListVerificationsResponseSchema },
+  },
+  {
     method: "get",
     path: "/v1/verifications/{id}",
     auth: "requester",

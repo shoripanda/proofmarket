@@ -7,6 +7,11 @@
 //     [--choices "A,B,C"] [--unit cm] [--bounty 0.10] [--deadline-min 45] [--publish] [--network solana]
 //   pnpm --filter @proofmarket/scripts run run x402-agent.ts --list-types
 //   add --dry-run to print the request body without sending or paying
+//   add --yes to skip the approval prompt (the terms are still shown and re-checked before paying)
+//
+// Before paying, the agent shows the terms (amount, token, destination, network, fee payer) and waits for a
+// person to approve them; then it fetches the terms again and refuses to pay if any field changed. This is
+// the approval gate the Solana Foundation's eve-pay template shows (docs/architecture 02 §4.5).
 //
 // Any of the 17 task types works; the answer schema comes from the type. Without --type it sends a
 // hands-on task that needs no place (CUSTOM_TASK), or PLACE_STATUS_VERIFICATION when --lat/--lng are given.
@@ -17,6 +22,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { stdin, stdout } from "node:process";
+import { createInterface } from "node:readline/promises";
 import { TASK_TYPE_SPECS, TASK_TYPES, type TaskType } from "@proofmarket/core";
 import { buildExactSvmPayment, encodeHeader, type PaymentRequirements } from "@proofmarket/solana";
 import { getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
@@ -130,21 +137,45 @@ const post = (headers: Record<string, string> = {}) =>
   });
 
 // 1. Ask without paying: the server answers 402 with what it accepts.
-const first = await post();
-if (first.status !== 402) {
-  say(`expected 402, got ${first.status}: ${await first.text()}`);
-  process.exit(1);
+async function fetchTerms(): Promise<PaymentRequirements> {
+  const res = await post();
+  if (res.status !== 402) {
+    say(`expected 402, got ${res.status}: ${await res.text()}`);
+    process.exit(1);
+  }
+  const required = JSON.parse(
+    Buffer.from(res.headers.get("payment-required") ?? "", "base64").toString("utf8"),
+  ) as { accepts: PaymentRequirements[] };
+  const r = required.accepts.find((x) => x.scheme === "exact" && x.network.startsWith("solana:"));
+  if (!r) throw new Error("no Solana exact payment option offered");
+  return r;
 }
-const required = JSON.parse(
-  Buffer.from(first.headers.get("payment-required") ?? "", "base64").toString("utf8"),
-) as {
-  accepts: PaymentRequirements[];
-};
-const req = required.accepts.find((r) => r.scheme === "exact" && r.network.startsWith("solana:"));
-if (!req) throw new Error("no Solana exact payment option offered");
-say(
-  `402: pay ${Number(req.amount) / 1e6} USDC to ${req.payTo} on ${req.network} (fee paid by ${req.extra.feePayer})`,
-);
+const TERM_FIELDS = ["amount", "asset", "payTo", "network"] as const;
+const terms = (r: PaymentRequirements) =>
+  `pay ${Number(r.amount) / 1e6} USDC (mint ${r.asset}) to ${r.payTo} on ${r.network} (fee paid by ${r.extra.feePayer})`;
+
+let req = await fetchTerms();
+say(`402: ${terms(req)}`);
+
+// 1a. Approval gate: a person sees the terms before any money moves. --yes skips the prompt, not the check.
+if (!a.yes) {
+  const rl = createInterface({ input: stdin, output: stdout });
+  const answer = (await rl.question("Pay these terms? [y/N] ")).trim().toLowerCase();
+  rl.close();
+  if (answer !== "y" && answer !== "yes") {
+    say("not paid: the terms were not approved");
+    process.exit(0);
+  }
+}
+// 1b. The terms could have changed while the person was reading them: fetch them again and compare.
+const approved = req;
+req = await fetchTerms();
+for (const f of TERM_FIELDS) {
+  if (req[f] !== approved[f] || req.extra.feePayer !== approved.extra.feePayer) {
+    say(`not paid: ${f} changed after approval (${String(approved[f])} -> ${String(req[f])}). Run again.`);
+    process.exit(1);
+  }
+}
 
 // 2. Check the balance, build and sign the transfer. The fee payer's signature slot stays empty.
 const connection = new Connection(rpc, "confirmed");

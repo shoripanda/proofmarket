@@ -12,8 +12,10 @@ import {
   handleCreateSchedule,
   handleDispute,
   handleGet,
+  handleList,
   handleListSchedules,
   handlePublicResult,
+  handleQuote,
   handleStopSchedule,
 } from "./handlers/requester";
 import { route } from "./http";
@@ -28,7 +30,7 @@ type Jobs = (res: Response, id: string) => Promise<string[]>;
 const body = <T>(res: Response) => res.clone().json() as Promise<T>;
 const none: Jobs = async () => [];
 
-// Every SDK method an MCP tool calls must have a row here (test/mcp-http.test.ts calls all nine tools).
+// Every SDK method an MCP tool calls must have a row here (test/mcp-http.test.ts calls all ten tools).
 // batch comes before /v1/verifications/{id} so "batch" is never read as an id.
 const TABLE: [string, RegExp, H, Jobs][] = [
   [
@@ -51,6 +53,8 @@ const TABLE: [string, RegExp, H, Jobs][] = [
           )
         : [],
   ],
+  ["POST", /^\/v1\/verifications\/quote$/, (a, r) => handleQuote(a, r), none],
+  ["GET", /^\/v1\/verifications$/, (a, r) => handleList(a, r), none],
   ["GET", /^\/v1\/verifications\/([^/]+)$/, handleGet, none],
   [
     "POST",

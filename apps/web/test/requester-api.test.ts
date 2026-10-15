@@ -2,7 +2,14 @@
 import { schema } from "@proofmarket/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { handleCancel, handleCreate, handleCreateBatch, handleGet } from "../lib/handlers/requester";
+import {
+  handleCancel,
+  handleCreate,
+  handleCreateBatch,
+  handleGet,
+  handleList,
+  handleQuote,
+} from "../lib/handlers/requester";
 import { handleClaimDetail, handleTaskDetail } from "../lib/handlers/worker";
 import { proofHeadline } from "../lib/proof-text";
 import { setAllowedTaskTypes } from "../lib/services/admin-service";
@@ -219,13 +226,13 @@ describe("POST /v1/verifications", () => {
     ).toHaveLength(0);
   });
 
-  it("I-LIM-01: no cap on the bounty (per request or per day); balance and rate limit still apply", async () => {
+  it("I-LIM-01: a key without ceilings is bounded by its balance and rate limit only", async () => {
     const amt = (a: string, n = 1) =>
       createBody(t.principalId, {
         bounty: { asset: "USDC", amount: a, network: "solana-devnet" },
         assurance: { required_witnesses: n, quorum: 1 },
       });
-    // the key's stored limits are 5 per request and 20 a day; neither is enforced any more
+    // the test key has no per-request or daily ceiling (null, docs/architecture 04 §4.3)
     expect((await create(amt("2.6", 2))).status).toBe(201); // 5.2, balance 10 -> 4.8
     expect(await errCode(await create(amt("5")))).toBe("INSUFFICIENT_BALANCE");
     await t.db
@@ -544,5 +551,157 @@ describe("GET / cancel", () => {
     expect(await res.json()).toMatchObject({ status: "CANCELLED" });
     const jobs = (await t.db.select().from(schema.outboxJobs)).map((j) => j.dedupeKey);
     expect(jobs).toContain(`REFUND_TASK:${id}`);
+  });
+});
+
+// ---------- spend policy, quotes and the list (docs/architecture 04 §4.1-4.3) ----------
+
+describe("spend policy", () => {
+  const amt = (a: string, n = 1) =>
+    createBody(t.principalId, {
+      bounty: { asset: "USDC", amount: a, network: "solana-devnet" },
+      assurance: { required_witnesses: n, quorum: 1 },
+    });
+
+  it("a key with ceilings refuses one request over max_task_amount and a day over daily_spend_limit", async () => {
+    const { issueApiKey, topUp } = await import("../lib/services/admin-service");
+    const capped = await issueApiKey(t.db, {
+      principalId: t.principalId,
+      requesterName: "capped",
+      maxTaskAmount: "5",
+      dailySpendLimit: "12",
+      operator: "test",
+    });
+    await topUp(t.db, capped.credentialId, "100");
+    const c = (body: unknown) => create(body, crypto.randomUUID(), capped.apiKey);
+    // 2.6 × 2 = 5.2 > 5 per request
+    const over = await c(amt("2.6", 2));
+    expect(over.status).toBe(403);
+    expect(await errCode(over)).toBe("TASK_AMOUNT_LIMIT_EXCEEDED");
+    expect((await c(amt("5"))).status).toBe(201); // today 5
+    expect((await c(amt("5"))).status).toBe(201); // today 10
+    const day = await c(amt("3")); // 13 > 12
+    expect(day.status).toBe(403);
+    expect(await errCode(day)).toBe("DAILY_SPEND_LIMIT_EXCEEDED");
+    expect((await c(amt("2"))).status).toBe(201); // exactly 12
+    expect(await errCode(await c(amt("0.1")))).toBe("DAILY_SPEND_LIMIT_EXCEEDED"); // 12.1
+    // the next JST day starts a new window
+    t.setNow(new Date("2026-10-09T15:00:01Z"));
+    expect((await c(createBody(t.principalId, { deadline: "2026-10-09T16:00:00Z" }))).status).toBe(201);
+    // the ledger never over-reserved
+    const spent = (await t.db.select().from(schema.requesterLedger))
+      .filter((l) => l.credentialId === capped.credentialId && l.entryType === "RESERVE")
+      .reduce((s, l) => s + Number(l.amount), 0);
+    expect(spent).toBeCloseTo(-12.5, 5);
+  });
+});
+
+describe("POST /v1/verifications/quote", () => {
+  const quote = (body: unknown, key = t.apiKey) =>
+    call((r) => handleQuote(t.app, r), jsonReq("POST", "/v1/verifications/quote", { key, body }));
+  const ledgerRows = async () => (await t.db.select().from(schema.requesterLedger)).length;
+
+  it("quotes the cost without reserving, and the quote_id confirms the same body once within 5 minutes", async () => {
+    const before = await ledgerRows();
+    const body = createBody(t.principalId, { assurance: { required_witnesses: 2, quorum: 2 } });
+    const q = await quote(body);
+    expect(q.status).toBe(200);
+    const qb = (await q.json()) as {
+      quote_id: string;
+      total: string;
+      balance: string;
+      balance_after: string;
+      policy: { ok: boolean; checked: string[] };
+      reuse: unknown;
+      expires_at: string;
+    };
+    expect(qb).toMatchObject({ total: "1", balance: "10", balance_after: "9", reuse: null });
+    expect(qb.quote_id).toMatch(/^qte_/);
+    expect(qb.policy.ok).toBe(true);
+    expect(qb.policy.checked).toContain("spend_limit");
+    expect(await ledgerRows()).toBe(before); // nothing reserved, no task
+    expect(await t.db.select().from(schema.verificationRequests)).toHaveLength(0);
+
+    // a different body cannot use the quote
+    const other = await create({ ...body, question: "Is it closed?", quote_id: qb.quote_id });
+    expect(other.status).toBe(409);
+    expect(await errCode(other)).toBe("QUOTE_MISMATCH");
+    // the same body does, once
+    const ok = await create({ ...body, quote_id: qb.quote_id });
+    expect(ok.status).toBe(201);
+    const { verification_id: id } = (await ok.json()) as { verification_id: string };
+    const [row] = await t.db.select().from(schema.verificationQuotes);
+    expect(row).toMatchObject({ verificationId: id });
+    expect(row?.consumedAt).not.toBeNull();
+    const again = await create({ ...body, quote_id: qb.quote_id });
+    expect(await errCode(again)).toBe("QUOTE_EXPIRED");
+  });
+
+  it("refuses an expired quote, another key's quote, and a body the create would refuse", async () => {
+    const body = createBody(t.principalId);
+    const qb = (await (await quote(body)).json()) as { quote_id: string };
+    const { issueApiKey } = await import("../lib/services/admin-service");
+    const other = await issueApiKey(t.db, {
+      principalId: t.principalId,
+      requesterName: "other",
+      maxTaskAmount: null,
+      dailySpendLimit: null,
+      operator: "t",
+    });
+    const stolen = await create({ ...body, quote_id: qb.quote_id }, crypto.randomUUID(), other.apiKey);
+    expect(stolen.status).toBe(404);
+    expect(await errCode(stolen)).toBe("QUOTE_NOT_FOUND");
+    t.advance(5 * 60_000 + 1);
+    const late = await create({ ...body, quote_id: qb.quote_id });
+    expect(await errCode(late)).toBe("QUOTE_EXPIRED");
+    // the quote runs every create check: a question against policy is refused before any quote is written
+    const bad = await quote(createBody(t.principalId, { question: "Check the whereabouts of the owner" }));
+    expect(bad.status).toBe(422);
+    expect(await errCode(bad)).toBe("TASK_POLICY_VIOLATION");
+    expect(await t.db.select().from(schema.verificationQuotes)).toHaveLength(1);
+  });
+});
+
+describe("GET /v1/verifications", () => {
+  const list = (qs = "", key = t.apiKey) =>
+    call((r) => handleList(t.app, r), jsonReq("GET", `/v1/verifications${qs}`, { key }));
+  const cancel = (id: string) =>
+    call(
+      (r) => handleCancel(t.app, r, id),
+      jsonReq("POST", `/v1/verifications/${id}/cancel`, { key: t.apiKey }),
+    );
+  type Page = { verifications: { verification_id: string; status: string }[]; next_cursor: string | null };
+
+  it("lists this key's verifications newest first, pages with a cursor, filters by status, hides others", async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      ids.push(
+        ((await (await create(createBody(t.principalId))).json()) as { verification_id: string })
+          .verification_id,
+      );
+    }
+    const { issueApiKey } = await import("../lib/services/admin-service");
+    const other = await issueApiKey(t.db, {
+      principalId: t.principalId,
+      requesterName: "other",
+      maxTaskAmount: null,
+      dailySpendLimit: null,
+      operator: "t",
+    });
+    expect(((await (await list("", other.apiKey)).json()) as Page).verifications).toEqual([]);
+
+    const p1 = (await (await list("?limit=2")).json()) as Page;
+    expect(p1.verifications.map((v) => v.verification_id)).toEqual([ids[2], ids[1]]);
+    expect(p1.next_cursor).toBe(ids[1]);
+    const p2 = (await (await list(`?limit=2&cursor=${p1.next_cursor}`)).json()) as Page;
+    expect(p2.verifications.map((v) => v.verification_id)).toEqual([ids[0]]);
+    expect(p2.next_cursor).toBeNull();
+
+    await cancel(ids[0] ?? "");
+    const cancelled = (await (await list("?status=CANCELLED")).json()) as Page;
+    expect(cancelled.verifications.map((v) => [v.verification_id, v.status])).toEqual([
+      [ids[0], "CANCELLED"],
+    ]);
+    expect(await errCode(await list("?status=NOPE"))).toBe("VALIDATION_FAILED");
   });
 });

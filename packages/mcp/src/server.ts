@@ -10,6 +10,7 @@ import {
   CANCEL_TOOL,
   DISPUTE_TOOL,
   GET_TOOL,
+  LIST_TOOL,
   LIST_WATCHES_TOOL,
   REQUEST_TOOL,
   STOP_WATCH_TOOL,
@@ -56,6 +57,7 @@ export function createServer(
   const { name: dName, ...dDef } = DISPUTE_TOOL;
   const { name: wName, ...wDef } = WATCH_TOOL;
   const { name: lName, ...lDef } = LIST_WATCHES_TOOL;
+  const { name: vName, ...vDef } = LIST_TOOL;
   const { name: aName, ...aDef } = ASSETS_TOOL;
   const { name: sName, ...sDef } = STOP_WATCH_TOOL;
 
@@ -80,8 +82,21 @@ export function createServer(
 
   server.registerTool(rName, rDef, async (args) => {
     try {
-      const { idempotency_key, principal_ref, wait_seconds, ...rest } = args;
+      const { idempotency_key, principal_ref, wait_seconds, confirm, ...rest } = args;
       const body = { ...rest, principal_ref: principal_ref ?? opts.principalRef };
+      if (confirm === false) {
+        // Quote only (docs/architecture 04 §4.2): nothing reserved, no task. The quote_id confirms it later.
+        const { quote_id: _unused, ...quoted } = body;
+        const q = await client.quoteVerification(quoted);
+        return ok({
+          ...q,
+          note:
+            `Nothing was reserved. Show the person the cost (${q.total} ${q.bounty.asset}; balance after: ` +
+            `${q.balance_after}). If they agree, call request_reality_verification again with the same arguments ` +
+            `plus quote_id=${q.quote_id} before ${q.expires_at}.` +
+            (q.reuse ? " A recent shared result exists for this place, so confirming costs nothing." : ""),
+        });
+      }
       const r = await client.createVerification(body, idempotency_key ?? defaultIdempotencyKey(body));
       if (r.reused) {
         return ok({
@@ -176,6 +191,13 @@ export function createServer(
   server.registerTool(lName, lDef, async () => {
     try {
       return ok(await client.listSchedules());
+    } catch (e) {
+      return err(e);
+    }
+  });
+  server.registerTool(vName, vDef, async (q) => {
+    try {
+      return ok(await client.listVerifications(q));
     } catch (e) {
       return err(e);
     }
