@@ -296,3 +296,37 @@ describe("parallel drain (16 §7.2)", () => {
     expect(await drainJobs(t.app, 60, 6)).toBe(0);
   });
 });
+
+describe("daily settlement reconciliation (docs/architecture 06 §4.2)", () => {
+  it("reads yesterday's settlements back from chain and records a mismatch in audit_events", async () => {
+    const { reconcileSettlements } = await import("../lib/services/settlement-jobs");
+    const id = await create();
+    await tick(t.app);
+    await witness(t, alice, id);
+    await tick(t.app); // settled on the fake chain
+    expect((await view(id)).status).toBe("SETTLED");
+    t.advance(60_000);
+    // the chain agrees with the DB: nothing to report
+    expect(await reconcileSettlements(t.app)).toEqual({ checked: 1, mismatched: [], unreadable: [] });
+    // the chain paid something else (a bug, or a key used outside the server): reported, never corrected
+    const [task] = await t.db
+      .select()
+      .from(schema.verificationRequests)
+      .where(eq(schema.verificationRequests.id, id));
+    const onChain = await t.chain.readTask(task?.taskIdHash ?? new Uint8Array());
+    if (onChain) onChain.paidTotal = 999_999n;
+    expect(await reconcileSettlements(t.app)).toMatchObject({ checked: 1, mismatched: [id] });
+    const audit = await t.db
+      .select()
+      .from(schema.auditEvents)
+      .where(eq(schema.auditEvents.eventType, "reconciliation_mismatch"));
+    expect(audit).toHaveLength(1);
+    expect(audit[0]?.metadata).toMatchObject({
+      onchain: { paid_total: "999999" },
+      db: { paid_total: "500000" },
+    });
+    // the tick enqueues the daily job once per day
+    const kinds = (await jobs()).map((j) => j.dedupeKey).filter((k) => k.startsWith("RECONCILE"));
+    expect(kinds).toEqual([`RECONCILE_SETTLEMENTS:${t.app.now().toISOString().slice(0, 10)}`]);
+  });
+});

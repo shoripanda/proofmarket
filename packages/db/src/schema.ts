@@ -946,3 +946,19 @@ export const verificationQuotes = pgTable(
     index("vq_credential_created_idx").on(t.credentialId, t.createdAt),
   ],
 );
+
+// ---------- tick_runs (docs/architecture 06 §4.3) ----------
+/** One row per tick: how long each step took. /v1/health/ready shows the latest; purged after seven days. */
+export const tickRuns = pgTable(
+  "tick_runs",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    startedAt: tsz("started_at").notNull(),
+    durationMs: integer("duration_ms").notNull(),
+    /** { step_name: milliseconds } in the order the steps ran. */
+    steps: jsonb("steps").notNull(),
+    jobsRun: integer("jobs_run").notNull(),
+    failed: text("failed").array().notNull(),
+  },
+  (t) => [index("tick_runs_started_idx").on(t.startedAt)],
+);

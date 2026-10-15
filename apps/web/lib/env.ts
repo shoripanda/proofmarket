@@ -23,6 +23,12 @@ const Common = {
   /** 16 §7.2: outbox jobs one tick runs at once. */
   JOB_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(6),
   /**
+   * 15 §4.2, docs/architecture 05 §4.3: how much the operator wallet should hold at most (USDC in the treasury,
+   * SOL for fees). Over 1.5× either, the tick warns so the operator moves the surplus to the admin wallet.
+   */
+  TREASURY_MAX_USDC: z.coerce.number().positive().optional(),
+  TREASURY_MAX_SOL: z.coerce.number().positive().optional(),
+  /**
    * 16 §3.2: rewards accepted here, comma separated registry symbols (default USDC). Off-mainnet mints come
    * from ASSET_MINT_<SYMBOL>. A symbol not in the registry or without a mint stops the server from starting.
    */

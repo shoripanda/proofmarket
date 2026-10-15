@@ -112,6 +112,7 @@ requester に worker の位置・自宅・移動履歴を返す API はない（
 - ログは JSON 1 行。`level`、`msg`、`request_id`、`verification_id`、`actor_type`、`duration_ms` を入れる
 - audit_events の `event_type` は `architecture.md` 7 節の 13 種類に、`submission_rejected`・`claim_abandoned`・`operator_action` を足す
 - tick の中で次を数え、しきい値を超えたら警告ログを出す: DEAD になった outbox ジョブ、PENDING のまま 10 分を超えた決済、operator の SOL 残高、treasury 残高と台帳のずれ
+- 2026-10-15 追加（`docs/architecture/` 06 §4.2〜4.3、08 §4.5）: (1) operator の財布が `TREASURY_MAX_USDC` / `TREASURY_MAX_SOL` の 1.5 倍を超えたら `treasury_over_cap` で警告する（15 §4.2）。(2) 1 日 1 回の `RECONCILE_SETTLEMENTS` ジョブが、前日に CONFIRMED になった決済ごとに Task 口座を読み、`paid_total` と受取人が `payment_records` と違えば `reconciliation_mismatch` を audit_events に残して警告する。直しはしない。(3) tick は段ごとの所要時間を `tick_runs` に記録し、`GET /v1/health/ready` が `last_tick`（開始時刻、全体と段ごとのミリ秒、流したジョブ数、落ちた段）で返す。200 秒を超えた tick は `tick_over_budget` で警告するが、503 にはしない
 
 ## 6. 障害・事故への対応
 

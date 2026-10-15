@@ -33,14 +33,21 @@ import type {
 import { depositAccounts, findDepositsByReference, tokenProgramId } from "./deposits.ts";
 import { allowedMintPda, configPda, taskPda, vaultPda } from "./pda.ts";
 import { sendAndConfirm } from "./send.ts";
+import { keypairSigner, type Signer, signerWallet } from "./signer.ts";
 
 export interface AnchorAdapterConfig {
   rpcUrl: string;
   expectedGenesisHash: string;
   programId: string;
   bountyMint: string;
-  operatorSecretKey: Uint8Array;
-  verifierSecretKey: Uint8Array;
+  /**
+   * The signing boundary (docs/architecture 05 §4.1): the adapter never holds a secret key itself. Pass the
+   * Signers, or the raw secret keys to wrap in the in-memory backend (the same behaviour as before).
+   */
+  operator?: Signer;
+  verifier?: Signer;
+  operatorSecretKey?: Uint8Array;
+  verifierSecretKey?: Uint8Array;
   /** Max wait for `finalized` before reporting retry (06 §5.1). */
   confirmTimeoutMs?: number;
   /** Floor of the compute-unit price; the actual price follows recent fees (16 §7.3). */
@@ -64,11 +71,11 @@ const OUTCOME_NAME: Record<FinalizeAndSettleInput["outcome"], OnChainOutcome> = 
 
 export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter {
   const connection = new Connection(cfg.rpcUrl, { commitment: "confirmed" });
-  const operator = Keypair.fromSecretKey(cfg.operatorSecretKey);
-  const verifier = Keypair.fromSecretKey(cfg.verifierSecretKey);
+  const operator = signerFrom(cfg.operator, cfg.operatorSecretKey, "operator");
+  const verifier = signerFrom(cfg.verifier, cfg.verifierSecretKey, "verifier");
   const programId = new PublicKey(cfg.programId);
   const mint = new PublicKey(cfg.bountyMint);
-  const provider = new AnchorProvider(connection, keypairWallet(operator), { commitment: "confirmed" });
+  const provider = new AnchorProvider(connection, signerWallet(operator), { commitment: "confirmed" });
   const program = new Program<Proofmarket>(
     { ...(idl as Proofmarket), address: programId.toBase58() },
     provider,
@@ -121,7 +128,7 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
   /** 16 §7.3: money moves wait for `finalized`; idempotent setup (ATAs) only for `confirmed`. */
   function send(
     ixs: TransactionInstruction[],
-    signers: Keypair[],
+    signers: Signer[],
     onSigned: (sig: string) => Promise<void>,
     commitment: "confirmed" | "finalized" = "finalized",
   ) {
@@ -338,29 +345,8 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
   };
 }
 
-/**
- * Minimal Anchor wallet. `Wallet` is only exported from the CJS build of @anchor-lang/core, so bundlers that
- * pick the ESM build (Next.js) cannot import it. We sign transactions ourselves; this only satisfies Provider.
- */
-function keypairWallet(kp: Keypair) {
-  return {
-    publicKey: kp.publicKey,
-    payer: kp,
-    async signTransaction<T extends VersionedTransaction | import("@solana/web3.js").Transaction>(
-      tx: T,
-    ): Promise<T> {
-      if (tx instanceof VersionedTransaction) tx.sign([kp]);
-      else tx.partialSign(kp);
-      return tx;
-    },
-    async signAllTransactions<T extends VersionedTransaction | import("@solana/web3.js").Transaction>(
-      txs: T[],
-    ): Promise<T[]> {
-      for (const tx of txs) {
-        if (tx instanceof VersionedTransaction) tx.sign([kp]);
-        else tx.partialSign(kp);
-      }
-      return txs;
-    },
-  };
+function signerFrom(signer: Signer | undefined, secretKey: Uint8Array | undefined, role: string): Signer {
+  if (signer) return signer;
+  if (secretKey) return keypairSigner(secretKey);
+  throw new Error(`no ${role} signer: pass ${role} or ${role}SecretKey`);
 }

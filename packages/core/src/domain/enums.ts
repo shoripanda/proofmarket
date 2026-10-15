@@ -222,6 +222,8 @@ export const OUTBOX_JOB_KINDS = [
   "DELIVER_WEBHOOK",
   "PURGE_EVIDENCE",
   "NOTIFY_WORKERS",
+  /** Daily: compare yesterday's settlements with the Task accounts on chain (docs/architecture 06 §4.2). */
+  "RECONCILE_SETTLEMENTS",
 ] as const;
 export type OutboxJobKind = (typeof OUTBOX_JOB_KINDS)[number];
 
@@ -279,6 +281,8 @@ export const AUDIT_EVENT_TYPES = [
   "operator_action",
   "oauth_granted",
   "bounty_fixed",
+  /** The daily reconciliation found a settlement whose on-chain record differs from the DB (06 §4.2). */
+  "reconciliation_mismatch",
 ] as const;
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];
 

@@ -6,12 +6,12 @@ import {
   ComputeBudgetProgram,
   type Connection,
   type Finality,
-  type Keypair,
   type PublicKey,
   type TransactionInstruction,
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
+import { type Signer, signTransaction } from "./signer.ts";
 
 export type SendConnection = Pick<
   Connection,
@@ -82,7 +82,7 @@ export async function sendAndConfirm(
   connection: SendConnection,
   payer: PublicKey,
   ixs: TransactionInstruction[],
-  signers: Keypair[],
+  signers: readonly Signer[],
   onSigned: (signature: string) => Promise<void>,
   o: SendOptions,
 ): Promise<SendResult> {
@@ -121,7 +121,7 @@ export async function sendAndConfirm(
     };
   }
   const tx = build(computeUnitLimit(sim.value.unitsConsumed));
-  tx.sign(signers);
+  await signTransaction(tx, signers);
   const signature = bs58encode(tx.signatures[0] ?? new Uint8Array());
   await onSigned(signature);
   const raw = tx.serialize();
