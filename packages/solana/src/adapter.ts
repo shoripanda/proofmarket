@@ -21,8 +21,17 @@ export interface OnChainTask {
   resultHash: Uint8Array;
   recipients: string[]; // first recipient_count entries
   paidTotal: bigint;
-  /** The escrowed mint: BOUNTY_MINT, or wSOL for a reward in SOL (15 §3.1). */
+  /** The escrowed mint: BOUNTY_MINT, wSOL for a reward in SOL (15 §3.1), or another allowed mint (16 §3). */
   mint: string;
+}
+
+/** A token the server settles in (16 §3): which mint, under which token program. */
+export interface ChainAsset {
+  symbol: string;
+  mint: string;
+  tokenProgram: "spl-token" | "token-2022";
+  /** SOL: escrowed as wSOL, paid to wallets as SOL (15 §3.1). */
+  native: boolean;
 }
 
 export interface FundTaskInput {
@@ -30,8 +39,11 @@ export interface FundTaskInput {
   taskIdHash: Uint8Array;
   requesterRefHash: Uint8Array;
   amountPerWitness: bigint; // base units of the asset (USDC: 10^-6, SOL: lamports)
-  /** USDC (BOUNTY_MINT) unless given. SOL is escrowed as wSOL and needs program v1.2 with wSOL allowed. */
-  asset?: "USDC" | "SOL";
+  /**
+   * USDC (BOUNTY_MINT) unless given. Any other mint needs its AllowedMint on chain (program v1.2; a
+   * Token-2022 mint needs v1.3, 16 §5). SOL is escrowed as wSOL.
+   */
+  asset?: ChainAsset;
   requiredWitnesses: number;
   quorum: number;
   deadline: Date;
@@ -88,7 +100,7 @@ export interface SettlementAdapter {
   /** For alerting (06 §5.2): operator SOL and treasury token balances. */
   balances(): Promise<{ operatorLamports: bigint; treasuryAmount: bigint }>;
 
-  /** 15 §4.3: where requesters send deposits (the operator wallet and its USDC account). */
+  /** 15 §4.3, 16 §6: where requesters send deposits (the operator wallet and its account of each asset). */
   depositAddresses(): DepositAddresses;
   /** 15 §4.3: finalized transfers to the treasury carrying `reference`, oldest first, newer than `until`. */
   findDeposits(reference: string, until?: string): Promise<ChainDeposit[]>;
@@ -103,6 +115,8 @@ export function createSettlementAdapter(cfg: {
   operatorSecretKey: Uint8Array;
   verifierSecretKey: Uint8Array;
   priorityMaxMicroLamports?: number;
+  /** The enabled assets, for deposits (16 §6). Default: USDC (BOUNTY_MINT) and SOL. */
+  assets?: ChainAsset[];
 }): SettlementAdapter {
   return createAnchorAdapter(cfg);
 }

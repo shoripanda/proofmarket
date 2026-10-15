@@ -2,7 +2,7 @@ import "server-only";
 // Requester console (01 §4.14). The API key is pasted once and exchanged for an httpOnly session cookie;
 // the key itself never stays in the browser. Read-mostly: the only actions are stopping a schedule and logout.
 
-import { ApiError, fromMicro, newId, toMicro } from "@proofmarket/core";
+import { ApiError, assetInfo, fromMicro, newId, toMicro } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
 import { and, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import { authenticateApiKey, credentialAuth, type RequesterAuth } from "../auth/requester";
@@ -145,10 +145,17 @@ export async function dashboard(app: AppContext, auth: RequesterAuth) {
       rate_limit_per_min: cred?.rateLimitPerMin ?? 0,
     },
     balance: money(bal?.s),
-    balances: {
-      USDC: money(bal?.s),
-      SOL: money(balRows.find((r) => r.asset === "SOL")?.s),
-    },
+    // 16 §6: every enabled asset, then any other one still held; registry order, never summed.
+    balances: [
+      ...app.config.assets.map((a) => a.symbol as string),
+      ...balRows.map((r) => r.asset).filter((x) => !app.config.assets.some((a) => a.symbol === x)),
+    ]
+      .map((asset) => ({
+        asset,
+        amount: money(balRows.find((r) => r.asset === asset)?.s),
+        volatile: assetInfo(asset)?.volatile === true,
+      }))
+      .filter((b) => b.amount !== "0" || app.config.assets.some((a) => a.symbol === b.asset)),
     spent_today: money(today?.s),
     tasks: tasks.map(({ t, answer }) => ({
       verification_id: t.id,

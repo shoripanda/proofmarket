@@ -82,7 +82,7 @@ export interface AssetInfo {
 
 受付が閉じた通貨の依頼は、これまでの SOL と同じく `UNSUPPORTED_ASSET` で断る。閉じても、すでに預かった依頼は払い出しも返金も続く。残高も消えない。
 
-`GET /v1/assets`（認証なし）で、受付中の通貨の記号・名前・桁・mint・下限を返す。エージェントは依頼の前にここを読めばよい。MCP にも同じ一覧を返す道具を足し、`llms.txt` と `/developers` から案内する。
+`GET /v1/public/assets`（認証なし）で、受付中の通貨の記号・名前・桁・mint・下限を返す。エージェントは依頼の前にここを読めばよい。MCP にも同じ一覧を返す道具を足し、`llms.txt` と `/developers` から案内する。
 
 ### 3.3 Devnet と localnet
 
@@ -197,7 +197,7 @@ RPC の呼び出しは並列数に比例して増える。Helius Developer の�
 |---|---|---|---|
 | 1 | この設計書 | 動かない | なし |
 | 2 | 決済の処理量（7 章）。並列数の既定 6 | 動かない（流れ方だけ変わる） | なし |
-| 3 | 通貨の台帳と金額の桁（3・4 章）、`GET /v1/assets`、`check-assets.ts`。`ASSETS_ENABLED` の既定は USDC だけ | 動かない | なし |
+| 3 | 通貨の台帳と金額の桁（3・4 章）、`GET /v1/public/assets`、`check-assets.ts`。`ASSETS_ENABLED` の既定は USDC だけ | 動かない | なし |
 | 4 | オフチェーンの多通貨化（6 章）。入金・画面・決済ジョブ・アダプタ | 動かない | 0029 |
 | 5 | プログラム v1.3（5 章）とテスト。Devnet へ配置し、試験用の mint 2 つを登録して一周する | Devnet だけ | なし |
 | 6 | 手順書。12 §9・§10 を v1.3 と多通貨に合わせ、`mainnet-setup.ts` が受付中の全通貨を `add_mint` する | 動かない | なし |

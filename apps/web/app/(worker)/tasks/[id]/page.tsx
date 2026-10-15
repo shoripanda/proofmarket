@@ -30,7 +30,7 @@ interface Task {
   answer_schema: AnswerSchemaView;
   location: { lat: number; lng: number; radius_m: number } | null;
   /** 13 §1: `max` and `rises_until` are set while the reward is still rising. */
-  reward: { amount: string; max: string | null; rises_until: string | null };
+  reward: { asset: string; amount: string; max: string | null; rises_until: string | null };
   deadline: string;
   freshness_max_age_seconds: number;
   open_slots: number;
@@ -106,7 +106,7 @@ export default function TaskDetailPage() {
                   <span className="font-semibold text-amber-600">
                     {" → "}
                     {pick(lang, "最大 ", "up to ")}
-                    {yen(t.reward.max, lang)}
+                    {yen(t.reward.max, lang, t.reward.asset)}
                   </span>
                   <span className="block text-xs text-slate-500">
                     {pick(
@@ -117,7 +117,9 @@ export default function TaskDetailPage() {
                   </span>
                 </dd>
               ) : (
-                <dd className="text-right text-lg font-bold text-teal-700">{yen(t.reward.amount, lang)}</dd>
+                <dd className="text-right text-lg font-bold text-teal-700">
+                  {yen(t.reward.amount, lang, t.reward.asset)}
+                </dd>
               )}
               <dt className="text-slate-500">{pick(lang, "締切まで", "Deadline in")}</dt>
               <dd className="text-right font-medium">{remaining(t.deadline, now, lang)}</dd>

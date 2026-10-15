@@ -1,6 +1,6 @@
 import "server-only";
 import { join } from "node:path";
-import { type BBox, parseBBox } from "@proofmarket/core";
+import { type BBox, type EnabledAsset, parseBBox, resolveEnabledAssets } from "@proofmarket/core";
 import { createDb, type Db } from "@proofmarket/db";
 import { openPgliteDb } from "@proofmarket/db/testing";
 import {
@@ -58,8 +58,8 @@ export interface AppConfig {
   webhookPepper: string;
   /** 13 §1: accept `bounty.max_amount` (needs program v1.1 on chain). */
   risingBountyEnabled: boolean;
-  /** 15 §3: accept rewards in SOL. */
-  solEnabled: boolean;
+  /** 16 §3.2: the assets accepted as a reward here, with their mints on this cluster (registry order). */
+  assets: EnabledAsset[];
   /** PROGRAM_ID; unset in DEV_MODE (13 §2 then falls back to the Devnet program). */
   programId?: string;
   /** 15 §4.1: which chain the server settles on. DEV_MODE is always devnet. */
@@ -91,7 +91,13 @@ function buildContext(): AppContext {
     workerRefSalt: e.WORKER_REF_SALT,
     webhookPepper: e.WEBHOOK_SIGNING_SECRET_PEPPER,
     risingBountyEnabled: e.RISING_BOUNTY_ENABLED,
-    solEnabled: e.SOL_ENABLED,
+    assets: resolveEnabledAssets({
+      cluster: isDev(e) ? "devnet" : e.SOLANA_CLUSTER,
+      assetsEnabled: e.ASSETS_ENABLED,
+      solEnabled: e.SOL_ENABLED,
+      bountyMint: isDev(e) ? DEVNET_USDC : e.BOUNTY_MINT,
+      mintEnv: process.env,
+    }),
     ...(isDev(e) ? {} : { programId: e.PROGRAM_ID }),
     cluster: isDev(e) ? "devnet" : e.SOLANA_CLUSTER,
     jobConcurrency: e.JOB_CONCURRENCY,
@@ -152,6 +158,7 @@ function buildContext(): AppContext {
         operatorSecretKey,
         verifierSecretKey,
         priorityMaxMicroLamports: e.PRIORITY_MAX_MICROLAMPORTS,
+        assets: config.assets,
       }),
     ),
     x402: once(() =>

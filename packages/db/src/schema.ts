@@ -131,11 +131,14 @@ export const requesterLedger = pgTable(
 );
 
 // ---------- 3.27 deposits (15 §4.3) ----------
-/** One finalized transfer to the treasury per row; the TOPUP ledger entry is written in the same transaction. */
+/**
+ * One finalized transfer to the treasury per (signature, asset): a transaction may carry several assets
+ * (16 §6). The TOPUP ledger entry is written in the same transaction.
+ */
 export const deposits = pgTable(
   "deposits",
   {
-    signature: text("signature").primaryKey(),
+    signature: text("signature").notNull(),
     credentialId: text("credential_id")
       .notNull()
       .references(() => requesterCredentials.id),
@@ -146,7 +149,9 @@ export const deposits = pgTable(
     createdAt: tsz("created_at").notNull().defaultNow(),
   },
   (t) => [
-    check("deposits_asset_chk", oneOf("asset", ["USDC", "SOL"])),
+    primaryKey({ columns: [t.signature, t.asset] }),
+    // any registry symbol (16 §3.1); which ones are accepted is checked by the app
+    check("deposits_asset_chk", sql`asset ~ '^[A-Za-z0-9]{2,10}$'`),
     check("deposits_amount_chk", sql`amount > 0`),
     index("deposits_credential_idx").on(t.credentialId, t.createdAt),
   ],

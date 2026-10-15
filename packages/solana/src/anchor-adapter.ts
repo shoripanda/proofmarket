@@ -20,6 +20,7 @@ import {
 import idl from "../idl/proofmarket.json" with { type: "json" };
 import type { Proofmarket } from "../idl/proofmarket.ts";
 import type {
+  ChainAsset,
   ChainResult,
   FinalizeAndSettleInput,
   FundTaskInput,
@@ -29,7 +30,7 @@ import type {
   RefundInput,
   SettlementAdapter,
 } from "./adapter.ts";
-import { findDepositsByReference } from "./deposits.ts";
+import { depositAccounts, findDepositsByReference, tokenProgramId } from "./deposits.ts";
 import { allowedMintPda, configPda, taskPda, vaultPda } from "./pda.ts";
 import { sendAndConfirm } from "./send.ts";
 
@@ -45,6 +46,7 @@ export interface AnchorAdapterConfig {
   /** Floor of the compute-unit price; the actual price follows recent fees (16 §7.3). */
   priorityMicroLamports?: number;
   priorityMaxMicroLamports?: number;
+  assets?: ChainAsset[];
 }
 
 const variant = (o: Record<string, unknown>) => Object.keys(o)[0] ?? "";
@@ -75,7 +77,24 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
   const treasury = getAssociatedTokenAddressSync(mint, operator.publicKey);
   // 15 §3.1: SOL is escrowed as wSOL out of the operator's wSOL account; settle / refund return to the
   // operator's account of the task's mint (for BOUNTY_MINT that is Config.treasury, checked at start).
-  const treasuryOf = (m: PublicKey) => getAssociatedTokenAddressSync(m, operator.publicKey);
+  const treasuryOf = (m: PublicKey, prog: PublicKey = TOKEN_PROGRAM_ID) =>
+    getAssociatedTokenAddressSync(m, operator.publicKey, false, prog);
+  // 16 §6: the enabled assets, for deposits; USDC and SOL when the caller names none.
+  const assets: ChainAsset[] = cfg.assets ?? [
+    { symbol: "USDC", mint: mint.toBase58(), tokenProgram: "spl-token", native: false },
+    { symbol: "SOL", mint: NATIVE_MINT.toBase58(), tokenProgram: "spl-token", native: true },
+  ];
+  const deposit = depositAccounts(operator.publicKey, assets);
+  // The token program that owns each mint (16 §5): SPL Token or Token-2022. Read once per mint.
+  const owners = new Map<string, PublicKey>(assets.map((a) => [a.mint, tokenProgramId(a.tokenProgram)]));
+  async function programOf(m: PublicKey): Promise<PublicKey> {
+    const known = owners.get(m.toBase58());
+    if (known) return known;
+    const info = await connection.getAccountInfo(m, "confirmed");
+    if (!info) throw new Error(`mint ${m.toBase58()} not found`);
+    owners.set(m.toBase58(), info.owner);
+    return info.owner;
+  }
   const timeoutMs = cfg.confirmTimeoutMs ?? 60_000;
   let checked = false;
 
@@ -146,28 +165,20 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
     },
 
     depositAddresses() {
-      return {
-        wallet: operator.publicKey.toBase58(),
-        usdcAccount: treasury.toBase58(),
-        usdcMint: mint.toBase58(),
-      };
+      return deposit;
     },
     findDeposits(reference, until) {
-      return findDepositsByReference(
-        connection,
-        { operator: operator.publicKey, usdcMint: mint },
-        reference,
-        until,
-      );
+      return findDepositsByReference(connection, deposit, reference, until);
     },
 
     async fundTask(i: FundTaskInput, onSigned) {
       await this.assertSafeToStart();
       const [task] = taskPda(programId, i.taskIdHash);
       if (await readTask(i.taskIdHash)) return confirmed(null, task.toBase58(), true);
-      const sol = i.asset === "SOL";
-      const taskMint = sol ? NATIVE_MINT : mint;
-      const from = treasuryOf(taskMint);
+      const sol = i.asset?.native === true;
+      const taskMint = i.asset ? new PublicKey(i.asset.mint) : mint;
+      const prog = i.asset ? tokenProgramId(i.asset.tokenProgram) : TOKEN_PROGRAM_ID;
+      const from = treasuryOf(taskMint, prog);
       const pre: TransactionInstruction[] = [];
       if (sol) {
         // Wrap only what the wSOL account lacks (refunds and settle remainders come back to it as wSOL).
@@ -205,8 +216,9 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           mint: taskMint,
           vault: vaultPda(programId, task)[0],
           treasury: from,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          allowedMint: sol ? allowedMintPda(programId, NATIVE_MINT)[0] : null,
+          tokenProgram: prog,
+          // Config.bounty_mint needs no AllowedMint; every other mint does (15 §3.1, 16 §5).
+          allowedMint: taskMint.equals(mint) ? null : allowedMintPda(programId, taskMint)[0],
         })
         .instruction();
       const r = await send([...pre, ix], [operator], onSigned);
@@ -235,7 +247,10 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
       const native = taskMint.equals(NATIVE_MINT);
       const recipients = i.recipients.map((r) => new PublicKey(r));
       // wSOL tasks pay native SOL into the wallets themselves (15 §3.1); others pay into each wallet's ATA.
-      const atas = native ? recipients : recipients.map((r) => getAssociatedTokenAddressSync(taskMint, r));
+      const prog = await programOf(taskMint);
+      const atas = native
+        ? recipients
+        : recipients.map((r) => getAssociatedTokenAddressSync(taskMint, r, false, prog));
       if (!native) {
         // Create missing ATAs in their own tx (06 §4: keeps the settle tx small).
         const infos = await connection.getMultipleAccountsInfo(atas, "confirmed");
@@ -244,7 +259,13 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           .filter((x) => !x.exists);
         if (missing.length) {
           const ataIxs = missing.map((m) =>
-            createAssociatedTokenAccountIdempotentInstruction(operator.publicKey, m.ata, m.owner, taskMint),
+            createAssociatedTokenAccountIdempotentInstruction(
+              operator.publicKey,
+              m.ata,
+              m.owner,
+              taskMint,
+              prog,
+            ),
           );
           const r = await send(ataIxs, [operator], async () => undefined, "confirmed");
           if (!r.ok) return { kind: "retry", signature: null, error: `ata: ${r.error}` };
@@ -275,8 +296,8 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
             task,
             mint: taskMint,
             vault: vaultPda(programId, task)[0],
-            treasury: treasuryOf(taskMint),
-            tokenProgram: TOKEN_PROGRAM_ID,
+            treasury: treasuryOf(taskMint, prog),
+            tokenProgram: prog,
           })
           .remainingAccounts(atas.map((pubkey) => ({ pubkey, isSigner: false, isWritable: true })))
           .instruction(),
@@ -295,6 +316,8 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
       if (onChain.status === "Refunded") return confirmed(null, task.toBase58(), true);
       if (onChain.status !== "Funded")
         return { kind: "halt", error: `refusing to refund a ${onChain.status} task` };
+      const refundMint = new PublicKey(onChain.mint);
+      const prog = await programOf(refundMint);
       const ix = await program.methods
         .refund(i.reason === "Cancelled" ? { cancelled: {} } : ({ expired: {} } as never))
         .accountsPartial({
@@ -302,8 +325,8 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           config,
           task,
           vault: vaultPda(programId, task)[0],
-          treasury: treasuryOf(new PublicKey(onChain.mint)),
-          tokenProgram: TOKEN_PROGRAM_ID,
+          treasury: treasuryOf(refundMint, prog),
+          tokenProgram: prog,
         })
         .instruction();
       const r = await send([ix], [operator], onSigned);

@@ -34,6 +34,7 @@
 | POST / GET | `/v1/schedules` | requester | P2 | 追加（2026-10-04）。定期確認の登録と一覧（04 §3.23）。2026-10-05: `every_minutes`・`max_runs`・`stop_when` で見守り依頼にも使う（01 §4.23） |
 | DELETE | `/v1/schedules/{id}` | requester | P2 | 追加。定期確認を止める |
 | GET | `/v1/public/verifications/{id}` | 誰でも | P1 | 追加。公開してよい項目だけ |
+| GET | `/v1/public/assets` | 誰でも | P1 | 追加（2026-10-14）。受付中の報酬の通貨と mint・桁（16 §3.2）。約 5 分キャッシュ |
 | GET | `/v1/public/stats` | 誰でも | P1 | 追加（2026-10-04）。公開の実績（集計だけ）。4.1 節。約 60 秒キャッシュ |
 | GET | `/v1/public/dataset`・`/v1/public/dataset.jsonl` | 誰でも | P2 | 追加（2026-10-07）。公開を許された VERIFIED の結果を、Solana の記録つきで機械が読める形に（01 §4.24）。約 60 秒キャッシュ、最大 1000 件 |
 | GET | `/v1/public/map` | 誰でも | P2 | 追加（2026-10-05）。依頼者が `publish: true` で公開を許した、72 時間以内の VERIFIED の結果（01 §4.22）。約 60 秒キャッシュ |

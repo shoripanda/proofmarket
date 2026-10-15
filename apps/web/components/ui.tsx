@@ -1,7 +1,7 @@
 "use client";
 import { type ReactNode, useEffect, useState } from "react";
 import { LLink, useLang } from "@/lib/client/lang";
-import { yenHint } from "@/lib/client/rate";
+import { USD_STABLE, yenHint } from "@/lib/client/rate";
 import { setSoundOn, soundOn } from "@/lib/client/sound";
 import { appendTranscript, speak, speechSupported, stopSpeaking, useSpeechInput } from "@/lib/client/speech";
 import { type Lang, pick } from "@/lib/lang";
@@ -212,8 +212,17 @@ export function SoundToggle() {
   );
 }
 
-/** "0.30 USDC（約 45 円）": the amount with a yen estimate, so no one has to know what USDC is worth. */
-export const yen = (usdc: string, lang: Lang = "ja") =>
-  pick(lang, `${usdc} USDC（${yenHint(usdc, lang)}）`, `${usdc} USDC (${yenHint(usdc, lang)})`);
+/**
+ * "0.30 USDC（約 45 円）": the amount with a yen estimate, so no one has to know what USDC is worth. Other
+ * dollar stablecoins get the same hint; any other asset reads "0.01 SOL" with none (16 §6).
+ */
+export const yen = (amount: string, lang: Lang = "ja", asset = "USDC") =>
+  USD_STABLE.includes(asset)
+    ? pick(
+        lang,
+        `${amount} ${asset}（${yenHint(amount, lang)}）`,
+        `${amount} ${asset} (${yenHint(amount, lang)})`,
+      )
+    : `${amount} ${asset}`;
 
 export { SAFETY_NOTES, safetyNotes } from "./safety";

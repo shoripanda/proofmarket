@@ -14,6 +14,9 @@
   connector with OAuth; paste the API key on the consent page.
 - REST: `POST https://proofmarket.fun/v1/verifications` with `Authorization: Bearer <API key>`; read the result with
   `GET /v1/verifications/{id}?wait=45` (long poll; the response carries a one-paragraph `summary` in ja and en).
+- Reward tokens: `bounty.asset` is USDC by default. `GET https://proofmarket.fun/v1/public/assets` (no auth; MCP
+  tool `list_reward_assets`) lists every token accepted here with its mint and decimals. Each token is its own
+  prepaid balance and the witness is paid in the same token; nothing is converted.
 - x402 (no account, pay per request in USDC on Solana): `POST https://proofmarket.fun/v1/x402/verifications`
   answers 402 with the exact payment terms; repeat with the signed payment in the `PAYMENT-SIGNATURE` header.
 - API key: https://proofmarket.fun/en/connect — the key is shown on the page at once, followed by the steps

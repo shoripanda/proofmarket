@@ -8,6 +8,7 @@ import type {
   CreateVerificationBatchRequest,
   CreateVerificationRequest,
   GetVerificationResponse,
+  PublicAssets,
   Schedule,
 } from "@proofmarket/core/schemas/api";
 
@@ -159,6 +160,11 @@ export class ProofMarketClient {
   }
 
   /** GET /v1/schedules */
+  /** GET /v1/public/assets: the tokens this server accepts as `bounty.asset` (16 §3.2). */
+  async listAssets(): Promise<PublicAssets> {
+    return (await this.request<PublicAssets>("GET", "/v1/public/assets")).json;
+  }
+
   async listSchedules(): Promise<{ schedules: Schedule[] }> {
     return (await this.request<{ schedules: Schedule[] }>("GET", "/v1/schedules")).json;
   }

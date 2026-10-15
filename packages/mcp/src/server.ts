@@ -5,6 +5,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { jcs } from "@proofmarket/core";
 import { ProofMarketApiError, type ProofMarketClient } from "@proofmarket/sdk";
 import {
+  ASSETS_TOOL,
   BATCH_TOOL,
   CANCEL_TOOL,
   DISPUTE_TOOL,
@@ -55,6 +56,7 @@ export function createServer(
   const { name: dName, ...dDef } = DISPUTE_TOOL;
   const { name: wName, ...wDef } = WATCH_TOOL;
   const { name: lName, ...lDef } = LIST_WATCHES_TOOL;
+  const { name: aName, ...aDef } = ASSETS_TOOL;
   const { name: sName, ...sDef } = STOP_WATCH_TOOL;
 
   /** GET, then re-read every 3 s until the state changes, a result lands, or `seconds` pass (01 §4.27). */
@@ -160,6 +162,13 @@ export function createServer(
             "Check list_reality_verification_watches for stopped_reason=condition_met and matched_verification_id."
           : "Runs continue on this schedule until stopped. Each run is paid.",
       });
+    } catch (e) {
+      return err(e);
+    }
+  });
+  server.registerTool(aName, aDef, async () => {
+    try {
+      return ok(await client.listAssets());
     } catch (e) {
       return err(e);
     }

@@ -1,5 +1,6 @@
 // Test AppContext over PGlite with a controllable clock.
 import { randomBytes } from "node:crypto";
+import { resolveEnabledAssets } from "@proofmarket/core";
 import { createTestDb } from "@proofmarket/db/testing";
 import type { AppContext } from "../../lib/context";
 import { route } from "../../lib/http";
@@ -38,7 +39,14 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
       workerRefSalt: "test-salt-test-salt",
       webhookPepper: "test-pepper-test-pepper",
       risingBountyEnabled: true,
-      solEnabled: true,
+      // 16 §3: USDC, SOL, a 5-decimal token (BONK) and a Token-2022 one (PYUSD), on test mints
+      assets: resolveEnabledAssets({
+        cluster: "devnet",
+        assetsEnabled: "USDC,SOL,BONK,PYUSD",
+        solEnabled: false,
+        bountyMint: "TestUsdcMint",
+        mintEnv: { ASSET_MINT_BONK: "TestBonkMint", ASSET_MINT_PYUSD: "TestPyusdMint" },
+      }),
       cluster: "devnet",
       // serial, so tests that count jobs see one order; jobs.test.ts turns it up
       jobConcurrency: 1,

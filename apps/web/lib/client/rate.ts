@@ -4,6 +4,12 @@ import { type Lang, pick } from "@/lib/lang";
 
 export const YEN_PER_USDC = 150;
 
+/**
+ * Dollar stablecoins get the same yen hint as USDC (16 §6). Every other asset is shown without one: SOL, BONK
+ * and the like move too much for a fixed number to be honest, and EURC has no rate here.
+ */
+export const USD_STABLE: readonly string[] = ["USDC", "USDT", "PYUSD", "USDG"];
+
 /** "約 45 円" / "about ¥45". Below one yen it says so rather than showing "約 0 円". */
 export function yenHint(usdc: string | number, lang: Lang = "ja"): string {
   const n = Number(usdc) * YEN_PER_USDC;

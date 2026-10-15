@@ -52,7 +52,7 @@ export async function depositView(app: AppContext, auth: RequesterAuth) {
     .limit(20);
   const list = recent.map((d) => ({
     signature: d.signature,
-    asset: d.asset as "USDC" | "SOL",
+    asset: d.asset,
     amount: fromMicro(toMicro(String(d.amount))),
     from: d.fromPubkey,
     credited_at: d.createdAt.toISOString(),
@@ -122,7 +122,7 @@ async function credit(app: AppContext, credentialId: string, d: ChainDeposit): P
         fromPubkey: d.from,
         createdAt: app.now(),
       })
-      .onConflictDoNothing({ target: schema.deposits.signature })
+      .onConflictDoNothing({ target: [schema.deposits.signature, schema.deposits.asset] })
       .returning({ signature: schema.deposits.signature });
     if (!ins.length) return false;
     await tx.insert(schema.requesterLedger).values({

@@ -1,10 +1,11 @@
 import "server-only";
-import type { Asset } from "@proofmarket/core/schemas/api";
+import type { Asset, PublicAssets } from "@proofmarket/core/schemas/api";
 // Public result (05 §4), worker payouts (05 §3.7), requester evidence URLs (05 §2.5).
 
 import {
   type AnswerKind,
   ApiError,
+  amountDecimals,
   fromMicro,
   LIMITS,
   parseId,
@@ -137,6 +138,25 @@ export async function featuredResults(app: AppContext, limit = 6) {
     });
   }
   return out;
+}
+
+/** GET /v1/public/assets (16 §3.2): what a request may name as `bounty.asset` here. */
+export function publicAssets(app: AppContext): PublicAssets {
+  return {
+    network: clusterText(app.config.cluster).network,
+    assets: app.config.assets.map((a) => ({
+      symbol: a.symbol,
+      name: a.name,
+      mint: a.mint,
+      token_program: a.tokenProgram,
+      decimals: a.decimals,
+      amount_decimals: amountDecimals(a.symbol),
+      min_bounty: a.minBounty,
+      volatile: a.volatile,
+      // x402 settles USDC only (15 §3.3)
+      x402: a.symbol === "USDC",
+    })),
+  };
 }
 
 export async function workerPayouts(app: AppContext, workerId: string) {

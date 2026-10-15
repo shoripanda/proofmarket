@@ -1,5 +1,6 @@
 "use client";
 // W-08 支払い履歴 — 金額、日時、状態、「取引記録を見る」。
+import { fromMicro, toMicro } from "@proofmarket/core";
 import { useEffect, useState } from "react";
 import { Button, Card, Notice, Shell, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
@@ -10,6 +11,7 @@ import { dateLocale, type Lang, pick } from "@/lib/lang";
 interface Payout {
   verification_id: string;
   amount: string;
+  asset: string;
   status: "PENDING" | "SUBMITTED" | "SETTLED" | "REFUNDED" | "FAILED_RETRYING";
   explorer_url: string | null;
   paid_at: string | null;
@@ -81,7 +83,7 @@ function downloadCsv(rows: Payout[], month: string, lang: Lang) {
         p.paid_at ? jstDate(p.paid_at, lang) : "",
         p.verification_id,
         p.amount,
-        "USDC",
+        p.asset,
         STATUS_TEXT[lang][p.status],
         p.explorer_url ?? "",
       ]
@@ -133,7 +135,11 @@ export default function PayoutsPage() {
       setErr(errorText(e, lang));
     }
   }
-  const total = (list ?? []).filter((p) => p.status === "SETTLED").reduce((a, p) => a + Number(p.amount), 0);
+  // One total per asset, never added together (15 §3.3, 16 §6). Micro units, so 0.1 + 0.2 stays exact.
+  const totals = new Map<string, bigint>();
+  for (const p of list ?? [])
+    if (p.status === "SETTLED") totals.set(p.asset, (totals.get(p.asset) ?? 0n) + toMicro(p.amount));
+  if (!totals.size) totals.set("USDC", 0n);
   const monthLabel = (m: string) =>
     lang === "en"
       ? new Date(`${m}-15T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
@@ -143,9 +149,11 @@ export default function PayoutsPage() {
       {err ? <Notice tone="error">{err}</Notice> : null}
       <Card>
         <p className="text-sm text-slate-500">{pick(lang, "受け取り済みの合計", "Total received")}</p>
-        <p className="mt-1 text-3xl font-bold text-teal-700">
-          {yen(String(Math.round(total * 1e6) / 1e6), lang)}
-        </p>
+        {[...totals].map(([asset, micro]) => (
+          <p key={asset} className="mt-1 text-3xl font-bold text-teal-700">
+            {yen(fromMicro(micro), lang, asset)}
+          </p>
+        ))}
         <p className="mt-1 text-xs text-slate-400">{rateNote(lang)}</p>
       </Card>
       {trust ? (
@@ -208,8 +216,8 @@ export default function PayoutsPage() {
                 )
               : pick(
                   lang,
-                  "いまは USDC で払っています。円で受け取りたい方は登録してください。始められるようになったら、先にご案内します。口座番号などはまだ聞きません。",
-                  "Right now we pay in USDC. Register your interest if you would like to be paid in yen; you will hear first when it becomes available. No bank details are asked for yet.",
+                  "いまは依頼者が決めた暗号資産（USDC など）で払っています。円で受け取りたい方は登録してください。始められるようになったら、先にご案内します。口座番号などはまだ聞きません。",
+                  "Right now we pay in the crypto asset the requester chose (USDC and others). Register your interest if you would like to be paid in yen; you will hear first when it becomes available. No bank details are asked for yet.",
                 )}
           </p>
           <div className="mt-3">
@@ -227,7 +235,7 @@ export default function PayoutsPage() {
       {list?.map((p) => (
         <Card key={p.verification_id}>
           <div className="flex items-baseline justify-between">
-            <span className="text-lg font-bold">{yen(p.amount, lang)}</span>
+            <span className="text-lg font-bold">{yen(p.amount, lang, p.asset)}</span>
             <span className="text-sm text-slate-500">{STATUS_TEXT[lang][p.status]}</span>
           </div>
           <p className="mt-1 text-xs text-slate-500">{p.paid_at ? jstDate(p.paid_at, lang) : ""}</p>

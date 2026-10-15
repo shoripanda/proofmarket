@@ -18,6 +18,7 @@ import {
 } from "./handlers/requester";
 import { route } from "./http";
 import { publicBase, resourceMetadataUrl } from "./services/oauth-service";
+import { publicAssets } from "./services/public-service";
 
 type Kick = (dedupeKeys: string[]) => void;
 type H = (app: AppContext, req: Request, id: string) => Promise<Response>;
@@ -27,7 +28,7 @@ type Jobs = (res: Response, id: string) => Promise<string[]>;
 const body = <T>(res: Response) => res.clone().json() as Promise<T>;
 const none: Jobs = async () => [];
 
-// Every SDK method an MCP tool calls must have a row here (test/mcp-http.test.ts calls all eight tools).
+// Every SDK method an MCP tool calls must have a row here (test/mcp-http.test.ts calls all nine tools).
 // batch comes before /v1/verifications/{id} so "batch" is never read as an id.
 const TABLE: [string, RegExp, H, Jobs][] = [
   [
@@ -67,6 +68,7 @@ const TABLE: [string, RegExp, H, Jobs][] = [
         : [],
   ],
   ["GET", /^\/v1\/public\/verifications\/([^/]+)$/, handlePublicResult, none],
+  ["GET", /^\/v1\/public\/assets$/, async (a) => Response.json(publicAssets(a)), none],
   ["POST", /^\/v1\/schedules$/, (a, r) => handleCreateSchedule(a, r), none],
   ["GET", /^\/v1\/schedules$/, (a, r) => handleListSchedules(a, r), none],
   ["DELETE", /^\/v1\/schedules\/([^/]+)$/, handleStopSchedule, none],

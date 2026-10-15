@@ -78,6 +78,7 @@ export default async function ConsolePage() {
   if (!auth) redirect(langHref(lang, "/console/login"));
   const d = await dashboard(app, auth);
   const sep = pick(lang, "・", " · ");
+  const assetList = d.balances.map((b) => b.asset).join(pick(lang, "、", ", "));
   return (
     <>
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 pt-8">
@@ -92,7 +93,9 @@ export default async function ConsolePage() {
 
       <Section title={pick(lang, "残高と上限", "Balance and limits")}>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Stat label={pick(lang, "残高", "Balance")} value={d.balance} unit="USDC" />
+          {d.balances.map((b) => (
+            <Stat key={b.asset} label={pick(lang, "残高", "Balance")} value={b.amount} unit={b.asset} />
+          ))}
           <Stat label={pick(lang, "今日使った額", "Spent today")} value={d.spent_today} unit="USDC" />
           <Stat
             label={pick(lang, "1分あたり", "Per minute")}
@@ -110,32 +113,36 @@ export default async function ConsolePage() {
         title={pick(lang, "入金", "Deposits")}
         lead={pick(
           lang,
-          `USDC か SOL を ${ct.chain} で送ると、確定（finalized）してから 1〜2 分で残高に入ります。送金には必ず下の参照（reference）を付けてください。Solana Pay のリンクを使えば自動で付きます。`,
-          `Send USDC or SOL on ${ct.chain}; it reaches your balance one to two minutes after the transfer is finalized. Every transfer must carry the reference below; the Solana Pay links add it for you.`,
+          `${assetList} のどれかを ${ct.chain} で送ると、確定（finalized）してから 1〜2 分で残高に入ります。残高は通貨ごとに分かれていて、依頼の報酬は同じ通貨の残高から払います。送金には必ず下の参照（reference）を付けてください。Solana Pay のリンクを使えば自動で付きます。`,
+          `Send any of ${assetList} on ${ct.chain}; it reaches your balance one to two minutes after the transfer is finalized. Each asset is its own balance, and a reward is paid from the balance in its asset. Every transfer must carry the reference below; the Solana Pay links add it for you.`,
         )}
       >
         {d.deposit.reference && d.deposit.addresses && d.deposit.solana_pay ? (
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <CopyField
-                label={pick(lang, "送り先（SOL と USDC のどちらも）", "Recipient (SOL and USDC)")}
+                label={pick(lang, "送り先（どの通貨も）", "Recipient (every asset)")}
                 value={d.deposit.addresses.wallet}
               />
               <CopyField label={pick(lang, "参照（reference）", "Reference")} value={d.deposit.reference} />
-              <CopyField
-                label={pick(lang, "Solana Pay: USDC", "Solana Pay: USDC")}
-                value={d.deposit.solana_pay.USDC}
-              />
-              <CopyField
-                label={pick(lang, "Solana Pay: SOL", "Solana Pay: SOL")}
-                value={d.deposit.solana_pay.SOL}
-              />
+              {d.deposit.addresses.accounts.map((a) => (
+                <CopyField
+                  key={a.asset}
+                  label={`Solana Pay: ${a.asset}`}
+                  value={d.deposit.solana_pay?.[a.asset] ?? ""}
+                />
+              ))}
             </div>
             <p className="text-xs text-slate-500">
+              {pick(lang, "ミント: ", "Mints: ")}
+              {d.deposit.addresses.accounts
+                .filter((a) => a.account !== d.deposit.addresses?.wallet)
+                .map((a) => `${a.asset} ${a.mint}`)
+                .join(pick(lang, "、", ", "))}
               {pick(
                 lang,
-                `USDC のミント: ${d.deposit.addresses.usdcMint}。参照の無い送金は自動では残高に入りません。その場合は運営者に取引 ID を伝えてください。`,
-                `USDC mint: ${d.deposit.addresses.usdcMint}. A transfer without the reference is not credited automatically; send the operator its transaction ID.`,
+                "。参照の無い送金は自動では残高に入りません。その場合は運営者に取引 ID を伝えてください。",
+                ". A transfer without the reference is not credited automatically; send the operator its transaction ID.",
               )}
             </p>
           </div>
