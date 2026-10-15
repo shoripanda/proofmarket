@@ -150,6 +150,24 @@ describe("POST /mcp", () => {
     expect(kicked).toContain(`FUND_TASK:${r.structuredContent.verification_id}`);
   });
 
+  it("offers the ChatGPT widget as a resource and names it in the request / get tools' _meta (02 §4.3)", async () => {
+    const mcp = await connect(t.apiKey);
+    const { resources } = await mcp.listResources();
+    expect(resources.map((r) => r.uri)).toEqual(["ui://widget/verification.html"]);
+    const read = await mcp.readResource({ uri: "ui://widget/verification.html" });
+    const c = read.contents[0] as { mimeType: string; text: string };
+    expect(c.mimeType).toBe("text/html+skybridge");
+    expect(c.text).toContain("window.openai");
+    expect(c.text).not.toMatch(/<script src=|https?:\/\//); // self-contained: nothing loaded from outside
+    const { tools } = await mcp.listTools();
+    const meta = (n: string) => tools.find((x) => x.name === n)?._meta as Record<string, unknown> | undefined;
+    expect(meta("get_reality_verification")?.["openai/outputTemplate"]).toBe("ui://widget/verification.html");
+    expect(meta("request_reality_verification")?.["openai/outputTemplate"]).toBe(
+      "ui://widget/verification.html",
+    );
+    expect(meta("cancel_reality_verification")).toBeUndefined();
+  });
+
   it("a path with no row is reported as an internal error, not as an unknown verification", async () => {
     const { inProcessFetch } = await import("../lib/mcp-http");
     const res = await inProcessFetch(t.app)("http://pm.test/v1/nowhere", { method: "GET" });

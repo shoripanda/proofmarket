@@ -129,6 +129,9 @@ requester に worker の位置・自宅・移動履歴を返す API はない（
 | 証拠の公開を止める | `POST /v1/admin/verifications/{id}/evidence/revoke-access`、全体なら `public_evidence_enabled` を false | 1 分 |
 | 店舗や写り込んだ人から削除を求められた | `/rules` のフォームで受け、`list-removal.ts` で読む。該当の依頼に `revoke-access` をかけ、必要なら元写真と派生画像を Storage から消して `--mark <id> --as handled` | 1 営業日 |
 | DEAD になったジョブを再実行する | 原因を直してから `POST /v1/admin/jobs/{id}/requeue` | 5 分 |
+| x402 の窓口だけを止める（2026-10-15） | `POST /v1/admin/flags { "key": "x402_enabled", "value": false }`。API キーの依頼は続く | 1 分 |
+| 日次の突き合わせが `reconciliation_mismatch` を出した（2026-10-15） | audit_events の `metadata`（Task 口座、チェーンと DB の `paid_total`・受取人・署名）を読み、Explorer で取引を確かめる。自動では直さない。operator 鍵の漏えいを疑うなら下の「鍵が漏れた」へ | 30 分 |
+| 運営者の財布が上限を超えた（`treasury_over_cap`、2026-10-15） | 超えた分を admin の財布へ送る（`TREASURY_MAX_USDC` / `TREASURY_MAX_SOL`、15 §4.2）。自動化しない | 10 分 |
 | 鍵が漏れた | `update_config` で operator / verifier を差し替え、Vercel の環境変数を更新、旧鍵の Devnet 資金を移す | 30 分 |
 
 `settlement_enabled` を false にしても、判定と結果の取得は続ける。VERIFIED のタスクは settlement が PENDING のまま待ち、再開後に順に処理される。
