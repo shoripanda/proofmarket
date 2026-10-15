@@ -40,6 +40,8 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
       risingBountyEnabled: true,
       solEnabled: true,
       cluster: "devnet",
+      // serial, so tests that count jobs see one order; jobs.test.ts turns it up
+      jobConcurrency: 1,
     },
   };
   const principalId = await createPrincipal(db, { displayName: "Test Agent Co", type: "organization" });

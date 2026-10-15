@@ -22,6 +22,8 @@ const Common = {
   MAIL_FROM: z.string().min(3).optional(),
   /** Rising bounty (13 §1). Off until program v1.1 is deployed; while off, `bounty.max_amount` is refused. */
   /** Rewards in SOL (15 §3). Off until program v1.2 with wSOL is deployed; while off, asset SOL is refused. */
+  /** 16 §7.2: outbox jobs one tick runs at once. */
+  JOB_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(6),
   SOL_ENABLED: z
     .enum(["true", "false", "1", "0"])
     .optional()
@@ -64,6 +66,8 @@ const FullSchema = z.object({
   REVIEW_MODEL: z.string().optional(),
   /** low (default, fastest) / medium / high. */
   REVIEW_EFFORT: z.enum(["low", "medium", "high"]).optional(),
+  /** 16 §7.3: ceiling of the priority fee (micro-lamports per CU); the fee itself follows recent fees. */
+  PRIORITY_MAX_MICROLAMPORTS: z.coerce.number().int().positive().optional(),
 });
 
 const DEV_SECRET = "dev-only-not-a-secret-dev-only-not-a-secret";

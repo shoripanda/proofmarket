@@ -64,6 +64,8 @@ export interface AppConfig {
   programId?: string;
   /** 15 §4.1: which chain the server settles on. DEV_MODE is always devnet. */
   cluster: Cluster;
+  /** 16 §7.2: outbox jobs one tick runs at once. */
+  jobConcurrency: number;
 }
 
 export const DEV_DATA_DIR = join(process.cwd(), ".data");
@@ -92,6 +94,7 @@ function buildContext(): AppContext {
     solEnabled: e.SOL_ENABLED,
     ...(isDev(e) ? {} : { programId: e.PROGRAM_ID }),
     cluster: isDev(e) ? "devnet" : e.SOLANA_CLUSTER,
+    jobConcurrency: e.JOB_CONCURRENCY,
   };
   if (isDev(e)) {
     assertDevAllowed(e.APP_ENV);
@@ -148,6 +151,7 @@ function buildContext(): AppContext {
         bountyMint: e.BOUNTY_MINT,
         operatorSecretKey,
         verifierSecretKey,
+        priorityMaxMicroLamports: e.PRIORITY_MAX_MICROLAMPORTS,
       }),
     ),
     x402: once(() =>
