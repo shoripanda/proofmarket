@@ -1,8 +1,9 @@
 "use client";
-// "Plain words" (13 §0, §7): jargon on the public pages can be swapped for everyday words. On by default; the
-// choice is kept in localStorage `pm.plain`. <Term k="solana"> wraps one word; <Plain>{text}</Plain> finds the
-// words inside a sentence, so the pages keep their copy as plain strings. /developers does not use either.
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+// "Plain words" (13 §0, §7): jargon on the public pages is swapped for everyday words, always. The header switch
+// that turned it off was removed on 2026-10-16 (owner: the switch is not needed), so any old `pm.plain` choice in
+// localStorage is ignored. <Term k="solana"> wraps one word; <Plain>{text}</Plain> finds the words inside a
+// sentence, so the pages keep their copy as plain strings. /developers does not use either.
+import { createContext, type ReactNode, useContext } from "react";
 import { useLang } from "@/lib/client/lang";
 import type { Lang } from "@/lib/lang";
 
@@ -105,32 +106,11 @@ export function splitTerms(text: string, lang: Lang): PlainPiece[] {
   return out;
 }
 
-const STORAGE_KEY = "pm.plain";
+const PlainContext = createContext<{ on: boolean }>({ on: true });
 
-const PlainContext = createContext<{ on: boolean; setOn: (on: boolean) => void }>({
-  on: true,
-  setOn: () => {},
-});
-
+/** Kept as the one place that decides the swap, so turning it back into a choice later touches only this. */
 export function PlainProvider({ children }: { children: ReactNode }) {
-  const [on, setOnState] = useState(true);
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(STORAGE_KEY) === "0") setOnState(false);
-    } catch {
-      // storage blocked: keep the default
-    }
-  }, []);
-  const setOn = useCallback((v: boolean) => {
-    setOnState(v);
-    try {
-      localStorage.setItem(STORAGE_KEY, v ? "1" : "0");
-    } catch {
-      // storage blocked: the switch still works for this page
-    }
-  }, []);
-  const value = useMemo(() => ({ on, setOn }), [on, setOn]);
-  return <PlainContext.Provider value={value}>{children}</PlainContext.Provider>;
+  return <PlainContext.Provider value={{ on: true }}>{children}</PlainContext.Provider>;
 }
 
 export const usePlain = () => useContext(PlainContext);
@@ -169,35 +149,5 @@ export function Plain({ children }: { children: string }) {
         ),
       )}
     </>
-  );
-}
-
-/** Header switch. A pill with a speech-bubble icon; pressed = plain words on. */
-export function PlainToggle() {
-  const { on, setOn } = usePlain();
-  const lang = useLang();
-  return (
-    <button
-      type="button"
-      aria-pressed={on}
-      onClick={() => setOn(!on)}
-      title={lang === "en" ? "Swap jargon for everyday words" : "専門語をふだんの言葉に置き換える"}
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ring-1 transition ${
-        on ? "bg-teal-50 text-teal-800 ring-teal-600" : "bg-white text-slate-500 ring-slate-300"
-      }`}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        aria-hidden="true"
-      >
-        <path d="M4 5h16v11H9l-5 4z" strokeLinejoin="round" />
-        {on ? <path d="M8 10.5l2.5 2.5L16 8" strokeLinecap="round" strokeLinejoin="round" /> : null}
-      </svg>
-      {lang === "en" ? "Plain words" : "やさしい言葉"}
-    </button>
   );
 }

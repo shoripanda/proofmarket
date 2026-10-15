@@ -1,9 +1,9 @@
 // Public site chrome (S-xx pages): header, footer and small building blocks. Server components only
-// (the plain-words switch is a client island). Every label exists in Japanese and English.
+// (the language switch is a client island). Every label exists in Japanese and English.
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LangSwitch } from "@/components/lang-switch";
-import { PlainProvider, PlainToggle } from "@/lib/client/plain";
+import { PlainProvider } from "@/lib/client/plain";
 import { clusterText } from "@/lib/cluster-public";
 import { type Lang, langHref, pick } from "@/lib/lang";
 
@@ -37,43 +37,70 @@ export const headerNav = (lang: Lang): NavItem[] => [
   { href: "/workers", label: pick(lang, "worker 向け", "For workers") },
 ];
 
+/** The app icon (public/icon-*.png: a white check on teal), drawn as SVG so it stays sharp at header size. */
+function LogoMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
+      <rect width="48" height="48" rx="11" className="fill-teal-700" />
+      <path
+        d="M13 25.5l7.5 7.5L35.5 16"
+        fill="none"
+        stroke="white"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode }) {
   const h = (href: string) => langHref(lang, href);
   const ct = clusterText();
   return (
     <PlainProvider>
       <div className="min-h-dvh bg-white">
-        <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
-            <Link href={h("/")} className="mr-auto text-lg font-bold tracking-tight text-slate-900 sm:mr-0">
-              ProofMarket
-            </Link>
-            <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-x-6 overflow-x-auto whitespace-nowrap px-4 text-base font-semibold text-slate-700 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0 sm:text-lg">
+        {/* Two rows so every header item is visible at once (2026-10-16: the one-row header cut the menu off at
+            desktop width and hid it behind a sideways scroll on phones). Sticky from tablet up only: on a phone
+            the two rows would cover a quarter of the screen. */}
+        <header className="z-10 border-b border-slate-200 bg-white/95 backdrop-blur sm:sticky sm:top-0">
+          <div className="mx-auto max-w-5xl space-y-3 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+              <Link
+                href={h("/")}
+                className="flex items-center gap-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+              >
+                <LogoMark className="h-11 w-11 shrink-0 sm:h-14 sm:w-14" />
+                ProofMarket
+              </Link>
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+                <Link
+                  href={h("/login")}
+                  className="whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-semibold text-teal-800 ring-1 ring-teal-700 hover:bg-teal-50 sm:px-4 sm:text-base"
+                >
+                  {pick(lang, "worker ログイン", "Worker login")}
+                </Link>
+                {/* The one action the site asks of an agent builder, on every page (13 §7 /connect). */}
+                <Link
+                  href={h("/connect")}
+                  className="whitespace-nowrap rounded-full bg-teal-700 px-2.5 py-2 text-[13px] font-semibold text-white hover:bg-teal-800 sm:px-5 sm:text-base"
+                >
+                  {pick(lang, "エージェントをつなぐ", "Connect your agent")}
+                </Link>
+                <LangSwitch />
+              </div>
+            </div>
+            <nav className="grid grid-cols-3 gap-2 text-sm font-semibold text-slate-700 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-1 sm:text-lg">
               {headerNav(lang).map((n) => (
                 <Link
                   key={n.href}
                   href={h(n.href)}
-                  className="py-1 underline-offset-8 hover:text-teal-700 hover:underline"
+                  className="rounded-lg bg-slate-50 px-2 py-2 text-center ring-1 ring-slate-200 hover:text-teal-700 sm:rounded-none sm:bg-transparent sm:px-0 sm:py-1 sm:ring-0 sm:underline-offset-8 sm:hover:underline"
                 >
                   {n.label}
                 </Link>
               ))}
             </nav>
-            <PlainToggle />
-            <LangSwitch />
-            <Link
-              href={h("/login")}
-              className="rounded-full px-4 py-2 text-base font-semibold text-teal-800 ring-1 ring-teal-700 hover:bg-teal-50"
-            >
-              {pick(lang, "worker ログイン", "Worker login")}
-            </Link>
-            {/* The one action the site asks of an agent builder, on every page (13 §7 /connect). */}
-            <Link
-              href={h("/connect")}
-              className="rounded-full bg-teal-700 px-5 py-2 text-base font-semibold text-white hover:bg-teal-800"
-            >
-              {pick(lang, "エージェントをつなぐ", "Connect your agent")}
-            </Link>
           </div>
         </header>
         <main>{children}</main>

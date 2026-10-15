@@ -13,11 +13,13 @@ export function LangSwitch() {
   return (
     <a
       href={href}
-      className="rounded-full px-3 py-1.5 text-base font-semibold text-slate-600 ring-1 ring-slate-200 hover:text-teal-700"
+      className="whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-semibold text-slate-600 ring-1 ring-slate-200 hover:text-teal-700 sm:text-base"
       lang={other}
       aria-label={other === "en" ? "Switch to English" : "日本語に切り替える"}
     >
-      {other === "en" ? "English" : "日本語"}
+      {/* Phones: "EN" so the switch fits beside the two header buttons at 360 px (2026-10-16). */}
+      <span className="sm:hidden">{other === "en" ? "EN" : "日本語"}</span>
+      <span className="hidden sm:inline">{other === "en" ? "English" : "日本語"}</span>
     </a>
   );
 }
