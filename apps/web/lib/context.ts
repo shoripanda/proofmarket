@@ -68,9 +68,30 @@ export interface AppConfig {
   jobConcurrency: number;
   /** 15 §4.2: ceilings for what the operator wallet holds (micro USDC, lamports); null = no warning. */
   treasuryMax: { usdcMicro: bigint | null; lamports: bigint | null };
+  /**
+   * docs/architecture 07 §4.2: per asset symbol, the total reward (micro units of that asset) from which a
+   * submission waits for the operator's review. An asset missing here is never held.
+   */
+  humanReviewMin: Record<string, bigint>;
 }
 
 export const DEV_DATA_DIR = join(process.cwd(), ".data");
+
+/** HUMAN_REVIEW_MIN_TOTAL for USDC, HUMAN_REVIEW_MIN_TOTAL_<SYMBOL> for the others; 0 or unset = never held. */
+export function humanReviewMinFromEnv(
+  usdc: number,
+  env: Record<string, string | undefined>,
+): Record<string, bigint> {
+  const out: Record<string, bigint> = {};
+  if (usdc > 0) out.USDC = BigInt(Math.round(usdc * 1e6));
+  for (const [k, v] of Object.entries(env)) {
+    const m = /^HUMAN_REVIEW_MIN_TOTAL_([A-Z0-9]+)$/.exec(k);
+    if (!m?.[1] || !v) continue;
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 0) out[m[1]] = BigInt(Math.round(n * 1e6));
+  }
+  return out;
+}
 
 // One context per process. Next.js bundles route handlers and pages separately, so a module-level singleton
 // would be duplicated (two PGlite instances on one directory in DEV_MODE, two pg pools in production).
@@ -107,6 +128,7 @@ function buildContext(): AppContext {
       usdcMicro: e.TREASURY_MAX_USDC === undefined ? null : BigInt(Math.round(e.TREASURY_MAX_USDC * 1e6)),
       lamports: e.TREASURY_MAX_SOL === undefined ? null : BigInt(Math.round(e.TREASURY_MAX_SOL * 1e9)),
     },
+    humanReviewMin: humanReviewMinFromEnv(e.HUMAN_REVIEW_MIN_TOTAL, process.env),
   };
   if (isDev(e)) {
     assertDevAllowed(e.APP_ENV);
