@@ -10,14 +10,11 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
-  ComputeBudgetProgram,
   Connection,
   Keypair,
   PublicKey,
   SystemProgram,
-  TransactionExpiredBlockheightExceededError,
   type TransactionInstruction,
-  TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
 import idl from "../idl/proofmarket.json" with { type: "json" };
@@ -34,6 +31,7 @@ import type {
 } from "./adapter.ts";
 import { findDepositsByReference } from "./deposits.ts";
 import { allowedMintPda, configPda, taskPda, vaultPda } from "./pda.ts";
+import { sendAndConfirm } from "./send.ts";
 
 export interface AnchorAdapterConfig {
   rpcUrl: string;
@@ -44,7 +42,9 @@ export interface AnchorAdapterConfig {
   verifierSecretKey: Uint8Array;
   /** Max wait for `finalized` before reporting retry (06 §5.1). */
   confirmTimeoutMs?: number;
+  /** Floor of the compute-unit price; the actual price follows recent fees (16 §7.3). */
   priorityMicroLamports?: number;
+  priorityMaxMicroLamports?: number;
 }
 
 const variant = (o: Record<string, unknown>) => Object.keys(o)[0] ?? "";
@@ -99,39 +99,19 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
     };
   }
 
-  /** Sign, report the signature, send, wait for `finalized` within timeoutMs. */
-  async function send(
+  /** 16 §7.3: money moves wait for `finalized`; idempotent setup (ATAs) only for `confirmed`. */
+  function send(
     ixs: TransactionInstruction[],
     signers: Keypair[],
     onSigned: (sig: string) => Promise<void>,
-  ): Promise<{ ok: true; signature: string } | { ok: false; signature: string | null; error: string }> {
-    const latest = await connection.getLatestBlockhash("finalized");
-    const msg = new TransactionMessage({
-      payerKey: operator.publicKey,
-      recentBlockhash: latest.blockhash,
-      instructions: [
-        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: cfg.priorityMicroLamports ?? 10_000 }),
-        ...ixs,
-      ],
-    }).compileToV0Message();
-    const tx = new VersionedTransaction(msg);
-    tx.sign(signers);
-    const signature = bs58encode(tx.signatures[0] ?? new Uint8Array());
-    await onSigned(signature); // record BEFORE sending (06 §5.1 step 2)
-    try {
-      await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 3 });
-      const confirm = connection.confirmTransaction({ signature, ...latest }, "finalized");
-      const timer = new Promise<never>((_, rej) =>
-        setTimeout(() => rej(new Error("not finalized within timeout")), timeoutMs),
-      );
-      const res = await Promise.race([confirm, timer]);
-      if (res.value.err) return { ok: false, signature, error: `tx error: ${JSON.stringify(res.value.err)}` };
-      return { ok: true, signature };
-    } catch (e) {
-      if (e instanceof TransactionExpiredBlockheightExceededError)
-        return { ok: false, signature, error: "blockhash expired" };
-      return { ok: false, signature, error: String(e).slice(0, 300) };
-    }
+    commitment: "confirmed" | "finalized" = "finalized",
+  ) {
+    return sendAndConfirm(connection, operator.publicKey, ixs, signers, onSigned, {
+      commitment,
+      timeoutMs,
+      minPriorityMicroLamports: cfg.priorityMicroLamports ?? 10_000,
+      maxPriorityMicroLamports: cfg.priorityMaxMicroLamports ?? 1_000_000,
+    });
   }
 
   const confirmed = (signature: string | null, taskAccount: string, alreadyDone = false): ChainResult => ({
@@ -266,7 +246,7 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
           const ataIxs = missing.map((m) =>
             createAssociatedTokenAccountIdempotentInstruction(operator.publicKey, m.ata, m.owner, taskMint),
           );
-          const r = await send(ataIxs, [operator], async () => undefined);
+          const r = await send(ataIxs, [operator], async () => undefined, "confirmed");
           if (!r.ok) return { kind: "retry", signature: null, error: `ata: ${r.error}` };
         }
       }
@@ -331,22 +311,6 @@ export function createAnchorAdapter(cfg: AnchorAdapterConfig): SettlementAdapter
       return { kind: "retry", signature: r.signature, error: r.error };
     },
   };
-}
-
-const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-function bs58encode(bytes: Uint8Array): string {
-  let n = 0n;
-  for (const b of bytes) n = (n << 8n) | BigInt(b);
-  let out = "";
-  while (n > 0n) {
-    out = ALPHABET[Number(n % 58n)] + out;
-    n /= 58n;
-  }
-  for (const b of bytes) {
-    if (b !== 0) break;
-    out = `1${out}`;
-  }
-  return out;
 }
 
 /**

@@ -52,7 +52,23 @@ export class FakeChain implements SettlementAdapter {
     return all.slice(i + 1);
   }
 
+  /** Simulated chain wait per fundTask, and the most fundTask calls seen in flight at once (16 §7.2). */
+  latencyMs = 0;
+  inFlight = 0;
+  maxInFlight = 0;
+
   async fundTask(i: FundTaskInput, onSigned: (s: string) => Promise<void>): Promise<ChainResult> {
+    this.inFlight++;
+    this.maxInFlight = Math.max(this.maxInFlight, this.inFlight);
+    try {
+      if (this.latencyMs) await new Promise((r) => setTimeout(r, this.latencyMs));
+      return await this.fundTaskNow(i, onSigned);
+    } finally {
+      this.inFlight--;
+    }
+  }
+
+  private async fundTaskNow(i: FundTaskInput, onSigned: (s: string) => Promise<void>): Promise<ChainResult> {
     const k = this.key(i.taskIdHash);
     const taskAccount = `Task${k.slice(0, 40)}`;
     if (this.tasks.has(k)) return { kind: "confirmed", signature: null, alreadyDone: true, taskAccount };

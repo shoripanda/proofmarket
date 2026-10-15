@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleSetFlag, handleSuspendWorker, handleTick } from "../lib/handlers/operator";
 import { handleCreate, handleGet } from "../lib/handlers/requester";
-import { leaseNextJob, tick } from "../lib/services/jobs";
+import { drainJobs, leaseNextJob, tick } from "../lib/services/jobs";
 import { call, createBody, createTestApp, jsonReq } from "./support/app";
 import { onboardWorker, W, witness } from "./support/worker";
 
@@ -272,5 +272,27 @@ describe("chain jobs", () => {
     expect(t.storage.raw.size + t.storage.derived.size).toBe(0);
     const [loc] = await t.db.select().from(schema.locationObservations);
     expect(loc?.coordsEnc).toBeNull();
+  });
+});
+
+describe("parallel drain (16 §7.2)", () => {
+  it("runs chain jobs side by side, each once, and stops at maxJobs", async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 6; i++) ids.push(await create());
+    t.chain.latencyMs = 150;
+    const started = Date.now();
+    const ran = await drainJobs(t.app, 4, 3);
+    expect(ran).toBe(4);
+    expect(t.chain.maxInFlight).toBe(3);
+    // three at a time: two rounds of 150 ms, not four
+    expect(Date.now() - started).toBeLessThan(4 * 150);
+    t.app.config.jobConcurrency = 4;
+    await tick(t.app);
+    for (const id of ids) expect((await view(id)).status).toBe("OPEN");
+    expect(t.chain.sent.filter((s) => s.op === "fund")).toHaveLength(6);
+  });
+
+  it("an empty queue ends every worker at once", async () => {
+    expect(await drainJobs(t.app, 60, 6)).toBe(0);
   });
 });
