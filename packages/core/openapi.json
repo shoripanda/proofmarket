@@ -3326,6 +3326,38 @@
                         "required_witnesses"
                       ]
                     },
+                    "bounty_total": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                    },
+                    "platform_fee": {
+                      "type": "object",
+                      "properties": {
+                        "rate_bps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "amount": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "0"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "rate_bps",
+                        "amount"
+                      ]
+                    },
                     "total": {
                       "type": "string",
                       "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,6})?$"
@@ -3390,6 +3422,8 @@
                   "required": [
                     "quote_id",
                     "bounty",
+                    "bounty_total",
+                    "platform_fee",
                     "total",
                     "balance",
                     "balance_after",

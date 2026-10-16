@@ -1,6 +1,12 @@
 import "server-only";
 import { join } from "node:path";
-import { type BBox, type EnabledAsset, parseBBox, resolveEnabledAssets } from "@proofmarket/core";
+import {
+  type BBox,
+  type EnabledAsset,
+  PLATFORM_FEE_BPS,
+  parseBBox,
+  resolveEnabledAssets,
+} from "@proofmarket/core";
 import { createDb, type Db } from "@proofmarket/db";
 import { openPgliteDb } from "@proofmarket/db/testing";
 import {
@@ -66,6 +72,8 @@ export interface AppConfig {
   cluster: Cluster;
   /** 16 §7.2: outbox jobs one tick runs at once. */
   jobConcurrency: number;
+  /** docs/architecture 13 §6.1: the platform fee on new requests, in basis points (PLATFORM_FEE_BPS). */
+  platformFeeBps: number;
   /** 15 §4.2: ceilings for what the operator wallet holds (micro USDC, lamports); null = no warning. */
   treasuryMax: { usdcMicro: bigint | null; lamports: bigint | null };
 }
@@ -103,6 +111,7 @@ function buildContext(): AppContext {
     ...(isDev(e) ? {} : { programId: e.PROGRAM_ID }),
     cluster: isDev(e) ? "devnet" : e.SOLANA_CLUSTER,
     jobConcurrency: e.JOB_CONCURRENCY,
+    platformFeeBps: PLATFORM_FEE_BPS,
     treasuryMax: {
       usdcMicro: e.TREASURY_MAX_USDC === undefined ? null : BigInt(Math.round(e.TREASURY_MAX_USDC * 1e6)),
       lamports: e.TREASURY_MAX_SOL === undefined ? null : BigInt(Math.round(e.TREASURY_MAX_SOL * 1e9)),

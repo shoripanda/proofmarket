@@ -26,7 +26,7 @@ import type { AppContext } from "../context";
 import { LEGAL_VERSIONS } from "../legal";
 import { attestationOf } from "./attestation";
 import { appendAudit } from "./audit";
-import { bountyOf, reservedMicro } from "./bounty";
+import { bountyOf, feeMicro, reservedMicro } from "./bounty";
 import { randomToken, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
 import { applyTaskEvent, lockTask, microToDecimal, type TaskRow, taskCounts } from "./task-engine";
@@ -377,7 +377,8 @@ async function fixRisingBounty(tx: Db, task: TaskRow, now: Date): Promise<string
     .where(eq(schema.verificationRequests.id, task.id));
   await tx
     .update(schema.requesterLedger)
-    .set({ amount: microToDecimal(-after) })
+    // The fee stays reserved on the ceiling; settlement keeps the part for what is paid (13 §6.1).
+    .set({ amount: microToDecimal(-(after + feeMicro(task))) })
     .where(
       and(
         eq(schema.requesterLedger.verificationId, task.id),

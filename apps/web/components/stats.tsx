@@ -38,7 +38,9 @@ export const usdc = (amount: string) => `${amount} USDC`;
 export function BigNumber({ value, label, note }: { value: string; label: string; note?: string }) {
   return (
     <div className="rounded-2xl border border-slate-200 p-5">
-      <p className="text-3xl font-bold tracking-tight text-slate-900">{value}</p>
+      <p data-count={value} className="text-3xl font-bold tracking-tight tabular-nums text-slate-900">
+        {value}
+      </p>
       <p className="mt-1 text-sm font-semibold text-slate-700">{label}</p>
       {note ? <p className="mt-1 text-xs text-slate-500">{note}</p> : null}
     </div>
@@ -58,7 +60,7 @@ export async function StatsHighlights({ lang = "ja" }: { lang?: Lang }) {
         "Live numbers, aggregated from the database and refreshed every minute.",
       )}
     >
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div data-stagger className="grid gap-4 sm:grid-cols-3">
         <BigNumber
           value={pick(lang, `${s.verifications.completed}件`, String(s.verifications.completed))}
           label={pick(lang, "人の手で確かめて完了した依頼", "requests completed by people")}

@@ -239,7 +239,7 @@ Target pilot availability is sufficient for demo; full production SLA is out of 
 
 ## 6. Out of scope
 
-- generalized freelancer profiles/résumé marketplace
+- generalized freelancer profiles/résumé marketplace（2026-10-16 改訂: 本人が公開を選んだ worker のプロフィールだけは出す。履歴書型の市場は引き続き対象外。§7）
 - bidding/auction engine
 - delivery logistics
 - purchasing goods
@@ -247,3 +247,34 @@ Target pilot availability is sufficient for demo; full production SLA is out of 
 - worker payroll/tax filing automation
 - mainnet production release
 - tokenomics
+
+## 7. 2026-10-16 改訂: 「確認」と「仕事」を並べる
+
+オーナーの決定（`docs/architecture/12-rentahuman-benchmark.md` §8、D1〜D6）により、頼めることを現実の確認から一般の仕事へ広げる。設計は `docs/architecture/13-marketplace-migration.md`。旗 `tasks_enabled` が off のあいだ、以下は公開しない。
+
+**REQ-T-001 [P2]**  
+依頼には `kind` があり、`verification`（今の確認）と `task`（仕事）を並べる。API の名前と既存の入力は変えない（D6）。
+
+**REQ-T-002 [P2]**  
+仕事は、題・説明・完了の定義・欲しい証拠・場所か遠隔可・締切・完了までの時間・席の数（1〜50）を持つ。worker の選び方は先着か応募から選ぶかを依頼ごとに決める。
+
+**REQ-T-003 [P2]**  
+仕事の支払いは依頼ごとに `auto`（AI 判定で払う）か `manual`（依頼者が承認して払う）を選ぶ。`manual` で提出から 24 時間、依頼者が承認・直しの依頼・却下のどれもしなければ worker へ払う（D2）。運営の人は判定しない。
+
+**REQ-T-004 [P2]**  
+却下には理由が要り、その席の報酬と手数料は依頼者の残高へ戻す。依頼者ごとの却下率を worker に見せる。
+
+**REQ-T-005 [P2]**  
+手数料は報酬に 15% を上乗せする（D3）。払われた席・証人の分だけを収益にし、払わなかった分は手数料ごと返す。見積もりに内訳を出す。
+
+**REQ-T-006 [P2]**  
+入金は Solana の送金と x402 のまま。カードでの入金はしない（D4）。
+
+**REQ-T-007 [P2]**  
+worker の公開プロフィールは本人が選んだ人だけ出す。出す位置は市区町村まで（D5）。
+
+**REQ-T-008 [P2]**  
+採用した仕事には依頼者と worker の会話がある。連絡先や外部での支払いへの誘導らしき文面は、届けたうえで記録する。worker の文面はエージェントに渡すとき、指示ではなくデータとして扱う。
+
+当面扱わない仕事: 物の購入、物の配送、時給での長時間の作業、資格の要る作業（§4 の Safety policy の禁止事項も仕事型にそのまま当てる）。
+
