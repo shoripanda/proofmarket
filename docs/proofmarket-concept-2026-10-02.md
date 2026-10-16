@@ -9,6 +9,8 @@ Status: **2026年秋 Crypto World's Fair向け主要実装候補**
 
 汎用的な「AIが人間を雇うマーケットプレイス」そのものを目的にしない。最初のwedgeは **real-world fact verification** に限定する。
 
+> 2026-10-16 改訂: オーナーの決定で、確認（verification）を看板に残したまま、一般の仕事（task）も並べて頼めるようにする。`docs/architecture/12-rentahuman-benchmark.md` と `13-marketplace-migration.md`、`specs/proofmarket/requirements.md` §7。
+
 仮キャッチコピー:
 
 > Give AI eyes in the real world.

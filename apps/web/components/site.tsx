@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LangSwitch } from "@/components/lang-switch";
+import { MotionObserver } from "@/components/motion";
 import { PlainProvider } from "@/lib/client/plain";
 import { type Lang, langHref, pick } from "@/lib/lang";
 
@@ -57,6 +58,7 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
   const h = (href: string) => langHref(lang, href);
   return (
     <PlainProvider>
+      <MotionObserver />
       <div className="min-h-dvh bg-white">
         {/* Two rows so every header item is visible at once (2026-10-16: the one-row header cut the menu off at
             desktop width and hid it behind a sideways scroll on phones). Sticky from tablet up only: on a phone
@@ -149,9 +151,19 @@ export function Section({
 }) {
   return (
     <section id={id} className="mx-auto max-w-5xl px-4 py-10">
-      <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-      {lead ? <p className="mt-2 max-w-3xl leading-relaxed text-slate-600">{lead}</p> : null}
-      {children ? <div className="mt-6">{children}</div> : null}
+      <h2 data-reveal className="text-2xl font-bold tracking-tight">
+        {title}
+      </h2>
+      {lead ? (
+        <p data-reveal className="mt-2 max-w-3xl leading-relaxed text-slate-600">
+          {lead}
+        </p>
+      ) : null}
+      {children ? (
+        <div data-reveal className="mt-6">
+          {children}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -162,12 +174,12 @@ export function PageHero({
   children,
 }: {
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   children?: ReactNode;
 }) {
   return (
-    <div className="border-b border-slate-100 bg-gradient-to-b from-teal-50 to-white">
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:py-16">
+    <div className="hero-bg border-b border-slate-100 bg-gradient-to-b from-teal-50 to-white">
+      <div className="hero-in mx-auto max-w-5xl px-4 py-12 sm:py-16">
         <p className="text-sm font-semibold tracking-wide text-teal-700">{eyebrow}</p>
         <h1 className="mt-2 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
           {title}

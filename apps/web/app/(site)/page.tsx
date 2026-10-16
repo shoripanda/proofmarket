@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Explainer } from "@/components/explainer";
 import { FeaturedResults } from "@/components/featured-results";
+import { RotatingWords } from "@/components/motion";
 import { PageHero, Section } from "@/components/site";
 import { StatsHighlights } from "@/components/stats";
 import { Plain } from "@/lib/client/plain";
@@ -76,7 +77,35 @@ const COPY = {
     eyebrow: "ProofMarket・東京から",
     title: "AI エージェントにできないことを、人に頼める",
     intro: "人が見に行き、写真つきで答えます。答えは AI が確かめ、Solana に記録します。",
-    ctaTry: "3 分で体験",
+    ctaTry: "体験する",
+    rotatePrefix: "たとえば",
+    rotate: [
+      "店が開いているか",
+      "棚に在庫があるか",
+      "行列の長さ",
+      "掲示の文字",
+      "書類の受け取り",
+      "現物の採寸",
+    ],
+    marqueeTitle: "頼めることの例",
+    marquee: [
+      [
+        { icon: "camera", text: "駅前のカフェが今開いているか" },
+        { icon: "clock", text: "人気店の行列が何人か" },
+        { icon: "grid", text: "棚に新商品が並んでいるか" },
+        { icon: "pin", text: "入口の掲示を書き起こす" },
+        { icon: "coin", text: "店頭の値札を読む" },
+        { icon: "camera", text: "駐輪場に空きがあるか" },
+      ],
+      [
+        { icon: "phone", text: "取引先に電話して営業日を聞く" },
+        { icon: "check", text: "届いた荷物の中身を確かめる" },
+        { icon: "grid", text: "現物の寸法を測る" },
+        { icon: "terminal", text: "書類の誤字を確かめる" },
+        { icon: "agree", text: "50 店舗の掲示を一斉に確認" },
+        { icon: "clock", text: "復旧するまで毎朝見に行く" },
+      ],
+    ] as { icon: IconKey; text: string }[][],
     ctaDev: "エージェントをつなぐ",
     sizes: {
       title: "小さな確認から、街ぐるみの調査まで",
@@ -160,7 +189,35 @@ const COPY = {
     eyebrow: "ProofMarket · from Tokyo",
     title: "Whatever your AI agent cannot do itself, ask a person",
     intro: "A person goes and answers with a photo. AI checks the answer; Solana records it.",
-    ctaTry: "Try it in 3 minutes",
+    ctaTry: "Try it",
+    rotatePrefix: "For example:",
+    rotate: [
+      "is the shop open",
+      "is it on the shelf",
+      "how long is the queue",
+      "what the sign says",
+      "collect a document",
+      "measure the item",
+    ],
+    marqueeTitle: "Things people are asked to do",
+    marquee: [
+      [
+        { icon: "camera", text: "Is the café by the station open now?" },
+        { icon: "clock", text: "How many people are queuing?" },
+        { icon: "grid", text: "Is the new product on the shelf?" },
+        { icon: "pin", text: "Transcribe the notice at the door" },
+        { icon: "coin", text: "Read the price tag" },
+        { icon: "camera", text: "Is there space at the bike park?" },
+      ],
+      [
+        { icon: "phone", text: "Call a supplier and ask their hours" },
+        { icon: "check", text: "Open a parcel and check the contents" },
+        { icon: "grid", text: "Measure the item" },
+        { icon: "terminal", text: "Proofread a document" },
+        { icon: "agree", text: "Check the notices at 50 shops at once" },
+        { icon: "clock", text: "Check every morning until it is fixed" },
+      ],
+    ] as { icon: IconKey; text: string }[][],
     ctaDev: "Connect your agent",
     sizes: {
       title: "From a small check to a city-wide survey",
@@ -251,10 +308,14 @@ export default async function Home() {
         <p className="text-lg">
           <Plain>{c.intro}</Plain>
         </p>
+        <p className="mt-3 text-xl font-bold text-teal-800 sm:text-2xl">
+          <span className="mr-2 text-base font-semibold text-slate-500">{c.rotatePrefix}</span>
+          <RotatingWords words={c.rotate} />
+        </p>
         <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap">
           <Link
             href={h("/try")}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-6 py-4 text-base font-bold text-white hover:bg-teal-800"
+            className="shine flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-6 py-4 text-base font-bold text-white hover:bg-teal-800"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
               <path d="M8 5l11 7-11 7z" />
@@ -271,10 +332,37 @@ export default async function Home() {
         </div>
       </PageHero>
 
+      <section className="border-b border-slate-100 py-6" aria-label={c.marqueeTitle}>
+        <p className="mx-auto mb-3 flex max-w-5xl items-center gap-2 px-4 text-sm font-semibold text-slate-500">
+          <span className="live-dot" aria-hidden="true" />
+          {c.marqueeTitle}
+        </p>
+        <div className="space-y-3">
+          {c.marquee.map((row, r) => (
+            <div key={row[0]?.text ?? r} className="marquee">
+              <ul className={r % 2 ? "marquee-track reverse" : "marquee-track"}>
+                {[...row.map((t) => ({ ...t, copy: false })), ...row.map((t) => ({ ...t, copy: true }))].map(
+                  (t) => (
+                    <li
+                      key={`${t.text}-${t.copy}`}
+                      aria-hidden={t.copy ? "true" : undefined}
+                      className="flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm"
+                    >
+                      <Icon k={t.icon} className="h-5 w-5 shrink-0" />
+                      {t.text}
+                    </li>
+                  ),
+                )}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <Explainer />
 
       <Section title={c.connect.title}>
-        <ol className="grid gap-3 sm:grid-cols-3">
+        <ol data-stagger className="grid gap-3 sm:grid-cols-3">
           {c.connect.steps.map((st, i) => (
             <li key={st.title} className="relative rounded-2xl border border-slate-200 p-4 pt-5 sm:p-5">
               <span className="absolute -top-3 left-4 rounded-full bg-teal-700 px-3 py-0.5 text-xs font-bold text-white">
@@ -296,14 +384,14 @@ export default async function Home() {
         </ol>
         <Link
           href={h("/connect")}
-          className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-6 py-3 text-base font-bold text-white hover:bg-teal-800"
+          className="shine mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-6 py-3 text-base font-bold text-white hover:bg-teal-800"
         >
           {c.connect.cta} <span aria-hidden="true">→</span>
         </Link>
       </Section>
 
       <Section title={c.sizes.title}>
-        <div className="grid grid-cols-3 gap-3">
+        <div data-stagger className="grid grid-cols-3 gap-3">
           {c.sizes.items.map((t) => (
             <div key={t.title} className="rounded-2xl border border-slate-200 p-3 text-center sm:p-5">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-50">
@@ -326,7 +414,7 @@ export default async function Home() {
       <StatsHighlights lang={lang} />
 
       <Section title={c.trust.title}>
-        <ul className="grid gap-3 sm:grid-cols-3">
+        <ul data-stagger className="grid gap-3 sm:grid-cols-3">
           {c.trust.items.map((p) => (
             <li
               key={p.title}
@@ -351,7 +439,7 @@ export default async function Home() {
       </Section>
 
       <Section title={c.roles.title}>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div data-stagger className="grid gap-4 sm:grid-cols-2">
           {[
             { ...c.roles.dev, href: "/connect" },
             { ...c.roles.worker, href: "/workers" },
@@ -407,7 +495,7 @@ export default async function Home() {
       </Section>
 
       <Section title={c.pilot.title}>
-        <ul className="grid gap-3 sm:grid-cols-3">
+        <ul data-stagger className="grid gap-3 sm:grid-cols-3">
           {c.pilot.items.map((t) => (
             <li
               key={t.text}

@@ -133,3 +133,13 @@ For hackathon:
 - public commercial locations
 - explicit participant consent
 - no sensitive/regulated task categories
+
+## 10. 確認と仕事を並べる市場（2026-10-16 追加）
+
+`docs/architecture/13-marketplace-migration.md` §10。旗 `tasks_enabled` を本番で立てる前にオーナーが判断する。
+
+- [ ] フリーランス・事業者間取引適正化等法: 依頼者が事業者で worker が個人のとき、仕事の内容・報酬・支払期日を依頼の画面と記録に残す。24 時間で払う作りは支払期日の面では有利
+- [ ] 職業安定法: 依頼者と worker を結ぶ仕組みが業務委託の仲介にとどまり、職業紹介に当たらないこと（1 件ごとの報酬、指揮命令なし、時給の長時間作業は扱わない）
+- [ ] 会話の保存: 連絡先の検出のために文面を読むこと、保存期間、削除の求めへの対応をプライバシーポリシーに書く
+- [ ] 手数料 15% の表示: 依頼者が払う総額と worker の受取額を作成前に見せる（特定商取引法の表示と合わせる）
+

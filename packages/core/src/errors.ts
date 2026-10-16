@@ -132,6 +132,16 @@ export const ERROR_CATALOG = {
     retryable: false,
     message: "The task or seat is not in a state that allows this action.",
   },
+  WEBHOOK_NOT_FOUND: {
+    http: 404,
+    retryable: false,
+    message: "The webhook endpoint was not found for this API key.",
+  },
+  WEBHOOK_LIMIT_REACHED: {
+    http: 409,
+    retryable: false,
+    message: "This API key already has the most active webhook endpoints allowed. Delete one first.",
+  },
   QUOTE_MISMATCH: {
     http: 409,
     retryable: false,
