@@ -5,6 +5,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import {
+  ApiError,
   newId,
   WEBHOOK_EVENTS,
   WEBHOOK_RETRY_DELAYS_S,
@@ -12,7 +13,7 @@ import {
   type WebhookEvent,
 } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
 import { decryptBytes, encryptBytes, sha256 } from "./crypto";
@@ -88,7 +89,15 @@ export async function assertSafeCallbackUrl(raw: string, resolve: Resolver = dns
 /** Operator-side registration (scripts/register-webhook.ts). Returns the signing secret once. */
 export async function registerWebhook(
   app: AppContext,
-  o: { credentialId: string; url: string; events: WebhookEvent[]; by: string; resolve?: Resolver },
+  o: {
+    credentialId: string;
+    url: string;
+    events: WebhookEvent[];
+    by: string;
+    /** "requester" when the API key registers its own endpoint (POST /v1/webhooks). */
+    actorType?: "operator" | "requester";
+    resolve?: Resolver;
+  },
 ): Promise<{ endpointId: string; secret: string }> {
   await assertSafeCallbackUrl(o.url, o.resolve);
   for (const e of o.events) if (!WEBHOOK_EVENTS.includes(e)) throw new Error(`unknown event ${e}`);
@@ -103,7 +112,7 @@ export async function registerWebhook(
   });
   await appendAudit(app.db, {
     verificationId: null,
-    actorType: "operator",
+    actorType: o.actorType ?? "operator",
     actorRef: o.by,
     eventType: "operator_action",
     beforeState: null,
@@ -132,6 +141,35 @@ export async function activeEndpoint(db: Db, credentialId: string): Promise<stri
 export interface DeliverDeps {
   fetch?: typeof fetch;
   resolve?: Resolver;
+}
+
+/** One signed POST to an endpoint. Returns the HTTP status, or 0 when the receiver could not be reached. */
+async function postSigned(
+  app: AppContext,
+  ep: typeof schema.webhookEndpoints.$inferSelect,
+  eventId: string,
+  payload: unknown,
+  deps: DeliverDeps,
+): Promise<number> {
+  const body = JSON.stringify(payload);
+  const secret = decryptBytes(keyFor(app.config.webhookPepper), ep.secretEnc).toString("utf8");
+  try {
+    const url = await assertSafeCallbackUrl(ep.url, deps.resolve);
+    const res = await (deps.fetch ?? fetch)(url, {
+      method: "POST",
+      redirect: "manual",
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+      headers: {
+        "content-type": "application/json",
+        "proofmarket-signature": signWebhook(secret, Math.floor(app.now().getTime() / 1000), body),
+        "proofmarket-event-id": eventId,
+      },
+      body,
+    });
+    return res.status;
+  } catch {
+    return 0;
+  }
 }
 
 /** DELIVER_WEBHOOK job. Same evt_ id across retries so receivers can de-duplicate. */
@@ -184,26 +222,7 @@ export async function deliverWebhook(
   if (d.deliveredAt) return { kind: "done" };
 
   const attempt = d.attempts + 1;
-  const body = JSON.stringify(d.payload);
-  const secret = decryptBytes(keyFor(app.config.webhookPepper), ep.secretEnc).toString("utf8");
-  let status = 0;
-  try {
-    const url = await assertSafeCallbackUrl(ep.url, deps.resolve);
-    const res = await (deps.fetch ?? fetch)(url, {
-      method: "POST",
-      redirect: "manual",
-      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
-      headers: {
-        "content-type": "application/json",
-        "proofmarket-signature": signWebhook(secret, Math.floor(app.now().getTime() / 1000), body),
-        "proofmarket-event-id": d.id,
-      },
-      body,
-    });
-    status = res.status;
-  } catch {
-    status = 0;
-  }
+  const status = await postSigned(app, ep, d.id, d.payload, deps);
   const ok = status >= 200 && status < 300;
   await app.db
     .update(schema.webhookDeliveries)
@@ -214,4 +233,162 @@ export async function deliverWebhook(
   return delay === undefined
     ? { kind: "dead", error: `webhook gave up after ${attempt} attempts (last ${status})` }
     : { kind: "retry", error: `HTTP ${status}`, delayS: delay };
+}
+
+// ---------- self-service endpoints (docs/architecture 12 §5.1, 13 §7.3) ----------
+
+/** Active endpoints one API key may hold. */
+export const MAX_WEBHOOK_ENDPOINTS = 5;
+
+type EndpointRow = typeof schema.webhookEndpoints.$inferSelect;
+type DeliveryRow = typeof schema.webhookDeliveries.$inferSelect;
+
+export const endpointView = (e: EndpointRow) => ({
+  id: e.id,
+  url: e.url,
+  events: e.events as WebhookEvent[],
+  status: e.status as "active" | "disabled",
+});
+
+export const deliveryView = (d: DeliveryRow) => {
+  const p = d.payload as { created_at?: string };
+  return {
+    id: d.id,
+    endpoint_id: d.endpointId,
+    event: d.eventType,
+    // a test delivery has no verification: its row stores the event id in that column
+    verification_id: d.eventType === "webhook.test" ? null : d.verificationId,
+    created_at: p.created_at ?? new Date(0).toISOString(),
+    attempts: d.attempts,
+    last_status: d.lastStatus,
+    delivered_at: d.deliveredAt?.toISOString() ?? null,
+  };
+};
+
+/** POST /v1/webhooks: register an endpoint for the calling key. The secret is returned once. */
+export async function createOwnWebhook(
+  app: AppContext,
+  auth: { credentialId: string; keyPrefix: string },
+  body: { url: string; events: (WebhookEvent | "*")[] },
+  resolve?: Resolver,
+) {
+  const active = await app.db
+    .select({ id: schema.webhookEndpoints.id })
+    .from(schema.webhookEndpoints)
+    .where(
+      and(
+        eq(schema.webhookEndpoints.credentialId, auth.credentialId),
+        eq(schema.webhookEndpoints.status, "active"),
+      ),
+    );
+  if (active.length >= MAX_WEBHOOK_ENDPOINTS) {
+    throw new ApiError("WEBHOOK_LIMIT_REACHED", { max: MAX_WEBHOOK_ENDPOINTS });
+  }
+  const events = body.events.includes("*")
+    ? [...WEBHOOK_EVENTS]
+    : [...new Set(body.events as WebhookEvent[])];
+  try {
+    await assertSafeCallbackUrl(body.url, resolve);
+  } catch {
+    throw new ApiError("VALIDATION_FAILED", { field: "url", reason: "must be a public https URL" });
+  }
+  const { endpointId, secret } = await registerWebhook(app, {
+    credentialId: auth.credentialId,
+    url: body.url,
+    events,
+    by: auth.keyPrefix,
+    actorType: "requester",
+    ...(resolve ? { resolve } : {}),
+  });
+  const ep = await ownEndpoint(app, auth.credentialId, endpointId);
+  return { endpoint: endpointView(ep), secret };
+}
+
+async function ownEndpoint(app: AppContext, credentialId: string, id: string): Promise<EndpointRow> {
+  const [ep] = await app.db
+    .select()
+    .from(schema.webhookEndpoints)
+    .where(and(eq(schema.webhookEndpoints.id, id), eq(schema.webhookEndpoints.credentialId, credentialId)));
+  if (!ep) throw new ApiError("WEBHOOK_NOT_FOUND");
+  return ep;
+}
+
+/** GET /v1/webhooks. Secrets are never shown again. */
+export async function listOwnWebhooks(app: AppContext, credentialId: string) {
+  const rows = await app.db
+    .select()
+    .from(schema.webhookEndpoints)
+    .where(eq(schema.webhookEndpoints.credentialId, credentialId));
+  return { endpoints: rows.map(endpointView) };
+}
+
+/** DELETE /v1/webhooks/{id}: stop delivering to it. Idempotent; the row and its log stay. */
+export async function disableOwnWebhook(app: AppContext, credentialId: string, id: string) {
+  const ep = await ownEndpoint(app, credentialId, id);
+  if (ep.status !== "disabled") {
+    await app.db
+      .update(schema.webhookEndpoints)
+      .set({ status: "disabled" })
+      .where(eq(schema.webhookEndpoints.id, id));
+  }
+  return { endpoint: endpointView({ ...ep, status: "disabled" }) };
+}
+
+/**
+ * POST /v1/webhooks/{id}/test: send one signed `webhook.test` event now, the same way real events are sent, and
+ * say whether the receiver answered 2xx. Recorded in the delivery log; not retried.
+ */
+export async function testOwnWebhook(
+  app: AppContext,
+  credentialId: string,
+  id: string,
+  deps: DeliverDeps = {},
+) {
+  const ep = await ownEndpoint(app, credentialId, id);
+  if (ep.status !== "active") throw new ApiError("VALIDATION_FAILED", { reason: "endpoint_disabled" });
+  const payload = {
+    id: newId("webhookEvent"),
+    type: "webhook.test",
+    created_at: app.now().toISOString(),
+    data: { endpoint_id: ep.id, message: "This is a test event from ProofMarket." },
+  };
+  const status = await postSigned(app, ep, payload.id, payload, deps);
+  const ok = status >= 200 && status < 300;
+  const [d] = await app.db
+    .insert(schema.webhookDeliveries)
+    .values({
+      id: payload.id,
+      endpointId: ep.id,
+      verificationId: payload.id,
+      eventType: "webhook.test",
+      payload,
+      attempts: 1,
+      lastStatus: status,
+      ...(ok ? { deliveredAt: app.now() } : {}),
+    })
+    .returning();
+  if (!d) throw new Error("insert returned no row");
+  return { delivery: deliveryView(d), ok };
+}
+
+/** GET /v1/webhooks/deliveries: newest first, across this key's endpoints or one of them. */
+export async function listOwnDeliveries(
+  app: AppContext,
+  credentialId: string,
+  q: { endpoint_id?: string | undefined; limit: number },
+) {
+  const own = await app.db
+    .select({ id: schema.webhookEndpoints.id })
+    .from(schema.webhookEndpoints)
+    .where(eq(schema.webhookEndpoints.credentialId, credentialId));
+  const ids = own.map((e) => e.id).filter((e) => !q.endpoint_id || e === q.endpoint_id);
+  if (q.endpoint_id && ids.length === 0) throw new ApiError("WEBHOOK_NOT_FOUND");
+  if (ids.length === 0) return { deliveries: [] };
+  const rows = await app.db
+    .select()
+    .from(schema.webhookDeliveries)
+    .where(inArray(schema.webhookDeliveries.endpointId, ids))
+    .orderBy(desc(sql`${schema.webhookDeliveries.payload}->>'created_at'`))
+    .limit(q.limit);
+  return { deliveries: rows.map(deliveryView) };
 }

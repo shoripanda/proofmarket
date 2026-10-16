@@ -748,6 +748,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -1065,6 +1067,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -1877,6 +1881,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -2643,6 +2649,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -3482,6 +3490,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -4707,6 +4717,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -5932,6 +5944,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -6083,6 +6097,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -6282,6 +6298,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -6481,6 +6499,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -7440,6 +7460,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -7724,6 +7746,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -8008,6 +8032,927 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks": {
+      "post": {
+        "summary": "Register a webhook endpoint for this API key (at most 5 active). The signing secret is returned once",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "format": "uri"
+                  },
+                  "events": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "verification.open",
+                        "verification.claimed",
+                        "verification.submitted",
+                        "verification.verified",
+                        "verification.rejected",
+                        "verification.settled",
+                        "verification.expired",
+                        "verification.cancelled",
+                        "verification.provisional",
+                        "verification.challenged",
+                        "*"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "url",
+                  "events"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "endpoint": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^whk_"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "events": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "verification.open",
+                              "verification.claimed",
+                              "verification.submitted",
+                              "verification.verified",
+                              "verification.rejected",
+                              "verification.settled",
+                              "verification.expired",
+                              "verification.cancelled",
+                              "verification.provisional",
+                              "verification.challenged"
+                            ]
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "disabled"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "url",
+                        "events",
+                        "status"
+                      ]
+                    },
+                    "secret": {
+                      "type": "string",
+                      "pattern": "^whsec_"
+                    }
+                  },
+                  "required": [
+                    "endpoint",
+                    "secret"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List this API key's webhook endpoints (secrets are not shown)",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "endpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^whk_"
+                          },
+                          "url": {
+                            "type": "string"
+                          },
+                          "events": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "verification.open",
+                                "verification.claimed",
+                                "verification.submitted",
+                                "verification.verified",
+                                "verification.rejected",
+                                "verification.settled",
+                                "verification.expired",
+                                "verification.cancelled",
+                                "verification.provisional",
+                                "verification.challenged"
+                              ]
+                            }
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "disabled"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "url",
+                          "events",
+                          "status"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "endpoints"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{id}": {
+      "delete": {
+        "summary": "Stop delivering to a webhook endpoint",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "endpoint": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^whk_"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "events": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "verification.open",
+                              "verification.claimed",
+                              "verification.submitted",
+                              "verification.verified",
+                              "verification.rejected",
+                              "verification.settled",
+                              "verification.expired",
+                              "verification.cancelled",
+                              "verification.provisional",
+                              "verification.challenged"
+                            ]
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "disabled"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "url",
+                        "events",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "endpoint"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{id}/test": {
+      "post": {
+        "summary": "Send one signed webhook.test event now and report whether the receiver answered 2xx",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "delivery": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^evt_"
+                        },
+                        "endpoint_id": {
+                          "type": "string"
+                        },
+                        "event": {
+                          "type": "string"
+                        },
+                        "verification_id": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "attempts": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "last_status": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "delivered_at": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "endpoint_id",
+                        "event",
+                        "verification_id",
+                        "created_at",
+                        "attempts",
+                        "last_status",
+                        "delivered_at"
+                      ]
+                    },
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "delivery",
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/deliveries": {
+      "get": {
+        "summary": "Every delivery attempt to this API key's endpoints, newest first",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "endpoint_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deliveries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^evt_"
+                          },
+                          "endpoint_id": {
+                            "type": "string"
+                          },
+                          "event": {
+                            "type": "string"
+                          },
+                          "verification_id": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "last_status": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "delivered_at": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "endpoint_id",
+                          "event",
+                          "verification_id",
+                          "created_at",
+                          "attempts",
+                          "last_status",
+                          "delivered_at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "deliveries"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -8207,6 +9152,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -8447,6 +9394,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -9082,6 +10031,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -9674,6 +10625,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -9841,6 +10794,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -9982,6 +10937,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -10162,6 +11119,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -10460,6 +11419,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -11056,6 +12017,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -11652,6 +12615,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -11830,6 +12795,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -12329,6 +13296,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -12524,6 +13493,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -12713,6 +13684,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -13082,6 +14055,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -13312,6 +14287,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -13591,6 +14568,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -13727,6 +14706,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -13841,6 +14822,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -13955,6 +14938,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -14069,6 +15054,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -14183,6 +15170,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",
@@ -14297,6 +15286,8 @@
                             "MEDIA_TYPE_UNSUPPORTED",
                             "MEDIA_TOO_LARGE",
                             "QUOTE_NOT_FOUND",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
                             "QUOTE_MISMATCH",
                             "QUOTE_EXPIRED",
                             "FEATURE_DISABLED",

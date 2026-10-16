@@ -960,6 +960,59 @@ export const WebhookPayloadSchema = z.object({
   data: z.object({ verification_id: VerificationIdSchema, status: z.enum(TASK_STATUSES) }),
 });
 
+// ---------- self-service webhook endpoints (docs/architecture 12 §5.1) ----------
+
+export const WEBHOOK_TEST_EVENT = "webhook.test" as const;
+
+export const CreateWebhookRequestSchema = z
+  .object({
+    /** Public HTTPS only. Private and loopback addresses are refused. */
+    url: z.string().url().max(500),
+    /** Events to receive; ["*"] means all of them. */
+    events: z.array(z.enum([...WEBHOOK_EVENTS, "*"])).min(1),
+  })
+  .strict();
+export type CreateWebhookRequest = z.infer<typeof CreateWebhookRequestSchema>;
+
+export const WebhookEndpointSchema = z.object({
+  id: z.string().regex(/^whk_/),
+  url: z.string(),
+  events: z.array(z.enum(WEBHOOK_EVENTS)),
+  status: z.enum(["active", "disabled"]),
+});
+
+/** The signing secret appears once, here. Verify `ProofMarket-Signature` against the raw body with it. */
+export const CreateWebhookResponseSchema = z.object({
+  endpoint: WebhookEndpointSchema,
+  secret: z.string().regex(/^whsec_/),
+});
+
+export const WebhookListResponseSchema = z.object({ endpoints: z.array(WebhookEndpointSchema) });
+
+export const WebhookDeliverySchema = z.object({
+  id: z.string().regex(/^evt_/),
+  endpoint_id: z.string(),
+  event: z.string(),
+  verification_id: z.string().nullable(),
+  created_at: IsoDateTime,
+  attempts: z.number().int(),
+  last_status: z.number().int().nullable(),
+  delivered_at: IsoDateTime.nullable(),
+});
+
+export const WebhookDeliveriesQuerySchema = z.object({
+  endpoint_id: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
+export const WebhookDeliveriesResponseSchema = z.object({ deliveries: z.array(WebhookDeliverySchema) });
+
+/** A test is sent at once (not queued) so the reply says whether the receiver accepted it. */
+export const WebhookTestResponseSchema = z.object({
+  delivery: WebhookDeliverySchema,
+  ok: z.boolean(),
+});
+
 // ---------- recurring checks (04 §3.23) ----------
 const HhmmSchema = z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "HH:MM (Japan time)");
 /** When to stop a watch (01 §4.23): the first VERIFIED result whose answer matches ends the schedule. */
