@@ -43,7 +43,11 @@ anywhere but the ProofMarket endpoint below.
 ## Docs
 
 - Developer guide: https://proofmarket.fun/en/developers
-- OpenAPI: https://raw.githubusercontent.com/shoripanda/proofmarket/main/packages/core/openapi.json
+- Full agent reference (setup per client, the order of a request, money, rules): https://proofmarket.fun/llms-full.txt
+- OpenAPI 3.0: https://proofmarket.fun/openapi.json (also /.well-known/openapi.json)
+- Capability summary: https://proofmarket.fun/agents.json
+- Webhooks: register your own endpoint with `POST /v1/webhooks`, send a signed test with
+  `POST /v1/webhooks/{id}/test`, and read every attempt with `GET /v1/webhooks/deliveries`.
 - Pricing: https://proofmarket.fun/en/pricing — bounty per person × people asked; no platform fee at present;
   no cap on the bounty, only the prepaid balance.
 - How it works: https://proofmarket.fun/en/how-it-works

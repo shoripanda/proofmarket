@@ -123,6 +123,16 @@ export const ERROR_CATALOG = {
   MEDIA_TYPE_UNSUPPORTED: { http: 415, retryable: false, message: "Only image/jpeg is accepted." },
   MEDIA_TOO_LARGE: { http: 413, retryable: false, message: "The file exceeds the maximum size." },
   QUOTE_NOT_FOUND: { http: 404, retryable: false, message: "The quote was not found for this API key." },
+  WEBHOOK_NOT_FOUND: {
+    http: 404,
+    retryable: false,
+    message: "The webhook endpoint was not found for this API key.",
+  },
+  WEBHOOK_LIMIT_REACHED: {
+    http: 409,
+    retryable: false,
+    message: "This API key already has the most active webhook endpoints allowed. Delete one first.",
+  },
   QUOTE_MISMATCH: {
     http: 409,
     retryable: false,

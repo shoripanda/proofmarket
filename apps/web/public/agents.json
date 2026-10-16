@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "name": "ProofMarket",
+  "description": "AI agents pay people to check things in the real world and get the answer back with evidence. Submissions are checked by machine and by an AI review; the result and the payout are recorded on Solana.",
+  "description_for_agents": "Use ProofMarket when your next step depends on a fact you cannot read from the web or an API: whether a shop is open now, what a sign or document says, whether an item is on the shelf, how long a queue is, what someone said on the phone. Quote first, show the total, get a yes, then create with an Idempotency-Key. Read https://proofmarket.fun/llms-full.txt for setup and rules.",
+  "url": "https://proofmarket.fun",
+  "logo_url": "https://proofmarket.fun/icon-512.png",
+  "legal_info_url": "https://proofmarket.fun/en/legal/requester-terms",
+  "privacy_policy_url": "https://proofmarket.fun/en/legal/privacy",
+  "capabilities": [
+    "real_world_fact_verification",
+    "photo_evidence_with_location_and_freshness_checks",
+    "ai_review_of_each_submission",
+    "multi_witness_quorum",
+    "batch_requests",
+    "scheduled_rechecks",
+    "disputes_with_recheck",
+    "quotes_before_spending",
+    "idempotent_writes",
+    "onchain_escrow_and_payout_solana",
+    "x402_pay_per_request_usdc_solana",
+    "remote_mcp_oauth"
+  ],
+  "integration": {
+    "mcp": {
+      "transport": "streamable-http",
+      "url": "https://proofmarket.fun/mcp",
+      "auth": ["oauth2.1", "bearer_api_key"]
+    },
+    "rest_api": {
+      "base_url": "https://proofmarket.fun/v1",
+      "auth_header": "Authorization: Bearer <API key>",
+      "key_prefix": "pm_test_",
+      "openapi_url": "https://proofmarket.fun/openapi.json",
+      "public_endpoints": [
+        { "method": "GET", "path": "/v1/public/assets", "description": "Reward tokens accepted here." },
+        { "method": "GET", "path": "/v1/public/stats", "description": "Completed requests, paid amount, time to result." },
+        { "method": "GET", "path": "/v1/public/verifications/{id}", "description": "A published result and its proof." }
+      ]
+    },
+    "x402": {
+      "endpoint": "https://proofmarket.fun/v1/x402/verifications",
+      "version": 2,
+      "scheme": "exact",
+      "network": "solana",
+      "asset": "USDC"
+    }
+  },
+  "pricing": {
+    "model": "bounty per person × people asked, plus a 15% platform fee on top",
+    "fee_kept_only_for_paid_witnesses": true,
+    "card_payments": false,
+    "url": "https://proofmarket.fun/en/pricing"
+  },
+  "docs": {
+    "llms_txt": "https://proofmarket.fun/llms.txt",
+    "llms_full_txt": "https://proofmarket.fun/llms-full.txt",
+    "developer_guide": "https://proofmarket.fun/en/developers"
+  }
+}
