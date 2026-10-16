@@ -16,6 +16,7 @@ import { appContext } from "@/lib/context";
 import { dateLocale, type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 import { CONSOLE_COOKIE, consoleAuth, dashboard } from "@/lib/services/console-service";
+import { flagEnabled } from "@/lib/services/flags";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -188,6 +189,14 @@ export default async function ConsolePage() {
           </ul>
         ) : null}
       </Section>
+
+      {(await flagEnabled(app.db, "tasks_enabled")) ? (
+        <Section title={pick(lang, "仕事", "Tasks")}>
+          <Link href={langHref(lang, "/console/tasks")} className="font-semibold text-teal-700 underline">
+            {pick(lang, "仕事の応募と提出を見る →", "See applicants and deliveries →")}
+          </Link>
+        </Section>
+      ) : null}
 
       <Section title={pick(lang, "最近の依頼", "Recent requests")}>
         {d.tasks.length ? (
