@@ -8,7 +8,6 @@ import { FlowDiagram } from "@/components/flow-diagram";
 import { RequestCard, ResultCard, StatusCard } from "@/components/try-cards";
 import { taskTypeText } from "@/lib/answers";
 import { LLink, useLang } from "@/lib/client/lang";
-import { speak, speechSupported, stopSpeaking } from "@/lib/client/speech";
 import { dateLocale, type Lang, pick } from "@/lib/lang";
 import { Button, Card, Notice, remaining, safetyNotes, useNow } from "./ui";
 
@@ -44,16 +43,10 @@ const TEXT = {
       "3. 撮って答える・AI が確かめる",
       "4. 確定して支払う",
     ],
-    autoOn: "自動で再生中",
-    autoOff: "自分で操作中",
-    takeOver: "止めて自分で操作する",
-    resume: "続きを自動で再生",
     restart: "最初から",
-    speed: "速さ",
     agentSide: "AI エージェント（依頼する側）",
     userAsk: "渋谷の「坂の上のパン屋」、今日は何時まで開いてる？ 正確な時間が知りたい。",
     thinkingTitle: "エージェントの考え",
-    readThinking: "考えを読み上げる",
     thinking:
       "ウェブの営業時間は古いかもしれない。確実なのは、いま現地にいる人に入口の掲示を書き起こしてもらうこと。ProofMarket の request_reality_verification を、種類 SIGN_TRANSCRIPTION・場所はこの店・締め切り45分・報酬 0.30 USDC で呼ぶ。",
     agentAsks: `ウェブの情報は古いかもしれません。ProofMarket で、いま近くにいる人に入口の掲示をそのまま書き写してもらいます。費用は ${BOUNTY} USDC、45分以内に返ってきます。頼んでいいですか？`,
@@ -165,16 +158,10 @@ const TEXT = {
       "3. Shoot, answer, AI reviews",
       "4. Final and paid",
     ],
-    autoOn: "Autoplay",
-    autoOff: "Manual",
-    takeOver: "Stop and take over",
-    resume: "Resume autoplay",
     restart: "Restart",
-    speed: "Speed",
     agentSide: "AI agent (the requester)",
     userAsk: "The bakery “Sakanoue” in Shibuya — until what time is it open today? I need the exact hours.",
     thinkingTitle: "Agent's reasoning",
-    readThinking: "Read the reasoning aloud",
     thinking:
       "Opening hours on the web may be stale. The sure way is to have someone on the spot transcribe the notice at the entrance. Call ProofMarket's request_reality_verification with type SIGN_TRANSCRIPTION, this shop as the place, a 45-minute deadline and a 0.30 USDC bounty.",
     agentAsks: `The web listing may be out of date. Through ProofMarket I can have someone nearby copy the notice at the entrance word for word. It costs ${BOUNTY} USDC and comes back within 45 minutes. Shall I go ahead?`,
@@ -318,45 +305,6 @@ function signPhoto(signLines: string[], takenAt: string, tilt: number): string {
 
 // ---------- small pieces ----------
 
-/** Reveals text a few characters at a time; `on=false` shows it at once (manual mode). */
-function useTypewriter(text: string, on: boolean, cps = 40): { shown: string; done: boolean } {
-  const [n, setN] = useState(on ? 0 : text.length);
-  useEffect(() => {
-    if (!on) {
-      setN(text.length);
-      return;
-    }
-    setN(0);
-    const step = Math.max(1, Math.round(cps / 25));
-    const id = setInterval(() => {
-      setN((k) => {
-        if (k >= text.length) {
-          clearInterval(id);
-          return k;
-        }
-        return Math.min(text.length, k + step);
-      });
-    }, 40);
-    return () => clearInterval(id);
-  }, [text, on, cps]);
-  return { shown: text.slice(0, n), done: n >= text.length };
-}
-
-function Typed({
-  text,
-  on,
-  cps,
-  className,
-}: {
-  text: string;
-  on: boolean;
-  cps?: number;
-  className?: string;
-}) {
-  const { shown, done } = useTypewriter(text, on, cps);
-  return <span className={`${className ?? ""} ${on && !done ? "typing-caret" : ""}`}>{shown}</span>;
-}
-
 function Bubble({ who, children }: { who: "user" | "agent"; children: ReactNode }) {
   const me = who === "user";
   return (
@@ -396,8 +344,6 @@ export function TryExperience() {
   const types = taskTypeText(lang);
   const EXACT = t.signLines.join("\n");
   const SUMMARY = t.summary;
-  // English speakers type more characters per idea, so the typewriter runs a little faster there.
-  const cps = lang === "en" ? 70 : 40;
 
   const [step, setStep] = useState<Step>("intro");
   const [attempt, setAttempt] = useState(1);
@@ -407,12 +353,7 @@ export function TryExperience() {
   const [checkIdx, setCheckIdx] = useState(0);
   const now = useNow(1000);
   const [startedAt] = useState(() => Date.now());
-  // Autoplay: the page performs every tap itself, like a screen recording you can take over at any moment.
-  const [auto, setAuto] = useState(true);
-  const [speed, setSpeed] = useState<1 | 2>(1);
   const [pressedId, setPressedId] = useState<string | null>(null);
-  const autoRef = useRef(auto);
-  autoRef.current = auto;
   // The agent log grows downward; keep its newest entry in view as the story advances.
   const log = useRef<HTMLElement>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs on every step change on purpose
@@ -453,7 +394,7 @@ export function TryExperience() {
     setPressedId(null);
   }, []);
 
-  // Every tap in the story has a name, so autoplay and a real finger run the same code.
+  // Every tap in the story has a name; the visitor plays every step (autoplay was removed on 2026-10-16).
   const act = useCallback(
     (id: string) => {
       switch (id) {
@@ -506,33 +447,7 @@ export function TryExperience() {
     [act],
   );
 
-  // The autoplay script: what happens next, and after how long. Stops the moment the person takes over.
-  useEffect(() => {
-    if (!auto) return;
-    const d = (ms: number) => ms / speed;
-    let next: [string, number] | null = null;
-    if (step === "intro") next = ["request", 5200];
-    else if (step === "open") next = ["card", 2200];
-    else if (step === "detail") next = ["claim", 2600];
-    else if (step === "claimed") next = ["arrive", 2200];
-    else if (step === "capture" && !photo) next = ["shoot", 1800];
-    else if (step === "capture" && photo && !answer)
-      next = [attempt === 1 ? "pickSummary" : "pickExact", 1600];
-    else if (step === "capture" && photo && answer) next = ["submit", 2200];
-    else if (step === "rejected") next = ["retry", 3800];
-    if (!next) return;
-    const [id, ms] = next;
-    const tm = setTimeout(() => {
-      if (autoRef.current) press(id);
-    }, d(ms));
-    return () => clearTimeout(tm);
-  }, [auto, speed, step, photo, answer, attempt, press]);
-
-  const takeOver = () => setAuto(false);
-  const replay = () => {
-    reset();
-    setAuto(true);
-  };
+  const replay = reset;
 
   const requestBody = {
     type: TYPE,
@@ -573,48 +488,14 @@ export function TryExperience() {
 
   return (
     <div className="space-y-6">
-      <ReadThinking on={step === "intro"} text={t.thinking} label={t.readThinking} lang={lang} />
-      {/* controls */}
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-        <span className="font-semibold text-slate-700">{auto ? t.autoOn : t.autoOff}</span>
-        <span className="text-slate-400">·</span>
-        {auto ? (
-          <button
-            type="button"
-            onClick={takeOver}
-            className="rounded-full px-3 py-1 font-semibold text-teal-700 ring-1 ring-teal-700"
-          >
-            {t.takeOver}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setAuto(true)}
-            className="rounded-full px-3 py-1 font-semibold text-teal-700 ring-1 ring-teal-700"
-          >
-            {t.resume}
-          </button>
-        )}
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={replay}
-          className="rounded-full px-3 py-1 font-semibold text-slate-600 ring-1 ring-slate-300"
+          className="rounded-full px-3 py-1 text-sm font-semibold text-slate-600 ring-1 ring-slate-300"
         >
           {t.restart}
         </button>
-        <span className="ml-auto flex items-center gap-1 text-xs text-slate-500">
-          {t.speed}
-          {([1, 2] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setSpeed(v)}
-              className={`rounded-full px-2 py-0.5 font-semibold ${speed === v ? "bg-teal-700 text-white" : "text-slate-600 ring-1 ring-slate-300"}`}
-            >
-              {v}x
-            </button>
-          ))}
-        </span>
       </div>
 
       {/* where we are, as a picture */}
@@ -636,11 +517,9 @@ export function TryExperience() {
             <>
               <div className="fade-in-up rounded-xl border border-dashed border-slate-300 bg-white/60 px-3 py-2 text-xs leading-relaxed text-slate-600">
                 <p className="font-semibold text-slate-500">{t.thinkingTitle}</p>
-                <Typed on={auto} cps={cps * 1.5} text={t.thinking} />
+                <p>{t.thinking}</p>
               </div>
-              <Bubble who="agent">
-                <Typed on={auto} cps={cps} text={t.agentAsks} />
-              </Bubble>
+              <Bubble who="agent">{t.agentAsks}</Bubble>
               <Button onClick={() => press("request")} pressed={pressedId === "request"}>
                 {t.requestBtn}
               </Button>
@@ -974,10 +853,7 @@ export function TryExperience() {
                     {t.answerText}
                     <textarea
                       value={answer}
-                      onChange={(e) => {
-                        setAuto(false);
-                        setAnswer(e.target.value);
-                      }}
+                      onChange={(e) => setAnswer(e.target.value)}
                       maxLength={500}
                       rows={6}
                       className="rounded-2xl border border-slate-300 px-4 py-3 text-base leading-relaxed"
@@ -1077,47 +953,6 @@ export function TryExperience() {
           ) : null}
         </section>
       </div>
-    </div>
-  );
-}
-
-/** 13 §7: reads the agent's reasoning aloud when it appears. Off by default (sound that starts on its own is
- *  unwelcome); the choice lasts for the visit only. Hidden where the browser cannot speak. */
-function ReadThinking({ on, text, label, lang }: { on: boolean; text: string; label: string; lang: Lang }) {
-  const [supported, setSupported] = useState(false);
-  const [voice, setVoice] = useState(false);
-  useEffect(() => setSupported(speechSupported()), []);
-  useEffect(() => {
-    if (!voice || !on) return;
-    speak(text, lang);
-    return () => stopSpeaking();
-  }, [voice, on, text, lang]);
-  if (!supported) return null;
-  return (
-    <div className="flex justify-end">
-      <button
-        type="button"
-        aria-pressed={voice}
-        onClick={() => setVoice((v) => !v)}
-        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 transition ${voice ? "bg-teal-700 text-white ring-teal-700" : "text-slate-600 ring-slate-300"}`}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <path d="M4 9v6h4l5 4V5L8 9z" strokeLinejoin="round" />
-          {voice ? (
-            <path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" strokeLinecap="round" />
-          ) : (
-            <path d="M17 9l5 6M22 9l-5 6" strokeLinecap="round" />
-          )}
-        </svg>
-        {label}
-      </button>
     </div>
   );
 }

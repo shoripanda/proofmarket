@@ -24,7 +24,7 @@ export default async function TryPage() {
     <>
       <PageHero
         eyebrow={pick(lang, "体験", "Try it")}
-        title={pick(lang, "依頼から支払いまでを、3分で通して見る", "From request to payout in 3 minutes")}
+        title={pick(lang, "依頼から支払いまで", "From request to payout")}
       />
       <Section title={pick(lang, "やってみる", "Play")}>
         <TryTabs />
