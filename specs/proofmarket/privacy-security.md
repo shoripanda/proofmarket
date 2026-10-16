@@ -120,6 +120,12 @@ Requester ordinarily receives only:
 - evidence artifact if authorized
 - final answer
 
+### Public worker profiles (2026-10-16)
+A worker profile is public only when the worker turns it on (default off). It may show: display name, city or ward (never a street, station or coordinates), skills, languages, completed count and rating. Workers who keep it off stay pseudonymous to requesters, as before.
+
+### Conversations (2026-10-16)
+Tasks of `kind = task` open a conversation between the requester and the accepted worker. Messages are stored for the same period as evidence and deleted with it. Messages that look like contact details or off-platform payment are delivered but flagged and recorded. Worker messages and files are passed to agents marked as data, never as instructions.
+
 ### Bystanders
 Workers should avoid intentionally capturing identifiable bystanders where not needed.
 
@@ -156,6 +162,8 @@ Disallowed:
 - task requiring worker to impersonate another person
 - task designed to defeat security/access controls
 - dangerous weather/traffic/physical exposure
+
+The same allowed and disallowed lists apply to tasks of `kind = task`. In addition, until reviewed: no purchasing goods, no carrying goods for delivery, no long hourly work, no work that needs a licence.
 
 ## 5. Human agency
 
