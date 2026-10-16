@@ -220,8 +220,8 @@ export function ConnectFlow({ base, cluster }: { base: string; cluster: "devnet"
               t: pick(lang, "料金", "Pricing"),
               s: pick(
                 lang,
-                "1 人あたりの報酬 × 人数。いまは手数料なし",
-                "Bounty per person × people asked. No fee at present",
+                "1 人あたりの報酬 × 人数 + 手数料 15%",
+                "Bounty per person × people asked, plus a 15% fee",
               ),
             },
             {

@@ -98,7 +98,7 @@ export async function challengeVerification(
     principal_ref: auth.principalId,
   });
   // Balance, limits and the RESERVE row are the challenger's: that reservation is the bond.
-  const created = await createVerification(app, tx, auth, body, `challenge:${orig.id}`);
+  const created = await createVerification(app, tx, auth, body, `challenge:${orig.id}`, { feeBps: 0 });
   const recheckId = created.body.verification_id;
   await tx
     .update(schema.verificationRequests)

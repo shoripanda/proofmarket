@@ -8,7 +8,7 @@ export const LEGAL_VERSIONS = {
   worker_terms: "2026-10-04",
   safety_rules: "2026-10-03",
   privacy_notice: "2026-10-04",
-  requester_terms: "2026-10-04",
+  requester_terms: "2026-10-16",
 } as const;
 
 export type LegalSlug = "worker-terms" | "requester-terms" | "privacy" | "operator";
@@ -119,7 +119,7 @@ export const LEGAL_DOCS: Record<Exclude<LegalSlug, "operator">, LegalDoc> = {
       {
         h: "4. 費用と上限",
         ps: [
-          "1件の費用は「1人あたりの報酬 × 確かめてもらう人数」です。試験運用中は手数料をいただかず、残高と報酬にはテスト用の資産を使います。",
+          "1件の費用は「1人あたりの報酬 × 確かめてもらう人数」に、その 15% の手数料を足した額です。手数料は報酬を払った人の分だけいただき、払わなかった分は手数料ごと残高に戻します。試験運用中は、残高と報酬にテスト用の資産を使います。",
           "報酬の額に上限はありません。ただし、残高を超える依頼は受け付けません。",
         ],
       },
@@ -283,7 +283,7 @@ const LEGAL_DOCS_EN: Record<Exclude<LegalSlug, "operator">, LegalDoc> = {
       {
         h: "4. Cost and limits",
         ps: [
-          "A request costs the bounty per person times the number of people asked. During the pilot there is no fee, and balances and bounties use test assets.",
+          "A request costs the bounty per person times the number of people asked, plus a 15% fee on top. The fee is kept only for the people who are paid; whatever is not paid goes back to the balance, fee included. During the pilot, balances and bounties use test assets.",
           "Each key has a per-request and a per-day limit. Requests beyond the limits or the balance are refused.",
         ],
       },
