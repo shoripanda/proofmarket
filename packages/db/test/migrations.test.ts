@@ -39,13 +39,34 @@ beforeAll(async () => {
 });
 
 describe("migrations", () => {
-  it("create all 41 tables (24 + 3 OAuth, 05 §6.2, + 7 added 2026-10-04, 04 §3.20-25, + 2 x402, 04 §3.26, + 2 edge features, 13 §8, + deposits, 15 §4.3, + quotes, 0030, + tick_runs, 0031) and seed 5 platform flags", async () => {
+  it("create all 46 tables (24 + 3 OAuth, 05 §6.2, + 7 added 2026-10-04, 04 §3.20-25, + 2 x402, 04 §3.26, + 2 edge features, 13 §8, + deposits, 15 §4.3, + quotes, 0030, + tick_runs, 0031, + 5 general tasks, 0033) and seed 5 platform flags on (tasks_enabled off)", async () => {
     const t = await db.query<{ n: number }>(
       "select count(*)::int n from information_schema.tables where table_schema='public'",
     );
-    expect(t.rows[0]?.n).toBe(41);
+    expect(t.rows[0]?.n).toBe(46);
     const f = await db.query<{ n: number }>("select count(*)::int n from platform_flags where value");
     expect(f.rows[0]?.n).toBe(5);
+    const off = await db.query<{ value: boolean }>(
+      "select value from platform_flags where key = 'tasks_enabled'",
+    );
+    expect(off.rows[0]?.value).toBe(false);
+  });
+
+  it("general tasks (0033): one RESERVE per task and one REFUND per seat; one live worker per seat", async () => {
+    const led = (seat: string | null, t: string) =>
+      `insert into requester_ledger(credential_id,market_task_id,seat_id,entry_type,amount)
+       values('key_1','tsk_1',${seat === null ? "null" : `'${seat}'`},'${t}',-1)`;
+    await db.exec(`insert into market_tasks(id,credential_id,principal_id,title,description,completion_criteria,
+      evidence_types,remote_ok,asset,network,price,seats,fee_rate_bps,fee_per_seat,selection_mode,release_mode,
+      completion_window_h,deadline,status,idempotency_key_hash,created_at,updated_at)
+      select 'tsk_1', id, principal_id, 'Photograph a sign', 'Take one clear photo of the sign at the door.',
+      'A sharp photo', '{photo}', true, 'USDC', 'solana-devnet', 1, 2, 1500, 0.15, 'application', 'manual', 24,
+      now() + interval '1 day', 'OPEN', '\\x01', now(), now() from requester_credentials where id = 'key_1'`);
+    expect(await fails(led(null, "RESERVE"))).toBeNull();
+    expect(await fails(led(null, "RESERVE"))).toMatch(/requester_ledger_market_entry_uq/);
+    expect(await fails(led("seat_1", "REFUND"))).toBeNull();
+    expect(await fails(led("seat_1", "REFUND"))).toMatch(/requester_ledger_market_entry_uq/);
+    expect(await fails(led("seat_2", "REFUND"))).toBeNull();
   });
 
   it("every public table has RLS on, so Supabase's PostgREST exposes nothing (04 §1)", async () => {

@@ -55,6 +55,7 @@ describe("readiness", () => {
       "expiry",
       "purge_job",
       "schedules",
+      "market_tasks",
       "deposits",
       "jobs",
       "warnings",

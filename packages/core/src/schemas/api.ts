@@ -7,16 +7,22 @@ import { ASSET_SYMBOLS } from "../domain/assets.ts";
 import {
   ANSWER_KINDS,
   API_SETTLEMENT_STATUSES,
+  APPLICATION_STATES,
   CHECK_REASON_CODES,
   CHECK_STATUSES,
   CLAIM_STATES,
   FUNDING_STATUSES,
+  MARKET_TASK_STATUSES,
   OUTCOME_REASONS,
   OUTCOMES,
   PLATFORM_FLAGS,
+  RELEASE_MODES,
+  SEAT_STATES,
+  SELECTION_MODES,
   SETTLEMENT_STATUSES,
   STORE_REPORT_STATUSES,
   SUBMISSION_STATES,
+  TASK_EVIDENCE_TYPES,
   TASK_STATUSES,
   TASK_TYPES,
   WEBHOOK_EVENTS,
@@ -1088,3 +1094,127 @@ export const ObjectionResponseSchema = z.object({
   bond: z.object({ asset: AssetSchema, amount: Amount }),
   state: z.literal("challenged"),
 });
+
+// ---------- general tasks (docs/architecture 13, D1-D6 of 2026-10-16) ----------
+
+const TaskIdSchema = z.string().regex(/^tsk_[0-9A-HJKMNP-TV-Z]{26}$/);
+const SeatIdSchema = z.string().regex(/^seat_[0-9A-HJKMNP-TV-Z]{26}$/);
+const ApplicationIdSchema = z.string().regex(/^app_[0-9A-HJKMNP-TV-Z]{26}$/);
+
+export const TaskQuestionSchema = z
+  .object({
+    id: z.string().regex(/^[a-z][a-z0-9_]{0,31}$/),
+    label: z.string().trim().min(1).max(200),
+    required: z.boolean().default(true),
+  })
+  .strict();
+
+export const CreateTaskRequestSchema = z
+  .object({
+    title: z.string().trim().min(5).max(200),
+    description: z.string().trim().min(20).max(5000),
+    /** What "done" means, in terms someone else could check. */
+    completion_criteria: z.string().trim().min(5).max(2000),
+    evidence_types: z.array(z.enum(TASK_EVIDENCE_TYPES)).min(1).max(4),
+    /** City or ward. Never an exact address in public text. Omit with remote_ok for work done anywhere. */
+    area: z.string().trim().min(1).max(100).optional(),
+    remote_ok: z.boolean().default(false),
+    price: z.object({ asset: AssetSchema, amount: Amount, network: NetworkSchema }).strict(),
+    seats: z.number().int().min(1).max(50).default(1),
+    selection_mode: z.enum(SELECTION_MODES).default("application"),
+    release_mode: z.enum(RELEASE_MODES).default("manual"),
+    completion_window_hours: z.number().int().min(1).max(168).default(24),
+    /** No new applicants after this. */
+    deadline: IsoDateTime,
+    application_questions: z.array(TaskQuestionSchema).max(5).default([]),
+    /** true: run every check and return the cost; nothing is created or reserved. */
+    dry_run: z.boolean().optional(),
+  })
+  .strict()
+  .refine((b) => b.area !== undefined || b.remote_ok, { message: "give an area or set remote_ok" });
+export type CreateTaskRequest = z.infer<typeof CreateTaskRequestSchema>;
+
+export const TaskCostSchema = z.object({
+  asset: AssetSchema,
+  price_per_seat: Amount,
+  seats: z.number().int(),
+  platform_fee: z.object({ rate_bps: z.number().int(), per_seat: z.string(), amount: z.string() }),
+  total: Amount,
+});
+
+export const SeatViewSchema = z.object({
+  seat_id: SeatIdSchema,
+  seat_no: z.number().int(),
+  round: z.number().int(),
+  state: z.enum(SEAT_STATES),
+  worker_ref: z.string(),
+  funded: z.boolean(),
+  assigned_at: IsoDateTime,
+  due_at: IsoDateTime,
+  submitted_at: IsoDateTime.nullable(),
+  /** manual release: when the 24 h rule pays the worker if nothing is decided (D2). */
+  review_due_at: IsoDateTime.nullable(),
+  revisions: z.number().int(),
+  released_by: z.enum(["requester", "timeout", "auto"]).nullable(),
+  decision_reason: z.string().nullable(),
+  delivery: z.object({ round: z.number().int(), body: z.string(), links: z.array(z.string()) }).nullable(),
+});
+
+export const TaskViewSchema = z.object({
+  task_id: TaskIdSchema,
+  kind: z.literal("task"),
+  status: z.enum(MARKET_TASK_STATUSES),
+  title: z.string(),
+  description: z.string(),
+  completion_criteria: z.string(),
+  evidence_types: z.array(z.enum(TASK_EVIDENCE_TYPES)),
+  area: z.string().nullable(),
+  remote_ok: z.boolean(),
+  selection_mode: z.enum(SELECTION_MODES),
+  release_mode: z.enum(RELEASE_MODES),
+  completion_window_hours: z.number().int(),
+  deadline: IsoDateTime,
+  application_questions: z.array(TaskQuestionSchema),
+  cost: TaskCostSchema,
+  applications_pending: z.number().int(),
+  seats: z.array(SeatViewSchema),
+  created_at: IsoDateTime,
+});
+export type TaskView = z.infer<typeof TaskViewSchema>;
+
+export const TaskDryRunResponseSchema = z.object({
+  dry_run: z.literal(true),
+  cost: TaskCostSchema,
+  balance_after: z.string(),
+});
+
+export const TaskListResponseSchema = z.object({ tasks: z.array(TaskViewSchema) });
+
+export const ApplicationViewSchema = z.object({
+  application_id: ApplicationIdSchema,
+  worker_ref: z.string(),
+  state: z.enum(APPLICATION_STATES),
+  answers: z.record(z.string(), z.string()),
+  note: z.string().nullable(),
+  /** The worker's public profile when they chose to publish one (D5); otherwise only completed counts. */
+  worker: z.object({ completed_tasks: z.number().int(), completed_verifications: z.number().int() }),
+  created_at: IsoDateTime,
+});
+export const ApplicationListResponseSchema = z.object({ applications: z.array(ApplicationViewSchema) });
+
+export const DecisionReasonSchema = z.object({ reason: z.string().trim().min(1).max(1000) }).strict();
+export const ReleaseSeatRequestSchema = z.object({ acknowledge_release: z.literal(true) }).strict();
+
+export const ApplyTaskRequestSchema = z
+  .object({
+    answers: z.record(z.string(), z.string().max(1000)).default({}),
+    note: z.string().trim().max(1000).optional(),
+  })
+  .strict();
+
+export const DeliverSeatRequestSchema = z
+  .object({
+    body: z.string().trim().min(1).max(5000),
+    links: z.array(z.url().max(500)).max(10).default([]),
+  })
+  .strict();

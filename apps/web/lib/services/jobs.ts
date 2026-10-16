@@ -10,6 +10,7 @@ import { log } from "../log";
 import { runOptimistic } from "./challenge-service";
 import { runDeposits } from "./deposit-service";
 import { releaseStaleReviews } from "./evidence-service";
+import { runFundSeat, runRefundSeat, runSettleSeat, sweepMarketTasks } from "./market-task-service";
 import { runNotifyWorkers } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
 import { runDueSchedules } from "./schedule-service";
@@ -83,6 +84,9 @@ const HANDLERS: Record<OutboxJobKind, Handler> = {
     await runNotifyWorkers(app, String(p.verification_id));
     return { kind: "done" };
   },
+  FUND_SEAT: (app, p) => runFundSeat(app, String(p.seat_id)),
+  SETTLE_SEAT: (app, p) => runSettleSeat(app, String(p.seat_id)),
+  REFUND_SEAT: (app, p) => runRefundSeat(app, String(p.seat_id)),
   RECONCILE_SETTLEMENTS: async (app) => {
     const r = await reconcileSettlements(app);
     log("info", "reconcile_settlements", { ...r });
@@ -252,6 +256,8 @@ export async function tick(app: AppContext, maxJobs = TICK_MAX_JOBS): Promise<Ti
   );
   // 5. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
   await step(failed, "schedules", () => runDueSchedules(app), steps);
+  // 5b. General tasks (docs/architecture 13 §5.3): pay seats whose 24 h passed, free seats out of time, close tasks.
+  await step(failed, "market_tasks", () => sweepMarketTasks(app), steps);
   // 6. Deposits (15 §4.3): credit finalized transfers that carry a requester's reference, before the jobs
   // below so a task created against the new balance can be funded in the same tick.
   await step(failed, "deposits", () => runDeposits(app), steps);

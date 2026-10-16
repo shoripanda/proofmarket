@@ -123,6 +123,15 @@ export const ERROR_CATALOG = {
   MEDIA_TYPE_UNSUPPORTED: { http: 415, retryable: false, message: "Only image/jpeg is accepted." },
   MEDIA_TOO_LARGE: { http: 413, retryable: false, message: "The file exceeds the maximum size." },
   QUOTE_NOT_FOUND: { http: 404, retryable: false, message: "The quote was not found for this API key." },
+  TASKS_NOT_ENABLED: { http: 404, retryable: false, message: "General tasks are not open yet." },
+  TASK_NOT_FOUND: { http: 404, retryable: false, message: "Task not found." },
+  SEAT_NOT_FOUND: { http: 404, retryable: false, message: "Seat not found for this task." },
+  APPLICATION_NOT_FOUND: { http: 404, retryable: false, message: "Application not found for this task." },
+  TASK_STATE_CONFLICT: {
+    http: 409,
+    retryable: false,
+    message: "The task or seat is not in a state that allows this action.",
+  },
   QUOTE_MISMATCH: {
     http: 409,
     retryable: false,
