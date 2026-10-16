@@ -20,6 +20,7 @@ import {
   type SeatState,
   toBaseUnits,
   toMicro,
+  type WebhookEvent,
 } from "@proofmarket/core";
 import type { CreateTaskRequest, TaskView } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
@@ -31,6 +32,7 @@ import { sha256, witnessRef } from "./crypto";
 import { flagEnabled } from "./flags";
 import { balanceMicro, checkBountyAsset, checkSpendPolicy } from "./requester-service";
 import { enqueueJob, lockCredential, microToDecimal } from "./task-engine";
+import { enqueueTaskWebhook } from "./webhook-service";
 
 /** D2: a delivered seat is paid this long after delivery if the requester decides nothing. */
 export const REVIEW_WINDOW_MS = 24 * 3600_000;
@@ -374,6 +376,11 @@ async function assignSeat(
     .returning();
   if (!seat) throw new Error("insert returned no row");
   await enqueueJob(tx, "FUND_SEAT", `FUND_SEAT:${id}`, { seat_id: id }, now);
+  await enqueueTaskWebhook(tx, now, t.credentialId, "task.seat_assigned", {
+    task_id: t.id,
+    seat_id: id,
+    state: "ASSIGNED",
+  });
   await appendAudit(tx, {
     verificationId: null,
     actorType: applicationId ? "requester" : "worker",
@@ -432,6 +439,16 @@ async function loadOwnSeat(tx: Db, t: TaskRow, rawSeatId: string): Promise<SeatR
   return s;
 }
 
+/** A task.* webhook for a seat, to the key that owns the task. */
+async function notify(tx: Db, now: Date, s: SeatRow, event: WebhookEvent, state: string) {
+  const [t] = await tx
+    .select({ credentialId: schema.marketTasks.credentialId })
+    .from(schema.marketTasks)
+    .where(eq(schema.marketTasks.id, s.taskId));
+  if (t)
+    await enqueueTaskWebhook(tx, now, t.credentialId, event, { task_id: s.taskId, seat_id: s.id, state });
+}
+
 /** RELEASED: the worker is paid (SETTLE_SEAT) and the seat's fee is kept. */
 async function releaseSeat(tx: Db, app: AppContext, s: SeatRow, by: "requester" | "timeout" | "auto") {
   const now = app.now();
@@ -440,6 +457,7 @@ async function releaseSeat(tx: Db, app: AppContext, s: SeatRow, by: "requester" 
     .set({ state: "RELEASED", releasedBy: by, decidedAt: now, reviewDueAt: null })
     .where(eq(schema.taskSeats.id, s.id));
   await enqueueJob(tx, "SETTLE_SEAT", `SETTLE_SEAT:${s.id}`, { seat_id: s.id }, now);
+  await notify(tx, now, s, "task.released", "RELEASED");
   await appendAudit(tx, {
     verificationId: null,
     actorType: by === "requester" ? "requester" : "system",
@@ -466,6 +484,9 @@ async function closeSeat(
     .set({ state, decidedAt: now, decisionReason: reason, reviewDueAt: null })
     .where(eq(schema.taskSeats.id, s.id));
   await enqueueJob(tx, "REFUND_SEAT", `REFUND_SEAT:${s.id}`, { seat_id: s.id }, now);
+  if (state !== "CANCELLED") {
+    await notify(tx, now, s, state === "REJECTED" ? "task.rejected" : "task.seat_expired", state);
+  }
   await appendAudit(tx, {
     verificationId: null,
     actorType: state === "REJECTED" ? "requester" : "system",
@@ -511,6 +532,7 @@ export async function decideSeat(
           dueAt: new Date(now.getTime() + t.completionWindowH * 3600_000),
         })
         .where(eq(schema.taskSeats.id, s.id));
+      await notify(tx, now, s, "task.changes_requested", "ASSIGNED");
     }
     await finishIfOver(tx, app, t);
     return taskView(tx, app, t);
@@ -703,10 +725,11 @@ export async function applyToTask(
       await assignSeat(tx, app, t, workerId, null);
       return publicTaskView(tx, app, t, workerId);
     }
-    await tx
+    const applicationId = newId("taskApplication");
+    const inserted = await tx
       .insert(schema.taskApplications)
       .values({
-        id: newId("taskApplication"),
+        id: applicationId,
         taskId: t.id,
         workerId,
         answers,
@@ -714,7 +737,15 @@ export async function applyToTask(
         state: "pending",
         createdAt: now,
       })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ id: schema.taskApplications.id });
+    if (inserted.length) {
+      await enqueueTaskWebhook(tx, now, t.credentialId, "task.application_received", {
+        task_id: t.id,
+        application_id: applicationId,
+        state: "pending",
+      });
+    }
     return publicTaskView(tx, app, t, workerId);
   });
 }
@@ -773,6 +804,7 @@ export async function deliverSeat(
       .update(schema.taskSeats)
       .set({ state: "IN_REVIEW", submittedAt: now, reviewDueAt: new Date(now.getTime() + REVIEW_WINDOW_MS) })
       .where(eq(schema.taskSeats.id, s.id));
+    await notify(tx, now, s, "task.submitted", "IN_REVIEW");
     if (t.releaseMode === "auto") await releaseSeat(tx, app, { ...s, state: "IN_REVIEW" }, "auto");
     const [fresh] = await tx.select().from(schema.taskSeats).where(eq(schema.taskSeats.id, s.id));
     return seatView(tx, app, fresh ?? s);

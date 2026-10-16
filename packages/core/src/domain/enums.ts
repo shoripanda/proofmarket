@@ -249,6 +249,14 @@ export const WEBHOOK_EVENTS = [
   "verification.provisional",
   /** 13 §3: someone challenged the provisional answer; a recheck was created. */
   "verification.challenged",
+  /** General tasks (docs/architecture 13 §7.3). data: { task_id, seat_id?, application_id?, state } */
+  "task.application_received",
+  "task.seat_assigned",
+  "task.submitted",
+  "task.changes_requested",
+  "task.released",
+  "task.rejected",
+  "task.seat_expired",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 

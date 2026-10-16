@@ -2,7 +2,7 @@ import "server-only";
 // Outbox runner and periodic tick (02 §4.1, 04 §3.17). Jobs are leased with a short committed UPDATE so no DB
 // transaction stays open while waiting for chain confirmation; expired leases are reclaimed.
 
-import { LIMITS, OUTBOX_RETRY, type OutboxJobKind, type WebhookEvent } from "@proofmarket/core";
+import { LIMITS, OUTBOX_RETRY, type OutboxJobKind } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
 import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
@@ -70,12 +70,7 @@ const HANDLERS: Record<OutboxJobKind, Handler> = {
   FUND_TASK: (app, p, attempts) => runFundTask(app, String(p.verification_id), attempts),
   FINALIZE_AND_SETTLE: (app, p) => runFinalizeAndSettle(app, String(p.verification_id)),
   REFUND_TASK: (app, p) => runRefund(app, String(p.verification_id)),
-  DELIVER_WEBHOOK: (app, p) =>
-    deliverWebhook(
-      app,
-      p as { verification_id: string; endpoint_id: string; event: WebhookEvent },
-      webhookDeps,
-    ),
+  DELIVER_WEBHOOK: (app, p) => deliverWebhook(app, p as Parameters<typeof deliverWebhook>[1], webhookDeps),
   PURGE_EVIDENCE: async (app) => {
     await purgeExpiredEvidence(app);
     return { kind: "done" };

@@ -17,7 +17,8 @@ import {
   handleWorkerListSeats,
 } from "../lib/handlers/market-tasks";
 import { setFlag } from "../lib/services/admin-service";
-import { tick } from "../lib/services/jobs";
+import { __setWebhookDeps, tick } from "../lib/services/jobs";
+import { registerWebhook, verifyWebhook } from "../lib/services/webhook-service";
 import { call, createTestApp, jsonReq } from "./support/app";
 import { onboardWorker } from "./support/worker";
 
@@ -272,6 +273,46 @@ describe("general tasks (13)", () => {
     expect(await taskLedger(id)).toEqual(["REFUND:1.15", "RESERVE:-2.3"]);
     expect(await balance()).toBeCloseTo(before - 1.15, 6);
     expect((await applications(id)).map((a) => a.state).sort()).toEqual(["accepted", "rejected"]);
+  });
+
+  it("sends signed task.* webhooks: applied, assigned, delivered, released", async () => {
+    const publicDns = async () => ["93.184.216.34"];
+    const { secret } = await registerWebhook(t.app, {
+      credentialId: t.credentialId,
+      url: "https://hooks.example.com/pm",
+      events: ["task.application_received", "task.seat_assigned", "task.submitted", "task.released"],
+      by: "test",
+      resolve: publicDns,
+    });
+    const got: { type: string; data: Record<string, string>; ok: boolean }[] = [];
+    __setWebhookDeps({
+      resolve: publicDns,
+      fetch: (async (_u: URL, init: RequestInit) => {
+        const body = String(init.body);
+        const sig = new Headers(init.headers).get("proofmarket-signature") ?? "";
+        const p = JSON.parse(body);
+        got.push({
+          type: p.type,
+          data: p.data,
+          ok: verifyWebhook(secret, sig, body, Math.floor(t.app.now().getTime() / 1000)),
+        });
+        return new Response(null, { status: 200 });
+      }) as unknown as typeof fetch,
+    });
+    const id = await create({ seats: 1 });
+    const seat = await hire(id);
+    await deliver(alice, seat);
+    await decideSeat(id, seat, "release", { acknowledge_release: true });
+    await tick(t.app);
+    __setWebhookDeps({});
+    expect(got.map((g) => g.type)).toEqual([
+      "task.application_received",
+      "task.seat_assigned",
+      "task.submitted",
+      "task.released",
+    ]);
+    expect(got.every((g) => g.ok)).toBe(true);
+    expect(got.at(-1)?.data).toEqual({ task_id: id, seat_id: seat, state: "RELEASED" });
   });
 
   it("another key cannot read or decide the task", async () => {

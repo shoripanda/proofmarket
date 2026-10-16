@@ -134,10 +134,48 @@ export interface DeliverDeps {
   resolve?: Resolver;
 }
 
+/**
+ * Queue a task.* event (docs/architecture 13 §7.3) to every active endpoint of the task's key that subscribes to it.
+ * The job carries the event's data, since there is no verification row to read the state from.
+ */
+export async function enqueueTaskWebhook(
+  tx: Db,
+  now: Date,
+  credentialId: string,
+  event: WebhookEvent,
+  data: { task_id: string; seat_id?: string; application_id?: string; state: string },
+): Promise<void> {
+  const eps = await tx
+    .select({ id: schema.webhookEndpoints.id, events: schema.webhookEndpoints.events })
+    .from(schema.webhookEndpoints)
+    .where(
+      and(
+        eq(schema.webhookEndpoints.credentialId, credentialId),
+        eq(schema.webhookEndpoints.status, "active"),
+      ),
+    );
+  const ref = data.seat_id ?? data.application_id ?? data.task_id;
+  for (const ep of eps.filter((e) => e.events.includes(event))) {
+    await tx
+      .insert(schema.outboxJobs)
+      .values({
+        kind: "DELIVER_WEBHOOK",
+        dedupeKey: `${event}:${ref}:${data.state}:${ep.id}`,
+        payload: { task: true, endpoint_id: ep.id, event, ref: `${ref}:${data.state}`, data },
+        state: "PENDING",
+        runAfter: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing({ target: schema.outboxJobs.dedupeKey });
+  }
+}
+
 /** DELIVER_WEBHOOK job. Same evt_ id across retries so receivers can de-duplicate. */
 export async function deliverWebhook(
   app: AppContext,
-  p: { verification_id: string; endpoint_id: string; event: WebhookEvent },
+  p:
+    | { verification_id: string; endpoint_id: string; event: WebhookEvent }
+    | { task: true; endpoint_id: string; event: WebhookEvent; ref: string; data: Record<string, string> },
   deps: DeliverDeps = {},
 ): Promise<JobOutcome> {
   const [ep] = await app.db
@@ -145,11 +183,19 @@ export async function deliverWebhook(
     .from(schema.webhookEndpoints)
     .where(eq(schema.webhookEndpoints.id, p.endpoint_id));
   if (ep?.status !== "active" || !ep.events.includes(p.event)) return { kind: "done" };
-  const [task] = await app.db
-    .select({ status: schema.verificationRequests.status })
-    .from(schema.verificationRequests)
-    .where(eq(schema.verificationRequests.id, p.verification_id));
-  if (!task) return { kind: "done" };
+  // task.* (13 §7.3): the data travels with the job; the delivery row keys on seat/application + state.
+  const subject = "task" in p ? p.ref : p.verification_id;
+  let data: Record<string, string>;
+  if ("task" in p) {
+    data = p.data;
+  } else {
+    const [task] = await app.db
+      .select({ status: schema.verificationRequests.status })
+      .from(schema.verificationRequests)
+      .where(eq(schema.verificationRequests.id, p.verification_id));
+    if (!task) return { kind: "done" };
+    data = { verification_id: p.verification_id, status: task.status };
+  }
 
   let [d] = await app.db
     .select()
@@ -157,7 +203,7 @@ export async function deliverWebhook(
     .where(
       and(
         eq(schema.webhookDeliveries.endpointId, ep.id),
-        eq(schema.webhookDeliveries.verificationId, p.verification_id),
+        eq(schema.webhookDeliveries.verificationId, subject),
         eq(schema.webhookDeliveries.eventType, p.event),
       ),
     );
@@ -166,14 +212,14 @@ export async function deliverWebhook(
       id: newId("webhookEvent"),
       type: p.event,
       created_at: app.now().toISOString(),
-      data: { verification_id: p.verification_id, status: task.status },
+      data,
     };
     [d] = await app.db
       .insert(schema.webhookDeliveries)
       .values({
         id: payload.id,
         endpointId: ep.id,
-        verificationId: p.verification_id,
+        verificationId: subject,
         eventType: p.event,
         payload,
       })

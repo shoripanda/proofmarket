@@ -18932,7 +18932,14 @@
           "verification.expired",
           "verification.cancelled",
           "verification.provisional",
-          "verification.challenged"
+          "verification.challenged",
+          "task.application_received",
+          "task.seat_assigned",
+          "task.submitted",
+          "task.changes_requested",
+          "task.released",
+          "task.rejected",
+          "task.seat_expired"
         ]
       },
       "created_at": {
@@ -18941,33 +18948,58 @@
         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
       },
       "data": {
-        "type": "object",
-        "properties": {
-          "verification_id": {
-            "type": "string",
-            "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "verification_id": {
+                "type": "string",
+                "pattern": "^ver_[0-9A-HJKMNP-TV-Z]{26}$"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "CREATED",
+                  "FUNDED",
+                  "OPEN",
+                  "CLAIMED",
+                  "SUBMITTED",
+                  "VERIFYING",
+                  "VERIFIED",
+                  "SETTLED",
+                  "REJECTED",
+                  "EXPIRED",
+                  "CANCELLED",
+                  "REFUNDED"
+                ]
+              }
+            },
+            "required": [
+              "verification_id",
+              "status"
+            ]
           },
-          "status": {
-            "type": "string",
-            "enum": [
-              "CREATED",
-              "FUNDED",
-              "OPEN",
-              "CLAIMED",
-              "SUBMITTED",
-              "VERIFYING",
-              "VERIFIED",
-              "SETTLED",
-              "REJECTED",
-              "EXPIRED",
-              "CANCELLED",
-              "REFUNDED"
+          {
+            "type": "object",
+            "properties": {
+              "task_id": {
+                "type": "string"
+              },
+              "seat_id": {
+                "type": "string"
+              },
+              "application_id": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "task_id",
+              "state"
             ]
           }
-        },
-        "required": [
-          "verification_id",
-          "status"
         ]
       }
     },

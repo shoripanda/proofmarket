@@ -963,7 +963,16 @@ export const WebhookPayloadSchema = z.object({
   id: z.string().regex(/^evt_/),
   type: z.enum(WEBHOOK_EVENTS),
   created_at: IsoDateTime,
-  data: z.object({ verification_id: VerificationIdSchema, status: z.enum(TASK_STATUSES) }),
+  data: z.union([
+    z.object({ verification_id: VerificationIdSchema, status: z.enum(TASK_STATUSES) }),
+    /** task.* events (docs/architecture 13 §7.3): GET /v1/tasks/{task_id} for the details. */
+    z.object({
+      task_id: z.string(),
+      seat_id: z.string().optional(),
+      application_id: z.string().optional(),
+      state: z.string(),
+    }),
+  ]),
 });
 
 // ---------- recurring checks (04 §3.23) ----------
