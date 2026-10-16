@@ -383,7 +383,7 @@ export async function createVerification(
 }
 
 /** The balance of one asset, in micro units (each asset is its own balance, 15 §3.3). */
-async function balanceMicro(tx: Db, credentialId: string, asset: string): Promise<bigint> {
+export async function balanceMicro(tx: Db, credentialId: string, asset: string): Promise<bigint> {
   const [bal] = await tx
     .select({ s: sql<string>`coalesce(sum(amount), 0)` })
     .from(schema.requesterLedger)

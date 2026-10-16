@@ -5,9 +5,11 @@
 
 import {
   ACTOR_TYPES,
+  APPLICATION_STATES,
   CHALLENGE_STATES,
   CLAIM_STATES,
   FUNDING_STATUSES,
+  MARKET_TASK_STATUSES,
   OUTBOX_JOB_KINDS,
   OUTCOME_REASONS,
   OUTCOMES,
@@ -15,6 +17,10 @@ import {
   PARTICIPATION_ROLES,
   PAYMENT_KINDS,
   PLATFORM_FLAGS,
+  RELEASE_MODES,
+  SEAT_PAYMENT_KINDS,
+  SEAT_STATES,
+  SELECTION_MODES,
   SETTLEMENT_STATUSES,
   STORE_REPORT_STATUSES,
   SUBMISSION_STATES,
@@ -117,6 +123,9 @@ export const requesterLedger = pgTable(
       .notNull()
       .references(() => requesterCredentials.id),
     verificationId: text("verification_id").references(() => verificationRequests.id),
+    /** General tasks (13 §6.2): RESERVE for the whole task (seat null), REFUND per seat that is not paid. */
+    marketTaskId: text("market_task_id").references(() => marketTasks.id),
+    seatId: text("seat_id"),
     entryType: text("entry_type").notNull(),
     amount: money("amount").notNull(),
     asset: text("asset").notNull().default("USDC"),
@@ -124,6 +133,10 @@ export const requesterLedger = pgTable(
   },
   (t) => [
     check("requester_ledger_entry_chk", oneOf("entry_type", ["TOPUP", "RESERVE", "RELEASE", "REFUND"])),
+    // one RESERVE per task (seat null) and one REFUND per seat
+    uniqueIndex("requester_ledger_market_entry_uq")
+      .on(t.marketTaskId, sql`coalesce(seat_id, '')`, t.entryType)
+      .where(sql`market_task_id is not null`),
     unique("requester_ledger_task_entry_uq").on(t.verificationId, t.entryType),
     uniqueIndex("one_credit_back_per_task")
       .on(t.verificationId)
@@ -970,4 +983,201 @@ export const tickRuns = pgTable(
     failed: text("failed").array().notNull(),
   },
   (t) => [index("tick_runs_started_idx").on(t.startedAt)],
+);
+
+// ---------- general tasks (docs/architecture 13, decisions D1-D6 of 2026-10-16) ----------
+/**
+ * A task next to verifications: free-form work with seats, applications and a requester who releases payment.
+ * Kept in its own tables so the verification flow is untouched. The whole cost (price × seats + fee) is reserved
+ * at creation; each seat is escrowed on chain only when a worker takes it (13 §6.3).
+ */
+export const marketTasks = pgTable(
+  "market_tasks",
+  {
+    id: text("id").primaryKey(),
+    credentialId: text("credential_id")
+      .notNull()
+      .references(() => requesterCredentials.id),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    completionCriteria: text("completion_criteria").notNull(),
+    evidenceTypes: text("evidence_types").array().notNull(),
+    /** Questions shown to applicants: [{ id, label, required }]. */
+    applicationQuestions: jsonb("application_questions").notNull().default(sql`'[]'::jsonb`),
+    /** Area only (city, ward); never an exact address in public text. Null with remote_ok for anywhere. */
+    area: text("area"),
+    remoteOk: boolean("remote_ok").notNull().default(false),
+    asset: text("asset").notNull(),
+    network: text("network").notNull(),
+    /** Per seat, paid to the worker in full. */
+    price: money("price").notNull(),
+    seats: smallint("seats").notNull(),
+    feeRateBps: integer("fee_rate_bps").notNull(),
+    /** Per seat, kept only when that seat is released (13 §6.1). */
+    feePerSeat: money("fee_per_seat").notNull(),
+    selectionMode: text("selection_mode").notNull(),
+    autoAccept: boolean("auto_accept").notNull().default(false),
+    releaseMode: text("release_mode").notNull(),
+    completionWindowH: smallint("completion_window_h").notNull(),
+    /** No new applications or claims after this. */
+    deadline: tsz("deadline").notNull(),
+    status: text("status").notNull(),
+    idempotencyKeyHash: bytea("idempotency_key_hash").notNull(),
+    createdAt: tsz("created_at").notNull(),
+    updatedAt: tsz("updated_at").notNull(),
+  },
+  (t) => [
+    check("mt_status_chk", oneOf("status", MARKET_TASK_STATUSES)),
+    check("mt_selection_chk", oneOf("selection_mode", SELECTION_MODES)),
+    check("mt_release_chk", oneOf("release_mode", RELEASE_MODES)),
+    check("mt_seats_chk", sql`seats between 1 and 50`),
+    check("mt_window_chk", sql`completion_window_h between 1 and 168`),
+    check("mt_price_chk", sql`price > 0`),
+    check("mt_fee_chk", sql`fee_per_seat >= 0 and fee_rate_bps between 0 and 5000`),
+    check("mt_title_chk", sql`char_length(title) between 5 and 200`),
+    check("mt_description_chk", sql`char_length(description) between 20 and 5000`),
+    check("mt_criteria_chk", sql`char_length(completion_criteria) between 5 and 2000`),
+    check("mt_place_chk", sql`area is not null or remote_ok`),
+    unique("mt_idempotency_uq").on(t.credentialId, t.idempotencyKeyHash),
+    index("mt_status_deadline_idx").on(t.status, t.deadline),
+    index("mt_credential_created_idx").on(t.credentialId, t.createdAt.desc()),
+  ],
+);
+
+export const taskApplications = pgTable(
+  "task_applications",
+  {
+    id: text("id").primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => marketTasks.id),
+    workerId: text("worker_id")
+      .notNull()
+      .references(() => workers.id),
+    /** { question_id: answer } */
+    answers: jsonb("answers").notNull().default(sql`'{}'::jsonb`),
+    note: text("note"),
+    state: text("state").notNull(),
+    decisionReason: text("decision_reason"),
+    createdAt: tsz("created_at").notNull(),
+    decidedAt: tsz("decided_at"),
+  },
+  (t) => [
+    check("ta_state_chk", oneOf("state", APPLICATION_STATES)),
+    check("ta_note_chk", sql`note is null or char_length(note) <= 1000`),
+    unique("ta_one_per_worker_uq").on(t.taskId, t.workerId),
+  ],
+);
+
+export const taskSeats = pgTable(
+  "task_seats",
+  {
+    id: text("id").primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => marketTasks.id),
+    /** 1..seats. A seat freed by an expiry or a rejection is filled again as a new row with the next round. */
+    seatNo: smallint("seat_no").notNull(),
+    round: smallint("round").notNull(),
+    workerId: text("worker_id")
+      .notNull()
+      .references(() => workers.id),
+    applicationId: text("application_id").references(() => taskApplications.id),
+    state: text("state").notNull(),
+    /** SHA-256(task id ‖ seat no ‖ round): the on-chain Task of this seat (13 §6.3). */
+    taskIdHash: bytea("task_id_hash").notNull().unique(),
+    fundedAt: tsz("funded_at"),
+    assignedAt: tsz("assigned_at").notNull(),
+    dueAt: tsz("due_at").notNull(),
+    submittedAt: tsz("submitted_at"),
+    reviewDueAt: tsz("review_due_at"),
+    revisions: smallint("revisions").notNull().default(0),
+    decidedAt: tsz("decided_at"),
+    decisionReason: text("decision_reason"),
+    /** released by the requester, or by the 24 h rule (D2) */
+    releasedBy: text("released_by"),
+  },
+  (t) => [
+    check("seat_state_chk", oneOf("state", SEAT_STATES)),
+    check("seat_revisions_chk", sql`revisions between 0 and 3`),
+    check("seat_released_by_chk", sql`released_by is null or released_by in ('requester','timeout','auto')`),
+    unique("seat_round_uq").on(t.taskId, t.seatNo, t.round),
+    // one live worker per seat number
+    uniqueIndex("one_live_seat").on(t.taskId, t.seatNo).where(sql`state in ('ASSIGNED','IN_REVIEW')`),
+    // a worker holds at most one seat of a task at a time
+    uniqueIndex("one_live_seat_per_worker")
+      .on(t.taskId, t.workerId)
+      .where(sql`state in ('ASSIGNED','IN_REVIEW')`),
+    index("seat_state_due_idx").on(t.state, t.dueAt),
+    index("seat_state_review_idx").on(t.state, t.reviewDueAt),
+  ],
+);
+
+export const taskSubmissions = pgTable(
+  "task_submissions",
+  {
+    id: text("id").primaryKey(),
+    seatId: text("seat_id")
+      .notNull()
+      .references(() => taskSeats.id),
+    /** 0 for the first delivery, then 1..3 after each request for changes. */
+    round: smallint("round").notNull(),
+    body: text("body").notNull(),
+    links: text("links").array().notNull(),
+    createdAt: tsz("created_at").notNull(),
+  },
+  (t) => [
+    check("tsub_body_chk", sql`char_length(body) between 1 and 5000`),
+    unique("tsub_round_uq").on(t.seatId, t.round),
+  ],
+);
+
+/** Chain operations per seat, like payment_records per verification: at most one of each kind. */
+export const seatPayments = pgTable(
+  "seat_payments",
+  {
+    id: text("id").primaryKey(),
+    seatId: text("seat_id")
+      .notNull()
+      .references(() => taskSeats.id),
+    kind: text("kind").notNull(),
+    amount: money("amount").notNull(),
+    status: text("status").notNull(),
+    signatures: text("signatures").array().notNull().default(sql`'{}'`),
+    lastError: text("last_error"),
+    createdAt: tsz("created_at").notNull(),
+    confirmedAt: tsz("confirmed_at"),
+  },
+  (t) => [
+    check("sp_kind_chk", oneOf("kind", SEAT_PAYMENT_KINDS)),
+    check("sp_status_chk", oneOf("status", ["PENDING", "SUBMITTED", "CONFIRMED", "FAILED"])),
+    unique("sp_seat_kind_uq").on(t.seatId, t.kind),
+    uniqueIndex("sp_settle_xor_refund").on(t.seatId).where(sql`kind in ('SETTLE','REFUND')`),
+  ],
+);
+
+/**
+ * The conversation of a seat (docs/architecture 13 §5.2): the requester and the worker who holds it. Messages that
+ * look like contact details or payment outside ProofMarket are delivered and flagged (privacy-security.md).
+ */
+export const taskMessages = pgTable(
+  "task_messages",
+  {
+    id: text("id").primaryKey(),
+    seatId: text("seat_id")
+      .notNull()
+      .references(() => taskSeats.id),
+    sender: text("sender").notNull(),
+    body: text("body").notNull(),
+    flags: text("flags").array().notNull().default(sql`'{}'`),
+    createdAt: tsz("created_at").notNull(),
+  },
+  (t) => [
+    check("tm_sender_chk", sql`sender in ('requester','worker')`),
+    check("tm_body_chk", sql`char_length(body) between 1 and 2000`),
+    index("tm_seat_created_idx").on(t.seatId, t.createdAt),
+  ],
 );

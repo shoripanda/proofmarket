@@ -12,6 +12,7 @@ const DEFAULTS: Record<PlatformFlag, boolean> = {
   public_evidence_enabled: true,
   external_review_enabled: false,
   x402_enabled: true,
+  tasks_enabled: false,
 };
 
 export async function flagEnabled(db: Db, key: PlatformFlag): Promise<boolean> {

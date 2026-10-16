@@ -200,6 +200,86 @@ export class ProofMarketClient {
   }
 
   /** DELETE /v1/schedules/{id} */
+  // ---------- general tasks (docs/architecture 13) ----------
+
+  /** POST /v1/tasks. With `dry_run: true` nothing is created: the cost comes back. */
+  async createTask(body: Record<string, unknown>, idempotencyKey?: string): Promise<Record<string, unknown>> {
+    return (
+      await this.request<Record<string, unknown>>("POST", "/v1/tasks", {
+        body,
+        ...(idempotencyKey ? { headers: { "idempotency-key": idempotencyKey } } : {}),
+      })
+    ).json;
+  }
+
+  async listTasks(): Promise<Record<string, unknown>> {
+    return (await this.request<Record<string, unknown>>("GET", "/v1/tasks")).json;
+  }
+
+  async getTask(id: string): Promise<Record<string, unknown>> {
+    return (await this.request<Record<string, unknown>>("GET", `/v1/tasks/${encodeURIComponent(id)}`)).json;
+  }
+
+  async cancelTask(id: string): Promise<Record<string, unknown>> {
+    return (await this.request<Record<string, unknown>>("POST", `/v1/tasks/${encodeURIComponent(id)}/cancel`))
+      .json;
+  }
+
+  async listTaskApplications(id: string): Promise<Record<string, unknown>> {
+    return (
+      await this.request<Record<string, unknown>>("GET", `/v1/tasks/${encodeURIComponent(id)}/applications`)
+    ).json;
+  }
+
+  async decideTaskApplication(
+    id: string,
+    applicationId: string,
+    action: "accept" | "reject",
+    reason?: string,
+  ): Promise<Record<string, unknown>> {
+    return (
+      await this.request<Record<string, unknown>>(
+        "POST",
+        `/v1/tasks/${encodeURIComponent(id)}/applications/${encodeURIComponent(applicationId)}/${action}`,
+        { body: reason ? { reason } : {} },
+      )
+    ).json;
+  }
+
+  async decideTaskSeat(
+    id: string,
+    seatId: string,
+    action: "release" | "request-changes" | "reject",
+    body: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    return (
+      await this.request<Record<string, unknown>>(
+        "POST",
+        `/v1/tasks/${encodeURIComponent(id)}/seats/${encodeURIComponent(seatId)}/${action}`,
+        { body },
+      )
+    ).json;
+  }
+
+  async taskMessages(id: string, seatId: string): Promise<Record<string, unknown>> {
+    return (
+      await this.request<Record<string, unknown>>(
+        "GET",
+        `/v1/tasks/${encodeURIComponent(id)}/seats/${encodeURIComponent(seatId)}/messages`,
+      )
+    ).json;
+  }
+
+  async sendTaskMessage(id: string, seatId: string, body: string): Promise<Record<string, unknown>> {
+    return (
+      await this.request<Record<string, unknown>>(
+        "POST",
+        `/v1/tasks/${encodeURIComponent(id)}/seats/${encodeURIComponent(seatId)}/messages`,
+        { body: { body } },
+      )
+    ).json;
+  }
+
   async stopSchedule(id: string): Promise<Schedule> {
     return (await this.request<Schedule>("DELETE", `/v1/schedules/${encodeURIComponent(id)}`)).json;
   }

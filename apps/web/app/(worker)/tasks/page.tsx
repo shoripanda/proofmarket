@@ -11,6 +11,7 @@ import { errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
 import { rateNote } from "@/lib/client/rate";
 import { pick } from "@/lib/lang";
+import { JobsLink } from "../jobs/jobs-link";
 
 const REFRESH_MS = 30_000;
 const SCOPE_STORE = "pm.tasks.scope";
@@ -137,6 +138,7 @@ export default function TasksPage() {
       }
     >
       <Tour />
+      <JobsLink />
       <div
         className="grid grid-cols-2 gap-1 rounded-full bg-slate-100 p-1"
         role="tablist"

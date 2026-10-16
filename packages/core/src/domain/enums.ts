@@ -224,6 +224,10 @@ export const OUTBOX_JOB_KINDS = [
   "NOTIFY_WORKERS",
   /** Daily: compare yesterday's settlements with the Task accounts on chain (docs/architecture 06 §4.2). */
   "RECONCILE_SETTLEMENTS",
+  /** General tasks (docs/architecture 13 §6.3): one on-chain Task per seat, funded when the seat is filled. */
+  "FUND_SEAT",
+  "SETTLE_SEAT",
+  "REFUND_SEAT",
 ] as const;
 export type OutboxJobKind = (typeof OUTBOX_JOB_KINDS)[number];
 
@@ -245,6 +249,15 @@ export const WEBHOOK_EVENTS = [
   "verification.provisional",
   /** 13 §3: someone challenged the provisional answer; a recheck was created. */
   "verification.challenged",
+  /** General tasks (docs/architecture 13 §7.3). data: { task_id, seat_id?, application_id?, state } */
+  "task.application_received",
+  "task.seat_assigned",
+  "task.submitted",
+  "task.changes_requested",
+  "task.released",
+  "task.rejected",
+  "task.seat_expired",
+  "task.message_received",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 
@@ -258,6 +271,8 @@ export const PLATFORM_FLAGS = [
   "external_review_enabled",
   /** The x402 window (no API key) can be stopped on its own (docs/architecture 08 §4.3). Default on. */
   "x402_enabled",
+  /** General tasks next to verifications (docs/architecture 13). Off until the operator turns it on. */
+  "tasks_enabled",
 ] as const;
 export type PlatformFlag = (typeof PLATFORM_FLAGS)[number];
 
@@ -298,3 +313,34 @@ export type ParticipationArea = (typeof PARTICIPATION_AREAS)[number];
 /** Reports a registered shop can file about itself (01 §4.13). Context only, never used to decide results. */
 export const STORE_REPORT_STATUSES = ["CLOSED_TODAY", "OPEN_AS_USUAL"] as const;
 export type StoreReportStatus = (typeof STORE_REPORT_STATUSES)[number];
+
+// ---------- general tasks (docs/architecture 13, owner decisions D1-D6 of 2026-10-16) ----------
+
+/** A task as a whole: open for applicants, closed to new ones, every seat decided, or cancelled. */
+export const MARKET_TASK_STATUSES = ["OPEN", "CLOSED", "DONE", "CANCELLED"] as const;
+export type MarketTaskStatus = (typeof MARKET_TASK_STATUSES)[number];
+
+/** first_come: the first workers to take it get the seats. application: the requester (or AI screening) picks. */
+export const SELECTION_MODES = ["first_come", "application"] as const;
+export type SelectionMode = (typeof SELECTION_MODES)[number];
+
+/** manual: the requester releases (or 24 h pass, D2). auto: released on delivery. */
+export const RELEASE_MODES = ["manual", "auto"] as const;
+export type ReleaseMode = (typeof RELEASE_MODES)[number];
+
+export const TASK_EVIDENCE_TYPES = ["text", "link", "photo", "file"] as const;
+export type TaskEvidenceType = (typeof TASK_EVIDENCE_TYPES)[number];
+
+export const APPLICATION_STATES = ["pending", "accepted", "rejected", "withdrawn"] as const;
+export type ApplicationState = (typeof APPLICATION_STATES)[number];
+
+/**
+ * One seat, one worker at a time (13 §5.2). ASSIGNED: funded or funding, the worker is working. IN_REVIEW: delivered,
+ * the 24 h clock runs. RELEASED / REJECTED / EXPIRED are final for that worker; an EXPIRED or REJECTED seat may be
+ * refilled while the task is open (a new row with the next round).
+ */
+export const SEAT_STATES = ["ASSIGNED", "IN_REVIEW", "RELEASED", "REJECTED", "EXPIRED", "CANCELLED"] as const;
+export type SeatState = (typeof SEAT_STATES)[number];
+
+export const SEAT_PAYMENT_KINDS = ["FUND", "SETTLE", "REFUND"] as const;
+export type SeatPaymentKind = (typeof SEAT_PAYMENT_KINDS)[number];

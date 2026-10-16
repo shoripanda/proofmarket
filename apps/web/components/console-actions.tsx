@@ -164,3 +164,154 @@ export function CopyField({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+/** General tasks (docs/architecture 13 §8): accept or decline an applicant from the console. */
+export function TaskApplicationButtons({ taskId, appId }: { taskId: string; appId: string }) {
+  const lang = useLang();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const act = async (action: "accept" | "reject") => {
+    setBusy(true);
+    await fetch(`/v1/console/tasks/${taskId}/applications/${appId}/${action}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    }).catch(() => null);
+    setBusy(false);
+    router.refresh();
+  };
+  return (
+    <span className="flex gap-3">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => act("accept")}
+        className="rounded-xl bg-teal-700 px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40"
+      >
+        {pick(lang, "採用する", "Accept")}
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => act("reject")}
+        className="text-sm font-semibold text-slate-600 underline disabled:opacity-40"
+      >
+        {pick(lang, "見送る", "Decline")}
+      </button>
+    </span>
+  );
+}
+
+/** Release, send back or reject a delivered seat. Releasing is final, so it asks first. */
+export function TaskSeatButtons({ taskId, seatId }: { taskId: string; seatId: string }) {
+  const lang = useLang();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const act = async (action: "release" | "request-changes" | "reject") => {
+    let body: Record<string, unknown> = {};
+    if (action === "release") {
+      if (
+        !window.confirm(
+          pick(lang, "支払います。取り消せません。よろしいですか。", "Pay now? This cannot be undone."),
+        )
+      )
+        return;
+      body = { acknowledge_release: true };
+    } else {
+      const reason = window.prompt(
+        action === "reject"
+          ? pick(
+              lang,
+              "受け取らない理由（worker に見えます）",
+              "Why you are rejecting it (the worker sees this)",
+            )
+          : pick(lang, "直してほしいところ（worker に見えます）", "What to change (the worker sees this)"),
+      );
+      if (!reason?.trim()) return;
+      body = { reason: reason.trim() };
+    }
+    setBusy(true);
+    setErr(null);
+    const res = await fetch(`/v1/console/tasks/${taskId}/seats/${seatId}/${action}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok)
+      setErr(
+        pick(lang, "うまくいきませんでした。読み込み直してください。", "That did not work. Reload the page."),
+      );
+    router.refresh();
+  };
+  return (
+    <span className="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => act("release")}
+        className="rounded-xl bg-teal-700 px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40"
+      >
+        {pick(lang, "承認して支払う", "Approve and pay")}
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => act("request-changes")}
+        className="text-sm font-semibold text-teal-800 underline disabled:opacity-40"
+      >
+        {pick(lang, "直しを頼む", "Ask for changes")}
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => act("reject")}
+        className="text-sm font-semibold text-rose-700 underline disabled:opacity-40"
+      >
+        {pick(lang, "受け取らない", "Reject")}
+      </button>
+      {err ? <span className="text-sm text-rose-700">{err}</span> : null}
+    </span>
+  );
+}
+
+/** Reply to the worker on a seat from the console. */
+export function TaskMessageForm({ taskId, seatId }: { taskId: string; seatId: string }) {
+  const lang = useLang();
+  const router = useRouter();
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <form
+      className="mt-2 flex gap-2"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!text.trim()) return;
+        setBusy(true);
+        await fetch(`/v1/console/tasks/${taskId}/seats/${seatId}/messages`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ body: text.trim() }),
+        }).catch(() => null);
+        setBusy(false);
+        setText("");
+        router.refresh();
+      }}
+    >
+      <input
+        className="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-sm"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={pick(lang, "worker へのメッセージ", "Message to the worker")}
+      />
+      <button
+        type="submit"
+        disabled={busy || !text.trim()}
+        className="rounded-xl border border-teal-700 px-3 py-1.5 text-sm font-semibold text-teal-800 disabled:opacity-40"
+      >
+        {pick(lang, "送る", "Send")}
+      </button>
+    </form>
+  );
+}

@@ -49,6 +49,10 @@ export function useApi() {
 /** Japanese text for API error codes a worker can hit (07 §6 + 05 §8). */
 export const ERROR_JA: Record<string, string> = {
   UNAUTHENTICATED: "ログインし直してください。",
+  TASKS_NOT_ENABLED: "仕事の受付はまだ始まっていません。",
+  TASK_STATE_CONFLICT: "いまの状態ではこの操作はできません。画面を読み込み直してください。",
+  TASK_NOT_FOUND: "この仕事は見つかりませんでした。",
+  SEAT_NOT_FOUND: "この仕事の担当は見つかりませんでした。",
   WORKER_NOT_ONBOARDED: "最初に登録を済ませてください。",
   INVITE_INVALID: "招待コードが正しくないか、期限が切れています。",
   TASK_NOT_CLAIMABLE: "このタスクはもう引き受けられません。",
@@ -66,6 +70,10 @@ export const ERROR_JA: Record<string, string> = {
 };
 
 const ERROR_EN: Record<string, string> = {
+  TASKS_NOT_ENABLED: "Tasks are not open yet.",
+  TASK_STATE_CONFLICT: "This cannot be done in the current state. Reload the page.",
+  TASK_NOT_FOUND: "This task was not found.",
+  SEAT_NOT_FOUND: "This seat was not found.",
   UNAUTHENTICATED: "Please sign in again.",
   WORKER_NOT_ONBOARDED: "Please finish registration first.",
   INVITE_INVALID: "The invite code is wrong or has expired.",

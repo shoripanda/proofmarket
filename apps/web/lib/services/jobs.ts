@@ -2,7 +2,7 @@ import "server-only";
 // Outbox runner and periodic tick (02 §4.1, 04 §3.17). Jobs are leased with a short committed UPDATE so no DB
 // transaction stays open while waiting for chain confirmation; expired leases are reclaimed.
 
-import { LIMITS, OUTBOX_RETRY, type OutboxJobKind, type WebhookEvent } from "@proofmarket/core";
+import { LIMITS, OUTBOX_RETRY, type OutboxJobKind } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
 import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
@@ -10,6 +10,7 @@ import { log } from "../log";
 import { runOptimistic } from "./challenge-service";
 import { runDeposits } from "./deposit-service";
 import { releaseStaleReviews } from "./evidence-service";
+import { runFundSeat, runRefundSeat, runSettleSeat, sweepMarketTasks } from "./market-task-service";
 import { runNotifyWorkers } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
 import { runDueSchedules } from "./schedule-service";
@@ -69,12 +70,7 @@ const HANDLERS: Record<OutboxJobKind, Handler> = {
   FUND_TASK: (app, p, attempts) => runFundTask(app, String(p.verification_id), attempts),
   FINALIZE_AND_SETTLE: (app, p) => runFinalizeAndSettle(app, String(p.verification_id)),
   REFUND_TASK: (app, p) => runRefund(app, String(p.verification_id)),
-  DELIVER_WEBHOOK: (app, p) =>
-    deliverWebhook(
-      app,
-      p as { verification_id: string; endpoint_id: string; event: WebhookEvent },
-      webhookDeps,
-    ),
+  DELIVER_WEBHOOK: (app, p) => deliverWebhook(app, p as Parameters<typeof deliverWebhook>[1], webhookDeps),
   PURGE_EVIDENCE: async (app) => {
     await purgeExpiredEvidence(app);
     return { kind: "done" };
@@ -83,6 +79,9 @@ const HANDLERS: Record<OutboxJobKind, Handler> = {
     await runNotifyWorkers(app, String(p.verification_id));
     return { kind: "done" };
   },
+  FUND_SEAT: (app, p) => runFundSeat(app, String(p.seat_id)),
+  SETTLE_SEAT: (app, p) => runSettleSeat(app, String(p.seat_id)),
+  REFUND_SEAT: (app, p) => runRefundSeat(app, String(p.seat_id)),
   RECONCILE_SETTLEMENTS: async (app) => {
     const r = await reconcileSettlements(app);
     log("info", "reconcile_settlements", { ...r });
@@ -252,6 +251,8 @@ export async function tick(app: AppContext, maxJobs = TICK_MAX_JOBS): Promise<Ti
   );
   // 5. Recurring checks that are due create normal tasks (04 §3.23); their FUND_TASK jobs drain below.
   await step(failed, "schedules", () => runDueSchedules(app), steps);
+  // 5b. General tasks (docs/architecture 13 §5.3): pay seats whose 24 h passed, free seats out of time, close tasks.
+  await step(failed, "market_tasks", () => sweepMarketTasks(app), steps);
   // 6. Deposits (15 §4.3): credit finalized transfers that carry a requester's reference, before the jobs
   // below so a task created against the new balance can be funded in the same tick.
   await step(failed, "deposits", () => runDeposits(app), steps);

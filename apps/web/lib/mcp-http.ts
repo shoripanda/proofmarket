@@ -6,6 +6,16 @@ import { ProofMarketClient } from "@proofmarket/sdk";
 import { authenticateRequester } from "./auth/requester";
 import type { AppContext } from "./context";
 import {
+  handleCancelTask,
+  handleCreateTask,
+  handleDecideApplication,
+  handleDecideSeat,
+  handleGetTask,
+  handleListApplications,
+  handleListTasksOwn,
+  handleSeatMessages,
+} from "./handlers/market-tasks";
+import {
   handleCancel,
   handleCreate,
   handleCreateBatch,
@@ -19,6 +29,7 @@ import {
   handleStopSchedule,
 } from "./handlers/requester";
 import { route } from "./http";
+import { flagEnabled } from "./services/flags";
 import { publicBase, resourceMetadataUrl } from "./services/oauth-service";
 import { publicAssets } from "./services/public-service";
 
@@ -76,6 +87,44 @@ const TABLE: [string, RegExp, H, Jobs][] = [
   ["POST", /^\/v1\/schedules$/, (a, r) => handleCreateSchedule(a, r), none],
   ["GET", /^\/v1\/schedules$/, (a, r) => handleListSchedules(a, r), none],
   ["DELETE", /^\/v1\/schedules\/([^/]+)$/, handleStopSchedule, none],
+  // General tasks (docs/architecture 13 §7.2). Seat jobs run on the next tick; nothing to kick here.
+  ["POST", /^\/v1\/tasks$/, (a, r) => handleCreateTask(a, r), none],
+  ["GET", /^\/v1\/tasks$/, (a, r) => handleListTasksOwn(a, r), none],
+  ["GET", /^\/v1\/tasks\/([^/]+)$/, handleGetTask, none],
+  ["POST", /^\/v1\/tasks\/([^/]+)\/cancel$/, handleCancelTask, none],
+  ["GET", /^\/v1\/tasks\/([^/]+)\/applications$/, handleListApplications, none],
+  [
+    "POST",
+    /^\/v1\/tasks\/([^/]+)\/applications\/[^/]+\/(?:accept|reject)$/,
+    (a, r, id) => {
+      const [, , , , , appId, action] = new URL(r.url).pathname.split("/");
+      return handleDecideApplication(a, r, id, decodeURIComponent(appId ?? ""), action ?? "");
+    },
+    none,
+  ],
+  [
+    "GET",
+    /^\/v1\/tasks\/([^/]+)\/seats\/[^/]+\/messages$/,
+    (a, r, id) =>
+      handleSeatMessages(a, r, id, decodeURIComponent(new URL(r.url).pathname.split("/")[5] ?? "")),
+    none,
+  ],
+  [
+    "POST",
+    /^\/v1\/tasks\/([^/]+)\/seats\/[^/]+\/messages$/,
+    (a, r, id) =>
+      handleSeatMessages(a, r, id, decodeURIComponent(new URL(r.url).pathname.split("/")[5] ?? "")),
+    none,
+  ],
+  [
+    "POST",
+    /^\/v1\/tasks\/([^/]+)\/seats\/[^/]+\/(?:release|request-changes|reject)$/,
+    (a, r, id) => {
+      const [, , , , , seatId, action] = new URL(r.url).pathname.split("/");
+      return handleDecideSeat(a, r, id, decodeURIComponent(seatId ?? ""), action ?? "");
+    },
+    none,
+  ],
 ];
 
 /** fetch that routes SDK requests to the REST handlers in this process (same auth, limits and idempotency). */
@@ -130,7 +179,10 @@ export async function handleMcp(app: AppContext, req: Request, kick: Kick): Prom
     apiKey,
     fetch: inProcessFetch(app, kick),
   });
-  const server = createServer(client, { principalRef: principalId });
+  const server = createServer(client, {
+    principalRef: principalId,
+    tasksEnabled: await flagEnabled(app.db, "tasks_enabled"),
+  });
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

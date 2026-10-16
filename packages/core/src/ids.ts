@@ -35,6 +35,12 @@ export const ID_PREFIXES = {
   /** docs/architecture 04 §4.2: the cost of a request, quoted before anything is reserved. */
   quote: "qte",
   payoutAdjustment: "pad",
+  marketTask: "tsk",
+  taskApplication: "app",
+  taskSeat: "seat",
+  taskSubmission: "dlv",
+  seatPayment: "spy",
+  taskMessage: "msg",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;
