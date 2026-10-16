@@ -4,14 +4,14 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { TaskApplicationButtons, TaskSeatButtons } from "@/components/console-actions";
+import { TaskApplicationButtons, TaskMessageForm, TaskSeatButtons } from "@/components/console-actions";
 import { Section } from "@/components/site";
 import { appContext } from "@/lib/context";
 import { dateLocale, type Lang, langHref, pick } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 import { CONSOLE_COOKIE, consoleAuth } from "@/lib/services/console-service";
 import { flagEnabled } from "@/lib/services/flags";
-import { listApplications, listTasks } from "@/lib/services/market-task-service";
+import { listApplications, listTasks, requesterMessages } from "@/lib/services/market-task-service";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -81,6 +81,16 @@ export default async function ConsoleTasksPage() {
   }
   const { tasks } = await listTasks(app, auth);
   const apps = await Promise.all(tasks.map((t) => listApplications(app, auth, t.task_id)));
+  const threads = new Map(
+    await Promise.all(
+      tasks.flatMap((t) =>
+        t.seats.map(
+          async (s) =>
+            [s.seat_id, (await requesterMessages(app, auth, t.task_id, s.seat_id)).messages] as const,
+        ),
+      ),
+    ),
+  );
   return (
     <>
       {back}
@@ -180,6 +190,26 @@ export default async function ConsoleTasksPage() {
                           <div className="mt-2">
                             <TaskSeatButtons taskId={t.task_id} seatId={s.seat_id} />
                           </div>
+                        ) : null}
+                        {(threads.get(s.seat_id) ?? []).length ? (
+                          <ul className="mt-3 space-y-1">
+                            {(threads.get(s.seat_id) ?? []).map((m) => (
+                              <li key={m.message_id} className="text-sm">
+                                <span className="font-semibold text-slate-500">
+                                  {m.sender === "worker" ? "worker" : pick(lang, "あなた", "You")}:
+                                </span>{" "}
+                                <span className="whitespace-pre-wrap">{m.body}</span>
+                                {m.flags.length ? (
+                                  <span className="ml-2 rounded bg-amber-100 px-1.5 text-xs text-amber-900">
+                                    {pick(lang, "外部への誘導の疑い", "possible off-platform")}
+                                  </span>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {s.state === "ASSIGNED" || s.state === "IN_REVIEW" ? (
+                          <TaskMessageForm taskId={t.task_id} seatId={s.seat_id} />
                         ) : null}
                       </li>
                     ))}

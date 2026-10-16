@@ -4,9 +4,16 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { PLATFORM_FEE_BPS } from "@proofmarket/core";
 import { beforeEach, describe, expect, it } from "vitest";
+import {
+  handleWorkerApply,
+  handleWorkerDeliver,
+  handleWorkerSeatMessages,
+} from "../lib/handlers/market-tasks";
 import { handleMcp } from "../lib/mcp-http";
 import { setFlag } from "../lib/services/admin-service";
-import { createTestApp } from "./support/app";
+import { tick } from "../lib/services/jobs";
+import { call, createTestApp, jsonReq } from "./support/app";
+import { onboardWorker } from "./support/worker";
 
 // biome-ignore lint/suspicious/noExplicitAny: test convenience
 type Any = any;
@@ -69,5 +76,68 @@ describe("MCP task tools", () => {
     expect(id).toMatch(/^tsk_/);
     const got = (await mcp.callTool({ name: "get_task", arguments: { task_id: id } })) as Any;
     expect(got.structuredContent).toMatchObject({ status: "OPEN", cost: { total: "2.3" } });
+  });
+
+  it("accept, message, release through MCP; worker messages are flagged when they move contact off ProofMarket", async () => {
+    await setFlag(t.db, "tasks_enabled", true, "test");
+    const alice = (await onboardWorker(t, "alice")).token;
+    const mcp = await connect();
+    const call2 = async (name: string, a: Record<string, unknown>) =>
+      (await mcp.callTool({ name, arguments: a })) as Any;
+    const posted = await call2("create_task", { ...args, dry_run: false, confirm: true });
+    const id = posted.structuredContent.task_id as string;
+    await call(
+      (r) => handleWorkerApply(t.app, r, id),
+      jsonReq("POST", `/v1/worker/market-tasks/${id}/apply`, { key: alice, body: {} }),
+    );
+    const apps = await call2("list_task_applications", { task_id: id });
+    const appId = apps.structuredContent.applications[0].application_id as string;
+    const accepted = await call2("decide_task_application", {
+      task_id: id,
+      application_id: appId,
+      action: "accept",
+    });
+    expect(accepted.isError).toBeFalsy();
+    const seatId = accepted.structuredContent.seats[0].seat_id as string;
+    await tick(t.app);
+
+    await call(
+      (r) => handleWorkerSeatMessages(t.app, r, seatId),
+      jsonReq("POST", `/v1/worker/market-seats/${seatId}/messages`, {
+        key: alice,
+        body: { body: "Done soon. You can also reach me at alice@example.com" },
+      }),
+    );
+    const sent = await call2("task_messages", {
+      task_id: id,
+      seat_id: seatId,
+      body: "Thanks, please keep it here.",
+    });
+    expect(
+      sent.structuredContent.messages.map((m: { sender: string; flags: string[] }) => [m.sender, m.flags]),
+    ).toEqual([
+      ["worker", ["contact_email"]],
+      ["requester", []],
+    ]);
+
+    await call(
+      (r) => handleWorkerDeliver(t.app, r, seatId),
+      jsonReq("POST", `/v1/worker/market-seats/${seatId}/deliver`, {
+        key: alice,
+        body: { body: "No typos found." },
+      }),
+    );
+    const noAck = await call2("decide_task_seat", { task_id: id, seat_id: seatId, action: "release" });
+    expect(noAck.isError).toBe(true);
+    const released = await call2("decide_task_seat", {
+      task_id: id,
+      seat_id: seatId,
+      action: "release",
+      acknowledge_release: true,
+    });
+    expect(released.structuredContent.seats[0]).toMatchObject({
+      state: "RELEASED",
+      released_by: "requester",
+    });
   });
 });

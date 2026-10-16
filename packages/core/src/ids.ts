@@ -40,6 +40,7 @@ export const ID_PREFIXES = {
   taskSeat: "seat",
   taskSubmission: "dlv",
   seatPayment: "spy",
+  taskMessage: "msg",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

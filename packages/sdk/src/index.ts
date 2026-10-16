@@ -261,6 +261,25 @@ export class ProofMarketClient {
     ).json;
   }
 
+  async taskMessages(id: string, seatId: string): Promise<Record<string, unknown>> {
+    return (
+      await this.request<Record<string, unknown>>(
+        "GET",
+        `/v1/tasks/${encodeURIComponent(id)}/seats/${encodeURIComponent(seatId)}/messages`,
+      )
+    ).json;
+  }
+
+  async sendTaskMessage(id: string, seatId: string, body: string): Promise<Record<string, unknown>> {
+    return (
+      await this.request<Record<string, unknown>>(
+        "POST",
+        `/v1/tasks/${encodeURIComponent(id)}/seats/${encodeURIComponent(seatId)}/messages`,
+        { body: { body } },
+      )
+    ).json;
+  }
+
   async stopSchedule(id: string): Promise<Schedule> {
     return (await this.request<Schedule>("DELETE", `/v1/schedules/${encodeURIComponent(id)}`)).json;
   }

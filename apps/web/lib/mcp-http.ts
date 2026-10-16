@@ -13,6 +13,7 @@ import {
   handleGetTask,
   handleListApplications,
   handleListTasksOwn,
+  handleSeatMessages,
 } from "./handlers/market-tasks";
 import {
   handleCancel,
@@ -96,16 +97,30 @@ const TABLE: [string, RegExp, H, Jobs][] = [
     "POST",
     /^\/v1\/tasks\/([^/]+)\/applications\/[^/]+\/(?:accept|reject)$/,
     (a, r, id) => {
-      const [, , , , appId, action] = new URL(r.url).pathname.split("/");
+      const [, , , , , appId, action] = new URL(r.url).pathname.split("/");
       return handleDecideApplication(a, r, id, decodeURIComponent(appId ?? ""), action ?? "");
     },
+    none,
+  ],
+  [
+    "GET",
+    /^\/v1\/tasks\/([^/]+)\/seats\/[^/]+\/messages$/,
+    (a, r, id) =>
+      handleSeatMessages(a, r, id, decodeURIComponent(new URL(r.url).pathname.split("/")[5] ?? "")),
+    none,
+  ],
+  [
+    "POST",
+    /^\/v1\/tasks\/([^/]+)\/seats\/[^/]+\/messages$/,
+    (a, r, id) =>
+      handleSeatMessages(a, r, id, decodeURIComponent(new URL(r.url).pathname.split("/")[5] ?? "")),
     none,
   ],
   [
     "POST",
     /^\/v1\/tasks\/([^/]+)\/seats\/[^/]+\/(?:release|request-changes|reject)$/,
     (a, r, id) => {
-      const [, , , , seatId, action] = new URL(r.url).pathname.split("/");
+      const [, , , , , seatId, action] = new URL(r.url).pathname.split("/");
       return handleDecideSeat(a, r, id, decodeURIComponent(seatId ?? ""), action ?? "");
     },
     none,

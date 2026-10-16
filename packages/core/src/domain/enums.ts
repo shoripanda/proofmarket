@@ -257,6 +257,7 @@ export const WEBHOOK_EVENTS = [
   "task.released",
   "task.rejected",
   "task.seat_expired",
+  "task.message_received",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 

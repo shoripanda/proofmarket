@@ -21,6 +21,7 @@ import {
   LIST_WATCHES_TOOL,
   REQUEST_TOOL,
   STOP_WATCH_TOOL,
+  TASK_MESSAGES_TOOL,
   WATCH_TOOL,
 } from "./tools.ts";
 import { WIDGET_HTML, WIDGET_META, WIDGET_MIME, WIDGET_URI } from "./widget.ts";
@@ -367,6 +368,27 @@ export function createServer(
     async (args) => {
       try {
         return ok(await client.cancelTask(String((args as { task_id: string }).task_id)));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    TASK_MESSAGES_TOOL.name,
+    {
+      title: TASK_MESSAGES_TOOL.title,
+      description: TASK_MESSAGES_TOOL.description,
+      inputSchema: TASK_MESSAGES_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        const a = args as { task_id: string; seat_id: string; body?: string };
+        return ok(
+          a.body?.trim()
+            ? await client.sendTaskMessage(a.task_id, a.seat_id, a.body)
+            : await client.taskMessages(a.task_id, a.seat_id),
+        );
       } catch (e) {
         return err(e);
       }

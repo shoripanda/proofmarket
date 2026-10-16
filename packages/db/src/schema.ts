@@ -1158,3 +1158,26 @@ export const seatPayments = pgTable(
     uniqueIndex("sp_settle_xor_refund").on(t.seatId).where(sql`kind in ('SETTLE','REFUND')`),
   ],
 );
+
+/**
+ * The conversation of a seat (docs/architecture 13 §5.2): the requester and the worker who holds it. Messages that
+ * look like contact details or payment outside ProofMarket are delivered and flagged (privacy-security.md).
+ */
+export const taskMessages = pgTable(
+  "task_messages",
+  {
+    id: text("id").primaryKey(),
+    seatId: text("seat_id")
+      .notNull()
+      .references(() => taskSeats.id),
+    sender: text("sender").notNull(),
+    body: text("body").notNull(),
+    flags: text("flags").array().notNull().default(sql`'{}'`),
+    createdAt: tsz("created_at").notNull(),
+  },
+  (t) => [
+    check("tm_sender_chk", sql`sender in ('requester','worker')`),
+    check("tm_body_chk", sql`char_length(body) between 1 and 2000`),
+    index("tm_seat_created_idx").on(t.seatId, t.createdAt),
+  ],
+);

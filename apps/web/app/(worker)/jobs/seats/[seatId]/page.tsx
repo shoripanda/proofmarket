@@ -7,6 +7,7 @@ import { useLang } from "@/lib/client/lang";
 import { pick } from "@/lib/lang";
 import { SEAT_TEXT } from "../../seat-state";
 import type { Job, MySeat } from "../../types";
+import { SeatMessages } from "./messages";
 
 export default function SeatPage({ params }: { params: Promise<{ seatId: string }> }) {
   const { seatId } = use(params);
@@ -145,6 +146,7 @@ export default function SeatPage({ params }: { params: Promise<{ seatId: string 
               ))}
             </Card>
           ) : null}
+          <SeatMessages seatId={seat.seat_id} />
         </>
       ) : null}
     </Shell>

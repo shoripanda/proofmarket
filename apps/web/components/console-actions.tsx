@@ -275,3 +275,43 @@ export function TaskSeatButtons({ taskId, seatId }: { taskId: string; seatId: st
     </span>
   );
 }
+
+/** Reply to the worker on a seat from the console. */
+export function TaskMessageForm({ taskId, seatId }: { taskId: string; seatId: string }) {
+  const lang = useLang();
+  const router = useRouter();
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <form
+      className="mt-2 flex gap-2"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!text.trim()) return;
+        setBusy(true);
+        await fetch(`/v1/console/tasks/${taskId}/seats/${seatId}/messages`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ body: text.trim() }),
+        }).catch(() => null);
+        setBusy(false);
+        setText("");
+        router.refresh();
+      }}
+    >
+      <input
+        className="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-sm"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={pick(lang, "worker へのメッセージ", "Message to the worker")}
+      />
+      <button
+        type="submit"
+        disabled={busy || !text.trim()}
+        className="rounded-xl border border-teal-700 px-3 py-1.5 text-sm font-semibold text-teal-800 disabled:opacity-40"
+      >
+        {pick(lang, "送る", "Send")}
+      </button>
+    </form>
+  );
+}

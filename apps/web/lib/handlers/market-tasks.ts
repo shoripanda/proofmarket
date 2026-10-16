@@ -30,7 +30,11 @@ import {
   listMySeats,
   listOpenTasksForWorker,
   listTasks,
+  requesterMessages,
+  requesterSend,
   requireTasksEnabled,
+  workerMessages,
+  workerSend,
 } from "../services/market-task-service";
 import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
 
@@ -159,4 +163,25 @@ export async function handleWorkerDeliver(app: AppContext, req: Request, seatId:
   const w = await requireWorker(app, req);
   const body = parse(DeliverSeatRequestSchema, await readJson(req));
   return Response.json(await deliverSeat(app, w.workerId, seatId, body));
+}
+
+// ---------- conversation (13 §5.2) ----------
+
+const messageBody = (raw: unknown): string =>
+  raw && typeof raw === "object" && "body" in raw && typeof raw.body === "string" ? raw.body : "";
+
+/** GET / POST /v1/tasks/{id}/seats/{seat_id}/messages */
+export async function handleSeatMessages(app: AppContext, req: Request, id: string, seatId: string) {
+  const auth = await authenticateRequester(app, req);
+  if (req.method === "GET") return Response.json(await requesterMessages(app, auth, id, seatId));
+  await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
+  return Response.json(await requesterSend(app, auth, id, seatId, messageBody(await readJson(req))));
+}
+
+/** GET / POST /v1/worker/market-seats/{seat_id}/messages */
+export async function handleWorkerSeatMessages(app: AppContext, req: Request, seatId: string) {
+  const w = await requireWorker(app, req);
+  if (req.method === "GET") return Response.json(await workerMessages(app, w.workerId, seatId));
+  await consumeRateLimit(app, `worker-msg:${w.workerId}`, 20);
+  return Response.json(await workerSend(app, w.workerId, seatId, messageBody(await readJson(req))));
 }

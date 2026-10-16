@@ -13,7 +13,7 @@ import {
   sessionCookie,
 } from "../services/console-service";
 import { ensureDepositReference } from "../services/deposit-service";
-import { decideApplication, decideSeat } from "../services/market-task-service";
+import { decideApplication, decideSeat, requesterSend } from "../services/market-task-service";
 import { clientIp } from "../services/oauth-service";
 import { stopSchedule } from "../services/schedule-service";
 
@@ -92,4 +92,15 @@ export async function handleConsoleTaskSeat(
   return Response.json(
     await decideSeat(app, auth, id, seatId, action === "reject" ? "reject" : "request_changes", reason),
   );
+}
+
+/** POST /v1/console/tasks/{id}/seats/{seat_id}/messages */
+export async function handleConsoleSeatMessage(app: AppContext, req: Request, id: string, seatId: string) {
+  assertSameOrigin(req);
+  const auth = await consoleAuth(app, cookieToken(req));
+  if (!auth) throw new ApiError("UNAUTHENTICATED");
+  const raw = await readJson(req).catch(() => ({}));
+  const body =
+    raw && typeof raw === "object" && "body" in raw && typeof raw.body === "string" ? raw.body : "";
+  return Response.json(await requesterSend(app, auth, id, seatId, body));
 }
