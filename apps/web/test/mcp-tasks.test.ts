@@ -8,6 +8,9 @@ import { handleMcp } from "../lib/mcp-http";
 import { setFlag } from "../lib/services/admin-service";
 import { createTestApp } from "./support/app";
 
+// biome-ignore lint/suspicious/noExplicitAny: test convenience
+type Any = any;
+
 let t: Awaited<ReturnType<typeof createTestApp>>;
 beforeEach(async () => {
   t = await createTestApp();
@@ -49,26 +52,22 @@ describe("MCP task tools", () => {
     const names = (await mcp.listTools()).tools.map((x) => x.name);
     expect(names).toEqual(expect.arrayContaining(["create_task", "get_task", "decide_task_seat"]));
 
-    // biome-ignore lint/suspicious/noExplicitAny: test convenience
-    const dry = (await mcp.callTool({ name: "create_task", arguments: { ...args, dry_run: true } })) as any;
+    const dry = (await mcp.callTool({ name: "create_task", arguments: { ...args, dry_run: true } })) as Any;
     expect(dry.structuredContent).toMatchObject({ dry_run: true, cost: { total: "2.3" } });
 
-    // biome-ignore lint/suspicious/noExplicitAny: test convenience
     const refused = (await mcp.callTool({
       name: "create_task",
       arguments: { ...args, dry_run: false },
-    })) as any;
+    })) as Any;
     expect(refused.isError).toBe(true);
 
-    // biome-ignore lint/suspicious/noExplicitAny: test convenience
     const posted = (await mcp.callTool({
       name: "create_task",
       arguments: { ...args, dry_run: false, confirm: true },
-    })) as any;
+    })) as Any;
     const id = posted.structuredContent.task_id as string;
     expect(id).toMatch(/^tsk_/);
-    // biome-ignore lint/suspicious/noExplicitAny: test convenience
-    const got = (await mcp.callTool({ name: "get_task", arguments: { task_id: id } })) as any;
+    const got = (await mcp.callTool({ name: "get_task", arguments: { task_id: id } })) as Any;
     expect(got.structuredContent).toMatchObject({ status: "OPEN", cost: { total: "2.3" } });
   });
 });

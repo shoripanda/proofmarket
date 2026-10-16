@@ -232,12 +232,6 @@ export function createServer(
 
   // General tasks (docs/architecture 13 §7.2): dry run first, then a real post only with confirm=true.
   if (!opts.tasksEnabled) return server;
-  const t = (def: {
-    name: string;
-    title: string;
-    description: string;
-    inputSchema: Record<string, unknown>;
-  }) => [def.name, { title: def.title, description: def.description, inputSchema: def.inputSchema }] as const;
   server.registerTool(
     CREATE_TASK_TOOL.name,
     {

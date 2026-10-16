@@ -43,7 +43,6 @@ const CHAIN_MARGIN_MS = 7 * 24 * 3600_000;
 
 type TaskRow = typeof schema.marketTasks.$inferSelect;
 type SeatRow = typeof schema.taskSeats.$inferSelect;
-type ApplicationRow = typeof schema.taskApplications.$inferSelect;
 
 export async function requireTasksEnabled(db: Db): Promise<void> {
   if (!(await flagEnabled(db, "tasks_enabled"))) throw new ApiError("TASKS_NOT_ENABLED");
@@ -966,7 +965,7 @@ export async function runFundSeat(app: AppContext, seatId: string): Promise<Seat
 export async function runSettleSeat(app: AppContext, seatId: string): Promise<SeatJobOutcome> {
   if (!(await settlementOn(app.db))) return { kind: "retry", error: "settlement_disabled", delayS: 60 };
   const st = await seatAndTask(app.db, seatId);
-  if (!st || st.s.state !== "RELEASED") return { kind: "done" };
+  if (st?.s.state !== "RELEASED") return { kind: "done" };
   const { s, t } = st;
   if (!s.fundedAt) return { kind: "retry", error: "seat not funded yet", delayS: 30 };
   const [w] = await app.db.select().from(schema.workers).where(eq(schema.workers.id, s.workerId));
