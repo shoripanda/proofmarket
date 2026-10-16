@@ -177,6 +177,9 @@ export function ResultCard({
 }) {
   const lang = useLang();
   const flowTitle = pick(lang, "エスクローから worker へ支払い", "Payout from escrow to the worker");
+  const pillLabel = `${bounty} USDC`;
+  // ~6.2 units per bold 10-px glyph plus 8 of padding each side; never wider than the gap between the boxes.
+  const pillHalf = Math.min(54, Math.ceil(pillLabel.length * 3.1 + 8));
   return (
     <div className="fade-in-up rounded-2xl border border-teal-300 bg-teal-50 p-4">
       <div className="flex items-center gap-2">
@@ -233,15 +236,17 @@ export function ResultCard({
           </text>
           <line x1="104" y1="30" x2="216" y2="30" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
           <g>
-            <rect x="-26" y="-9" width="52" height="18" rx="9" fill="#0f766e" />
+            {/* The pill is sized from the label so "0.30 USDC" stays inside it (it was a fixed 52 wide), and
+                it travels only between the two boxes. */}
+            <rect x={-pillHalf} y="-9" width={pillHalf * 2} height="18" rx="9" fill="#0f766e" />
             <text x="0" y="4" textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">
-              {bounty} USDC
+              {pillLabel}
             </text>
             <animateMotion
               dur="1.6s"
               repeatCount={settled ? "1" : "indefinite"}
               fill="freeze"
-              path="M130,30 L190,30"
+              path={`M${104 + pillHalf},30 L${216 - pillHalf},30`}
             />
           </g>
         </svg>

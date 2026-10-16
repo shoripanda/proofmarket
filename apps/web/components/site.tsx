@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LangSwitch } from "@/components/lang-switch";
 import { PlainProvider } from "@/lib/client/plain";
-import { clusterText } from "@/lib/cluster-public";
 import { type Lang, langHref, pick } from "@/lib/lang";
 
 type NavItem = { href: string; label: string };
@@ -56,7 +55,6 @@ function LogoMark({ className }: { className?: string }) {
 
 export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode }) {
   const h = (href: string) => langHref(lang, href);
-  const ct = clusterText();
   return (
     <PlainProvider>
       <div className="min-h-dvh bg-white">
@@ -131,13 +129,6 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
                 {pick(lang, "運営者情報", "Operator")}
               </Link>
             </nav>
-            <p>
-              {pick(
-                lang,
-                `拠点は東京。決済は ${ct.chain} で行います。`,
-                `Based in Tokyo. Payments are settled on ${ct.chain}.`,
-              )}
-            </p>
           </div>
         </footer>
       </div>

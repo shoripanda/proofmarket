@@ -25,22 +25,7 @@ export default async function TryPage() {
       <PageHero
         eyebrow={pick(lang, "体験", "Try it")}
         title={pick(lang, "依頼から支払いまでを、3分で通して見る", "From request to payout in 3 minutes")}
-      >
-        <p>
-          {pick(
-            lang,
-            "左が AI エージェント、右が worker のスマートフォンです（画面が狭いときは上下に並びます）。開くと自動で再生が始まり、依頼が出てから人が確かめ、AI が中身を確認し、Solana で支払われるまでを通して見られます。途中で止めて、自分で操作することもできます。画面も文言もやり取りの中身も、本番と同じです。",
-            "The AI agent is on the left, the worker's phone on the right (stacked on a narrow screen). Playback starts by itself: the request goes out, a person checks, AI reviews the content, and Solana pays. Stop at any point and take over. The screens, the wording and the exchanged data are the same as in production.",
-          )}
-        </p>
-        <p className="mt-2 text-sm text-slate-600">
-          {pick(
-            lang,
-            "体験ではお金もブロックチェーンも動きません。ID・取引の署名・写真は見本です。",
-            "No money and no blockchain move here. The IDs, transaction signatures and photo are samples.",
-          )}
-        </p>
-      </PageHero>
+      />
       <Section title={pick(lang, "やってみる", "Play")}>
         <TryTabs />
       </Section>
