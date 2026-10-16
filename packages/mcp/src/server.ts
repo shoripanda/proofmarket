@@ -7,9 +7,16 @@ import { ProofMarketApiError, type ProofMarketClient } from "@proofmarket/sdk";
 import {
   ASSETS_TOOL,
   BATCH_TOOL,
+  CANCEL_TASK_TOOL,
   CANCEL_TOOL,
+  CREATE_TASK_TOOL,
+  DECIDE_TASK_APPLICATION_TOOL,
+  DECIDE_TASK_SEAT_TOOL,
   DISPUTE_TOOL,
+  GET_TASK_TOOL,
   GET_TOOL,
+  LIST_TASK_APPLICATIONS_TOOL,
+  LIST_TASKS_TOOL,
   LIST_TOOL,
   LIST_WATCHES_TOOL,
   REQUEST_TOOL,
@@ -47,7 +54,12 @@ export function defaultIdempotencyKey(args: unknown): string {
 
 export function createServer(
   client: ProofMarketClient,
-  opts: { principalRef: string; sleep?: (ms: number) => Promise<void> },
+  opts: {
+    principalRef: string;
+    sleep?: (ms: number) => Promise<void>;
+    /** General tasks (docs/architecture 13): listed only while the operator has them on. */
+    tasksEnabled?: boolean;
+  },
 ): McpServer {
   const sleep = opts.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const server = new McpServer({ name: "proofmarket", version: "0.1.0" });
@@ -217,6 +229,155 @@ export function createServer(
       return err(e);
     }
   });
+
+  // General tasks (docs/architecture 13 §7.2): dry run first, then a real post only with confirm=true.
+  if (!opts.tasksEnabled) return server;
+  const t = (def: {
+    name: string;
+    title: string;
+    description: string;
+    inputSchema: Record<string, unknown>;
+  }) => [def.name, { title: def.title, description: def.description, inputSchema: def.inputSchema }] as const;
+  server.registerTool(
+    CREATE_TASK_TOOL.name,
+    {
+      title: CREATE_TASK_TOOL.title,
+      description: CREATE_TASK_TOOL.description,
+      inputSchema: CREATE_TASK_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        const { dry_run, confirm, idempotency_key, ...body } = args as Record<string, unknown> & {
+          dry_run: boolean;
+          confirm?: boolean;
+          idempotency_key?: string;
+        };
+        if (dry_run) return ok(await client.createTask({ ...body, dry_run: true }));
+        if (confirm !== true) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: "text",
+                text: "Not posted. Call with dry_run=true, show the cost to the person you work for, and call again with confirm=true after they say yes.",
+              },
+            ],
+          };
+        }
+        return ok(await client.createTask(body, idempotency_key ?? defaultIdempotencyKey(body)));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+  server.registerTool(
+    GET_TASK_TOOL.name,
+    {
+      title: GET_TASK_TOOL.title,
+      description: GET_TASK_TOOL.description,
+      inputSchema: GET_TASK_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        return ok(await client.getTask(String((args as { task_id: string }).task_id)));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+  server.registerTool(
+    LIST_TASKS_TOOL.name,
+    {
+      title: LIST_TASKS_TOOL.title,
+      description: LIST_TASKS_TOOL.description,
+      inputSchema: LIST_TASKS_TOOL.inputSchema,
+    },
+    async () => {
+      try {
+        return ok(await client.listTasks());
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+  server.registerTool(
+    LIST_TASK_APPLICATIONS_TOOL.name,
+    {
+      title: LIST_TASK_APPLICATIONS_TOOL.title,
+      description: LIST_TASK_APPLICATIONS_TOOL.description,
+      inputSchema: LIST_TASK_APPLICATIONS_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        return ok(await client.listTaskApplications(String((args as { task_id: string }).task_id)));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+  server.registerTool(
+    DECIDE_TASK_APPLICATION_TOOL.name,
+    {
+      title: DECIDE_TASK_APPLICATION_TOOL.title,
+      description: DECIDE_TASK_APPLICATION_TOOL.description,
+      inputSchema: DECIDE_TASK_APPLICATION_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        const a = args as {
+          task_id: string;
+          application_id: string;
+          action: "accept" | "reject";
+          reason?: string;
+        };
+        return ok(await client.decideTaskApplication(a.task_id, a.application_id, a.action, a.reason));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+  server.registerTool(
+    DECIDE_TASK_SEAT_TOOL.name,
+    {
+      title: DECIDE_TASK_SEAT_TOOL.title,
+      description: DECIDE_TASK_SEAT_TOOL.description,
+      inputSchema: DECIDE_TASK_SEAT_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        const a = args as {
+          task_id: string;
+          seat_id: string;
+          action: "release" | "request_changes" | "reject";
+          acknowledge_release?: boolean;
+          reason?: string;
+        };
+        const action = a.action === "request_changes" ? "request-changes" : a.action;
+        const body =
+          a.action === "release"
+            ? { acknowledge_release: a.acknowledge_release === true }
+            : { reason: a.reason ?? "" };
+        return ok(await client.decideTaskSeat(a.task_id, a.seat_id, action, body));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+  server.registerTool(
+    CANCEL_TASK_TOOL.name,
+    {
+      title: CANCEL_TASK_TOOL.title,
+      description: CANCEL_TASK_TOOL.description,
+      inputSchema: CANCEL_TASK_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        return ok(await client.cancelTask(String((args as { task_id: string }).task_id)));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
 
   return server;
 }
