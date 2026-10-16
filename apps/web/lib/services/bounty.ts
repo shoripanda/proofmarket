@@ -1,5 +1,11 @@
 // Rising bounty (13 §1) over a task row: what is escrowed, what is still reserved, what is paid.
-import { fundedPerWitnessMicro, type RisingBounty, settledPerWitnessMicro } from "@proofmarket/core";
+import {
+  fundedPerWitnessMicro,
+  platformFeeMicro,
+  type RisingBounty,
+  settledPerWitnessMicro,
+  toMicro,
+} from "@proofmarket/core";
 import type { TaskRow } from "./task-engine";
 
 type BountyCols = Pick<
@@ -22,3 +28,16 @@ export const fundedMicro = (t: BountyCols & Pick<TaskRow, "requiredWitnesses">) 
 /** Base units still held from the requester's balance: the escrow minus what came back at the first claim. */
 export const reservedMicro = (t: BountyCols & Pick<TaskRow, "requiredWitnesses">) =>
   settledPerWitnessMicro(bountyOf(t)) * BigInt(t.requiredWitnesses);
+
+/** The platform fee reserved with this request (13 §6.1); 0 for older rows and rechecks. */
+export const feeMicro = (t: Pick<TaskRow, "platformFeeAmount">) => toMicro(t.platformFeeAmount);
+
+/** The part of the fee kept when `paidMicro` went to witnesses: the rate on what was paid, never above the reserve. */
+export function earnedFeeMicro(
+  t: Pick<TaskRow, "platformFeeAmount" | "feeRateBps">,
+  paidMicro: bigint,
+): bigint {
+  const fee = feeMicro(t);
+  const earned = platformFeeMicro(paidMicro, t.feeRateBps);
+  return earned < fee ? earned : fee;
+}

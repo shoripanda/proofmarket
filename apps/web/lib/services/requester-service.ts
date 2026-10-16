@@ -18,6 +18,7 @@ import {
   newId,
   type Outcome,
   POLICY_RULE_VERSION,
+  platformFeeMicro,
   type SettlementStatus,
   SPEND_LIMIT_TIMEZONE,
   settledPerWitnessMicro,
@@ -48,7 +49,7 @@ import type { RequesterAuth } from "../auth/requester";
 import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
-import { bountyOf, reservedMicro } from "./bounty";
+import { bountyOf, feeMicro, reservedMicro } from "./bounty";
 import { sha256 } from "./crypto";
 import { flagEnabled } from "./flags";
 import { requestHash } from "./idempotency";
@@ -181,6 +182,8 @@ export async function createVerification(
   auth: RequesterAuth,
   body: CreateVerificationRequest,
   idempotencyKey: string,
+  /** Rechecks (dispute, challenge) pass 0: their cost is the bond, not a new sale (13 §6.1). */
+  opts: { feeBps?: number } = {},
 ): Promise<CreateResult> {
   const now = app.now();
   const idemHash = sha256(idempotencyKey);
@@ -275,7 +278,11 @@ export async function createVerification(
   // 15-17 under a credential row lock so parallel creates cannot overdraw (02 §4.2, I-RACE-03).
   await lockCredential(tx, auth.credentialId);
   // The ceiling is reserved and escrowed; the part not paid comes back at the first claim (13 §1).
-  const total = fundedPerWitnessMicro({ amount: body.bounty.amount, maxAmount }) * BigInt(n);
+  const bountyTotal = fundedPerWitnessMicro({ amount: body.bounty.amount, maxAmount }) * BigInt(n);
+  // 15% on top (13 §6.1): reserved with the bounty, kept only for the witnesses who are paid.
+  const feeBps = opts.feeBps ?? app.config.platformFeeBps;
+  const fee = platformFeeMicro(bountyTotal, feeBps);
+  const total = bountyTotal + fee;
   // A quote names this body (without the quote_id itself) and this key, and is used once (04 §4.2).
   if (body.quote_id) {
     const { quote_id, ...quoted } = body;
@@ -312,6 +319,8 @@ export async function createVerification(
       bountyAsset: body.bounty.asset,
       bountyAmount: body.bounty.amount,
       bountyNetwork: body.bounty.network,
+      platformFeeAmount: fromMicro(fee),
+      feeRateBps: feeBps,
       bountyMaxAmount: maxAmount,
       bountyRampMinutes: rampMinutes,
       challengeMinutes,
@@ -344,7 +353,7 @@ export async function createVerification(
     verificationId: id,
     kind: "FUND",
     asset: body.bounty.asset,
-    amount: fromMicro(total),
+    amount: fromMicro(bountyTotal),
     network: body.bounty.network,
     status: "PENDING",
   });
@@ -366,6 +375,7 @@ export async function createVerification(
     metadata: {
       place_id: placeId,
       total: fromMicro(total),
+      platform_fee: fromMicro(fee),
       ...(body.quote_id ? { quote_id: body.quote_id } : {}),
     },
   });
@@ -469,9 +479,11 @@ export async function quoteVerification(
   const now = app.now();
   const preview = await dryRunCreate(app, auth, body);
   const n = body.assurance.required_witnesses;
-  const total =
+  const bountyTotal =
     fundedPerWitnessMicro({ amount: body.bounty.amount, maxAmount: body.bounty.max_amount ?? null }) *
     BigInt(n);
+  const fee = platformFeeMicro(bountyTotal, app.config.platformFeeBps);
+  const total = bountyTotal + fee;
   const balance = await balanceMicro(app.db, auth.credentialId, body.bounty.asset);
   const id = newId("quote");
   const expiresAt = new Date(now.getTime() + QUOTE_TTL_MS);
@@ -487,6 +499,8 @@ export async function quoteVerification(
   return {
     quote_id: id,
     bounty: { asset: body.bounty.asset, amount: body.bounty.amount, required_witnesses: n },
+    bounty_total: fromMicro(bountyTotal),
+    platform_fee: { rate_bps: app.config.platformFeeBps, amount: fromMicro(fee) },
     total: fromMicro(total),
     balance: fromMicro(balance),
     balance_after: fromMicro(balance - total),
@@ -633,7 +647,7 @@ export async function cancelVerification(app: AppContext, auth: RequesterAuth, i
     const task = await lockTask(tx, id);
     if (task.status === "CANCELLED" || task.status === "REFUNDED")
       return buildVerificationView(tx, task, app.now(), app.config.workerRefSalt);
-    const total = reservedMicro(task);
+    const total = reservedMicro(task) + feeMicro(task);
     const [fund] = await tx
       .select()
       .from(schema.paymentRecords)
@@ -716,7 +730,7 @@ export async function disputeVerification(app: AppContext, auth: RequesterAuth, 
       .from(schema.verificationRequests)
       .where(eq(schema.verificationRequests.recheckOf, orig.id));
     if (existing) throw new ApiError("DISPUTE_NOT_ALLOWED", { recheck_verification_id: existing.id });
-    const created = await createVerification(app, tx, auth, body, `dispute:${orig.id}`);
+    const created = await createVerification(app, tx, auth, body, `dispute:${orig.id}`, { feeBps: 0 });
     const recheckId = created.body.verification_id;
     await tx
       .update(schema.verificationRequests)

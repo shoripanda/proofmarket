@@ -50,6 +50,8 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
       cluster: "devnet",
       // serial, so tests that count jobs see one order; jobs.test.ts turns it up
       jobConcurrency: 1,
+      // No fee here, so balances in older tests stay round; platform-fee.test.ts sets PLATFORM_FEE_BPS.
+      platformFeeBps: 0,
       treasuryMax: { usdcMicro: null, lamports: null },
     },
   };

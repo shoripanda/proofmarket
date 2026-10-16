@@ -19,7 +19,7 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { log } from "../log";
 import { appendAudit } from "./audit";
-import { bountyOf, fundedMicro, reservedMicro } from "./bounty";
+import { bountyOf, earnedFeeMicro, feeMicro, fundedMicro, reservedMicro } from "./bounty";
 import { sha256, witnessRef } from "./crypto";
 import { applyTaskEvent, lockTask, type TaskRow } from "./task-engine";
 import { handleDeadline } from "./verification-service";
@@ -183,7 +183,7 @@ export async function runFundTask(
           retryLimitReached: attempts >= OUTBOX_RETRY.maxAttempts,
           allBlockhashesExpired: true,
         },
-        creditBackMicro: reservedMicro(t),
+        creditBackMicro: reservedMicro(t) + feeMicro(t),
       });
       await tx
         .update(schema.paymentRecords)
@@ -280,12 +280,18 @@ export async function runFinalizeAndSettle(app: AppContext, verificationId: stri
       })
       .where(eq(schema.paymentRecords.id, pay.id));
     if (t.settlementStatus === "CONFIRMED") return;
+    // 13 §6.1: the fee is kept for the paid witnesses only; the rest of it goes back with the unpaid bounty.
+    const earned = earnedFeeMicro(t, paid);
+    await tx
+      .update(schema.verificationRequests)
+      .set({ platformFeeEarned: fromMicro(earned) })
+      .where(eq(schema.verificationRequests.id, t.id));
     await applyTaskEvent(tx, app, t, "SETTLEMENT_CONFIRMED", {
       actorType: "system",
       actorRef: null,
       correlationId: t.id,
       chain: { settleFinalized: true },
-      creditBackMicro: reservedMicro(t) - paid,
+      creditBackMicro: reservedMicro(t) - paid + feeMicro(t) - earned,
       metadata: { onchain_outcome: OUTCOME[result.outcome] },
     });
   });
@@ -333,7 +339,7 @@ export async function runRefund(app: AppContext, verificationId: string): Promis
       actorRef: null,
       correlationId: t.id,
       chain: { refundFinalized: true },
-      creditBackMicro: reservedMicro(t),
+      creditBackMicro: reservedMicro(t) + feeMicro(t),
     });
   });
   return { kind: "done" };

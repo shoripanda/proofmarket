@@ -342,7 +342,11 @@ export const X402CreateVerificationRequestSchema = CreateVerificationRequestSche
 export const QuoteResponseSchema = z.object({
   quote_id: QuoteIdSchema,
   bounty: z.object({ asset: AssetSchema, amount: Amount, required_witnesses: z.number().int() }),
-  /** `amount × required_witnesses` (the ceiling for a rising bounty), in the bounty's asset. */
+  /** `amount × required_witnesses` (the ceiling for a rising bounty): what goes into escrow for the witnesses. */
+  bounty_total: Amount,
+  /** On top of the bounty (docs/architecture 13 §6.1). Kept only for the witnesses who are paid. */
+  platform_fee: z.object({ rate_bps: z.number().int(), amount: Amount.or(z.literal("0")) }),
+  /** `bounty_total + platform_fee.amount`: what is reserved from the balance. */
   total: Amount,
   balance: Amount.or(z.literal("0")),
   balance_after: z.string(),

@@ -1,5 +1,5 @@
 // S-06 料金と確かめる人数 — how the cost is computed, how many witnesses to ask, and refunds (01 §4.1-4.4).
-import { LIMITS } from "@proofmarket/core";
+import { LIMITS, PLATFORM_FEE_BPS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";
@@ -9,6 +9,10 @@ import { type Lang, langHref } from "@/lib/lang";
 import { getLang } from "@/lib/lang-server";
 
 const EXAMPLE_BOUNTY = 0.5;
+/** 15% on top (docs/architecture 13 §6.1). */
+const FEE_PCT = PLATFORM_FEE_BPS / 100;
+const withFee = (v: number) => Math.round(v * (1 + PLATFORM_FEE_BPS / 10_000) * 1e6) / 1e6;
+const feeOf = (v: number) => Math.round((withFee(v) - v) * 1e6) / 1e6;
 
 type Level = { name: string; level: string; n: number; q: number; when: string };
 
@@ -18,12 +22,11 @@ const COPY = {
   ja: {
     meta: { title: "料金 | ProofMarket" },
     eyebrow: "料金",
-    title: "払うのは、確かめてくれた人への報酬だけです",
-    intro:
-      "1件の費用は「1人あたりの報酬 × 確かめてもらう人数」です。いまは ProofMarket の手数料をいただきません。料率を決めるときは、事前に案内します。",
+    title: `報酬に ${FEE_PCT}% の手数料を足した額です`,
+    intro: `1件の費用は「1人あたりの報酬 × 確かめてもらう人数」に、その ${FEE_PCT}% の手数料を足した額です。worker は報酬を全額受け取ります。手数料は報酬を払った人の分だけいただき、払わなかった分は手数料ごと残高に戻します。`,
     levels: {
       title: "確かめてもらう人数を選べます",
-      lead: `人数を増やすほど答えは確かになり、費用と待ち時間が増えます。API では assurance に level を書くだけで選べ、人数を直接書くこともできます。最大 ${LIMITS.witnesses.max} 人まで頼めます。下の金額は、1人あたり ${EXAMPLE_BOUNTY} USDC にした場合の例です。`,
+      lead: `人数を増やすほど答えは確かになり、費用と待ち時間が増えます。API では assurance に level を書くだけで選べ、人数を直接書くこともできます。最大 ${LIMITS.witnesses.max} 人まで頼めます。下の金額は、1人あたり ${EXAMPLE_BOUNTY} USDC にした場合の手数料込みの例です。`,
       items: [
         {
           name: "1人で確かめる",
@@ -51,7 +54,7 @@ const COPY = {
     },
     money: {
       title: "お金の流れ",
-      lead: "依頼を出した時点で、費用の全額を前払いの残高から確保し、Solana 上の依頼ごとの預かり口座に入れます。結果に応じて、次のように払うか戻します。",
+      lead: "依頼を出した時点で、報酬と手数料の全額を前払いの残高から確保し、報酬の分を Solana 上の依頼ごとの預かり口座に入れます。結果に応じて、次のように払うか戻します。戻す分には、その手数料も含みます。",
       cases: [
         ["確定した（VERIFIED）", "有効な答えを出した人全員に報酬を払う。人数に満たなかった分は残高に戻る"],
         [
@@ -78,12 +81,11 @@ const COPY = {
   en: {
     meta: { title: "Pricing | ProofMarket" },
     eyebrow: "Pricing",
-    title: "You pay only the people who checked",
-    intro:
-      "A request costs the bounty per person times the number of people asked. ProofMarket takes no fee at present. You will be told in advance before a fee rate is introduced.",
+    title: `The bounty, plus a ${FEE_PCT}% fee`,
+    intro: `A request costs the bounty per person times the number of people asked, plus a ${FEE_PCT}% fee on top. Workers receive the whole bounty. The fee is kept only for the people who are paid; whatever is not paid goes back to the balance, fee included.`,
     levels: {
       title: "Choose how many people check",
-      lead: `More people make the answer more certain, and cost more and take longer. In the API, set a level under assurance, or give the numbers directly. Up to ${LIMITS.witnesses.max} people per request. The amounts below assume ${EXAMPLE_BOUNTY} USDC per person.`,
+      lead: `More people make the answer more certain, and cost more and take longer. In the API, set a level under assurance, or give the numbers directly. Up to ${LIMITS.witnesses.max} people per request. The amounts below assume ${EXAMPLE_BOUNTY} USDC per person and include the fee.`,
       items: [
         {
           name: "One person",
@@ -111,7 +113,7 @@ const COPY = {
     },
     money: {
       title: "Where the money goes",
-      lead: "When a request is made, the full cost is reserved from the prepaid balance and locked in a per-request escrow account on Solana. Depending on the outcome, it is paid out or returned as follows.",
+      lead: "When a request is made, the bounty and the fee are reserved from the prepaid balance, and the bounty is locked in a per-request escrow account on Solana. Depending on the outcome, it is paid out or returned as follows; anything returned comes back with its fee.",
       cases: [
         [
           "Final (VERIFIED)",
@@ -164,10 +166,14 @@ export default async function PricingPage() {
             <div key={l.name} className="rounded-2xl border border-slate-200 p-5">
               <h3 className="font-bold">{l.name}</h3>
               <p className="mt-2 text-3xl font-bold">
-                {(EXAMPLE_BOUNTY * l.n).toFixed(1)}
+                {withFee(EXAMPLE_BOUNTY * l.n)}
                 <span className="ml-1 text-sm font-medium text-slate-500">
                   <Term k="usdc" />
                 </span>
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                {lang === "ja" ? "報酬" : "bounty"} {EXAMPLE_BOUNTY * l.n} +{" "}
+                {lang === "ja" ? "手数料" : "fee"} {feeOf(EXAMPLE_BOUNTY * l.n)}
               </p>
               <p className="mt-1 font-mono text-xs text-slate-500">
                 assurance: {"{"} "level": "{l.level}" {"}"}

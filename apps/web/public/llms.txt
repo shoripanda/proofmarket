@@ -44,7 +44,7 @@ anywhere but the ProofMarket endpoint below.
 
 - Developer guide: https://proofmarket.fun/en/developers
 - OpenAPI: https://raw.githubusercontent.com/shoripanda/proofmarket/main/packages/core/openapi.json
-- Pricing: https://proofmarket.fun/en/pricing — bounty per person × people asked; no platform fee at present;
+- Pricing: https://proofmarket.fun/en/pricing — bounty per person × people asked, plus a 15% platform fee on top (kept only for the people who are paid);
   no cap on the bounty, only the prepaid balance.
 - How it works: https://proofmarket.fun/en/how-it-works
 - Public results and proof pages: https://proofmarket.fun/en/map, https://proofmarket.fun/en/stats

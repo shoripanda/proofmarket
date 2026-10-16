@@ -3,7 +3,7 @@ import "server-only";
 // we verify the transaction as our own facilitator, co-sign as fee payer, send it, and only then create the
 // verification through the same createVerification path the API key flow uses (TOPUP then RESERVE).
 
-import { ApiError, fromMicro, newId, TASK_TYPES, toMicro } from "@proofmarket/core";
+import { ApiError, fromMicro, newId, platformFeeMicro, TASK_TYPES, toMicro } from "@proofmarket/core";
 import {
   type CreateVerificationRequest,
   X402CreateVerificationRequestSchema,
@@ -59,11 +59,18 @@ export function parseX402Body(raw: unknown): CreateVerificationRequest {
   return { ...r.data, principal_ref: "" };
 }
 
+/** What an x402 request costs: bounty × witnesses plus the platform fee (13 §6.1). */
+export function x402TotalMicro(body: CreateVerificationRequest, feeBps: number): bigint {
+  const bounty = toMicro(body.bounty.amount) * BigInt(body.assurance.required_witnesses);
+  return bounty + platformFeeMicro(bounty, feeBps);
+}
+
 export function paymentRequirements(
   f: X402Facilitator,
   body: CreateVerificationRequest,
+  feeBps: number,
 ): PaymentRequirements {
-  const amount = toMicro(body.bounty.amount) * BigInt(body.assurance.required_witnesses);
+  const amount = x402TotalMicro(body, feeBps);
   return {
     scheme: "exact",
     network: f.network,
@@ -143,7 +150,7 @@ class Rollback {
 export async function dryRun(app: AppContext, body: CreateVerificationRequest): Promise<CreateResult> {
   try {
     await app.db.transaction(async (tx) => {
-      const amount = fromMicro(toMicro(body.bounty.amount) * BigInt(body.assurance.required_witnesses));
+      const amount = fromMicro(x402TotalMicro(body, app.config.platformFeeBps));
       const { auth } = await creditWallet(tx, `dry-run-${newId("principal")}`, amount);
       const result = await createVerification(
         app,
@@ -186,7 +193,7 @@ export async function createWithPayment(
 ): Promise<X402Outcome> {
   const body = parseX402Body(raw);
   const f = app.x402();
-  const req = paymentRequirements(f, body);
+  const req = paymentRequirements(f, body, app.config.platformFeeBps);
   const reject = (reason: string, status: 400 | 402 = 402, payer = ""): X402Outcome => ({
     kind: "rejected",
     status,
