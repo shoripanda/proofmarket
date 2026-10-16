@@ -34,8 +34,16 @@
       "openapi_url": "https://proofmarket.fun/openapi.json",
       "public_endpoints": [
         { "method": "GET", "path": "/v1/public/assets", "description": "Reward tokens accepted here." },
-        { "method": "GET", "path": "/v1/public/stats", "description": "Completed requests, paid amount, time to result." },
-        { "method": "GET", "path": "/v1/public/verifications/{id}", "description": "A published result and its proof." }
+        {
+          "method": "GET",
+          "path": "/v1/public/stats",
+          "description": "Completed requests, paid amount, time to result."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/public/verifications/{id}",
+          "description": "A published result and its proof."
+        }
       ]
     },
     "x402": {
