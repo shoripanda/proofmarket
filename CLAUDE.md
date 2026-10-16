@@ -80,3 +80,5 @@ Technology stackはClaude Code側で選定してよいが、P0 requirementsやse
 - 2026-10-14 [本番 / PR のマージ] `gh pr merge` は auto mode の判定（Merge Without Review）で止められた → マージはオーナーに頼む。PR は前の PR を base にして積む（#39←#40←#41←#42）
 - 2026-10-15 [Surfpool / 試験スクリプト] scratchpad に置いた `.mts` を `pnpm --filter @proofmarket/scripts run run <絶対パス>` で走らせる → `@anchor-lang/core` などワークスペースの依存が見つからない（`.ts` だと CJS 扱いで top-level await も通らない）→ スクリプトを `scripts/` に一時的に置いて走らせ、終わったら消す。出力を `| tail` に通すと終わるまで何も見えないので、ログはファイルに書いて `until grep` で待つ。結果は `docs/ops/surfpool-spike-2026-10-15.md`
 - 2026-10-16 [積んだ PR のマージ] #39 を `gh pr merge 39 -R shoripanda/proofmarket --merge --delete-branch` でマージ → 土台のブランチが消えた #40 は main に付け替えられず CLOSED になった → `--delete-branch` を使わず、マージの直前に `gh pr edit <次の番号> --base main` で付け替える。閉じたら、消したブランチを元の SHA で push し直して `gh pr reopen` する
+- 2026-10-16 [CI / OpenAPI] core の enum（WEBHOOK_EVENTS）だけ変えて push → zod から作る openapi.json とずれて CI が落ちた → enum・スキーマのどちらを変えても `pnpm openapi` を流してからコミットする
+- 2026-10-16 [本番 DB の移行] 私（Claude）が `DATABASE_URL=$DATABASE_URL_DIRECT pnpm db:migrate` を打つ → auto mode の判定（Production Deploy）で止められた → 移行もオーナーに `!` で打ってもらう
