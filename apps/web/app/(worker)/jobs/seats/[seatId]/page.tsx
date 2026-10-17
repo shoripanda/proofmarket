@@ -1,5 +1,5 @@
 "use client";
-// W-22 担当している仕事 — deliver the work, see the review clock and the requester's decision.
+// W-22 My task — deliver the work, see the review clock and the requester's decision.
 import { use, useCallback, useEffect, useState } from "react";
 import { Button, Card, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";

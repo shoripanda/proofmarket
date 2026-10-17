@@ -1,5 +1,5 @@
-// S-01 トップ — picture first (13 §7, 2026-10-09): every section is an icon, a heading and at most one line.
-// Everything that used to be a paragraph is folded under 「くわしく」 so the page reads with the pictures alone.
+// S-01 Home — picture first (13 §7, 2026-10-09): every section is an icon, a heading and at most one line.
+// Everything that used to be a paragraph is folded under "More detail" so the page reads with the pictures alone.
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";

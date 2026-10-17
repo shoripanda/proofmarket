@@ -1,4 +1,4 @@
-// S-03 開発者向け — connect over MCP or REST, the request fields, and how to read the result.
+// S-03 For developers — connect over MCP or REST, the request fields, and how to read the result.
 import { LIMITS, TASK_TYPE_ANSWERS, type TaskType, WEBHOOK_EVENTS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { headers } from "next/headers";

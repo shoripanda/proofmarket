@@ -255,7 +255,7 @@ export function answerFormat(lang: Lang, s: AnswerSchemaView | undefined): strin
   if (s.type === "form") return `${s.fields.length} 項目に答える: ${labels}`;
   return `文章で答える${s.max_chars ? `（${s.max_chars}字まで）` : ""}`;
 }
-/** 13 §4: how a scale field is answered, e.g. "（尺度で答える 1〜5）". */
+/** 13 §4: how a scale field is answered, e.g. "(answer on a scale of 1–5)". */
 export const scaleFormat = (lang: Lang, f: { min?: number; max: number }) =>
   lang === "en" ? ` (on a scale of ${f.min ?? 1}-${f.max})` : `（尺度で答える ${f.min ?? 1}〜${f.max}）`;
 export const answerFormatJa = (s: AnswerSchemaView | undefined) => answerFormat("ja", s);

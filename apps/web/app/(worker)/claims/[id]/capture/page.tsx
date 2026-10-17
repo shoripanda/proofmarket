@@ -1,7 +1,7 @@
 "use client";
 import type { AnswerValue, TaskType } from "@proofmarket/core";
 import { LIMITS } from "@proofmarket/core/domain/limits";
-// W-06 撮影と回答 — challenge -> live camera -> capture 1–4 photos (canvas -> JPEG) -> high-accuracy location -> answer
+// W-06 Capture and answer — challenge -> live camera -> capture 1–4 photos (canvas -> JPEG) -> high-accuracy location -> answer
 // -> upload each photo -> submit (01 §4.18). Photos come only from the in-app camera; there is no gallery picker (07 §2).
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";

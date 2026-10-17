@@ -1,5 +1,5 @@
 "use client";
-// "30 秒でわかる" (13 §7): the request flow told in six scenes. One play button; the narration (Kokoro mp3 in
+// "Understand it in 30 seconds" (13 §7): the request flow told in six scenes. One play button; the narration (Kokoro mp3 in
 // public/audio) moves the lit stage on `timeupdate`, with the scene's sentence as a one-line caption. Where sound
 // cannot play (no audio file for the language, autoplay blocked, a decode error) the captions run on a timer.
 import { useCallback, useEffect, useRef, useState } from "react";

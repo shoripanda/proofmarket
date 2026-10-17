@@ -1,5 +1,5 @@
 "use client";
-// W-20 仕事 — general tasks next to verifications (docs/architecture 13 §8): open tasks, and the worker's own seats.
+// W-20 Tasks — general tasks next to verifications (docs/architecture 13 §8): open tasks, and the worker's own seats.
 import { useEffect, useState } from "react";
 import { Card, Notice, Shell, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";

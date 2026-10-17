@@ -1,5 +1,5 @@
 "use client";
-// W-21 仕事の内容 — what to do, what "done" means, the pay, how the requester has decided before, and apply.
+// W-21 Task detail — what to do, what "done" means, the pay, how the requester has decided before, and apply.
 import { use, useEffect, useState } from "react";
 import { Button, Card, Notice, Shell, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";

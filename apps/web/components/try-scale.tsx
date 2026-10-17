@@ -1,5 +1,5 @@
 "use client";
-// S-13b 体験・大勢で同時に: one agent asks about ten station elevators at once; ten people answer in parallel;
+// S-13b Try it at scale: one agent asks about ten station elevators at once; ten people answer in parallel;
 // each result lands on the map and the agent routes a wheelchair user. Same request shape as production
 // (publish: true puts verified facts on the public map). Nothing here touches money or Solana.
 import { useEffect, useMemo, useRef, useState } from "react";

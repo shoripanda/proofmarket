@@ -1,4 +1,4 @@
-// S-B09 店舗の申告ページ (01 §4.13). Reached only through the secret link the operator sent to the shop.
+// S-B09 Shop report page (01 §4.13). Reached only through the secret link the operator sent to the shop.
 import type { Metadata } from "next";
 import { PageHero, Section } from "@/components/site";
 import { StoreReportForm } from "@/components/store-report-form";

@@ -1,6 +1,6 @@
 "use client";
 import type { TaskType } from "@proofmarket/core";
-// W-04 タスク詳細 — 質問、地図リンク、半径、報酬、締切、撮影の注意、「引き受ける」。
+// W-04 Task detail — question, map link, radius, reward, deadline, photo notes, "Take this".
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {

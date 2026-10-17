@@ -1,4 +1,4 @@
-// S-07 結果の見本 — the newest featured result, field by field, with an in-browser check against Solana.
+// S-07 Sample result — the newest featured result, field by field, with an in-browser check against Solana.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { OnchainCheck } from "@/components/onchain-check";

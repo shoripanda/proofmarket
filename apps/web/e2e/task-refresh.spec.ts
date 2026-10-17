@@ -1,4 +1,4 @@
-// W-03 auto-refresh (02 §W-03): a task created while the list is open shows up marked "新着" without a reload.
+// W-03 auto-refresh (02 §W-03): a task created while the list is open shows up marked "new" without a reload.
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 

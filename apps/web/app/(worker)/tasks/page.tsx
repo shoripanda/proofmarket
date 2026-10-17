@@ -1,7 +1,7 @@
 "use client";
 import type { TaskType } from "@proofmarket/core";
-// W-03 タスク一覧 — 「近くで」は現在地（小数3桁に丸める）から近い順、「家でできる」は場所の要らない依頼だけで
-// 位置情報を使わない (01 §4.20)。開いている間は30秒ごとに取り直し、新着に印を付ける。
+// W-03 Task list — "Nearby" sorts by distance from the current position (rounded to 3 decimals); "From home" lists only
+// place-free requests and never uses location (01 §4.20). While open it refetches every 30 s and marks new arrivals.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PushOptIn } from "@/components/push-opt-in";
 import { Tour } from "@/components/tour";

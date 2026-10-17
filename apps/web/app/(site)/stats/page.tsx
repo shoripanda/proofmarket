@@ -1,4 +1,4 @@
-// S-11 実績 — public track record read from the DB (05 §4.1). Aggregates only; nothing about a single request.
+// S-11 Stats — public track record read from the DB (05 §4.1). Aggregates only; nothing about a single request.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";

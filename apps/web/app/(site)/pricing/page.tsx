@@ -1,4 +1,4 @@
-// S-06 料金と確かめる人数 — how the cost is computed, how many witnesses to ask, and refunds (01 §4.1-4.4).
+// S-06 Pricing and number of witnesses — how the cost is computed, how many witnesses to ask, and refunds (01 §4.1-4.4).
 import { LIMITS, PLATFORM_FEE_BPS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";

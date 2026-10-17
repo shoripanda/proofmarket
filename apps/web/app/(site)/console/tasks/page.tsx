@@ -1,4 +1,4 @@
-// S-B11 仕事（requester console, docs/architecture 13 §8): each task with its applicants and seats; accept,
+// S-B11 Tasks (requester console, docs/architecture 13 §8): each task with its applicants and seats; accept,
 // approve and pay, ask for changes, or reject. Agents do the same through the API and MCP.
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
