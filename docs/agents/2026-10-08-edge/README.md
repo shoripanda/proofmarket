@@ -1,6 +1,6 @@
 # 並行作業の指示書（尖った機能と初心者の導線・2026-10-08）
 
-設計の正本: `specs/proofmarket/implementation/ja/13-edge-features.md`（以下「設計書」）。背景: `docs/pitch/07-landscape-and-edge.md`。要件: 01 §4.26。
+設計の正本: `specs/proofmarket/implementation/en/13-edge-features.md`（以下「設計書」）。背景: `docs/pitch/07-landscape-and-edge.md`。要件: 01 §4.26。
 
 オーナーがターミナルで Claude Code の画面を担当の数だけ開き、それぞれに次のように頼む。
 

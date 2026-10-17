@@ -75,7 +75,7 @@ pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url https://proo
   --type SIGN_TRANSCRIPTION --question "Transcribe the opening-hours notice at the entrance"
 ```
 
-Secrets are never kept in the repository. Local runs read them from `~/.config/proofmarket/`; see [`specs/proofmarket/implementation/ja/11-code-skeleton.md`](specs/proofmarket/implementation/ja/11-code-skeleton.md).
+Secrets are never kept in the repository. Local runs read them from `~/.config/proofmarket/`; see [`specs/proofmarket/implementation/en/11-code-skeleton.md`](specs/proofmarket/implementation/en/11-code-skeleton.md).
 
 ## Documents
 

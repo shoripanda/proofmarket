@@ -1,7 +1,7 @@
 # ProofMarket Hackathon Canvas
 
 作成: 2026-10-04 ／ 提出: 2026-10-12（Colosseum・Crypto World's Fair）
-元にした資料: `specs/proofmarket/project-brief.md`、`problem.md`、`competitor-differentiation.md`、`implementation/ja/01-requirements-definition.md` §4.15〜4.17、`docs/proofmarket-schedule-2026-10.md` の「方針」
+元にした資料: `specs/proofmarket/project-brief.md`、`problem.md`、`competitor-differentiation.md`、`implementation/en/01-requirements-definition.md` §4.15〜4.17、`docs/proofmarket-schedule-2026-10.md` の「方針」
 
 **【】で囲んだ所はオーナーが埋める。** 数字は `/stats` から写す。推測の数字は入れない。
 

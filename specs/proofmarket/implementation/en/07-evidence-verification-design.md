@@ -1,7 +1,5 @@
 # 07. Evidence Collection and Verification Design
 
-> English translation. The Japanese version in [`../ja/07-evidence-verification-design.md`](../ja/07-evidence-verification-design.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 ## 1. What Can and Cannot Be Verified

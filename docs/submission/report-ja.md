@@ -192,4 +192,4 @@ AI による内容確認については、要約を送ると差し戻され、�
 
 ## D. 仕様書と資料の所在（リポジトリ内）
 
-実装仕様13本は `specs/proofmarket/implementation/ja/`、問題設定・利用者・競合との違い・KPI・法務確認表は `specs/proofmarket/`、背景調査は `docs/`、発表資料の構成（日英12枚）と動画の台本3本は `docs/pitch/` にあります。リポジトリは `github.com/shoripanda/Solana-idea`（現在は非公開。求めに応じて閲覧権限を付与します）。
+実装仕様13本は `specs/proofmarket/implementation/en/`、問題設定・利用者・競合との違い・KPI・法務確認表は `specs/proofmarket/`、背景調査は `docs/`、発表資料の構成（日英12枚）と動画の台本3本は `docs/pitch/` にあります。リポジトリは `github.com/shoripanda/Solana-idea`（現在は非公開。求めに応じて閲覧権限を付与します）。

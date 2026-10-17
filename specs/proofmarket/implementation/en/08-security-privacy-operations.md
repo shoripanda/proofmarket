@@ -1,7 +1,5 @@
 # 08. Security, Privacy, and Operations Design
 
-> English translation. The Japanese version in [`../ja/08-security-privacy-operations.md`](../ja/08-security-privacy-operations.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 For each threat in `privacy-security.md`, this chapter maps which mechanism in which component stops it.

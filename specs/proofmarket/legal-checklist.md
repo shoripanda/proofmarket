@@ -108,7 +108,7 @@ Before commercial rollout:
 
 ### Yen payouts (added 2026-10-04)
 
-The app records only a worker's interest in yen payouts and lets them export a statement CSV (implementation/ja/01 §4.10). Before paying any yen:
+The app records only a worker's interest in yen payouts and lets them export a statement CSV (implementation/en/01 §4.10). Before paying any yen:
 - [ ] decide whether a licensed payment provider pays workers directly
 - [ ] decide withholding and invoice handling for individual workers
 - [ ] decide how requester prepayments are held so the operator does not custody them

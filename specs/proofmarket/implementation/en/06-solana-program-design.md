@@ -1,7 +1,5 @@
 # 06. Design of the Solana Program and the Settlement Adapter
 
-> English translation. The Japanese version in [`../ja/06-solana-program-design.md`](../ja/06-solana-program-design.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 ## 1. What Goes On-Chain

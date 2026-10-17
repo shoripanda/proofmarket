@@ -7,7 +7,7 @@
 - `docs/colosseum-hackathon-winners-2024-2026.md`（過去の入賞作）
 - `specs/proofmarket/competitor-differentiation.md`（RentAHuman・Taskin・NeedaHuman との違い）
 - `specs/proofmarket/project-brief.md`、`problem.md`
-- `specs/proofmarket/implementation/ja/01-requirements-definition.md` の 4.15〜4.17 節（実際に作ったもの）
+- `specs/proofmarket/implementation/en/01-requirements-definition.md` の 4.15〜4.17 節（実際に作ったもの）
 - `docs/proofmarket-schedule-2026-10.md` の「方針」
 
 ## 方針（資料はこれに合わせる）

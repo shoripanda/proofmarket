@@ -52,4 +52,4 @@ docs/agents/README.md と docs/agents/<担当のファイル> を読んで、そ
 8. 最後にオーナーへ、日本語で短く報告する: PR の URL、できたこと、確かめたこと、本番で必要な手順、残したこと。
 
 ### 迷ったら
-仕様は `specs/proofmarket/implementation/ja/` が正本。範囲や P0 の要件を変えるときは、先に仕様書に理由を書く（`CLAUDE.md` の決まり）。判断に迷うことはオーナーに聞く。推測で範囲を広げない。
+仕様は `specs/proofmarket/implementation/en/` が正本。範囲や P0 の要件を変えるときは、先に仕様書に理由を書く（`CLAUDE.md` の決まり）。判断に迷うことはオーナーに聞く。推測で範囲を広げない。

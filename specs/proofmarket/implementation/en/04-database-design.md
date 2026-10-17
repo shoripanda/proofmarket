@@ -1,7 +1,5 @@
 # 04. Database Design
 
-> English translation. The Japanese version in [`../ja/04-database-design.md`](../ja/04-database-design.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 ## 1. Policy

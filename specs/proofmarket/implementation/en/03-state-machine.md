@@ -1,6 +1,4 @@
-# 03. State Transition Design (English translation)
-
-> English translation. The Japanese version in [`../ja/03-state-machine.md`](../ja/03-state-machine.md) is authoritative; if they differ, the Japanese version wins.
+# 03. State Transition Design
 
 Created: 2026-10-02
 
