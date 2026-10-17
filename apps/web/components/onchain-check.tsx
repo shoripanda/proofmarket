@@ -1,5 +1,5 @@
 "use client";
-// S-07 「Solana で確かめる」: reads the Task account from a public RPC in the visitor's browser and compares it
+// S-07 "Check on Solana": reads the Task account from a public RPC in the visitor's browser and compares it
 // with what this page shows, so the check does not depend on trusting ProofMarket's server.
 import { useState } from "react";
 import { useLang } from "@/lib/client/lang";

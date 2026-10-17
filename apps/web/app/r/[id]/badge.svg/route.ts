@@ -1,5 +1,5 @@
 // GET /r/{id}/badge.svg — one-line "a human checked this" badge an agent can embed next to its answer
-// (01 §4.21). Same public-safe facts as the page; a missing or unfinished result reads 確認中 / pending.
+// (01 §4.21). Same public-safe facts as the page; a missing or unfinished result reads "pending" (in the viewer's language).
 // ?lang=en gives the English wording (the badge is an image, so the page language cannot reach it).
 import { ApiError } from "@proofmarket/core";
 import { appContext } from "@/lib/context";

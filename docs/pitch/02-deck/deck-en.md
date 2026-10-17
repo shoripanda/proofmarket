@@ -1,6 +1,6 @@
 # Pitch deck outline — English (12 slides)
 
-Created 2026-10-04. Japanese version and owner notes: `deck-ja.md`. Video script: `../03-videos/pitch-video.md`.
+Created 2026-10-04. Owner notes: `../README.md`. Video script: `../03-videos/pitch-video.md`.
 
 [Brackets] are for the owner to fill in, using numbers from `/stats`.
 
@@ -95,7 +95,7 @@ Created 2026-10-04. Japanese version and owner notes: `deck-ja.md`. Video script
 - **Title**: Team
 - **Message**: [Owner: one sentence on why you are the one to solve this]
 - **Visual**: Photo, name, X handle
-- **Talk track**: [Owner writes. Use the three questions in `deck-ja.md`, slide 10.]
+- **Talk track**: [Owner writes. Use the three questions under "The founder's story" in `../README.md`.]
   - Fact we can state: spec fixed on Oct 2; by Oct 4 the API, MCP server, worker app, Solana program, and AI review were live in production
 
 ## 12. CTA

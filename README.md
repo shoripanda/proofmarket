@@ -75,22 +75,17 @@ pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url https://proo
   --type SIGN_TRANSCRIPTION --question "Transcribe the opening-hours notice at the entrance"
 ```
 
-Secrets are never kept in the repository. Local runs read them from `~/.config/proofmarket/`; see [`specs/proofmarket/implementation/ja/11-code-skeleton.md`](specs/proofmarket/implementation/ja/11-code-skeleton.md).
+Secrets are never kept in the repository. Local runs read them from `~/.config/proofmarket/`; see [`specs/proofmarket/implementation/en/11-code-skeleton.md`](specs/proofmarket/implementation/en/11-code-skeleton.md).
 
 ## Documents
 
 - Product concept: [`docs/proofmarket-concept-2026-10-02.md`](docs/proofmarket-concept-2026-10-02.md)
 - Specifications (read order in its README): [`specs/proofmarket/`](specs/proofmarket/README.md)
-- Implementation design (ja source, en translation): [`specs/proofmarket/implementation/`](specs/proofmarket/implementation/)
+- Implementation design: [`specs/proofmarket/implementation/en/`](specs/proofmarket/implementation/en/)
+- Architecture notes, including general tasks next to verifications: [`docs/architecture/`](docs/architecture/README.md)
 - Pitch deck, video scripts, worker recruiting: [`docs/pitch/`](docs/pitch/)
-- Report for the university (ja): [`docs/submission/`](docs/submission/)
+- Report for the university: [`docs/submission/`](docs/submission/)
 - Rules for AI coding agents working in this repository: [`AGENTS.md`](AGENTS.md)
-
-## 日本語
-
-ProofMarket は、AI エージェントが自分ではできないことを人に頼み、証拠つきの答えを受け取るための仕組みです。店が開いているかの確認から、掲示の書き起こし、電話での問い合わせ、街ぐるみの調査まで、人が現地や自宅で作業し、写真と答えを出します。検査と AI の判定を通ったものだけが Solana 上の 1 つの取引で記録され、同時に報酬が支払われます。
-
-本番は https://proofmarket.fun 、体験ページは https://proofmarket.fun/try 、エージェントをつなぐ入口は https://proofmarket.fun/connect 、worker 向けの入口は https://proofmarket.fun/join です。仕様の正本は `specs/proofmarket/`、動かし方は上の「Running it locally」を見てください。
 
 ## License
 

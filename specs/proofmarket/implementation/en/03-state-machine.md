@@ -1,6 +1,4 @@
-# 03. State Transition Design (English translation)
-
-> English translation. The Japanese version in [`../ja/03-state-machine.md`](../ja/03-state-machine.md) is authoritative; if they differ, the Japanese version wins.
+# 03. State Transition Design
 
 Created: 2026-10-02
 
@@ -72,6 +70,9 @@ Any combination of (state, event) not in the table is rejected (REQ-S-001).
 | T16 | CREATED | `FUNDING_FAILED` | The retry limit was reached, or the deadline has passed. And the Task PDA does not exist on-chain, and the blockhash of every signature sent has expired (it can no longer land) | CANCELLED | Release the balance reservation, reason `FUNDING_FAILED`, Webhook `verification.cancelled` |
 | T17 | CANCELLED / EXPIRED | `REFUND_CONFIRMED` | refund is finalized | REFUNDED | Return the balance, settlement_status = CONFIRMED |
 | T18 | REJECTED / EXPIRED | `SETTLEMENT_CONFIRMED` | settle is finalized (1 or more valid) | (unchanged) | Return the remainder, settlement_status = CONFIRMED. `verification.settled` is not sent (so that it is not misread as success) |
+| T19 | VERIFYING | `CHALLENGE_OVERTURNED` | A recheck of an optimistic verification contradicted the provisional answer (13 §3) | REJECTED | As T10. The result's reason is `CHALLENGED` |
+
+**Provisional results (added 2026-10-08, 13 §3)**: with optimistic verification (`assurance.level: "optimistic"`), the first valid submission records `provisional_at`. `QUORUM_READY` does not fire at that point. The task stays SUBMITTED during the challenge window; no state is added, and `provisional_at` tells whether a result is provisional. When the window passes, or a recheck agrees with the provisional answer, it finalises normally through `QUORUM_READY` → T07 → T09. If a recheck contradicts it, `QUORUM_READY` → T07 → T19 makes it REJECTED. A provisional task is not processed by T08 / T11 when its deadline passes (it waits for the end of the challenge window).
 
 If the Task PDA is found while checking the condition of T16, fund locking had succeeded, so proceed to T01. If the deadline has passed, continue with a refund through T12. This way, we never create the state "marked CANCELLED, but the funds remain locked on-chain".
 

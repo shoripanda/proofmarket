@@ -1,4 +1,4 @@
-"""Narration for the home page's "30 秒でわかる" with a neural voice (13 §7, 2026-10-09).
+"""Narration for the home page's "Understand it in 30 seconds" with a neural voice (13 §7, 2026-10-09).
 
 Same contract as make.py (reads apps/web/public/audio/explainer-<lang>.json, writes the mp3 next to it and the
 start second of every line back into the JSON), but the voice is Microsoft's neural TTS reached through the
@@ -28,7 +28,7 @@ meta = json.load(open(meta_path))
 
 def spoken(text: str) -> str:
     # Read "AI" as people say it; the caption keeps the letters.
-    return text.replace("AI", "エーアイ") if lang == "ja" else text
+    return text.replace("AI", "\u30a8\u30fc\u30a2\u30a4") if lang == "ja" else text
 
 
 def seconds(path: str) -> float:

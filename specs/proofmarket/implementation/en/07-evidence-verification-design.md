@@ -1,7 +1,5 @@
 # 07. Evidence Collection and Verification Design
 
-> English translation. The Japanese version in [`../ja/07-evidence-verification-design.md`](../ja/07-evidence-verification-design.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 ## 1. What Can and Cannot Be Verified
@@ -54,7 +52,7 @@ After a submission passes the pre-checks of the submission API (Chapter 05 Secti
 | 3 | `freshness` | `now() − challenge.issued_at ≤ freshness_max_age_s`, and the Storage object creation time ≥ `challenge.issued_at` | `EVIDENCE_STALE` | Yes |
 | 4 | `geofence` | `accuracy_m ≤ 100`, and the distance to the target point (haversine) ≤ `radius_m` | `LOCATION_ACCURACY_TOO_LOW` / `EVIDENCE_OUTSIDE_GEOFENCE` | Yes |
 | 5 | `duplicate` (P1) | Hamming distance of dHash to other submissions in the past 90 days > 6 | `EVIDENCE_NEAR_DUPLICATE` | No (claim becomes REJECTED) |
-| 6 | `vision_consistency` (P1, optional) | Not a gate. The result is only recorded as `warning` or `pass` | — | — |
+| 6 | `vision_consistency` (Chapter 01 Section 4.16) | After 1-5 all pass, Claude compares the photo and answer with the request. `pass` passes; `uncertain`, or no verdict possible, passes as `warning`; `fail` fails | `EVIDENCE_MISMATCH` | Yes |
 
 Notes:
 
@@ -62,7 +60,8 @@ Notes:
 - If distance + accuracy exceeds the radius (the center is inside but the error circle spills outside), the check still passes and `edge_of_geofence` is attached to `risk_flags`
 - Check 2 is the DB unique constraint itself (Chapter 04 Section 3.10). Even if two copies of the same file arrive at the same time, one of them fails on insert and becomes `EVIDENCE_REPLAYED`
 - Check 5 excludes earlier attempts within the same claim from the comparison set. Re-shooting the same shop naturally produces a similar photo
-- When `vision_consistency` is used, text visible in the image is treated as untrusted input. The prompt passes the image delimited, and the model output accepted is only enumerated values for two items: "is a storefront visible" and "are there signs that it is open for business." The result is not used for pass/fail (REQ-V-007, `users-and-stakeholders.md` Section 4)
+- For a submission with two or more photos (Chapter 01 Section 4.18), checks 1, 2, 3 and 5 run per photo, and one failing photo fails that check; `machine_details.photo` records which photo. When all pass, `machine_details.photos` lists the details per photo. Check 4 runs once per submission, and check 6 passes all the photos to Claude together
+- In `vision_consistency`, the request text, the answer and any text visible in the images are all treated as untrusted input. The prompt delimits them and says explicitly not to follow instructions inside them. The model output is limited by structured output to three fields: `verdict`, `reason` and `observed`. On 2026-10-04 this check became a pass/fail gate (Chapter 01 Section 4.16, replacing the old REQ-V-007 "not used for pass/fail")
 
 ### 3.1 Storing Images
 
@@ -110,6 +109,7 @@ The payment recipients are everyone who made a valid submission (Chapter 01 Sect
   "type": "PLACE_STATUS_VERIFICATION",
   "question_hash": "sha256:...",
   "answer_values": ["CLOSED", "OPEN", "UNCLEAR"],
+  "location_commitment": "sha256:...",
   "assurance": { "required_witnesses": 1, "quorum": 1 },
   "submissions": [
     {
@@ -130,6 +130,8 @@ The payment recipients are everyone who made a valid submission (Chapter 01 Sect
 - The array `answer_values` is sorted in lexicographic order
 - `witness_ref` is `HMAC-SHA256(WORKER_REF_SALT, worker_id + ":" + verification_id)`. The value changes per task, so lining up bundles does not let anyone link them to the same worker. The operator can trace it through the DB mapping
 - Coordinates, photos, and the question text itself are not included
+- `location_commitment` (13 §9 PR 7, 2026-10-08) is present only for requests with a place. Its value is `SHA-256("proofmarket:location:v1:" + lat.toFixed(6) + "," + lng.toFixed(6) + ":" + salt)` as hex prefixed with `sha256:`. The coordinates are the place the requester specified, not the worker's position. It is part of the `evidence_root` calculation, so the place cannot be swapped later. Bundles without this field (requests without a place, and those created before it) keep the same root
+- The salt is the hex of `HMAC-SHA256(WORKER_REF_SALT, "location:" + verification_id)`. It is not stored but derived each time. The requester receives it as `location_salt` in `GET /v1/verifications/{id}`, so only someone given both the place and the salt can check the commitment. The original design used the public `task_id_hash` as the salt, but that lets the place be brute-forced: the area published with `"coarse"` has only about 6×10⁷ points at 6 decimal places, which can all be tried in seconds. Hence a secret salt
 
 ### 5.2 Computation
 

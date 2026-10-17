@@ -1,5 +1,5 @@
 "use client";
-// S-13 体験ページ (/try). One person plays both sides in the browser: the agent that asks (left) and the worker's
+// S-13 Try-it page (/try). One person plays both sides in the browser: the agent that asks (left) and the worker's
 // phone (right). Screens, wording, JSON shapes and the review rule mirror production; nothing here touches the
 // database, the balance or Solana. IDs, signatures and the photo are samples.
 import type { TaskType } from "@proofmarket/core";

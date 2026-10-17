@@ -1,38 +1,38 @@
-# 担当 A: 急ぐほど上がる報酬（設計書 §1）
+# Owner A: a reward that rises with urgency (design §1)
 
-ブランチ: `feat/rising-bounty`。worktree: `~/proofmarket-a`。
+Branch: `feat/rising-bounty`. Worktree: `~/proofmarket-a`.
 
-## 作るもの
+## What to build
 
-1. **Solana プログラム v1.1**（`programs/proofmarket/`）
-   - `FinalizeVerificationArgs` に `amount_per_witness: Option<u64>` を足す。`Some(a)` なら `a > 0 && a <= task.amount_per_witness` を要求し（新しいエラー `AmountIncrease` 等）、`task.amount_per_witness = a` にしてから従来の処理。`None` なら従来どおり
-   - `settle` は変えない（`task.amount_per_witness` を使うので自動で確定額で払い、余りは treasury へ）
-   - `programs/proofmarket/tests/program_tests.rs` に 2 本足す: 「下げて finalize → settle が下げた額で払い、余りが treasury に戻る」「上げようとすると弾く」
-   - 手元の検証は台帳どおり `CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 cargo test -p proofmarket`。ビルドは `cargo build-sbf --manifest-path programs/proofmarket/Cargo.toml --tools-version v1.57`（台帳）。ディスクが 8GB 以上あるか `df -h /System/Volumes/Data` で先に見る
-   - IDL が変わるので `anchor build` のあと `packages/solana` の IDL（置き場所は `packages/solana/src` か `idl/` を grep）を更新し、`anchor-adapter.ts` の `finalizeAndSettle` が `amountPerWitness?: bigint` を渡せるようにする（`FinalizeAndSettleInput` に任意の `amountPerWitness` を足す）
-   - **devnet へのデプロイ**は最後に、オーナーに `!` で実行してもらう（本番相当の操作のため自分では実行しない）: `solana program deploy target/deploy/proofmarket.so --program-id ~/.config/proofmarket/proofmarket-program-keypair.json -u devnet -k ~/.config/proofmarket/admin.json`。admin は 3.5 SOL。終わったら `solana program show A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s -u devnet` で Data Length が変わったことを確かめる
+1. **Solana program v1.1** (`programs/proofmarket/`)
+   - Add `amount_per_witness: Option<u64>` to `FinalizeVerificationArgs`. With `Some(a)`, require `a > 0 && a <= task.amount_per_witness` (new error such as `AmountIncrease`), set `task.amount_per_witness = a`, then proceed as before. With `None`, as before
+   - `settle` does not change (it uses `task.amount_per_witness`, so it pays the final amount automatically and the remainder goes to the treasury)
+   - Add 2 tests to `programs/proofmarket/tests/program_tests.rs`: "finalize with a lower amount → settle pays the lower amount and the remainder returns to the treasury" and "an attempt to raise it is rejected"
+   - Verify locally as the failure log says: `CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 cargo test -p proofmarket`. Build with `cargo build-sbf --manifest-path programs/proofmarket/Cargo.toml --tools-version v1.57` (failure log). Check first with `df -h /System/Volumes/Data` that 8 GB or more is free
+   - The IDL changes, so after `anchor build` update the IDL in `packages/solana` (grep for whether it lives in `packages/solana/src` or `idl/`), and let `finalizeAndSettle` in `anchor-adapter.ts` pass `amountPerWitness?: bigint` (add an optional `amountPerWitness` to `FinalizeAndSettleInput`)
+   - **Deploying to devnet** comes last and is run by the owner with `!` (a production-grade operation, so do not run it yourself): `solana program deploy target/deploy/proofmarket.so --program-id ~/.config/proofmarket/proofmarket-program-keypair.json -u devnet -k ~/.config/proofmarket/admin.json`. Admin has 3.5 SOL. Afterwards confirm the Data Length changed with `solana program show A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s -u devnet`
 
-2. **API と ledger**（`apps/web`）
-   - `CreateVerificationRequestSchema.bounty` に `max_amount`（Amount、任意）と `ramp_minutes`（10〜1440、任意。省略時は締切までの分数）を足す。`max_amount < amount` は 400
-   - `requester-service.createVerification`: 引き当てと FUND_TASK は `max_amount`（無ければ `amount`）× 人数。`bountyMaxAmount`・`bountyRampMinutes` を保存。環境変数 `RISING_BOUNTY_ENABLED` が真でなければ `max_amount` を `VALIDATION_FAILED`（`reason: "disabled"`）で断る（デプロイ前の安全弁。`apps/web/lib/env.ts` に足す）
-   - 「今の額」の関数 `currentBounty(task, now)` を `packages/core/src/domain/money.ts` の隣に置く: `amount + (max − amount) × min(1, 経過分 / ramp)`、6 桁に丸める。確定後（`bountyFinalAmount` あり）はその額
-   - `worker-service` のクレーム作成: 最初のクレーム（その依頼の claims が 0 件）のとき `bountyFinalAmount = currentBounty(now)` を保存し、差額 `(max − final) × 人数` を `requester_ledger` に `RELEASE` の行（`entry_type` に既存の種類があれば従う。無ければ `RESERVE_RELEASE` を足し、`startOfSpendDay` の集計から外す）で戻す。クレーム行に `rewardAmount` を記録
-   - `settlement-jobs`: `amountPerWitness` に `bountyFinalAmount ?? bountyAmount` を渡す。`totalMicro` も合わせる
-   - `views.ts`: `GET` の `bounty` に `max_amount`・`ramp_minutes`・`current_amount` を返す（スキーマに追加）。`worker-service` の一覧・詳細に `reward.current`・`reward.max`・`reward.rises_until`（ISO）
-   - 結果の `settlement.paid[].amount` は確定額になる。`buildResult` を確かめる
+2. **API and ledger** (`apps/web`)
+   - Add `max_amount` (Amount, optional) and `ramp_minutes` (10–1440, optional; defaults to the minutes until the deadline) to `CreateVerificationRequestSchema.bounty`. `max_amount < amount` is 400
+   - `requester-service.createVerification`: the reservation and FUND_TASK use `max_amount` (or `amount` if absent) × witnesses. Store `bountyMaxAmount` and `bountyRampMinutes`. Unless the env var `RISING_BOUNTY_ENABLED` is true, refuse `max_amount` with `VALIDATION_FAILED` (`reason: "disabled"`) (a safety valve before deployment; add it to `apps/web/lib/env.ts`)
+   - Put a "current amount" function `currentBounty(task, now)` next to `packages/core/src/domain/money.ts`: `amount + (max − amount) × min(1, elapsed minutes / ramp)`, rounded to 6 decimals. Once fixed (`bountyFinalAmount` set), that amount
+   - Claim creation in `worker-service`: on the first claim (the request has 0 claims) store `bountyFinalAmount = currentBounty(now)` and return the difference `(max − final) × witnesses` to `requester_ledger` as a `RELEASE` row (follow an existing `entry_type` if there is one; otherwise add `RESERVE_RELEASE` and exclude it from the `startOfSpendDay` totals). Record `rewardAmount` on the claim row
+   - `settlement-jobs`: pass `bountyFinalAmount ?? bountyAmount` as `amountPerWitness`, and match `totalMicro`
+   - `views.ts`: return `max_amount`, `ramp_minutes` and `current_amount` in `bounty` on `GET` (add to the schema). Add `reward.current`, `reward.max` and `reward.rises_until` (ISO) to the list and detail in `worker-service`
+   - `settlement.paid[].amount` in the result becomes the final amount. Check `buildResult`
 
-3. **worker の画面**
-   - 一覧（`apps/web/app/(worker)/tasks/page.tsx`）: 上がっている依頼は額の横に「↑」と `max` を小さく。詳細（`tasks/[id]/page.tsx`）: 「今 0.42 → 最大 0.60 USDC（あと 12 分で最大）」。音は付けない
+3. **Worker screens**
+   - List (`apps/web/app/(worker)/tasks/page.tsx`): for rising requests, a small "↑" and `max` next to the amount. Detail (`tasks/[id]/page.tsx`): "Now 0.42 → up to 0.60 USDC (maximum in 12 min)". No sound
 
-4. **MCP**: `REQUEST_TOOL` の説明に 1 文「bounty.max_amount と ramp_minutes で、受け手が付くまで報酬を上げられる」。
+4. **MCP**: add one sentence to the `REQUEST_TOOL` description: "bounty.max_amount and ramp_minutes let the reward rise until someone takes it".
 
-5. **文書**: 05 §2.1 の表に `max_amount`・`ramp_minutes` の検査行を足す。`/developers` の項目表に `bounty.max_amount` の行（日英）。
+5. **Docs**: add check rows for `max_amount` and `ramp_minutes` to the table in 05 §2.1, and a `bounty.max_amount` row to the field table on `/developers` (Japanese and English).
 
-## テスト
-- `apps/web/test/requester-api.test.ts`: `max_amount` 付きで作ると引き当てが `max × n`。`RISING_BOUNTY_ENABLED` が偽なら 400
-- `apps/web/test/worker-flow.test.ts` か新規 `rising-bounty.test.ts`: `createTestApp` の時計を進めてクレーム → `bountyFinalAmount` が途中の額、ledger に差額が戻る、2 人目のクレームは同じ額
-- `settlement` のテストがあれば `amountPerWitness` が確定額になることを確かめる
-- Rust のテスト 2 本
+## Tests
+- `apps/web/test/requester-api.test.ts`: creating with `max_amount` reserves `max × n`; with `RISING_BOUNTY_ENABLED` false, 400
+- `apps/web/test/worker-flow.test.ts` or a new `rising-bounty.test.ts`: advance `createTestApp`'s clock and claim → `bountyFinalAmount` is the intermediate amount, the difference returns to the ledger, a second claim gets the same amount
+- If there is a `settlement` test, check `amountPerWitness` is the final amount
+- The 2 Rust tests
 
-## できたの判定
-上がる依頼を作り、途中でクレームすると確定額が記録され、差額が残高に戻る。LiteSVM で settle が確定額で払う。本番の Devnet へのデプロイが済んだら `RISING_BOUNTY_ENABLED=true` を Vercel に入れるのはオーナー（STATUS.md に「デプロイ待ち」と書く）。
+## Done when
+Create a rising request; claiming midway records the final amount and returns the difference to the balance. In LiteSVM, settle pays the final amount. Once deployed to production Devnet, the owner sets `RISING_BOUNTY_ENABLED=true` in Vercel (write "awaiting deployment" in STATUS.md).

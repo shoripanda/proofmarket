@@ -1,27 +1,27 @@
-# ProofMarket アーキテクチャ設計書（2026-10-14）
+# ProofMarket architecture design (2026-10-14)
 
-オーナーの指示書「Solana Foundation 公式テンプレートを活用したアーキテクチャ設計・開発指示書」に沿って、既存コードと [solana-foundation/templates](https://github.com/solana-foundation/templates) を調べ、設計をまとめた。**この文書群は設計だけで、本番コードは変えていない。** 実装は、オーナーが 11 章のロードマップを承認してから始める。
+Following the owner's brief "Architecture design and development using the official Solana Foundation templates", we studied the existing code and [solana-foundation/templates](https://github.com/solana-foundation/templates) and wrote down a design. **These documents are design only; they did not change production code.** Implementation starts once the owner approves the roadmap in chapter 11.
 
-結論を先に書く。ProofMarket の土台（Next.js と Supabase、Anchor のエスクロー、Privy の埋め込みウォレット、x402 の窓口、MCP）はすでに動いており、公式テンプレートで置き換えるべき層はない。採り入れる価値があるのは、テンプレートが示す**型**のほうで、具体的には (1) 支払い前に条件を見せて承認を取る型（eve-pay）、(2) 署名鍵を KMS や MPC に逃がす署名インターフェース（nextjs-keychain）、(3) IDL から型つきクライアントを生成する型（nextjs-anchor の Codama）、(4) ChatGPT の画面に結果を描くウィジェット（solana-chatgpt-kit）の 4 つである。いちばん急ぐのは、依頼者の支出上限が DB にあるのに検査されていない点の修正と、メインネットで実際のお金を持つ operator 鍵の置き場の見直しで、どちらもテンプレートではなく設計の問題として 08 章と 11 章に書いた。
+The conclusion first. ProofMarket's foundation (Next.js and Supabase, the Anchor escrow, Privy embedded wallets, the x402 window, MCP) is already running, and there is no layer the official templates should replace. What is worth adopting are the **patterns** the templates show: (1) show the terms and get approval before paying (eve-pay), (2) a signing interface that moves signing keys out to a KMS or MPC (nextjs-keychain), (3) generating a typed client from the IDL (Codama in nextjs-anchor), and (4) a widget that draws the result inside ChatGPT (solana-chatgpt-kit). The most urgent items are fixing the requester spending limits, which are stored in the DB but never checked, and rethinking where the operator key that will hold real money on mainnet lives. Both are design problems rather than template questions, and are covered in chapters 08 and 11.
 
-| # | 文書 | 何が書いてあるか |
+| # | Document | Contents |
 |---|---|---|
-| 01 | [現行システム](01-current-system.md) | 機能ごとの実装状況（Implemented / Partial / Missing / Unknown）と、コードで確かめた事実 |
-| 02 | [テンプレート分析](02-template-analysis.md) | 6 本の優先テンプレートと、関係の深い 3 本の調査結果。採用・部分採用・不採用の表 |
-| 03 | [目標アーキテクチャ](03-target-architecture.md) | 構成図と、いまの作りから変える点・変えない点 |
-| 04 | [Agent API 仕様](04-agent-api-specification.md) | 認証、API キー、レート制限、権限、冪等性、足りない一覧 API |
-| 05 | [エスクロー設計](05-escrow-design.md) | Anchor プログラムの口座と命令、二重払いの防止、鍵の分離 |
-| 06 | [決済設計](06-payment-design.md) | 前払い残高、x402、入金検出、支出上限、処理量 |
-| 07 | [成果物検証設計](07-verification-design.md) | 機械検査、AI 審査、人の審査、異議。AI だけで不可逆な支払いをする危険の評価 |
-| 08 | [セキュリティ設計](08-security-design.md) | 脅威ごとの対策、鍵管理、緊急停止、支出の歯止め |
-| 09 | [データベース設計](09-database-design.md) | 39 表の役割、制約で守っていること、足す表 |
-| 10 | [移行計画](10-migration-plan.md) | 互換性を保ったまま変える順番と、戻し方 |
-| 11 | [実装ロードマップ](11-implementation-roadmap.md) | Phase 1〜5 の作業、依存、難易度、完了条件 |
-| 12 | [RentAHuman の調査](12-rentahuman-benchmark.md) | rentahuman.ai の作りと、ProofMarket をそちらへ寄せる設計・決めごと D1〜D6 |
-| 13 | [市場への移行](13-marketplace-migration.md) | D1〜D6 の答えに沿って「確認」と「仕事」を並べる設計。表・席ごとの Task・手数料 15%・24 時間の自動支払い・移す順番 |
+| 01 | [Current system](01-current-system.md) | Implementation status per feature (Implemented / Partial / Missing / Unknown) and facts checked in the code |
+| 02 | [Template analysis](02-template-analysis.md) | Six priority templates and three closely related ones; adopt / partly adopt / reject |
+| 03 | [Target architecture](03-target-architecture.md) | The diagram, and what changes and what stays |
+| 04 | [Agent API specification](04-agent-api-specification.md) | Authentication, API keys, rate limits, permissions, idempotency, the missing list API |
+| 05 | [Escrow design](05-escrow-design.md) | Accounts and instructions of the Anchor program, double-payment protection, key separation |
+| 06 | [Payment design](06-payment-design.md) | Prepaid balance, x402, deposit detection, spending limits, throughput |
+| 07 | [Verification design](07-verification-design.md) | Machine checks, AI review, human review, disputes; the risk of irreversible payments decided by AI alone |
+| 08 | [Security design](08-security-design.md) | Countermeasures per threat, key management, kill switches, spending brakes |
+| 09 | [Database design](09-database-design.md) | The role of the 39 tables, what the constraints guarantee, tables to add |
+| 10 | [Migration plan](10-migration-plan.md) | The order of compatible changes, and how to roll back |
+| 11 | [Implementation roadmap](11-implementation-roadmap.md) | Phases 1-5: work, dependencies, difficulty, done criteria |
+| 12 | [RentAHuman study](12-rentahuman-benchmark.md) | How rentahuman.ai is built, a design to move ProofMarket toward it, decisions D1-D6 |
+| 13 | [Moving to a marketplace](13-marketplace-migration.md) | Verifications and general tasks side by side, following the answers to D1-D6: tables, one on-chain Task per seat, the 15% fee, payment 24 hours after delivery, the order of the move |
 
-2026-10-15 にオーナーが実装を承認し、11 章 §10 の 8 件を決めた（同節に記録）。同日に Phase 3・1〜2・4 とウィジェットを PR #44〜#47 として出し、各変更は既存仕様の章（01 §4.29〜4.30、04 §3.28〜3.29、05 §1.2/§2.1b/§2.2a/§6.1、06 §5.x、08 §5〜6、12 §10.3、15 §4.2）に追記した。
+On 2026-10-15 the owner approved implementation and decided the eight items in chapter 11 §10 (recorded there). The same day Phases 3, 1-2 and 4 and the widget went out as PRs #44-#47, and each change was added to the existing spec chapters (01 §4.29-4.30, 04 §3.28-3.29, 05 §1.2/§2.1b/§2.2a/§6.1, 06 §5.x, 08 §5-6, 12 §10.3, 15 §4.2).
 
-既存の正本は `specs/proofmarket/implementation/ja/`（00〜16 章）で、この文書群はそれを置き換えない。ここで決めた設計は、実装のときに該当する章へ追記する。
+The authoritative implementation design remains `specs/proofmarket/implementation/en/` (chapters 00-16); these documents do not replace it. A design decided here is added to the relevant chapter when it is implemented.
 
-調査の方法は次のとおり。ProofMarket は `origin/main`（コミット `05d6544`、PR #37 まで）を読み、未マージの PR #39〜#42（多通貨と並列決済）は「審査中」として区別した。templates は 2026-10-11 のコミット `d7961ba` を clone し、README・AGENTS.md・TEMPLATES.md と各テンプレートの package.json・README・主要ソースを読んだ。npm の公開日と各ディレクトリの最終コミット日は 2026-10-14 に GitHub API と npm registry で確かめた。
+Method: for ProofMarket we read `origin/main` (commit `05d6544`, up to PR #37) and kept the unmerged PRs #39-#42 (multi-token and parallel settlement) apart as "under review". For the templates we cloned commit `d7961ba` of 2026-10-11 and read README, AGENTS.md, TEMPLATES.md and each template's package.json, README and main sources. npm publish dates and the last commit date of each directory were checked on 2026-10-14 through the GitHub API and the npm registry.

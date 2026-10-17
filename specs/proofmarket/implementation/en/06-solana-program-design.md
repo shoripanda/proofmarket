@@ -1,7 +1,5 @@
 # 06. Design of the Solana Program and the Settlement Adapter
 
-> English translation. The Japanese version in [`../ja/06-solana-program-design.md`](../ja/06-solana-program-design.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 ## 1. What Goes On-Chain
@@ -116,7 +114,7 @@ Event: `TaskInitialized { task, task_id_hash, amount_total, deadline }`
 
 ### 3.3 finalize_verification
 
-Arguments: `outcome`, `evidence_root`, `result_hash`, `recipients: Vec<Pubkey>`
+Arguments: `outcome`, `evidence_root`, `result_hash`, `recipients: Vec<Pubkey>`, `amount_per_witness: Option<u64>` (v1.1: the per-witness amount fixed by the rising bounty in 13 §1. With `Some(a)`, check `0 < a ≤ task.amount_per_witness` (`AmountIncrease` if above, `InvalidAmount` if 0) and set `task.amount_per_witness = a`; settle pays this amount and the rest returns to the treasury. `None` behaves as before)
 
 Checks:
 
@@ -168,7 +166,7 @@ Event: `TaskRefunded { task, amount, reason }`
 
 ### 3.6 Error codes
 
-`Paused`, `Unauthorized`, `InvalidMint`, `InvalidTreasury`, `InvalidAmount`, `InvalidWitnessConfig`, `DeadlineInPast`, `AmountOverflow`, `InvalidStatus`, `InvalidRoot`, `InvalidRecipients`, `RecipientCountMismatch`, `RecipientAccountMismatch`, `InsufficientVaultBalance`, `NotExpired`
+`Paused`, `Unauthorized`, `InvalidMint`, `InvalidTreasury`, `InvalidAmount`, `InvalidWitnessConfig`, `DeadlineInPast`, `AmountOverflow`, `InvalidStatus`, `InvalidRoot`, `InvalidRecipients`, `RecipientCountMismatch`, `RecipientAccountMismatch`, `InsufficientVaultBalance`, `NotExpired`, `AmountIncrease` (v1.1), `PayoutBelowRent` (v1.2), `UnsupportedMintExtension` (v1.3, 16 §5.2)
 
 The following cases reuse an existing code instead of adding a dedicated one.
 
@@ -231,7 +229,13 @@ treasury token balance = Σ ledger balances of all requesters + Σ RESERVE amoun
 
 Reconcile once an hour inside tick, and warn if they diverge (P1).
 
+### 5.x The signing boundary (added 2026-10-15)
+
+`docs/architecture/` 05 §4.1. The adapter holds no `Keypair`; it takes a `Signer { publicKey, sign(message) }` (`createAnchorAdapter({ operator, verifier })`; for compatibility it also accepts `operatorSecretKey` / `verifierSecretKey` and wraps them with `keypairSigner`). Sending passes the built transaction's message to `sign` and attaches the returned 64 bytes with `addSignature`. `packages/solana/test/send.test.ts` pins that `keypairSigner`'s signature matches `tx.sign`'s byte for byte. A KMS or MPC backend plugs in by implementing this type.
+
 ## 6. Reward Asset
+
+Added 2026-10-14: v1.2 handles several mints through `AllowedMint` (15 §3.1), and v1.3 handles Token-2022 mints (16 §5). Which currencies are accepted is decided by the off-chain registry (16 §3) and `add_mint`. What follows describes the initial USDC-only period.
 
 The default is Circle's Devnet USDC (mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`, 6 decimal places). Fund the operator's ATA from the faucet (`https://faucet.circle.com`).
 

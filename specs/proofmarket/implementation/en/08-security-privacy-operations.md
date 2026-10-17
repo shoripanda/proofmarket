@@ -1,7 +1,5 @@
 # 08. Security, Privacy, and Operations Design
 
-> English translation. The Japanese version in [`../ja/08-security-privacy-operations.md`](../ja/08-security-privacy-operations.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 For each threat in `privacy-security.md`, this chapter maps which mechanism in which component stops it.
@@ -114,6 +112,7 @@ There is no API that returns a worker's location, home, or movement history to a
 - Logs are one JSON line each. They include `level`, `msg`, `request_id`, `verification_id`, `actor_type`, and `duration_ms`
 - The `event_type` values of audit_events are the 13 types in `architecture.md` Section 7, plus `submission_rejected`, `claim_abandoned`, and `operator_action`
 - Within the tick, count the following and emit a warning log when a threshold is exceeded: outbox jobs that became DEAD, payments left PENDING for more than 10 minutes, the operator's SOL balance, and drift between the treasury balance and the ledger
+- Added 2026-10-15 (`docs/architecture/` 06 §4.2-4.3, 08 §4.5): (1) when the operator wallet goes over 1.5 times `TREASURY_MAX_USDC` / `TREASURY_MAX_SOL`, warn with `treasury_over_cap` (15 §4.2). (2) A daily `RECONCILE_SETTLEMENTS` job reads the Task account for every settlement that became CONFIRMED the previous day; if `paid_total` or the recipients differ from `payment_records`, it records `reconciliation_mismatch` in audit_events and warns. It does not fix anything. (3) The tick records per-step durations in `tick_runs`, and `GET /v1/health/ready` returns them as `last_tick` (start time, total and per-step milliseconds, jobs run, failed steps). A tick over 200 seconds warns with `tick_over_budget` but does not cause a 503
 
 ## 6. Responding to Failures and Incidents
 
@@ -130,6 +129,9 @@ This maps the "must be able to do" list in `privacy-security.md` Section 8 to th
 | Stop evidence disclosure | `POST /v1/admin/verifications/{id}/evidence/revoke-access`; for everything, set `public_evidence_enabled` to false | 1 minute |
 | A shop or a person in a photo asks for removal | Received via the `/rules` form and read with `list-removal.ts`. Apply `revoke-access` to the task, delete the raw and derived images from Storage if needed, then `--mark <id> --as handled` | 1 business day |
 | Rerun a DEAD job | Fix the cause, then `POST /v1/admin/jobs/{id}/requeue` | 5 minutes |
+| Stop only the x402 window (2026-10-15) | `POST /v1/admin/flags { "key": "x402_enabled", "value": false }`. API-key requests continue | 1 minute |
+| The daily reconciliation reported `reconciliation_mismatch` (2026-10-15) | Read the audit_events `metadata` (Task account, chain and DB `paid_total`, recipients, signature) and check the transaction on Explorer. Nothing is fixed automatically. If an operator-key leak is suspected, go to "A key leaked" below | 30 minutes |
+| The operator wallet went over its cap (`treasury_over_cap`, 2026-10-15) | Send the excess to the admin wallet (`TREASURY_MAX_USDC` / `TREASURY_MAX_SOL`, 15 §4.2). Not automated | 10 minutes |
 | A key leaked | Replace operator / verifier with `update_config`, update the Vercel environment variables, and move the old key's Devnet funds | 30 minutes |
 
 Even when `settlement_enabled` is set to false, verification and result retrieval continue. Tasks that are VERIFIED wait with settlement left PENDING, and are processed in order after it is re-enabled.

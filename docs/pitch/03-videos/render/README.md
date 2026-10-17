@@ -1,33 +1,33 @@
-# 提出用の動画を作る手順（2026-10-08）
+# How the submission videos are made (2026-10-08)
 
-技術デモ（約 72 秒）とピッチ（約 116 秒、`pitch2/`）の 2 本を、どちらも 1920×1080・H.264 で作る。語りは Kokoro（無料で手元で動く音声合成）の英語音声で、台本を読ませている。収録に人は要らない。
+Two videos — a technical demo (about 72 s) and a pitch (about 116 s, `pitch2/`) — both 1920×1080 H.264. The narration is Kokoro (free speech synthesis that runs locally) reading the script in an English voice. No one needs to be recorded.
 
-## 準備（最初の 1 回だけ）
+## Setup (once)
 
 ```bash
-brew install espeak-ng                       # Kokoro の発音辞書。pip 版の espeak は macOS でデータを読めない
+brew install espeak-ng                       # Kokoro's pronunciation dictionary. The pip espeak cannot read its data on macOS
 cd docs/pitch/03-videos/render/tts
 uv venv -p 3.12 .venv && uv pip install --python .venv/bin/python kokoro-onnx soundfile
 curl -L -o kokoro-v1.0.onnx https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
 curl -L -o voices-v1.0.bin  https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
 ```
 
-`tts/say.py <voice> <out.wav> <text|file.txt> [speed]` で 1 行ずつ合成する。声は `af_heart`（女性）と `am_michael`（男性）を試した。`.venv` とモデル（約 350MB）はリポジトリに入れない。
+Synthesize one line at a time with `tts/say.py <voice> <out.wav> <text|file.txt> [speed]`. Voices tried: `af_heart` (female) and `am_michael` (male). `.venv` and the models (about 350 MB) are not committed.
 
-## 技術デモ
+## Technical demo
 
-`/en/try` の自動再生を録画し、表題と結びのカード、語り、字幕を重ねる。
+Record the autoplay of `/en/try` and overlay title and closing cards, narration and captions.
 
-1. `pnpm dev:local`（http://localhost:3917）を起動する
+1. Start `pnpm dev:local` (http://localhost:3917)
 2. `node demo/build.mjs af_heart ~/Desktop/ProofMarket-demo-en.mp4`
 
-中で行うこと: `demo/narration.txt` を 1 行ずつ合成 → Playwright で `/en/try` を 1920×1080 で録画 → `card.html` を表題 3 秒・結びは語りが終わるまでの長さで静止画の動画に → concat → 各行の語りを `adelay` で重ねる。
+What it does: synthesize `demo/narration.txt` line by line → record `/en/try` at 1920×1080 with Playwright → turn `card.html` into still-image clips (title 3 s, closing for as long as the narration lasts) → concat → overlay each line's narration with `adelay`.
 
-字幕はページの中に固定の帯として描く（録画の前に `<div id="pm-sub">` を足し、画面の文言を見張って行を切り替える）。ffmpeg 9 では画像の overlay が 1 コマ目にしか効かず、字幕が消えたので、この方式にした。語りの開始時刻も同じ見張りで決める。画面が語りより先に進んだときは、前の行を言い終えるまで次の行を待たせる。`MARKERS` の文言は `components/try-experience.tsx` の段階ラベルと「attempt 2」の表示に対応している。
+Captions are drawn inside the page as a fixed band (a `<div id="pm-sub">` is added before recording, and lines switch by watching the on-screen text). In ffmpeg 9, an image overlay applied only to the first frame and the captions disappeared, hence this approach. The same watcher decides when each narration line starts. When the screen gets ahead of the narration, the next line waits until the previous one has finished. The `MARKERS` strings correspond to the stage labels and the "attempt 2" display in `components/try-experience.tsx`.
 
-## ピッチ
+## Pitch
 
-`pitch/narration.txt` の 1 行が 1 枚のスライド（`pitch/slide.html?k=N`）になる。
+Each line of `pitch/narration.txt` becomes one slide (`pitch/slide.html?k=N`).
 
 ```bash
 cd docs/pitch/03-videos/render/tts
@@ -35,52 +35,52 @@ mkdir -p ../pitch/voice && i=0; while IFS= read -r l; do i=$((i+1)); .venv/bin/p
 node ../pitch/build.mjs ../pitch/voice ~/Desktop/ProofMarket-pitch-en.mp4
 ```
 
-スライドを Playwright で撮り、1 枚ごとに `ffmpeg -loop 1`（CRF 17・30fps・末尾 0.7 秒の無音）で動画にして concat する。ピッチは 2 分以内という提出条件があるので、`build.mjs` が出す合計秒数を見る。
+Slides are captured with Playwright, each turned into a clip with `ffmpeg -loop 1` (CRF 17, 30 fps, 0.7 s of silence at the end), then concatenated. The submission rules cap the pitch at 2 minutes, so watch the total seconds `build.mjs` prints.
 
-## ピッチ v2（2026-10-08 午後、提出版）
+## Pitch v2 (afternoon of 2026-10-08, the submitted version)
 
-上のスライド式は差し替え、`pitch2/` の動く版を提出した。Apple の製品動画を手本に、明るい背景と大きな文字、本番の画面（worker の電話画面、エージェント側のカード、開発者ページ、地図）を動かす 13 場面、115 秒。
+The slide approach above was replaced; the animated version in `pitch2/` was submitted. Modelled on Apple's product videos: a light background, large type, and 13 scenes animating real production screens (the worker's phone, the agent-side card, the developer page, the map), 115 s.
 
 ```bash
 cd docs/pitch/03-videos/render/pitch2
-node shots.mjs                      # 本番から画面を assets/ に撮る（終わりに表示される crop と logo のコピーも行う）
+node shots.mjs                      # capture screens from production into assets/ (also does the crop and logo copy shown at the end)
 mkdir -p voice && i=0; while IFS= read -r l; do i=$((i+1)); ../tts/.venv/bin/python ../tts/say.py af_heart voice/cue$i.wav "$l" 0.95; done < narration.txt
 curl -L -o music.mp3 "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Inspired.mp3"
-node render.mjs --preview preview.mp4           # 2fps の下見。配置の確認に使う
+node render.mjs --preview preview.mp4           # 2 fps preview for checking layout
 node render.mjs ~/Desktop/ProofMarket-pitch-v2.mp4 music.mp3
 ```
 
-仕組み: `scene.html` は場面ごとの要素を Web Animations API で作り、全部を一時停止したまま `seek(t)` で時刻を指す。`render.mjs` が 1/30 秒ずつ `seek` して PNG を撮り、パイプで ffmpeg に流す（コマ落ちがなく、字もにじまない。M2 で 1 コマ 0.08 秒ほど）。語りの長さから場面の開始時刻を決めるので、声を差し替えても `render.mjs` を回し直すだけでよい。音楽は Kevin MacLeod「Inspired」（CC BY 4.0）。YouTube の説明文にクレジットを書く。
+How it works: `scene.html` builds each scene's elements with the Web Animations API, keeps them all paused, and points at a time with `seek(t)`. `render.mjs` seeks in 1/30 s steps, captures PNGs and pipes them into ffmpeg (no dropped frames, no blurry text; about 0.08 s per frame on an M2). Scene start times are derived from the narration lengths, so swapping the voice only needs `render.mjs` rerun. Music: Kevin MacLeod, "Inspired" (CC BY 4.0); credited in the YouTube description.
 
-はまりどころ: 退場のアニメーションに `fill: both` を使うと、開始前にも最初のキーフレーム（不透明）が効いて、入場より優先される。退場は `fill: forwards` にする。
+Pitfall: using `fill: both` on exit animations makes the first keyframe (opaque) apply before they start, overriding the entrance. Use `fill: forwards` for exits.
 
-### v3（2026-10-08 夕）: 役割の対比を軸に組み直し
+### v3 (evening of 2026-10-08): rebuilt around contrasting roles
 
-オーナーの指摘（エージェントと人の長所・短所の対比を前面に。17 種類の見せ方は視野が狭い。灰色の「photo_0231.jpg」の枠が壊れた画像に見える）を受けて、同じ `pitch2/` の仕組みのまま台本と 14 場面を書き換えた。約 117 秒。
+Following the owner's feedback (put the contrast between agents' and people's strengths and weaknesses up front; showing 17 types is too narrow; the grey "photo_0231.jpg" frame looks like a broken image), the script and 14 scenes were rewritten on the same `pitch2/` machinery. About 117 s.
 
-- 冒頭 4 場面が「百万ページを読める／体がない／人は逆／足し合わせる」。本編のあとに「17 種類 → 現実世界の事実ぜんぶ」「既に数十億ドルの市場、エージェントで 1,000 倍（作業仮説と注記）」の 2 場面を足した。事業規模の整理は `docs/pitch/06-business-scale.md`
-- 仮の写真の枠はやめ、実物の写真 `assets/shutter.jpg` を使う。出所は Wikimedia Commons「本日休ませて頂きます (11512624976).jpg」（Rumi Yoshizawa、CC BY 2.0）。`shots.mjs` は撮らないので、`curl` で取って `sips -Z 1600` で縮めて置く。動画内とYouTube の説明文にクレジットを書く
-- 語りは Kokoro `af_heart`、速度 1.0（0.95 だと 125 秒で 2 分を超えた）。`render.mjs` の行間 `GAP` は 0.4 秒、末尾 `TAIL` は 2 秒
-- 市場規模の数字は Straits Research と Fortune Business Insights の 2025 年推計（ともに 23 億ドル台）。「1,000 倍」は測った数ではないので、画面の脚注で作業仮説だと断っている
+- The first 4 scenes are "can read a million pages / has no body / people are the opposite / add them together". After the main part, two scenes were added: "17 types → every real-world fact" and "already a multi-billion-dollar market, 1,000× with agents (a working hypothesis, with a footnote)". The business-scale reasoning is in `docs/pitch/06-business-scale.md`
+- The placeholder photo frame was replaced with a real photo, `assets/shutter.jpg`, from Wikimedia Commons (a sign reading "Closed today", Flickr photo 11512624976) by Rumi Yoshizawa, CC BY 2.0. `shots.mjs` does not capture it; fetch it with `curl` and shrink with `sips -Z 1600`. Credit it in the video and in the YouTube description
+- Narration is Kokoro `af_heart` at speed 1.0 (0.95 ran 125 s, over 2 minutes). In `render.mjs`, the gap between lines `GAP` is 0.4 s and the tail `TAIL` is 2 s
+- The market-size figures are 2025 estimates from Straits Research and Fortune Business Insights (both around $2.3 billion). "1,000×" is not measured, so an on-screen footnote says it is a working hypothesis
 
-## 置き場所と公開
+## Where the files go, and publishing
 
-できた mp4 はリポジトリに置かず、YouTube に限定公開で上げて提出フォームに URL を書く。表題スライドと説明文に「語りは合成音声」と明記する。自分の声で録ったものに差し替えるときは、`cue*.wav` を置き換えるだけでよい。
+The resulting mp4 files are not committed. Upload them to YouTube as unlisted and put the URLs in the submission form. State "narration is synthesized" on the title slide and in the description. To replace it with a recording of your own voice, just replace the `cue*.wav` files.
 
-## トップの「30 秒でわかる」の語り（2026-10-08、13 §7）
+## Narration for the home page's "Understand it in 30 seconds" (2026-10-08, 13 §7)
 
-字幕の文は `apps/web/public/audio/explainer-{ja,en}.json` の `lines[].text` が正本。文を直したら、次で mp3 と各文の開始秒を作り直す（どちらも同じ JSON に書き戻す）。合計が 30 秒を超えると止まる。
+The caption text's source of truth is `lines[].text` in `apps/web/public/audio/explainer-{ja,en}.json`. After editing the text, regenerate the mp3 and each line's start second with the commands below (both are written back to the same JSON). It stops if the total exceeds 30 seconds.
 
 ```bash
 cd docs/pitch/03-videos/render/tts
-uv pip install --python .venv/bin/python "misaki[ja]"   # 日本語だけ。pyopenjtalk をソースからビルドするので数分〜数十分
-# 2026-10-09 から本番の語りは neural 音声（edge-tts）。Kokoro の日本語は機械的だと指摘されたため
+uv pip install --python .venv/bin/python "misaki[ja]"   # Japanese only. Builds pyopenjtalk from source: minutes to tens of minutes
+# From 2026-10-09 production narration uses neural voices (edge-tts), after feedback that Kokoro's Japanese sounded mechanical
 uv venv tts-venv && uv pip install --python tts-venv/bin/python edge-tts
-tts-venv/bin/python ../explainer/make_edge.py ja ja-JP-NanamiNeural   # 29.5 秒
-tts-venv/bin/python ../explainer/make_edge.py en en-US-AvaNeural      # 22.7 秒
-# Kokoro で作る旧手順（鍵も網も要らない）
+tts-venv/bin/python ../explainer/make_edge.py ja ja-JP-NanamiNeural   # 29.5 s
+tts-venv/bin/python ../explainer/make_edge.py en en-US-AvaNeural      # 22.7 s
+# The older Kokoro procedure (no key, no network)
 ../tts/.venv/bin/python ../explainer/make.py en af_heart 0.95
 ../tts/.venv/bin/python ../explainer/make.py ja jf_alpha
 ```
 
-edge-tts は Microsoft Edge の読み上げを網経由で使う非公式のパッケージで、鍵は要らないが利用規約は正式な API 契約ではない。問題になれば VOICEVOX（無料・商用可・クレジット表記）に替える。日本語の Kokoro は misaki の `JAG2P(version="pyopenjtalk")` で読みを発音記号にしてから Kokoro に渡す。既定の cutlet 版は 770MB の unidic 辞書を要求するので使わない。pyopenjtalk 版の戻り値は「発音記号＋同じ長さの高低記号」がつながった文字列なので、前半だけを渡す。「AI」は「エーアイ」と読ませ、字幕は AI のまま。`jf_nezumi` は 30 秒を超えたので `jf_alpha` にした。
+edge-tts is an unofficial package that uses Microsoft Edge's read-aloud over the network. It needs no key, but its terms are not a formal API contract. If that becomes a problem, switch to VOICEVOX (free, commercial use allowed, with credit). For Japanese, Kokoro takes phonemes produced by misaki's `JAG2P(version="pyopenjtalk")`. The default cutlet version requires a 770 MB unidic dictionary, so it is not used. The pyopenjtalk version returns "phonemes + pitch marks of the same length" joined in one string, so only the first half is passed. "AI" is read as the Japanese pronunciation "ē-ai" while captions keep the letters AI. `jf_nezumi` ran over 30 seconds, so `jf_alpha` was chosen.

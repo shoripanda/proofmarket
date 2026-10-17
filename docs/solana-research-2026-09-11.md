@@ -1,148 +1,148 @@
-# Solana 技術調査メモ
+# Solana technical research notes
 
-調査基準日: **2026-09-11**
+Research date: **2026-09-11**
 
-## 調査方針
+## Approach
 
-Solanaの仕様・性能・リスクについて、Solana公式ドキュメント、Solana Foundation、原著ホワイトペーパー、公式Changelog / Upgrade trackerなどの一次資料を優先して整理する。
+Organizes Solana's specification, performance and risks, preferring primary sources: official Solana docs, the Solana Foundation, the original whitepaper, and the official changelog / upgrade tracker.
 
-## 1. 基本構造
+## 1. Basic structure
 
-SolanaはPermissionless Layer 1 blockchainで、高スループット、低手数料、低遅延の実行環境を目指して設計されている。
+Solana is a permissionless Layer 1 blockchain designed as a high-throughput, low-fee, low-latency execution environment.
 
-### Proof of History（PoH）
+### Proof of History (PoH)
 
-PoHはコンセンサス方式そのものではない。連続的な暗号学的計算によってイベントの順序と時間経過を検証可能にする仕組みで、validator間の時間・順序に関する調整を削減することを狙う。
+PoH is not a consensus mechanism in itself. It makes the order of events and the passage of time verifiable through continuous cryptographic computation, aiming to reduce coordination between validators about time and ordering.
 
-現在のSolanaはProof of StakeとTower BFTを用いてコンセンサスを形成する。
+Today Solana reaches consensus with Proof of Stake and Tower BFT.
 
 ### Accounts
 
-Solanaは状態をAccountに保存する。公式Core Conceptsでは、Accountは32-byte addressをキーとするkey-value storeとして説明されている。
+Solana stores state in accounts. The official Core Concepts describe accounts as a key-value store keyed by a 32-byte address.
 
 ### Programs
 
-SolanaのスマートコントラクトはProgramと呼ばれ、sBPFへコンパイルされる。Program自体は原則としてstatelessで、mutable stateはInstructionで渡されるdata account側に保持される。
+Solana smart contracts are called programs and compile to sBPF. Programs are in principle stateless; mutable state lives in data accounts passed in instructions.
 
-### Transaction / Instruction
+### Transactions / instructions
 
-InstructionはProgramの呼び出し単位で、複数Instructionを1つのTransactionにまとめられる。Transactionはatomicに処理される。
+An instruction is a unit of program invocation, and several instructions can be grouped into one transaction. Transactions are processed atomically.
 
-## 2. 並列実行
+## 2. Parallel execution
 
-SolanaではTransactionがアクセスするAccountをあらかじめ明示する。このため、互いに同じwritable accountを競合して使用しないTransactionは並列処理できる。
+On Solana, a transaction declares in advance which accounts it accesses. Transactions that do not contend for the same writable account can therefore run in parallel.
 
-社会課題向けサービスとの関係では、以下のような多数の独立イベントを扱うシステムと相性がよい可能性がある。
+For services aimed at social problems, this may suit systems handling many independent events, such as:
 
-- 移動サービスの乗車証明
-- 小口バウチャー利用
-- リサイクル回収イベント
-- 食品寄附・受渡し証明
-- 物流のcustody transfer
-- インセンティブ配布
+- proof of ride for mobility services
+- small voucher redemptions
+- recycling collection events
+- proof of food donation / handover
+- custody transfer in logistics
+- incentive distribution
 
-## 3. 手数料
+## 3. Fees
 
-2026-09-11時点のSolana公式Fees documentationでは、基本手数料は原則**5,000 lamports / signature**。
+As of 2026-09-11, the official Solana fees documentation puts the base fee at **5,000 lamports per signature**.
 
-また、optional priority feeを追加できる。
+An optional priority fee can be added.
 
-fee payerを別主体に設定できるため、自治体やサービス運営者が利用者のtransaction feeをスポンサーするUXも構築可能。これにより、一般利用者がSOLを保有していなくてもサービスを使える構成を設計できる。
+The fee payer can be a different party, so municipalities or service operators can sponsor users' transaction fees. This allows designs where ordinary users can use a service without holding SOL.
 
-## 4. 2026年の主なネットワーク変更
+## 4. Main network changes in 2026
 
-### 100M CU Blocks
+### 100M CU blocks
 
-2026年7月、MainnetでSIMD-0286がactivateされ、block limitが**60M Compute Unitsから100M Compute Units**へ引き上げられた。
+In July 2026, SIMD-0286 activated on mainnet, raising the block limit from **60M to 100M compute units**.
 
-### 300ms target slot time
+### 300 ms target slot time
 
-2026年8月28日、Mainnetでtarget slot timeを**300ms**へ短縮するfeature gateがactivateされた。
+On 2026-08-28, a feature gate shortening the target slot time to **300 ms** activated on mainnet.
 
-### V1 Transactions
+### V1 transactions
 
-V1 Transactionではmaximum transaction sizeを**1,232 bytesから4,096 bytes**へ拡張する計画。
+V1 transactions are planned to raise the maximum transaction size from **1,232 bytes to 4,096 bytes**.
 
-ただし、2026-09-11現在はまだMainnet activation前であり、公式upgrade trackerでは**2026-09-15 01:20 UTC**のactivation予定とされている。
+As of 2026-09-11 this has not yet activated on mainnet; the official upgrade tracker schedules activation for **2026-09-15 01:20 UTC**.
 
 ### Alpenglow
 
-SolanaはTower BFTを次世代consensus protocolである**Alpenglow**へ置き換える計画を進めている。
+Solana is working to replace Tower BFT with the next-generation consensus protocol **Alpenglow**.
 
-Alpenglow Phase 1ではVotor voting algorithmを導入し、約**150ms finality**を目標としている。
+Alpenglow Phase 1 introduces the Votor voting algorithm, targeting about **150 ms finality**.
 
-2026-09-11現在、Alpenglow consensus自体はMainnetで未稼働。公式upgrade trackerではAgave 4.3、2026年10月ごろの導入が予定されている。
+As of 2026-09-11, Alpenglow consensus is not live on mainnet. The official upgrade tracker plans it for Agave 4.3, around October 2026.
 
-将来Phase 2では、block propagationについてTurbineからRotorへの移行が想定されている。
+Phase 2 is expected to move block propagation from Turbine to Rotor.
 
-## 5. Network health と分散性
+## 5. Network health and decentralization
 
-Solana Foundationの2025年6月Network Health Reportでは、2025年4月16日時点として以下が報告されている。
+The Solana Foundation's June 2025 Network Health Report gave, as of 2025-04-16:
 
 - Consensus validators: 1,295
-- Nakamoto Coefficient: 20
+- Nakamoto coefficient: 20
 - Validator clients: 3
 
-ただし、これはFoundation自身による2025年時点の報告であり、2026年現在のリアルタイム値としては扱わない。
+This is the Foundation's own report from 2025 and is not treated as a real-time value for 2026.
 
-validator clientの多様化は、同一software bugによるnetwork-wide failure riskを減らす上で重要。Agaveに加え、Firedancer / Frankendancer系の実装が進められている。
+Validator client diversity matters for reducing the risk of a network-wide failure from a single software bug. Besides Agave, Firedancer / Frankendancer implementations are progressing.
 
-## 6. 過去の障害
+## 6. Past outages
 
-2024-02-06、Solana Mainnet Betaは約5時間block finalizationが停止した。
+On 2024-02-06, Solana Mainnet Beta stopped finalizing blocks for about 5 hours.
 
-公式outage reportによると、LoadedProgramsに関係するlegacy loaderの挙動によって無限recompile loopが発生し、当時95%以上のcluster stakeが該当バージョンを利用していたため、多くのvalidatorが同時に停止してconsensusがhaltした。
+According to the official outage report, legacy loader behaviour related to LoadedPrograms caused an infinite recompile loop. Over 95% of cluster stake ran that version at the time, so many validators stopped simultaneously and consensus halted.
 
-社会インフラ用途では、Solanaだけをsingle point of failureにしないことが重要。
+For social-infrastructure uses, it matters not to make Solana a single point of failure.
 
-例:
+Examples:
 
-- 一時的なoff-chain queue
-- 再送処理
+- a temporary off-chain queue
+- resend handling
 - offline voucher / QR fallback
-- chain recovery後のreconciliation
+- reconciliation after the chain recovers
 - read model / local cache
 
-## 7. 社会課題サービスで使いやすいSolanaの性質
+## 7. Solana properties useful for social-problem services
 
-### A. 低コストで多数のイベントを記録できる
+### A. Recording many events at low cost
 
-物流、交通、食品、リサイクルなど、1件あたりの価値が小さく件数が多い用途に向く可能性がある。
+May suit uses with small value per event and high volume, such as logistics, transport, food and recycling.
 
-### B. 複数主体が同じ履歴を検証できる
+### B. Several parties can verify the same history
 
-自治体、企業、市民、NPO等が同じサービスに参加する場合、単一事業者が管理するDBとは異なるaudit layerを提供できる。
+When municipalities, companies, citizens and NPOs join the same service, it offers an audit layer different from a database run by a single operator.
 
-### C. Programによるルールの自動化
+### C. Automating rules with programs
 
-用途限定voucher、利用期限、reward、escrow、settlement等をProgramで実装できる。
+Purpose-limited vouchers, expiry, rewards, escrow, settlement and so on can be implemented as programs.
 
-### D. fee sponsorship
+### D. Fee sponsorship
 
-利用者に暗号資産の知識やSOL保有を要求しないUXを構築できる。
+A UX can be built that requires no crypto knowledge or SOL from users.
 
-## 8. 社会課題用途での注意点
+## 8. Cautions for social-problem uses
 
-### 個人情報を直接オンチェーンに置かない
+### Do not put personal data directly on chain
 
-公開blockchainは履歴が広く検証可能である。氏名、住所、医療情報、避難情報、本人確認資料、企業秘密などは原則off-chainに置く。
+A public blockchain's history is widely verifiable. Names, addresses, medical information, evacuation information, identity documents and trade secrets belong off chain in principle.
 
-推奨パターン:
+Recommended pattern:
 
-- on-chain: hash / status / timestamp / pseudonymous identifier / settlement
-- off-chain: actual records / PII / sensitive business data
+- on chain: hash / status / timestamp / pseudonymous identifier / settlement
+- off chain: actual records / PII / sensitive business data
 
-### Oracle problem
+### The oracle problem
 
-Blockchainは「入力された記録が改ざんされにくい」ことを提供できるが、「入力された事実が現実世界で正しい」ことを自動的には保証しない。
+A blockchain can provide "the recorded input is hard to tamper with", but does not automatically guarantee "the recorded fact is true in the real world".
 
-そのため、QR、NFC、IoT sensor、行政認証、事業者署名、複数主体attestation等と組み合わせる必要がある。
+So it must be combined with QR, NFC, IoT sensors, government authentication, operator signatures, attestations by several parties and the like.
 
-### 法制度
+### Law
 
-tokenを発行する場合、設計によっては資金決済法、金融商品取引法その他の規制検討が必要になる。公共分野では個人情報保護、行政情報システム、調達、業界固有規制も確認する。
+Issuing a token may, depending on its design, require review under Japan's Payment Services Act, the Financial Instruments and Exchange Act and other regulations. In the public sector, also check personal data protection, government information systems, procurement and industry-specific rules.
 
-## 9. 主要一次資料
+## 9. Main primary sources
 
 - Solana Whitepaper: https://solana.com/solana-whitepaper.pdf
 - Solana Core Concepts: https://solana.com/docs/core
@@ -158,12 +158,12 @@ tokenを発行する場合、設計によっては資金決済法、金融商品
 - 2024-02-06 outage report: https://solana.com/news/02-06-24-solana-mainnet-beta-outage-report
 - Network Health Report June 2025: https://solana.com/id/news/network-health-report-june-2025
 
-## 10. 今後の追加調査
+## 10. Further research
 
-- Alpenglow / Votorの原論文・formal specification
+- The Alpenglow / Votor paper and formal specification
 - Firedancer architecture
-- Token-2022を社会インフラ用途で使う際の機能・制約
-- ZK / confidential transferの実運用可能性
-- Solanaの長期運用コスト
+- Features and limits of Token-2022 for social-infrastructure uses
+- Practicality of ZK / confidential transfers
+- Long-term operating cost of Solana
 - RPC / indexer architecture
-- 日本法上のtoken、voucher、stablecoin利用条件
+- Conditions under Japanese law for using tokens, vouchers and stablecoins

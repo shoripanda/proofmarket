@@ -1,6 +1,6 @@
 # Legal / Compliance Checklist
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 **This is a product checklist, not legal advice.**  
 Production launch and real-money mainnet operation require professional review in relevant jurisdictions.
@@ -10,7 +10,7 @@ Production launch and real-money mainnet operation require professional review i
 Current official guidance states that contractual labels do not alone determine whether a person is legally a worker; actual working conditions matter.
 
 Before production:
-- [ ] review applicability of フリーランス・事業者間取引適正化等法
+- [ ] review applicability of the Act on Ensuring Proper Transactions Involving Specified Entrusted Business Operators (the freelance protection act)
 - [ ] review whether task terms must show remuneration, scope, payment timing and other required matters
 - [ ] assess worker classification based on actual control/dependence, not “independent contractor” label
 - [ ] avoid mandatory availability/exclusivity in MVP
@@ -108,7 +108,7 @@ Before commercial rollout:
 
 ### Yen payouts (added 2026-10-04)
 
-The app records only a worker's interest in yen payouts and lets them export a statement CSV (implementation/ja/01 §4.10). Before paying any yen:
+The app records only a worker's interest in yen payouts and lets them export a statement CSV (implementation/en/01 §4.10). Before paying any yen:
 - [ ] decide whether a licensed payment provider pays workers directly
 - [ ] decide withholding and invoice handling for individual workers
 - [ ] decide how requester prepayments are held so the operator does not custody them
@@ -134,12 +134,12 @@ For hackathon:
 - explicit participant consent
 - no sensitive/regulated task categories
 
-## 10. 確認と仕事を並べる市場（2026-10-16 追加）
+## 10. A marketplace with verifications and tasks side by side (added 2026-10-16)
 
-`docs/architecture/13-marketplace-migration.md` §10。旗 `tasks_enabled` を本番で立てる前にオーナーが判断する。
+`docs/architecture/13-marketplace-migration.md` §10. The owner decides these before turning on the `tasks_enabled` flag in production.
 
-- [ ] フリーランス・事業者間取引適正化等法: 依頼者が事業者で worker が個人のとき、仕事の内容・報酬・支払期日を依頼の画面と記録に残す。24 時間で払う作りは支払期日の面では有利
-- [ ] 職業安定法: 依頼者と worker を結ぶ仕組みが業務委託の仲介にとどまり、職業紹介に当たらないこと（1 件ごとの報酬、指揮命令なし、時給の長時間作業は扱わない）
-- [ ] 会話の保存: 連絡先の検出のために文面を読むこと、保存期間、削除の求めへの対応をプライバシーポリシーに書く
-- [ ] 手数料 15% の表示: 依頼者が払う総額と worker の受取額を作成前に見せる（特定商取引法の表示と合わせる）
+- [ ] The freelance protection act (Act on Ensuring Proper Transactions Involving Specified Entrusted Business Operators): when the requester is a business and the worker an individual, keep the work, pay and payment date on the request screen and on record. Paying within 24 hours helps with the payment-date rule
+- [ ] Employment Security Act: matching requesters and workers stays an intermediary for service contracts, not employment placement (per-task pay, no direction and supervision, no long hourly work)
+- [ ] Keeping conversations: state in the privacy policy that messages are read to detect contact details, how long they are kept, and how deletion requests are handled
+- [ ] Showing the 15% fee: show the requester's total and the worker's amount before creation (aligned with the display rules of the Act on Specified Commercial Transactions)
 

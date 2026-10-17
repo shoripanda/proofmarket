@@ -1,42 +1,44 @@
-# worker の募集文（知人・大学・X）
+# Worker recruiting messages (acquaintances, universities, X)
 
-作成: 2026-10-04 ／ 10/5〜10/10 に worker を集めるときに使う
-招待コードは運営者が `scripts/issue-invite.ts` で発行する。参加が決まった人には `worker-guide.md` を送る。
+Written: 2026-10-04 / For gathering workers 10/5–10/10
+The operator issues invite codes with `scripts/issue-invite.ts`. Send `worker-guide.md` to people who join.
 
-【】は送る前に埋める。報酬の額は依頼ごとに違うので、決まった額は書かない。
+Fill in [brackets] before sending. Reward amounts differ per request, so no fixed amount is stated.
 
-## 知人向け（LINE・メッセージ）
+The messages were sent in Japanese; this is the English text.
 
-> 【名前】さん、ちょっとお願いがあります。
+## For acquaintances (LINE, messages)
+
+> Hi [name], I have a small favour to ask.
 >
-> いま、AI から届く小さな作業を人が引き受けるアプリを試していて、使ってくれる人を探しています。たとえば「この店の入口の貼り紙を書き写して」「この店はいま開いているか見て」といった依頼で、1件数分です。
+> I'm testing an app where people take small tasks sent by AI, and I'm looking for people to use it. Requests are things like "copy down the notice on this shop's door" or "check whether this shop is open now", a few minutes each.
 >
-> スマホのブラウザだけで使えて、アプリのインストールも暗号資産の知識も要りません。引き受けるかは毎回自分で決められて、途中でやめても大丈夫です。試験運用中なので、報酬はテスト用の USDC（お金には換えられません）になります。
+> It works in your phone's browser, with no app to install and no crypto knowledge needed. You decide each time whether to take a request, and it's fine to stop midway. It's a trial, so rewards are in test USDC (not exchangeable for money).
 >
-> 10/【日】までに【件数】件くらい試してもらえると、とても助かります。よければ招待コードを送ります。
+> It would help a lot if you could try about [count] by 10/[day]. If you're up for it, I'll send you an invite code.
 
-## 大学向け（研究室・サークルの掲示、メーリングリスト）
+## For universities (lab or club notice boards, mailing lists)
 
-> **スマホで数分の作業を試してくれる人を募集しています（東京・試験運用）**
+> **Looking for people to try a few minutes of phone tasks (Tokyo, trial)**
 >
-> AI エージェントが自分ではできない作業（店の前の様子の確認、掲示の書き写し、値段の確認など）を、人が引き受けて写真と答えを返すサービス「ProofMarket」を作っています。10/12 締め切りのハッカソン（Colosseum）に出す作品です。
+> We're building ProofMarket, a service where people take on tasks AI agents can't do themselves (checking what's in front of a shop, copying down notices, checking prices, etc.) and return a photo and an answer. It's our entry for a hackathon (Colosseum) closing 10/12.
 >
-> - 使うもの: カメラと位置情報が使えるスマホ。ブラウザで開くだけ
-> - 時間: 1件数分。空いた時間に、引き受けたい依頼だけ
-> - 報酬: 試験運用中はテスト用の USDC（換金はできません）
-> - 安全: 店内や立入禁止の場所には入りません。人の顔が大きく写らないように撮ります。危ないと感じたらいつでもやめられます
-> - 期間: 10/5〜10/【日】
+> - What you need: a phone with a camera and location. Just open it in the browser
+> - Time: a few minutes per request, in your spare time, only the requests you want
+> - Reward: test USDC during the trial (not exchangeable)
+> - Safety: you never enter shops or restricted areas. Shoot so faces don't appear large. Stop whenever you feel unsafe
+> - Period: 10/5–10/[day]
 >
-> 参加したい方は【連絡先】まで。招待コードをお送りします。
+> If you'd like to join, contact [contact]. We'll send you an invite code.
 
-## X（個人のアカウント）
+## X (personal account)
 
-`../04-x-posts/personal-ja.md` の 5 番を使う。リンクは返信に置く。
+Use post 5 in `../04-x-posts/personal.md`. Put the link in a reply.
 
 
-## 送る前に決めること（オーナー）
+## To decide before sending (owner)
 
-- 【サイトの URL】: 本番は https://proofmarket.fun
-- 【連絡先】: 問い合わせを受ける先（X の DM、メールなど）
-- 試してほしい件数と期間
-- 招待コードの発行（1人1つ）
+- [site URL]: production is https://proofmarket.fun
+- [contact]: where inquiries go (X DMs, email, etc.)
+- How many requests to ask for, and over what period
+- Issuing invite codes (one per person)

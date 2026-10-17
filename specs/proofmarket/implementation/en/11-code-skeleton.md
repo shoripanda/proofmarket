@@ -1,7 +1,5 @@
 # 11. Code Skeleton
 
-> English translation. The Japanese version in [`../ja/11-code-skeleton.md`](../ja/11-code-skeleton.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 The design in Chapters 00–10 is now code that implementation can build on. Types, schemas, DB definitions, the program's account structures, API entry points and test names are all in place; function bodies are not. Functions with real work throw `NOT_IMPLEMENTED (PR-xx)`, and placeholder APIs return 501. Which PR fills each one follows Chapter 10, Section 3.

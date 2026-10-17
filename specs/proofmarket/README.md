@@ -1,18 +1,18 @@
 # ProofMarket Specifications
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
-このdirectoryはProofMarketの**実装前仕様のsource of truth**。
+This directory is the **source of truth for ProofMarket's pre-implementation specification**.
 
-Claude Code / Codex / OpenClaw等が実装を開始するときは、repository rootの `AGENTS.md` を全文読んだ後、このREADMEと以下の仕様を読むこと。
+Before Claude Code, Codex, OpenClaw or any other agent starts implementing, read all of `AGENTS.md` at the repository root, then this README and the specs below.
 
 ## Product definition
 
-ProofMarketは汎用gig marketplaceではない。
+ProofMarket is not a general gig marketplace.
 
-**AI agentがWeb/APIだけでは確定できない物理世界の事実を、人間のfresh evidenceによって検証し、machine-readableなVerificationResultとして受け取るためのnetwork / API。**
+**A network and API through which an AI agent has facts about the physical world that cannot be settled from the web or APIs verified with fresh human evidence, and receives them as a machine-readable VerificationResult.**
 
-MVPの中心は `PLACE_STATUS_VERIFICATION`。
+The MVP centres on `PLACE_STATUS_VERIFICATION`. Since 2026-10-16, general tasks are offered next to verifications (`requirements.md` §7).
 
 ## Read order
 
@@ -33,9 +33,9 @@ MVPの中心は `PLACE_STATUS_VERIFICATION`。
 
 ## Precedence
 
-仕様が衝突した場合の優先順位:
+When specs conflict, the order of precedence is:
 
-1. `AGENTS.md` のsecurity / privacy / implementation principles
+1. The security, privacy and implementation principles in `AGENTS.md`
 2. `requirements.md`
 3. `acceptance-criteria.md`
 4. `api-contract.md`
@@ -44,9 +44,9 @@ MVPの中心は `PLACE_STATUS_VERIFICATION`。
 
 ## Implementation freedom
 
-この仕様は**何を満たす必要があるか**を定義する。
+This specification defines **what must be satisfied**.
 
-以下はClaude Code側で選定してよい。
+Claude Code may choose the following:
 
 - frontend framework
 - backend framework
@@ -58,30 +58,29 @@ MVPの中心は `PLACE_STATUS_VERIFICATION`。
 - test framework
 - image verification provider/model
 
-ただし、technology choiceによってP0 requirement、privacy/security、legal constraint、acceptance criteriaを弱めてはならない。
+A technology choice must never weaken a P0 requirement, privacy/security, a legal constraint or the acceptance criteria.
 
 ## Hard constraints
 
-- raw photo / raw GPS / personal dataをSolanaへ書かない
-- workerにSOL保有を強制しない
-- secrets / seed phraseをrepositoryへcommitしない
-- task create / settleはidempotentにする
-- replay / duplicate evidence対策を持つ
-- unsafe / illegal / surveillance taskをMVPで受け付けない
-- human evidenceをAIでsimulatedしてdemoしない
-- mainnet real-money payoutはlegal checklist未解決のまま有効化しない
+- Never write raw photos, raw GPS or personal data to Solana
+- Never force workers to hold SOL
+- Never commit secrets or seed phrases to the repository
+- Make task creation and settlement idempotent
+- Protect against replayed and duplicate evidence
+- Do not accept unsafe, illegal or surveillance tasks in the MVP
+- Never demo with human evidence simulated by AI
+- Do not enable real-money payouts on mainnet while the legal checklist is unresolved
 
 ## Hackathon target
 
-Crypto World's Fair submission deadline: **2026-10-12**。
+Crypto World's Fair submission deadline: **2026-10-12**.
 
-Submission-readyの意味は `acceptance-criteria.md` に従う。
+"Submission-ready" means what `acceptance-criteria.md` says.
 
 ## Implementation design (2026-10-02)
 
-技術選定・DB・API詳細・Solana Program・判定・テスト・日程を定めた実装設計書と要件定義書は `implementation/` にある。日本語版が正本、英語版は対訳。
+The implementation design and requirements definition — technology choices, DB, API details, the Solana program, verdicts, tests and schedule — are in `implementation/en/`.
 
-- 日本語（正本）: [`implementation/ja/00-README.md`](implementation/ja/00-README.md)
-- English (translation): [`implementation/en/00-README.md`](implementation/en/00-README.md)
+- [`implementation/en/00-README.md`](implementation/en/00-README.md)
 
-これらは上記の仕様を弱めず、曖昧だった点の解釈を決めたものである。優先順位は上の Precedence に従う。
+They do not weaken the specs above; they settle how ambiguous points are interpreted. Precedence is as above.

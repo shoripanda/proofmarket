@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "no-referrer" },
-          // microphone: "話して入力" on the worker app (13 §6)
+          // microphone: "speak to type" on the worker app (13 §6)
           { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(self)" },
         ],
       },

@@ -53,7 +53,7 @@ export function resolveLangRoute(
   return { lang: "ja" };
 }
 
-/** Pick one of two values by language. Keeps call sites short: pick(lang, "体験", "Try it"). */
+/** Pick one of two values by language. Keeps call sites short: pick(lang, ja, "Try it"). */
 export const pick = <T>(lang: Lang, ja: T, en: T): T => (lang === "en" ? en : ja);
 
 /** Time zone and locale for dates shown to people. Everything in the pilot happens in Tokyo. */

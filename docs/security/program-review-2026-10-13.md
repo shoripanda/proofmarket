@@ -1,66 +1,66 @@
-# プログラム v1.2 の点検（2026-10-13、運営者による）
+# Review of program v1.2 (2026-10-13, by the operator)
 
-メインネットで実際の資金を扱う前に、Anchor プログラム `programs/proofmarket`（v1.2、`e74ebd5` まで）を運営者が読み直した記録。**第三者の監査ではない。** 読んだ範囲、確かめたこと、見つけた注意点、メインネットで守る運用を書く。
+A record of the operator re-reading the Anchor program `programs/proofmarket` (v1.2, up to `e74ebd5`) before handling real funds on mainnet. **This is not a third-party audit.** It covers what was read, what was checked, caveats found, and the operating rules kept on mainnet.
 
-## 読んだもの
+## What was read
 
-- `src/lib.rs`・`state.rs`・`constants.rs`・`error.rs`・`events.rs`・`instructions.rs`
-- 命令 7 つ: `initialize_config`・`update_config`・`add_mint`／`remove_mint`・`initialize_task`・`finalize_verification`・`settle`・`refund`
-- LiteSVM のテスト `tests/program_tests.rs`（25 本。P-INIT-01〜03、P-FIN-01〜04、P-SET-01〜05、P-REF-01〜03、P-OVF-01、P-CFG-01、P-MINT-01〜05 ほか）。`cargo test -p proofmarket` は 2026-10-11 に 23/23、v1.2 の追加後に全件通過
+- `src/lib.rs`, `state.rs`, `constants.rs`, `error.rs`, `events.rs`, `instructions.rs`
+- 7 instructions: `initialize_config`, `update_config`, `add_mint` / `remove_mint`, `initialize_task`, `finalize_verification`, `settle`, `refund`
+- LiteSVM tests `tests/program_tests.rs` (25 tests: P-INIT-01–03, P-FIN-01–04, P-SET-01–05, P-REF-01–03, P-OVF-01, P-CFG-01, P-MINT-01–05 and others). `cargo test -p proofmarket` passed 23/23 on 2026-10-11, and all after the v1.2 additions
 
-## 資金が動く経路と、守られていること
+## Paths where funds move, and what protects them
 
-| 経路 | 署名する鍵 | 確かめたこと |
+| Path | Signing key | What was checked |
 |---|---|---|
-| treasury → vault（`initialize_task`） | operator | `paused` なら拒否。額 > 0、1 ≤ quorum ≤ required ≤ max_witnesses、締切は未来、`amount × required` は checked_mul。Task PDA は `init` なので同じ task_id_hash を 2 度は作れない（二重入金なし）。mint は `Config.bounty_mint` か、admin が `add_mint` した mint だけ。treasury は bounty_mint なら `Config.treasury` に固定、それ以外は operator 所有の口座に限る |
-| vault → 証人（`settle`） | operator | 状態が `Finalized` のときだけ。受け取り口座は `recipient_count` と同数、各口座は `get_associated_token_address(recipient, mint)` と一致し、token program 所有・書込可・mint と owner が一致。**全口座を確かめてから**送金する。払う額は `amount_per_witness × recipient_count` で vault の残高以下、余りは treasury へ、vault は閉じて rent は operator へ。wSOL のときは受け取り先が財布そのもの（system 所有）で、空の財布には rent 以上の額しか払わない（`PayoutBelowRent`）。vault を task 口座へ閉じ、プログラムが lamports を財布へ移す。移した合計は vault の lamports と一致する（task 口座の残高は変わらない） |
-| vault → treasury（`refund`） | operator | 状態が `Funded` のときだけ。理由 `None` は拒否。`Expired` は締切を過ぎてから。全額を treasury へ、vault を閉じる |
-| 判定の記録（`finalize_verification`） | verifier | 状態が `Funded` のときだけ。root と hash は非ゼロ、受取人は重複なし・既定値なし・required 以下・MAX_RECIPIENTS（5）以下。Verified／NoConsensus は quorum 以上、InsufficientWitnesses は 1 以上 quorum 未満、None は拒否。額の引き下げは可、引き上げは不可（`AmountIncrease`） |
+| treasury → vault (`initialize_task`) | operator | Refused when `paused`. Amount > 0, 1 ≤ quorum ≤ required ≤ max_witnesses, deadline in the future, `amount × required` with checked_mul. The Task PDA uses `init`, so the same task_id_hash cannot be created twice (no double funding). The mint must be `Config.bounty_mint` or a mint admin added with `add_mint`. For bounty_mint the treasury is pinned to `Config.treasury`; otherwise it must be an account owned by operator |
+| vault → witnesses (`settle`) | operator | Only in state `Finalized`. As many receiving accounts as `recipient_count`; each equals `get_associated_token_address(recipient, mint)`, is owned by the token program, writable, and matches mint and owner. **All accounts are checked before** any transfer. The amount paid is `amount_per_witness × recipient_count`, at most the vault balance; the remainder goes to the treasury, and the vault is closed with rent to operator. For wSOL the destination is the wallet itself (system-owned), and an empty wallet is only paid an amount at or above rent (`PayoutBelowRent`). The vault is closed into the task account and the program moves lamports to the wallets. The total moved equals the vault's lamports (the task account's balance does not change) |
+| vault → treasury (`refund`) | operator | Only in state `Funded`. Reason `None` is refused. `Expired` only after the deadline. Everything goes to the treasury and the vault is closed |
+| Recording the verdict (`finalize_verification`) | verifier | Only in state `Funded`. Root and hash non-zero; recipients without duplicates or default keys, at most required and at most MAX_RECIPIENTS (5). Verified / NoConsensus need at least quorum, InsufficientWitnesses at least 1 and below quorum, None is refused. The amount may be lowered but not raised (`AmountIncrease`) |
 
-二度払いの防止: `settle` と `refund` は vault を `UncheckedAccount` で受け、**状態を確かめてから**読む。閉じた vault を読んで落ちる前に `InvalidStatus` で止まる（D8〜D10）。`Settled`・`Refunded` からは何にも遷移しない。
+Preventing double payment: `settle` and `refund` take the vault as an `UncheckedAccount` and read it **after checking the state**. They stop with `InvalidStatus` before failing on reading a closed vault (D8–D10). Nothing transitions out of `Settled` or `Refunded`.
 
-鍵の分離: `initialize_config` と `update_config` は operator ≠ verifier を要求する。受取人を決める鍵（verifier）と vault を動かす鍵（operator）が別なので、サーバーの鍵 1 本が漏れただけでは、自分を受取人にして払えない。
+Key separation: `initialize_config` and `update_config` require operator ≠ verifier. The key deciding recipients (verifier) and the key moving the vault (operator) are different, so one leaked server key is not enough to pay oneself.
 
-## 注意点（コードの欠陥ではないが、メインネットで効いてくるもの）
+## Caveats (not code defects, but they matter on mainnet)
 
-1. **operator は `Funded` の task をいつでも `Cancelled` で返金できる。** 証人が作業中でも、オンチェーンは止めない。歯止めはサーバー側（T15: 向かっている証人がいれば取り消さない）だけ。operator 鍵が漏れた場合、進行中の報酬が treasury に戻る（証人が損をする）。→ 運用: operator 鍵は Vercel の環境変数にだけ置き、漏えいを疑ったら `update_config` で鍵を替える（admin が署名）。
-2. **`finalize_verification` に時間の制限がない（D-11）。** verifier 鍵が漏れると、`Funded` のまま残っている task の受取人を好きに決められる。ただし払うのは operator なので、両方が漏れないと資金は動かない。→ 運用: verifier の鍵も operator と別の場所で管理する。
-3. **`refund` は `Funded` のまま締切を過ぎた task しか `Expired` にできない。** 証人が提出したのに verifier が finalize しないと、資金は vault に残り続ける。サーバーの tick が止まると起きる。→ 運用: 08 §5 の tick の警告を必ず受け取る。
-4. **`update_config` の `bounty_mint` の変更は treasury と同時にしか変えられない。** 正しい。ただし変更後も、古い mint で `Funded` の task は `is_treasury_for` が「operator 所有の同じ mint の口座」も許すので settle／refund できる。
-5. **プログラムの更新権限。** `solana program deploy` した鍵（admin）がそのまま upgrade authority になる。これが漏れるとプログラムを差し替えられる。→ 運用: admin はサーバーに置かない。配置のあと `solana program set-upgrade-authority` でマルチシグかハードウェア財布に移すか、監査を受けるまでは少なくとも別の鍵にする。
-6. **`settle` の wSOL 経路で、受取人の財布が「空ではないが rent 未満」のとき。** 存在する財布は常に rent 以上の残高を持つので、この状態は起きない。0 のときだけ検査すれば足りる。
-7. **イベントは出すが、サーバーはイベントではなく口座を読む。** 監視を足すなら、`TaskSettled` の `paid_total` と DB の `payment_records` を日次で突き合わせる。
+1. **operator can refund a `Funded` task as `Cancelled` at any time.** Even while a witness is working, the chain does not stop it. The only guard is server-side (T15: do not cancel while a witness is on the way). If the operator key leaks, rewards in progress return to the treasury (witnesses lose). → Operations: keep the operator key only in Vercel env vars, and if a leak is suspected, change it with `update_config` (signed by admin).
+2. **`finalize_verification` has no time limit (D-11).** If the verifier key leaks, recipients of tasks still `Funded` can be chosen at will. But operator does the paying, so funds do not move unless both leak. → Operations: manage the verifier key in a different place from operator.
+3. **`refund` can only mark `Expired` a task still `Funded` past its deadline.** If witnesses submitted but verifier never finalizes, funds stay in the vault. This happens if the server's tick stops. → Operations: always receive the tick alerts of 08 §5.
+4. **`update_config` can change `bounty_mint` only together with the treasury.** Correct. After the change, tasks `Funded` in the old mint can still settle/refund, because `is_treasury_for` also allows "an operator-owned account of the same mint".
+5. **The program's upgrade authority.** The key that ran `solana program deploy` (admin) becomes the upgrade authority. If it leaks, the program can be replaced. → Operations: never put admin on a server. After deployment, move it with `solana program set-upgrade-authority` to a multisig or hardware wallet, or at least to a separate key until audited.
+6. **The wSOL path of `settle` when the recipient wallet is "not empty but below rent".** An existing wallet always holds at least rent, so this state cannot occur. Checking only for 0 is enough.
+7. **Events are emitted, but the server reads accounts, not events.** If monitoring is added, reconcile `paid_total` from `TaskSettled` with the DB's `payment_records` daily.
 
-## 見つからなかったもの
+## What was not found
 
-- 整数のあふれ（checked_mul／checked_sub を使っている箇所を全部確かめた）
-- 口座の取り違え（seeds と `address =` 制約で全部固定されている）
-- 署名者の取り違え（各命令の signer は `Config` の鍵と `address =` で一致を要求）
+- Integer overflow (every use of checked_mul / checked_sub was checked)
+- Account substitution (everything is pinned by seeds and `address =` constraints)
+- Signer substitution (each instruction's signer must match a key in `Config` via `address =`)
 
-## メインネットで守ること（決定文書の歯止めと合わせて）
+## Rules kept on mainnet (together with the safeguards in the decision document)
 
-- treasury には 1 日の支払い見込みの 2 倍までしか置かない。超えた分は admin へ
-- admin はサーバーに置かない。upgrade authority も admin
-- operator と verifier の鍵は別の場所で管理し、漏えいを疑ったら `update_config` で替える
-- tick の警告（DEAD・決済 10 分超・SOL 残高）を必ず受け取る
-- 第三者の監査は、資金の量が増える前に受ける。それまで treasury の上限を上げない
+- Keep at most twice the expected daily payouts in the treasury; move the excess to admin
+- Never put admin on a server. The upgrade authority is admin too
+- Manage the operator and verifier keys in different places, and change them with `update_config` if a leak is suspected
+- Always receive tick alerts (DEAD, settlement over 10 minutes, SOL balance)
+- Get a third-party audit before the volume of funds grows. Do not raise the treasury cap until then
 
-## 追記: v1.3 で変えたところ（2026-10-14）
+## Addendum: changes in v1.3 (2026-10-14)
 
-16 §5 で、Token-2022 の mint も預かれるようにした。第三者の監査は受けていない点は v1.2 と同じである。
+16 §5 made Token-2022 mints escrowable too. As with v1.2, there has been no third-party audit.
 
-**変えたこと。** 口座の型を `token_interface` に替え、送金はすべて `transfer_checked` にした。refund の末尾に省略できる `mint` を足した。`Task`・`Config`・`AllowedMint` のレイアウトは変えていない。
+**What changed.** Account types became `token_interface`, and every transfer became `transfer_checked`. An optional `mint` was added at the end of refund. The layouts of `Task`, `Config` and `AllowedMint` did not change.
 
-**守られていること。**
+**What protects it.**
 
-- initialize_task と settle は、渡されたトークンプログラムが mint の持ち主と一致しなければ断る。別のプログラムに送金を回させる道は無い
-- 証人の口座は、mint の持ち主のプログラムで導いた ATA に限る。SPL Token 側の ATA を渡すと `RecipientAccountMismatch` になる（テスト p_t22_05）
-- 拡張は許可リストで見る。送金手数料は両方の期で 0、送金フックは呼ぶプログラムが空のときだけ通す。add_mint で全部、initialize_task で手数料とフックを毎回調べる（p_t22_03・p_t22_04）
-- Token-2022 の依頼を mint 抜きで返金しようとすると、何も動かさずに断る（p_t22_02）
+- initialize_task and settle refuse if the token program passed does not match the mint's owner. There is no way to route a transfer through another program
+- Witness accounts are limited to ATAs derived with the mint's owning program. Passing an SPL Token ATA gives `RecipientAccountMismatch` (test p_t22_05)
+- Extensions are checked against an allow list. The transfer fee must be 0 in both epochs, and a transfer hook passes only when its program is unset. add_mint checks all of them; initialize_task checks fee and hook every time (p_t22_03, p_t22_04)
+- Trying to refund a Token-2022 request without the mint is refused with nothing moved (p_t22_02)
 
-**残るリスク。** 発行元を信頼して台帳に載せる、という前提に寄りかかっている。
+**Remaining risk.** It leans on the premise of trusting the issuer when listing a token.
 
-- PYUSD と USDG には永続委任がある。発行元は vault の中身を動かせる。USDC の凍結権と同じ種類の信頼である
-- 預けた後に発行元が手数料を上げると、証人は手数料を引いた額を受け取る。vault から出る額は変わらないので、settle が止まることは無い
-- 預けた後に発行元が送金フックを設定すると、settle と refund の送金に余分な口座が要り、払い出しが止まる。再開は発行元がフックを外すのを待つしかない。凍結と同じ扱いで、台帳に載せるかどうかの判断に含める
-- 一時停止（Pausable）の間は払えない。これも凍結と同じ
+- PYUSD and USDG have a permanent delegate, so the issuer can move the vault's contents. This is the same kind of trust as USDC's freeze authority
+- If the issuer raises the fee after funds are escrowed, witnesses receive the amount minus the fee. The amount leaving the vault does not change, so settle never stops
+- If the issuer sets a transfer hook after funds are escrowed, settle and refund transfers need extra accounts and payouts stop. Resuming means waiting for the issuer to remove the hook. Treated like a freeze and part of the listing decision
+- No payouts while paused (Pausable). Also the same as a freeze

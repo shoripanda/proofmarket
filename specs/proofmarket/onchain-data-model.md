@@ -1,6 +1,6 @@
 # On-chain Data Model
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 Goal: store only what benefits from public verifiability or programmatic settlement.
 

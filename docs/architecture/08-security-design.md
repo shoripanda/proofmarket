@@ -1,89 +1,89 @@
-# 08. セキュリティ設計: 12 の要件のうち 9 は満たしている。残る 3 つを設計で埋める
+# 08. Security design: 9 of the 12 requirements are met; design fills the other 3
 
-作成: 2026-10-14 ／ 正本は 08 章（脅威と対策）、`docs/security/program-review-2026-10-13.md`、`docs/legal/2026-10-13-owner-decision.md`
+Written: 2026-10-14 / Authoritative: chapter 08 (threats and countermeasures), `docs/security/program-review-2026-10-13.md`, `docs/legal/2026-10-13-owner-decision.md`
 
-## 1. 目的
+## 1. Purpose
 
-指示書第 8 節の 12 項目（ウォレット署名、秘密鍵、mint とネットワークの検証、不正な取引、二重支払い、リプレイ、API キーの漏洩、エージェントの過剰な権限、スマートコントラクトの脆弱性、紛争、不正な成果物、本番資金の誤送金）を既存の対策に照らし、足りないものを設計する。支出上限、承認ポリシー、緊急停止を重点に置く。
+Check the 12 items in section 8 of the brief (wallet signatures, secret keys, mint and network verification, malicious transactions, double payment, replay, API key leaks, agents with excessive authority, smart-contract vulnerabilities, disputes, fraudulent deliverables, mis-sending real funds) against the existing countermeasures and design what is missing, with emphasis on spending limits, approval policy and kill switches.
 
-## 2. 現状
+## 2. Current state
 
-| 要件 | 既存の対策 | 評価 |
+| Requirement | Existing countermeasure | Rating |
 |---|---|---|
-| ウォレット署名の安全性 | 認証にウォレット署名を使わない。worker は Privy のアクセストークン、x402 は取引の署名を仕様の MUST で検証 | 満たす |
-| 秘密鍵の管理 | admin はオフライン。operator と verifier は Vercel の環境変数。`server-only` と CI のバンドル検査で流出を防ぐ。Devnet の鍵をメインネットで拒む | **部分的**（メインネットで実際のお金を持つ鍵が環境変数にある） |
-| USDC の mint とネットワークの検証 | 起動時に genesis hash を照合。メインネットでは `BOUNTY_MINT` を USDC に固定。プログラムは `Config.bounty_mint` と `AllowedMint` だけを受ける。x402 は mint と桁を検証 | 満たす |
-| 不正なトランザクション | サーバーが送る取引は IDL で組み、口座は PDA と `address =` で固定。x402 は命令の並びと手数料支払者の不在を検証 | 満たす |
-| 二重支払い | 状態検査、`settle_xor_refund`、`dedupe_key`、Task PDA の一意性 | 満たす |
-| リプレイ攻撃 | 冪等キー、`x402_payments` の主キー、証拠の SHA-256 一意制約、チャレンジ nonce | 満たす |
-| API キーの漏洩 | SHA-256 で保存、revoke と suspend、レート制限、ログは先頭 8 文字 | 満たす（依頼者自身のローテーションは無い） |
-| AI エージェントの過剰な権限 | 残高の範囲でしか使えない。種別と地域の許可リスト | **部分的**（1 件・1 日の上限が検査されていない。承認の段階が無い） |
-| スマートコントラクトの脆弱性 | 運営者の点検（2026-10-13）、LiteSVM 23 本、`overflow-checks`、checked_mul | 部分的（第三者監査なし。更新権限が配置鍵のまま） |
-| 依頼者・ワーカー間の紛争 | 異議と再確認、audit_events、運営者の suspend | 満たす（設計の範囲で） |
-| 不正な成果物 | 機械検査 6 種、AI 審査、pHash、アプリ内カメラ | 満たす（07 章の評価のとおり限界あり） |
-| 本番資金の誤送金 | `settle` は受取人の ATA と mint を検査。空の財布には rent 以上しか払わない。treasury は operator の ATA に固定 | 満たす |
+| Wallet signature safety | Wallet signatures are not used for auth. Workers use Privy access tokens; x402 verifies the transaction signature against every MUST in the spec | Met |
+| Secret key management | admin is offline. operator and verifier are in Vercel env vars. `server-only` and the CI bundle check prevent leaks. Devnet keys are refused on mainnet | **Partial** (the keys that will hold real money on mainnet are in env vars) |
+| Verifying the USDC mint and network | Genesis hash checked at startup. On mainnet `BOUNTY_MINT` is fixed to USDC. The program accepts only `Config.bounty_mint` and `AllowedMint`. x402 checks mint and decimals | Met |
+| Malicious transactions | Transactions the server sends are built from the IDL, with accounts fixed by PDAs and `address =`. x402 checks the instruction sequence and that the fee payer is absent | Met |
+| Double payment | State checks, `settle_xor_refund`, `dedupe_key`, Task PDA uniqueness | Met |
+| Replay attacks | Idempotency keys, the `x402_payments` primary key, a unique SHA-256 constraint on evidence, challenge nonces | Met |
+| API key leaks | Stored as SHA-256, revoke and suspend, rate limits, only the first 8 characters logged | Met (no rotation by the requester) |
+| AI agents with excessive authority | Spending only within the balance; allow lists for types and regions | **Partial** (per-request and daily limits not checked; no approval step) |
+| Smart-contract vulnerabilities | Operator review (2026-10-13), 23 LiteSVM tests, `overflow-checks`, checked_mul | Partial (no third-party audit; upgrade authority still the deploying key) |
+| Requester-worker disputes | Disputes and rechecks, audit_events, operator suspensions | Met (within the design) |
+| Fraudulent deliverables | 6 machine checks, AI review, pHash, in-app camera | Met (with the limits assessed in chapter 07) |
+| Mis-sending real funds | `settle` checks the recipient's ATA and mint. An empty wallet is paid at least the rent. The treasury is fixed to the operator's ATA | Met |
 
-緊急停止は `platform_flags` の 5 種（新規依頼、引き受け、決済、公開証拠、人の審査）、プログラムの `paused`（`update_config`）、credential と worker の suspend で、どれも 1 分以内に効く（08 §6）。
+Kill switches are the five `platform_flags` (new requests, claims, settlement, public evidence, human review), the program's `paused` (`update_config`), and suspending credentials and workers; each takes effect within a minute (08 §6).
 
-## 3. 要件
+## 3. Requirements
 
-部分的の 3 つを埋める。(1) 支出上限と承認ポリシー、(2) 鍵の置き場、(3) プログラムの更新権限と監査。あわせて x402 の窓口を単独で止める旗を足す。
+Fill the three partial items: (1) spending limits and approval policy, (2) where keys live, (3) the program's upgrade authority and an audit. Also add a flag to stop the x402 window on its own.
 
-## 4. 提案する設計
+## 4. Proposed design
 
-### 4.1 支出の歯止め（3 層）
+### 4.1 Spending brakes (three layers)
 
-| 層 | 何を抑えるか | 実装 |
+| Layer | What it bounds | Implementation |
 |---|---|---|
-| 残高 | 依頼者が入れた以上は使えない | 既存（`INSUFFICIENT_BALANCE`） |
-| credential の上限 | 1 件の額と 1 日の累計。null なら無効 | 04 §4.3。既存のエラーコードを再び使う |
-| 見積もりと承認 | 払う前に費用を見せ、エージェントの実行基盤が人を止められる | 04 §4.2。MCP の `confirm: false` と REST の `mode: "quote"` |
+| Balance | Cannot spend more than the requester put in | Existing (`INSUFFICIENT_BALANCE`) |
+| Credential limits | Amount per request and daily total; null disables | 04 §4.3, reusing the existing error codes |
+| Quote and approval | Shows the cost before paying so the agent runtime can stop for a person | 04 §4.2: MCP `confirm: false` and REST `mode: "quote"` |
 
-PR #14 が上限を外した理由（依頼者が自分の残高の範囲で自由に使えるべき）は、null を既定にすることで保つ。`/join` と x402 のキーには 5 USDC と 20 USDC を入れる。これは運営者が身元を知らない依頼者への天井で、残高を増やしたい依頼者は運営者に上限の引き上げを頼む。
+PR #14's reason for removing limits (a requester should be free to spend within their own balance) is kept by making null the default. Keys from `/join` and x402 get 5 USDC and 20 USDC: a ceiling for requesters whose identity the operator does not know. A requester who wants more asks the operator to raise it.
 
-### 4.2 鍵の置き場
+### 4.2 Where keys live
 
-05 §4.1 の Signer の境界を置き、メインネットの operator と verifier を KMS か MPC に移す。移すまでの間は、15 §4.2 と 05 §4.3 の treasury の上限（仮に 200 USDC と 2 SOL）で被害の天井を決める。admin はハードウェア財布に置き、`Config.admin` と upgrade authority を同じ鍵にする。鍵の原本（`~/.config/proofmarket/mainnet/`）の保管は運営者の手元で、複製を 1 つだけ別の場所に置く（推測: 現状の保管方法は読めていない）。
+Put the Signer boundary from 05 §4.1 in place and move mainnet's operator and verifier to a KMS or MPC. Until then, the treasury cap from 15 §4.2 and 05 §4.3 (provisionally 200 USDC and 2 SOL) is the ceiling on damage. admin lives on a hardware wallet, with `Config.admin` and the upgrade authority on the same key. The original keys (`~/.config/proofmarket/mainnet/`) stay with the operator, with exactly one copy kept elsewhere (guess: the current storage practice was not read).
 
-### 4.3 緊急停止の追加
+### 4.3 An added kill switch
 
-`platform_flags` に `x402_enabled` を足す。x402 の窓口は API キーなしで動き、IP ごとのレート制限しか無いので、悪用が見えたら窓口だけを止められるようにする。停止中は 402 ではなく `503 FEATURE_DISABLED` を返す。他の 5 旗と同じく `POST /v1/admin/flags` で切り替える。
+Add `x402_enabled` to `platform_flags`. The x402 window works without an API key and has only per-IP rate limits, so it should be possible to stop just the window when abuse appears. While stopped it returns `503 FEATURE_DISABLED` instead of 402. Toggled with `POST /v1/admin/flags`, like the other five.
 
-### 4.4 更新権限と監査
+### 4.4 Upgrade authority and audit
 
-メインネットに配置した直後に upgrade authority を admin のハードウェア財布へ移す（05 §4.2）。第三者監査は、v1.3（Token-2022）の配置を待ってから依頼する。v1.2 を監査しても v1.3 で命令の中身が変わる（`transfer_checked`、拡張の許可リスト）ので、二度手間になる。監査までの間、treasury の上限が被害の天井になる。
+Move the upgrade authority to admin's hardware wallet right after deploying to mainnet (05 §4.2). Request a third-party audit after v1.3 (Token-2022) is deployed: auditing v1.2 would be redone, since v1.3 changes the instructions (`transfer_checked`, an allow list of extensions). Until the audit, the treasury cap is the ceiling on damage.
 
-### 4.5 ログと監視
+### 4.5 Logs and monitoring
 
-既存の 08 §5（JSON ログ、tick の警告 4 種）に、06 §4.2 の日次の突き合わせと、07 §4.4 の審査の実行者の記録を足す。ログに出さないもの（トークン、nonce、座標、鍵）は変えない。
+Add the daily reconciliation from 06 §4.2 and the record of who ran each review from 07 §4.4 to the existing 08 §5 (JSON logs, four tick warnings). What is never logged (tokens, nonces, coordinates, keys) is unchanged.
 
-## 5. 技術選定の理由
+## 5. Rationale
 
-支出の歯止めをオフチェーンに置くのは、依頼者の身元と上限がオフチェーンにしかないためで、プログラムは「誰の依頼か」を `requester_ref_hash` でしか知らない。緊急停止を旗で増やすのは、既存の仕組みが 1 分で効くことが確かめられており、新しい経路を作る理由がないからである。
+Spending brakes are off-chain because the requester's identity and limits exist only off-chain; the program knows "whose request" only as `requester_ref_hash`. Kill switches are added as flags because the existing mechanism is proven to take effect within a minute, and there is no reason for a new path.
 
-## 6. 代替案
+## 6. Alternatives
 
-- operator 鍵をマルチシグにする案。`initialize_task` と `settle` は毎分の tick が自動で送るので、人の承認を挟むマルチシグは成り立たない。KMS（自動で署名するが鍵は出ない）が正しい形
-- 依頼者ごとにオンチェーンの口座を持たせ、残高を預からない案（G-11 の P2、D-05 の法務にも効く）。大きな設計変更で、メインネット移行後に別途扱う
+- A multisig for the operator key. `initialize_task` and `settle` are sent automatically by the tick every minute, so a multisig that waits for people does not work. A KMS (signs automatically, but the key never leaves) is the right shape
+- Giving each requester an on-chain account instead of holding their balance (G-11, P2; it also helps with the legal question D-05). A large design change, to be handled separately after mainnet
 
-## 7. セキュリティ上の考慮事項（この設計自身の弱点）
+## 7. Security considerations (weaknesses of this design itself)
 
-Signer を KMS に移しても、何に署名するかはサーバーが決める。サーバーが侵入されれば、operator の権限で `refund(Cancelled)` を送って進行中の報酬を treasury に戻せる（点検記録 1 項）。被害は treasury の上限と、vault に入っている進行中の報酬の合計が天井で、それ以上には広がらない。これを下げるには、プログラム側で「進行中のクレームがあれば返金できない」を持つ必要があるが、クレームはオフチェーンにしかない。受け入れる。
+Even with the Signer on a KMS, the server decides what gets signed. If the server is compromised, the operator's authority can send `refund(Cancelled)` and return in-progress bounties to the treasury (review item 1). The damage is capped by the treasury cap plus the total of in-progress bounties in vaults, and goes no further. Lowering it would need the program to know "no refund while a claim is in progress", but claims exist only off-chain. Accepted.
 
-見積もりと承認は、エージェントの実行基盤が承認の機能を持つときだけ効く。`confirm` を省けばいまと同じく即時に引き当てるので、既存の利用者の動作は変わらない。
+Quotes and approval only help when the agent runtime has an approval feature. Omitting `confirm` reserves immediately as today, so existing users see no change.
 
-## 8. 実装上の課題
+## 8. Implementation issues
 
-- `platform_flags` の CHECK 制約（`platform_flags_key_chk`）に `x402_enabled` を足す移行が要る（09 章、0030）
-- `pm_live_` の接頭辞（04 §4.4）は、CI のバンドル検査の正規表現（`pm_test_[A-Za-z0-9_-]{8,}`）にも足す
+- Adding `x402_enabled` to the CHECK constraint on `platform_flags` (`platform_flags_key_chk`) needs a migration (chapter 09, 0030)
+- The `pm_live_` prefix (04 §4.4) must also be added to the regex in the CI bundle check (`pm_test_[A-Za-z0-9_-]{8,}`)
 
-## 9. テスト方針
+## 9. Test strategy
 
-旗は `apps/web/test/x402.test.ts` に「`x402_enabled` が false のとき 503」を足す。上限は 04 §9 のとおり。鍵の境界は 05 §9。監査の前に、LiteSVM のテストが v1.3 で 29 本通ること（CI）を確かめる。
+For the flag, add "503 when `x402_enabled` is false" to `apps/web/test/x402.test.ts`. Limits as in 04 §9. The key boundary as in 05 §9. Before the audit, confirm the 29 LiteSVM tests pass on v1.3 (CI).
 
-## 10. 未決定事項
+## 10. Open questions
 
-- KMS のバックエンドと費用（02 §10）
-- treasury の上限の値
-- 第三者監査の依頼先と時期
-- 法務（D-05）は未解決のまま。`docs/legal/2026-10-13-owner-decision.md` のとおり、確認を待たずにメインネットへ進む決定はオーナーがしている。この文書群はその決定を変えない
+- The KMS backend and its cost (02 §10)
+- The treasury cap values
+- Who audits, and when
+- The legal question (D-05) remains open. As recorded in `docs/legal/2026-10-13-owner-decision.md`, the owner decided to move to mainnet without waiting for review. These documents do not change that decision

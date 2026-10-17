@@ -1,5 +1,5 @@
 "use client";
-// W-07 判定結果 — 合格/不合格、理由とやり直し方、残り試行回数。
+// W-07 Verdict — pass/fail, the reason and how to retry, attempts left.
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button, Card, Notice, Shell } from "@/components/ui";

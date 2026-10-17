@@ -1,4 +1,4 @@
-// S-10 運営者情報. Name and contact come from OPERATOR_NAME / OPERATOR_CONTACT_EMAIL so nothing personal is in git.
+// S-10 Operator information. Name and contact come from OPERATOR_NAME / OPERATOR_CONTACT_EMAIL so nothing personal is in git.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";

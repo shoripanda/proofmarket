@@ -1,93 +1,93 @@
 # AGENTS.md
 
-このリポジトリは ProofMarket（AI エージェントが自分ではできないことを人に頼み、証拠つきの答えを受け取るための仕組み）を設計・実装・運用するための共同作業領域である。
+This repository is the shared workspace for designing, building and running ProofMarket: a way for AI agents to ask people for what they cannot do themselves and get the answer back with evidence.
 
-ChatGPT、Codex、Claude Code、OpenClaw、その他 AI エージェントは、作業開始時にこのファイルを読み、以下のルールに従うこと。
+ChatGPT, Codex, Claude Code, OpenClaw and any other AI agent must read this file before starting work and follow the rules below.
 
-## 1. 最初に読むファイル
+## 1. What to read first
 
-原則として次の順番で読む。
+In this order, as a rule:
 
 1. `README.md`
-2. `docs/proofmarket-concept-2026-10-02.md`（製品の構想と wedge）
-3. `specs/proofmarket/README.md` と、そこに書かれた read order の仕様一式
-4. `specs/proofmarket/implementation/ja/`（実装設計書。ja が正本、en は訳）
-5. `docs/solana-research-2026-09-11.md`（Solana の技術メモ。必要なときだけ）
+2. `docs/proofmarket-concept-2026-10-02.md` (the product idea and the wedge)
+3. `specs/proofmarket/README.md` and every spec in the read order it lists
+4. `specs/proofmarket/implementation/en/` (the implementation design)
+5. `docs/solana-research-2026-09-11.md` (Solana technical notes; only when needed)
 
-ProofMarket を実装・変更する場合は、**`specs/proofmarket/README.md` とそこから参照される仕様一式を必ず読むこと。**
+**Anyone implementing or changing ProofMarket must read `specs/proofmarket/README.md` and the specs it references.**
 
-## 2. リポジトリの目的
+## 2. Purpose of the repository
 
-目的は「Solanaを使うこと」ではない。
+The goal is not "to use Solana".
 
-**実在する社会課題を、既存手段より良く解決できる場合に限ってSolanaを採用し、調査 → 仮説 → PoC → MVP → 実運用へ進めること。**
+**Adopt Solana only where it solves a real social problem better than existing means, and move from research → hypothesis → PoC → MVP → production.**
 
-## 3. 必ず行う反証
+## 3. Counter-arguments to run every time
 
-新しいアイデアや機能を提案するとき、必ず以下を検討する。
+When proposing a new idea or feature, always consider:
 
-1. 本当に社会課題が存在するか。
-2. 誰が困っているか。
-3. 既存サービス・制度で十分ではないか。
-4. PostgreSQL等の通常DBだけでは不足する理由は何か。
-5. permissioned ledgerの方が適切ではないか。
-6. public blockchainが必要なら、なぜSolanaなのか。
-7. 利用者がwalletやSOLを意識しないUXにできるか。
-8. 個人情報・企業秘密をon-chainに置かず設計できるか。
-9. network outage時のfallbackが必要か。
-10. 日本の法令・行政制度・業界規制と両立するか。
+1. Does the social problem really exist?
+2. Who is affected?
+3. Are existing services or institutions already enough?
+4. Why is an ordinary database such as PostgreSQL not enough?
+5. Would a permissioned ledger be more appropriate?
+6. If a public blockchain is needed, why Solana?
+7. Can the UX keep users from having to think about wallets or SOL?
+8. Can it be designed without putting personal data or trade secrets on-chain?
+9. Is a fallback needed for network outages?
+10. Is it compatible with Japanese law, administrative systems and industry regulation?
 
-「blockchainだから透明」「Solanaだから高速」のような一般論だけで採用理由としない。
+Generalities such as "it's transparent because it's a blockchain" or "it's fast because it's Solana" are not reasons to adopt it.
 
-## 4. 出典ポリシー
+## 4. Source policy
 
-### 社会課題・制度・統計
+### Social problems, institutions and statistics
 
-優先順位:
+In order of preference:
 
-1. 日本国政府・省庁・自治体
-2. 独立行政法人・公的研究機関
-3. 国際機関
-4. 大学・査読論文
-5. 信頼性の高いシンクタンク
-6. 企業の一次資料（競合サービス自身の実績確認等）
+1. The Japanese government, ministries and local governments
+2. Incorporated administrative agencies and public research institutes
+3. International organisations
+4. Universities and peer-reviewed papers
+5. Reputable think tanks
+6. Companies' own primary sources (for example, a competitor's own track record)
 
-### Solana技術
+### Solana technology
 
-優先順位:
+In order of preference:
 
-1. Solana公式documentation
+1. Official Solana documentation
 2. Solana Foundation / official network research
-3. Solana whitepaper / protocol specification
-4. validator client / proposal等の一次資料
-5. 査読論文・国際機関研究
+3. The Solana whitepaper / protocol specifications
+4. Primary sources such as validator clients and proposals
+5. Peer-reviewed papers and research by international organisations
 
-一般ニュース、SEOメディア、価格予想サイト、匿名ブログ等を重要事実の唯一の根拠にしない。
+Do not rely on general news, SEO media, price-prediction sites or anonymous blogs as the only source for an important fact.
 
-## 5. 数字の分類
+## 5. Classifying numbers
 
-市場調査の数字を混同しない。必ず以下のどれかとして扱う。
+Do not mix up market-research numbers. Always treat a number as one of:
 
-- `MARKET_SIZE`: 当該製品・サービス市場そのもの
-- `INDUSTRY_SCALE`: 対象産業全体
-- `PROBLEM_SCALE`: 社会的損失・影響額
-- `TRANSACTION_SCALE`: 取引量・取扱量
-- `AID_SCALE`: 支援資金量
+- `MARKET_SIZE`: the market for the product or service itself
+- `INDUSTRY_SCALE`: the whole target industry
+- `PROBLEM_SCALE`: social loss or impact
+- `TRANSACTION_SCALE`: transaction or handling volume
+- `AID_SCALE`: amount of support funding
 - `ADOPTION`: users / companies / participants
 
-例:
+Examples:
 
-- 食品ロスによる経済損失4兆円 = `PROBLEM_SCALE`
-- 医薬品国内出荷12.8兆円 = `INDUSTRY_SCALE`
-- Circular economy 80兆円 = `INDUSTRY_SCALE`
+- Economic loss from food waste of ¥4 trillion = `PROBLEM_SCALE`
+- Domestic pharmaceutical shipments of ¥12.8 trillion = `INDUSTRY_SCALE`
+- Circular economy of ¥80 trillion = `INDUSTRY_SCALE`
 
-これらをそのまま「当サービスのTAM」と書かない。
+Never present these as "this service's TAM".
 
-## 6. On-chain dataの原則
+## 6. On-chain data
 
-公開チェーンには原則として必要最小限のproof/stateだけを置く。
+As a rule, put only the minimum proof and state on a public chain.
 
-推奨:
+Recommended:
 
 - hash
 - pseudonymous identifier
@@ -97,51 +97,51 @@ ProofMarket を実装・変更する場合は、**`specs/proofmarket/README.md` 
 - settlement state
 - entitlement / voucher state
 
-原則禁止:
+Not allowed, as a rule:
 
-- 氏名
-- 住所
-- 電話番号
-- メール
-- マイナンバー関連情報
-- 医療情報
-- 避難所・被災状況等の機微情報
-- 企業秘密
-- 契約書本文
-- 大容量raw data
+- names
+- addresses
+- phone numbers
+- email
+- anything related to My Number (national ID)
+- medical information
+- sensitive information such as evacuation shelters or disaster damage
+- trade secrets
+- contract text
+- large raw data
 
-## 7. 製品の主仮説
+## 7. Main product hypothesis
 
-汎用 gig marketplace ではなく、**AI agent が物理世界の fresh fact を人間へ検証依頼し、machine-readable result を得る Reality Verification Network**。MVP の中心は `PLACE_STATUS_VERIFICATION`。2026-10-04 に、店の外から確かめられる `QUEUE_LENGTH`・`NOTICE_POSTED` を API キーごとの許可制で追加した（`specs/proofmarket/implementation/ja/01-requirements-definition.md` 4.8 節）。同日、オーナーの判断で、本・紙資料・実物・電話など人の手が要る作業まで広げた（17 種類、数値と文章の答え、場所の省略、店舗の許可リストの廃止。同 4.15 節）。2026-10-08 に、依頼者が仕事の「形」も決められるようにした（複数項目の答え `form`、受け取りの条件 `acceptance_criteria`、場所を問わない依頼の締切 7 日、一括依頼 `POST /v1/verifications/batch`。同 4.25 節。17 種類は見本の位置づけ）。raw photo / GPS は off-chain、Solana は settlement / attestation の最小レイヤーとする。
+Not a general gig marketplace, but a **Reality Verification Network where an AI agent asks a person to verify a fresh fact in the physical world and gets a machine-readable result**. The MVP centres on `PLACE_STATUS_VERIFICATION`. On 2026-10-04, `QUEUE_LENGTH` and `NOTICE_POSTED`, which can be checked from outside a shop, were added behind a per-API-key allow list (`specs/proofmarket/implementation/en/01-requirements-definition.md` §4.8). The same day, by the owner's decision, the scope widened to work that needs a person's hands: books, paper documents, physical objects and phone calls (17 task types, numeric and text answers, optional location, the shop allow list removed; §4.15). On 2026-10-08 requesters gained control of the shape of the work (multi-field `form` answers, `acceptance_criteria`, a 7-day deadline for location-free requests, and batch requests `POST /v1/verifications/batch`; §4.25; the 17 types became examples). On 2026-10-16 the owner decided to offer general tasks next to verifications (`docs/architecture/12-rentahuman-benchmark.md` and `13-marketplace-migration.md`). Raw photos and GPS stay off-chain; Solana is the minimal settlement and attestation layer.
 
-## 8. 現時点の優先順位
+## 8. Current priorities
 
-**2026 年秋の Colosseum Crypto World's Fair（締切 2026-10-12）に向けて、本番（https://proofmarket.fun）を動かしながら仕上げる。** 実装判断は `specs/proofmarket/requirements.md` と `specs/proofmarket/acceptance-criteria.md` を優先する。要件を変えるときは `specs/proofmarket/implementation/ja/01-requirements-definition.md` を先に直す。
+**Finish the product while running production (https://proofmarket.fun) for the Colosseum Crypto World's Fair in autumn 2026 (deadline 2026-10-12).** Implementation decisions follow `specs/proofmarket/requirements.md` and `specs/proofmarket/acceptance-criteria.md`. To change a requirement, update `specs/proofmarket/implementation/en/01-requirements-definition.md` first.
 
-## 9. 新規調査を保存するとき
+## 9. Saving new research
 
-ファイル名には必要に応じて基準日を付ける。
+Add a reference date to the file name where it helps.
 
-例:
+Examples:
 
 - `docs/solana-research-2026-09-11.md`
 - `docs/agent-clients-check-2026-10-04.md`
 
-各調査には最低限、以下を含める。
+Every piece of research includes at least:
 
-1. 調査基準日
-2. 結論
-3. 事実
-4. 推論・仮説
-5. 出典URL
-6. 不確実性
-7. 次に確認すべきこと
+1. The reference date
+2. The conclusion
+3. Facts
+4. Inferences and hypotheses
+5. Source URLs
+6. Uncertainty
+7. What to check next
 
-**事実とアイデアを明確に分けること。**
+**Keep facts and ideas clearly apart.**
 
-## 10. 仕様策定時の標準ファイル
+## 10. Standard files for a spec
 
-実装候補に昇格したプロジェクトは、次を作る。
+A project promoted to an implementation candidate gets:
 
 ```text
 specs/<project>/
@@ -158,43 +158,43 @@ specs/<project>/
 └── kpi.md
 ```
 
-## 11. 実装原則
+## 11. Implementation principles
 
-- blockchain部分を最小化する。
-- business logicの全てをon-chainへ置かない。
-- idempotency、replay protection、double-spend対策を明示する。
-- devnet/local validatorで検証してからmainnetを検討する。
-- private keyをrepositoryへcommitしない。
-- `.env`、secret、API key、seed phraseをcommitしない。
-- 利用者へSOL保有を強制しないUXを優先する。
-- fee sponsorship / embedded wallet / passkey等を検討する。
-- 法規制未確認のasset/tokenを発行しない。
+- Keep the blockchain part minimal.
+- Do not put all business logic on-chain.
+- Make idempotency, replay protection and double-spend protection explicit.
+- Verify on devnet or a local validator before considering mainnet.
+- Never commit a private key to the repository.
+- Never commit `.env`, secrets, API keys or seed phrases.
+- Prefer UX that never forces users to hold SOL.
+- Consider fee sponsorship, embedded wallets and passkeys.
+- Do not issue assets or tokens whose legal status has not been checked.
 
-## 12. 競合調査のルール
+## 12. Competitor research
 
-「類似サービスがある = アイデアを捨てる」ではない。
+"A similar service exists" does not mean "drop the idea".
 
-次の順で評価する。
+Evaluate in this order:
 
-1. 同じ課題を解決しているか。
-2. 同じ顧客が支払うか。
-3. 同じworkflowか。
-4. blockchainを使っているか。
-5. どのchain / architectureか。
-6. 実証実験かproductionか。
-7. adoptionはどの程度か。
-8. 既存サービスの何を置換せず、何を補完できるか。
+1. Does it solve the same problem?
+2. Does the same customer pay?
+3. Is it the same workflow?
+4. Does it use a blockchain?
+5. Which chain and architecture?
+6. Is it a pilot or in production?
+7. How much adoption does it have?
+8. What of the existing service would this not replace, and what could it complement?
 
-可能な限り「競合」だけでなく「integration partner候補」としても評価する。
+Wherever possible, evaluate each one as a possible integration partner as well as a competitor.
 
-## 13. READMEとの関係
+## 13. The README
 
-READMEはリポジトリの入口・概要として簡潔に保つ。調査・運用メモ・提出資料は`docs/`、仕様は`specs/`へ置く。
+Keep the README short: the entrance and overview of the repository. Research, operations notes and submission materials go in `docs/`, specs in `specs/`.
 
-AIエージェントが新しい重要文書を追加した場合、必要に応じてREADMEまたは関連indexからリンクする。
+When an agent adds an important new document, link it from the README or the relevant index as needed.
 
-## 14. 現在の基準日
+## 14. Reference dates
 
-Solana 仕様の技術メモの基準日は **2026-09-11**。ProofMarket の仕様・競合・法務チェックの基準日は **2026-10-02**。
+The Solana technical notes are as of **2026-09-11**. ProofMarket's specs, competitor research and legal checklist are as of **2026-10-02**.
 
-将来の作業では、時間依存する数字・制度・Solana network仕様は必ず最新の一次資料で再確認すること。
+Always re-check time-dependent numbers, institutions and Solana network specifications against the latest primary sources.

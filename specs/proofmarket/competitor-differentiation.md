@@ -1,6 +1,6 @@
 # Competitor and Differentiation
 
-調査基準日: 2026-10-02
+Research reference date: 2026-10-02
 
 ## Conclusion
 

@@ -1,56 +1,56 @@
-# ProofMarket — AIのためのReality Verification Network
+# ProofMarket — a Reality Verification Network for AI
 
-更新日: 2026-10-02  
-Status: **2026年秋 Crypto World's Fair向け主要実装候補**
+Updated: 2026-10-02  
+Status: **Lead implementation candidate for the Fall 2026 Crypto World's Fair**
 
-## 1. 一言でいうと
+## 1. In one line
 
-**AIエージェントが、WebやAPIでは確定できない現実世界の事実を、人間に検証依頼し、証拠付き・機械可読な結果を受け取れるネットワーク。**
+**A network where AI agents ask humans to verify real-world facts that the web and APIs cannot settle, and receive evidence-backed, machine-readable results.**
 
-汎用的な「AIが人間を雇うマーケットプレイス」そのものを目的にしない。最初のwedgeは **real-world fact verification** に限定する。
+The goal is not a general "marketplace where AI hires humans". The first wedge is limited to **real-world fact verification**.
 
-> 2026-10-16 改訂: オーナーの決定で、確認（verification）を看板に残したまま、一般の仕事（task）も並べて頼めるようにする。`docs/architecture/12-rentahuman-benchmark.md` と `13-marketplace-migration.md`、`specs/proofmarket/requirements.md` §7。
+> Revised 2026-10-16: by the owner's decision, verification stays the headline, and general work (tasks) can be requested side by side. See `docs/architecture/12-rentahuman-benchmark.md`, `13-marketplace-migration.md` and `specs/proofmarket/requirements.md` §7.
 
-仮キャッチコピー:
+Working tagline:
 
 > Give AI eyes in the real world.
 
 ## 2. Problem
 
-AIエージェントはWeb、API、database、browserにはアクセスできるが、次のような「今この場所で実際にどうなっているか」は直接確認できない。
+AI agents can reach the web, APIs, databases and browsers, but cannot directly check "what is actually happening at this place right now", such as:
 
-- 店舗が今、本当に営業しているか
-- 店頭に特定商品が存在するか
-- 現在掲示されている価格はいくらか
-- 現地掲示・設備・看板が存在するか
-- Web情報と現場の状態が一致しているか
+- Whether a shop is really open now
+- Whether a particular product is on the shelf
+- What price is currently posted
+- Whether an on-site notice, facility or sign exists
+- Whether web information matches the state on the ground
 
-検索結果、口コミ、営業時間DBは古い場合があり、AIが誤った前提で次の行動を取る可能性がある。
+Search results, reviews and opening-hours databases can be stale, and an AI may take its next action on a wrong premise.
 
 ## 3. Narrow initial user
 
-最初のrequesterは、**物理世界の最新事実を必要とするAI agent developer / operator**。
+The first requesters are **AI agent developers / operators who need up-to-date facts about the physical world**.
 
-MVPでは「一般消費者」「全企業」ではなく、以下のような開発者を想定する。
+In the MVP the target is not "general consumers" or "all companies" but developers such as:
 
-- travel / local search agent
-- shopping / retail research agent
-- field verificationを必要とするoperations agent
-- autonomous research agent
+- travel / local search agents
+- shopping / retail research agents
+- operations agents that need field verification
+- autonomous research agents
 
-Human worker側は、pilot対象地域にいる少数のtest workerから開始する。
+On the human worker side, start with a small number of test workers in the pilot area.
 
-## 4. 最初のtask type
+## 4. First task type
 
-MVPでは自由記述の何でも屋にしない。
+The MVP is not a do-anything service with free-form requests.
 
 ### P0 task: PLACE_STATUS_VERIFICATION
 
-例:
+Example:
 
-> 指定店舗が現在営業中か確認せよ。
+> Check whether the specified shop is open right now.
 
-必須入力:
+Required input:
 
 - question
 - target location
@@ -61,21 +61,21 @@ MVPでは自由記述の何でも屋にしない。
 - bounty
 - witness count / quorum
 
-必須提出:
+Required submission:
 
 - answer
 - fresh photo
 - device/server timestamp
 - location proof
-- one-time task nonceとの紐付け
+- binding to a one-time task nonce
 
-### P1 task
+### P1 tasks
 
 - PRICE_VERIFICATION
 - PRODUCT_PRESENCE
 - SIGNAGE_VERIFICATION
 
-主観評価、購入代行、配送、対人交渉、危険作業はMVP対象外。
+Subjective evaluation, purchasing on someone's behalf, delivery, negotiating with people and dangerous work are out of scope for the MVP.
 
 ## 5. User flow
 
@@ -101,11 +101,11 @@ Machine-readable result
 AI Agent continues workflow
 ```
 
-## 6. Outputの考え方
+## 6. What the output is
 
-AIへ返す主成果物は「人間の作業物」ではなく **VerificationResult**。
+The main deliverable returned to the AI is not "human work product" but a **VerificationResult**.
 
-例:
+Example:
 
 ```json
 {
@@ -125,121 +125,121 @@ AIへ返す主成果物は「人間の作業物」ではなく **VerificationRes
 }
 ```
 
-calibratedされていない「AI confidence 98%」のような数字はMVPでは使わない。代わりに、観測可能な `consensus_ratio` と個別check結果を返す。
+The MVP does not use uncalibrated numbers like "AI confidence 98%". Instead it returns an observable `consensus_ratio` and the result of each check.
 
-## 7. 競合との違い
+## 7. How it differs from competitors
 
-2026-10-02時点で、agent-to-human市場にはTaskin、RentAHuman、NeedaHuman、Human4Hire等が存在する。
+As of 2026-10-02, the agent-to-human market includes Taskin, RentAHuman, NeedaHuman, Human4Hire and others.
 
-ProofMarketは以下に絞る。
+ProofMarket narrows to:
 
-1. 汎用task marketplaceではなく **fact verification protocol**
-2. input/output schemaをverification向けに標準化
-3. workerの自由文成果物ではなくmachine-readable result
-4. 必要に応じ複数witnessによるquorum
-5. raw evidenceではなくevidence hash/rootをSolanaへanchor
-6. request → proof → settlementまでagentがAPI/MCPで完結
+1. A **fact verification protocol**, not a general task marketplace
+2. Input/output schemas standardized for verification
+3. Machine-readable results rather than workers' free-text deliverables
+4. Quorum across several witnesses when needed
+5. Anchoring evidence hashes/roots on Solana rather than raw evidence
+6. Agents completing request → proof → settlement entirely over API/MCP
 
-競合が同様の機能を追加する可能性は高い。差別化は名称ではなく、verification quality、latency、coverage、worker reputation、agent integration、costで実証する必要がある。
+Competitors are likely to add similar features. The difference has to be proven not by naming but by verification quality, latency, coverage, worker reputation, agent integration and cost.
 
 ## 8. Why blockchain
 
-通常DBだけでもtask matchingとevidence storageは実装できる。
+Task matching and evidence storage could be built with an ordinary database alone.
 
-Solanaを使う仮説は以下に限定する。
+The hypotheses for using Solana are limited to:
 
-- agentがprogrammaticにUSDC等でbountyをfundできる
-- acceptance条件後のsettlementを第三者検証可能にする
-- evidence本文を公開せずhash/rootのみをtimestamp付きでanchorする
-- requester / worker / verifierをまたぐsettlement receiptを共通化する
-- agentic payment toolingとcomposableに接続する
+- agents can fund bounties programmatically in USDC and the like
+- settlement after acceptance conditions becomes verifiable by third parties
+- only hashes/roots are anchored with timestamps, without publishing the evidence itself
+- a common settlement receipt across requester / worker / verifier
+- composable connection with agentic payment tooling
 
-上記価値がPoCで確認できなければ、on-chain範囲を縮小する。
+If PoC does not confirm this value, shrink the on-chain scope.
 
 ## 9. Why Solana
 
-- micro-payment / high-frequency settlementに適した低cost
-- fast confirmationを前提にagent workflowへ組み込みやすい
-- stablecoin payment ecosystem
-- x402 / MPP等agentic paymentとの公式documentationがある
-- public verifiabilityを持つsettlement / attestation layerとして利用可能
+- Low cost suited to micro-payments and high-frequency settlement
+- Fast confirmation makes it easy to build into agent workflows
+- A stablecoin payment ecosystem
+- Official documentation for agentic payments such as x402 / MPP
+- Usable as a publicly verifiable settlement / attestation layer
 
-x402は「人間タスク全体のescrow」と同義ではない。agentによるAPI payment/fundingと、worker bounty settlementは別レイヤーとして設計してよい。
+x402 is not the same as "escrow for the whole human task". Agent API payment/funding and worker bounty settlement may be designed as separate layers.
 
 ## 10. Hackathon MVP
 
-最低限、実在する人間を使って次をend-to-endで動かす。
+At minimum, run the following end to end with real people:
 
-1. AI agentがverification requestを作成
-2. taskがworker画面に表示
-3. workerがaccept
-4. 現地でfresh photo + location + answerをsubmit
-5. serverがevidence checks
-6. VerificationResult生成
-7. Solana Devnet上でsettlementまたはattestation
-8. agentがmachine-readable resultを取得
+1. An AI agent creates a verification request
+2. The task appears on the worker screen
+3. A worker accepts it
+4. On site, the worker submits a fresh photo + location + answer
+5. The server runs evidence checks
+6. A VerificationResult is produced
+7. Settlement or attestation on Solana Devnet
+8. The agent retrieves the machine-readable result
 
-**simulated human resultは禁止。**
+**Simulated human results are forbidden.**
 
 Stretch:
 
 - 2-of-3 quorum
 - MCP integration
-- x402 payment-gated request
+- x402 payment-gated requests
 - worker reputation
 - live explorer
 
 ## 11. Non-goals
 
-MVPでは以下を行わない。
+The MVP does not do:
 
-- 汎用gig marketplace
-- 配送 / 購入 / 代理交渉
-- 医療・法律・金融判断
-- 個人追跡 / surveillance
-- 私有地への立入りを要するtask
-- weapon / drug / controlled goods関連
-- token発行
+- a general gig marketplace
+- delivery / purchasing / negotiating on someone's behalf
+- medical, legal or financial judgements
+- tracking individuals / surveillance
+- tasks requiring entry onto private property
+- anything involving weapons, drugs or controlled goods
+- token issuance
 - DAO governance
-- raw GPS / photoのon-chain保存
+- storing raw GPS or photos on chain
 - fully autonomous dispute arbitration
 
-## 12. Mandatory Gate
+## 12. Mandatory gate
 
 ### Problem
-物理世界のfresh stateをagentが直接取得できない問題は実在する。ただしProofMarket固有の支払意思はuser interviewで未検証。
+The problem that agents cannot directly get the fresh state of the physical world is real. Willingness to pay for ProofMarket specifically has not been validated in user interviews.
 
 ### Existing alternatives
-Taskin / RentAHuman / NeedaHuman / Human4Hireが近い。従って「AIが人間を雇える」だけでは差別化にならない。
+Taskin / RentAHuman / NeedaHuman / Human4Hire are close. So "AI can hire humans" alone is no differentiation.
 
 ### Why now
-AI agent tool useとmachine payment infrastructureが拡大し、physical-world escalation pathが製品カテゴリとして現れ始めている。
+AI agent tool use and machine payment infrastructure are expanding, and a physical-world escalation path is starting to appear as a product category.
 
 ### Founder-market fit
-現時点では「AI agent / automationを日常的に構築している」という側面を中心に説明する。誇張しない。user interviewと実運用で補強する。
+For now, explain it mainly through "builds AI agents and automation day to day". Do not exaggerate. Strengthen it with user interviews and real operation.
 
 ### Distribution
-最初はagent developerにREST/MCPを提供し、worker側は1地域のclosed pilotで供給を作る。
+Start by offering REST/MCP to agent developers, and build worker supply with a closed pilot in one area.
 
 ### Hackathon feasibility
-task typeを1つに限定すればworking MVPは短期で可能。
+Limited to one task type, a working MVP is feasible in a short time.
 
-## 13. 主要リスク
+## 13. Main risks
 
-- 既存競合が近い
-- worker supplyのcold start
-- GPS spoof / stale photo / replay
-- requesterによる危険・違法task
-- worker collusion
-- payout / escrowの法規制
-- worker classification / freelance regulation
-- privacy / location data
-- verification costがbountyを上回る
-- quorum化によるlatency増大
+- Existing competitors are close
+- Cold start of worker supply
+- GPS spoofing / stale photos / replay
+- Dangerous or illegal tasks from requesters
+- Worker collusion
+- Regulation of payouts / escrow
+- Worker classification / freelance regulation
+- Privacy / location data
+- Verification cost exceeding the bounty
+- Higher latency from quorum
 
 ## 14. Source of truth
 
-実装時は `specs/proofmarket/README.md` を入口とし、特に以下を優先する。
+When implementing, start from `specs/proofmarket/README.md` and give priority to:
 
 - `requirements.md`
 - `api-contract.md`

@@ -1,4 +1,4 @@
-// S-13 体験 — play both sides of one request in the browser. Nothing here touches the DB, the balance or Solana.
+// S-13 Try it — play both sides of one request in the browser. Nothing here touches the DB, the balance or Solana.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";

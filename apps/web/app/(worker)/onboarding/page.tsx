@@ -1,5 +1,5 @@
 "use client";
-// W-02 初回登録 — 招待コード、利用規約・安全ルール・プライバシーへの同意、位置とカメラの説明。
+// W-02 First-time registration — invite code, consent to the terms, safety rules and privacy, and an explanation of location and camera use.
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
 import { Button, Card, Notice, Shell, safetyNotes } from "@/components/ui";

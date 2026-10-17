@@ -43,11 +43,11 @@ export const TERMS: Record<TermKey, Record<Lang, { word: string; plain: string }
 
 /**
  * Phrases found inside sentences, longest first. `plain` may differ from TERMS when the grammar around the word
- * changes ("5 USDC" → "5 ドル相当", "an escrow account" → "a holding account").
+ * changes ("5 USDC" → "worth $5", "an escrow account" → "a holding account").
  */
 const PHRASES: Record<Lang, { re: RegExp; k: TermKey; plain: (m: RegExpExecArray) => string }[]> = {
   ja: [
-    // Japanese copy puts a space around Latin words ("結果は Solana に"); the swap takes those spaces with it.
+    // Japanese copy puts a space around Latin words (e.g. a space either side of "Solana"); the swap takes those spaces with it.
     { re: / ?Solana Devnet ?/, k: "solana", plain: () => "試験用の台帳" },
     { re: / ?Solana のウォレット/, k: "wallet", plain: () => "デジタルのお財布" },
     { re: / ?Solana のエスクロー/, k: "escrow", plain: () => "改ざんできない預かり" },

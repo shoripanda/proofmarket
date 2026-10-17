@@ -1,4 +1,4 @@
-// S-14 データ — the open dataset of human-verified observations (01 §4.24): what is in it, the licence, how to fetch.
+// S-14 Data — the open dataset of human-verified observations (01 §4.24): what is in it, the licence, how to fetch.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Code, PageHero, Section } from "@/components/site";

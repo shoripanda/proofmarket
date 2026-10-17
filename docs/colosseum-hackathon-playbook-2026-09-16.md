@@ -1,19 +1,19 @@
-# Colosseum Hackathon Playbook 精読メモ / 実行ルール
+# Colosseum Hackathon Playbook: close-reading notes and working rules
 
-調査日: 2026-09-16
+Researched: 2026-09-16
 
 Primary source: Superteam Japan, **Colosseum Hackathon Playbook**
 https://superteam-japan.gitbook.io/hackathon-playbook
 
-この文書は、2026年秋のColosseum Hackathon（Crypto World's Fair）での入賞を目的として、Superteam Japanが過去winner、judge、多数のteamへのinterview / analysisを基に作成したPlaybookを、このリポジトリの実行ルールへ変換したもの。
+Superteam Japan wrote the Playbook from interviews with and analysis of past winners, judges and many teams. This document turns it into working rules for this repository, with the aim of placing at the Fall 2026 Colosseum hackathon (Crypto World's Fair).
 
-> 注意: Playbookを「これを守れば自動的に入賞する保証」とは扱わない。競争相手、judge、product quality、execution等で結果は変わる。ただし、応募プロセス上の重要な実践知として原則すべて反映する。
+> Note: the Playbook is not treated as "a guarantee of winning if followed". Results depend on competitors, judges, product quality, execution and more. Still, as important practical knowledge about the application process, it is applied in principle in full.
 
 ---
 
-# 0. Playbookの推奨順序
+# 0. The Playbook's recommended order
 
-Playbookは以下の順で進めることを推奨している。
+The Playbook recommends working in this order:
 
 1. Hackathon Canvas
 2. Pitch Deck
@@ -22,27 +22,27 @@ Playbookは以下の順で進めることを推奨している。
 5. Pitch Video
 6. Technical Demo Video
 
-さらにChecklistとしてTasks / Build in Public / Strategy for X / Red Flag Word List等を並行運用する。
+Alongside, run the checklists: Tasks, Build in Public, Strategy for X, Red Flag Word List and so on.
 
 ---
 
 # 1. Hackathon Canvas
 
-Hackathon Canvasは、短期間でstartupをlaunchしColosseumで勝つためのframework。
+The Hackathon Canvas is a framework for launching a startup in a short time and winning at Colosseum.
 
-二つのphaseに分かれる。
+It has two phases.
 
-## Planning Phase — Lean Section
+## Planning phase — Lean section
 
-Lean Canvasを用いてproblem、solution、customer segment等を一枚で整理・検証する。
+Use a Lean Canvas to organize and validate problem, solution, customer segment etc. on one page.
 
-重要なのは「最初にcodeを書く」のではなく、problem / user / value propositionを先に固定すること。
+What matters is fixing problem / user / value proposition first, not "writing code first".
 
-## Execution Phase — Momentum Section
+## Execution phase — Momentum section
 
-hackathon終了時点までに結果を出すためのKey Success Factorsを管理する。
+Manage the key success factors for producing results by the end of the hackathon.
 
-このリポジトリでは各候補案に最低限以下を用意する。
+In this repository, each candidate idea has at least:
 
 - Problem
 - Initial target user
@@ -61,39 +61,39 @@ Source: https://superteam-japan.gitbook.io/hackathon-playbook/1.-hackathon-canva
 
 # 2. Pitch Deck
 
-Playbookが強調する最重要点は「なぜこのprojectを作るのか」とfounder story。
+The point the Playbook stresses most is "why build this project" and the founder story.
 
-単にmarket opportunityを説明するのではなく、founder/teamがproblemに遭遇した経緯、経験、なぜ自分たちが解決するのかをstoryとして構造化する。
+Rather than just explaining the market opportunity, structure as a story how the founder/team ran into the problem, their experience, and why they are the ones to solve it.
 
-推奨story pattern:
+Recommended story pattern:
 
-1. founderが特定industry/problemで課題を発見
-2. そのproblemを解くためproductを作った
-3. 最初は狭いuser segmentから始める
-4. feedbackを受けてfeatureを開発
-5. 小さなwedgeから大きなvisionへ拡張
+1. The founder discovers a problem in a specific industry
+2. They build a product to solve it
+3. They start from a narrow user segment
+4. They develop features from feedback
+5. They expand from a small wedge to a large vision
 
-## Pitch DeckのBad Practices
+## Pitch deck bad practices
 
-- problemとtarget userがabstract / vague / broad
-- textが多すぎる
-- structureがなく理解しにくい
-- key informationが欠ける
-- 意味のないdesign / visualization
+- Problem and target user are abstract / vague / broad
+- Too much text
+- No structure, hard to follow
+- Key information missing
+- Meaningless design / visualization
 
-### このリポジトリへのルール
+### Rule for this repository
 
-「日本人」「企業」「学生」「自治体」などの広すぎるtargetは禁止。最初のuserを具体的に狭める。
+Overly broad targets such as "Japanese people", "companies", "students" or "municipalities" are forbidden. Narrow the first user concretely.
 
-Source:
+Sources:
 - https://superteam-japan.gitbook.io/hackathon-playbook/2.-pitch-deck
 - https://superteam-japan.gitbook.io/hackathon-playbook/2.-pitch-deck/best-and-bad-practices
 
 ---
 
-# 3. Pitch Agenda
+# 3. Pitch agenda
 
-Playbookの例:
+The Playbook's example:
 
 1. Hook
 2. Problem
@@ -102,22 +102,22 @@ Playbookの例:
 5. Demo
 6. Business Model
 7. Traction
-8. Market — 必要なら
-9. Roadmap — 必要なら
+8. Market — if needed
+9. Roadmap — if needed
 10. Team
 11. Call to Action
 
-3分未満で説明する。
+Explain it in under 3 minutes.
 
-Colosseum Hackathonはpre-seed近辺のprojectを対象とするため、初期pitchで以下は原則不要。
+Colosseum hackathons target projects around pre-seed, so an early pitch generally does not need:
 
 - Financials
 - Long-term sales forecast
 - Tokenomics
 
-Market slideを入れる場合は、新しいmarketを作るのかを説明し、必要に応じTAM/SAM/SOMを示す。
+If a market slide is included, explain whether a new market is being created, and show TAM/SAM/SOM if needed.
 
-最初のtargetは意図的にnarrowにする。これは最終marketを小さくする意味ではなく、customerを深く理解するためのbeachhead。
+Keep the first target deliberately narrow. This does not mean a small final market; it is a beachhead for understanding customers deeply.
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/2.-pitch-deck/agenda-example
 
@@ -125,154 +125,154 @@ Source: https://superteam-japan.gitbook.io/hackathon-playbook/2.-pitch-deck/agen
 
 # 4. Iteration
 
-Playbookが最も重視するbehaviorの一つ。
+One of the behaviours the Playbook values most.
 
-focus:
+Focus:
 
-- judgeが主に触れるpitchを最高品質にする
-- feedbackを得て高速iteration
-- venture-scalableなものを作る
+- Make the pitch, which judges mostly see, the highest quality
+- Iterate fast on feedback
+- Build something venture-scalable
 
-基本cycle:
+Basic cycle:
 
-1. Pitchを作る
-2. 2–3人程度のuser / friend / mentorからfeedback
-3. すぐ修正
-4. 修正版を別の人に見せる
-5. productも修正
-6. repeat
+1. Make the pitch
+2. Get feedback from 2–3 users / friends / mentors
+3. Revise right away
+4. Show the revision to different people
+5. Revise the product too
+6. Repeat
 
-100人に同じv0を見せるより、2–3人 → revise → 新しい2–3人の方が価値が高い。
+2–3 people → revise → 2–3 new people is worth more than showing the same v0 to 100 people.
 
-iteration cycleは可能な限り高速にし、目安1–7日。毎cycleにhypothesisを置く。
+Make the iteration cycle as fast as possible, 1–7 days as a guide, with a hypothesis each cycle.
 
-例:
-- このslideでproblem理解率が上がるか
-- このfeatureはuserをdelightさせるか
-- onboarding frictionが下がるか
-- Solana transactionまで到達するuserが増えるか
+Examples:
+- Does this slide improve understanding of the problem?
+- Does this feature delight users?
+- Does onboarding friction go down?
+- Do more users reach a Solana transaction?
 
-Consumerは高速、DeFi等は検証に時間がかかる場合がある。
+Consumer products can iterate fast; DeFi and the like may take longer to validate.
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/3.-iteration
 
 ---
 
-# 5. Hype Video
+# 5. Hype video
 
-Videoはattention獲得に非常に有効。
+Video is very effective for getting attention.
 
-Playbookは大きくNarrative Type / Teaser Typeを例示している。
+The Playbook gives two broad examples: narrative type and teaser type.
 
-このリポジトリではHype Videoを単なる広告にせず、projectのone-line narrativeを視覚的に伝えるassetとして作る。
+In this repository the hype video is not just an ad; it is an asset that conveys the project's one-line narrative visually.
 
-目的:
-- projectを一度で記憶させる
-- Build in Publicでshareしやすくする
-- pitchを見てもらう入口を作る
+Purpose:
+- Make the project memorable in one viewing
+- Make it easy to share in Build in Public
+- Create an entry point to the pitch
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/4.-hype-video
 
 ---
 
-# 6. Pitch Video
+# 6. Pitch video
 
-Playbookは **Pitch Video is the most important part of the hackathon** と明記。
+The Playbook states plainly: **Pitch Video is the most important part of the hackathon**.
 
-Rule: **3分未満**。
+Rule: **under 3 minutes**.
 
-過去winnerとしてTokamai、The Arena、FXSwap、Windfall、UNKOMON等のpitch videoをreferenceとしている。
+It references pitch videos of past winners such as Tokamai, The Arena, FXSwap, Windfall and UNKOMON.
 
-このリポジトリではsubmission直前に作るのではなく、pitch deck iterationと同時にscriptを更新する。
+In this repository the script is not made just before submission but updated alongside pitch deck iteration.
 
-Pitch Videoでjudgeが短時間に理解できる状態:
+What judges should understand from the pitch video in a short time:
 
-- 誰の何のproblemか
-- なぜ今か
-- productが何をするか
-- 実際に動くか
-- Solanaが本質的に必要か
-- traction / validationはあるか
-- founder/teamがなぜ勝てるか
-- どこまで大きくなるか
+- Whose problem, and what it is
+- Why now
+- What the product does
+- Whether it actually works
+- Whether Solana is essential
+- Whether there is traction / validation
+- Why the founder/team can win
+- How big it can get
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/5.-pitch-video
 
 ---
 
-# 7. Technical Demo Video
+# 7. Technical demo video
 
-Rule: **3分未満**。
+Rule: **under 3 minutes**.
 
-productがbehind the scenesでどう動くかを説明する。ただしcodeを逐行説明する必要はない。
+Explain how the product works behind the scenes, without walking through code line by line.
 
-参考例としてLootGO、Crypto Fantasy League、Daikoが掲載されている。
+LootGO, Crypto Fantasy League and Daiko are listed as examples.
 
-このリポジトリではtechnical demoに以下を必ず含める。
+In this repository the technical demo always includes:
 
 1. working product
 2. user action
 3. wallet / transaction / program interaction
-4. on-chainとoff-chainの境界
-5. Solanaを使う部分
-6. transaction result / explorer等のproof
-7. failure / fallbackが重要ならその設計
+4. the boundary between on-chain and off-chain
+5. the part that uses Solana
+6. proof such as transaction results / explorer
+7. failure / fallback design if it matters
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/6.-technical-demo-video
 
 ---
 
-# 8. Preparation / Daily / Weekly Tasks
+# 8. Preparation / daily / weekly tasks
 
 ## Preparation
 
-- Colosseum official/member accountsをfollow
-- judgesを把握
-- Superteam core members / mentorsと接点を作る
-- Build in Public groupへ参加
-- project X accountでproject introductionを投稿
+- Follow Colosseum's official and member accounts
+- Know who the judges are
+- Build contact with Superteam core members / mentors
+- Join the Build in Public group
+- Post a project introduction from the project's X account
 
 ## Daily
 
 X:
-- project / idea / requestをpublicにshare
-- 関係を築きたい人のpostに早くreaction
-- 相手が価値を感じるcomment付きquote
-- 可能なら実際に会う
+- Share the project / idea / requests publicly
+- React quickly to posts from people you want a relationship with
+- Quote with comments the other person finds valuable
+- Meet in person when possible
 
 Colosseum:
-- show-and-tellでprojectをshare
+- Share the project in show-and-tell
 
 ## Weekly
 
-- Colosseum DashboardへWeekly Video Updateを提出
-- event / acceleration programでSolana ecosystem foundersへpitch
-- judges / KOLがいる場合はpitchを見せfeedbackを得る
+- Submit a weekly video update to the Colosseum dashboard
+- Pitch to Solana ecosystem founders at events / acceleration programs
+- If judges / KOLs are present, show the pitch and get feedback
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/checklist/tasks
 
 ---
 
-# 9. Matty Taylor checklist
+# 9. Matty Taylor's checklist
 
-Playbookが引用するColosseum co-founder Matty Taylorのproject checklist:
+The project checklist from Colosseum co-founder Matty Taylor, quoted in the Playbook:
 
-1. Founderはdeep lived experienceまたはobsessive curiosityからproduct opportunityを発見したか。
-2. Founderはelite levelでship / iterate / prioritizeできるか。
-3. 今がそのproduct / marketを作る適切な時期か。
-4. credibleなdistribution path / user flywheelがあるか。
-5. massive potentialを持つcrypto-native marketを作っているか。
-6. Founderに最後までやり切る執念があるか。
+1. Did the founder discover the product opportunity from deep lived experience or obsessive curiosity?
+2. Can the founder ship / iterate / prioritize at an elite level?
+3. Is now the right time to build this product / market?
+4. Is there a credible distribution path / user flywheel?
+5. Is it building a crypto-native market with massive potential?
+6. Does the founder have the tenacity to see it through?
 
 ### Repo rule
 
-今後新しいideaを追加する際、上記6問への回答をidea fileに必須sectionとして入れる。
+Whenever a new idea is added, answers to these 6 questions are a required section of the idea file.
 
 ---
 
-# 10. Build in Public / X Strategy
+# 10. Build in Public / X strategy
 
-PlaybookはXを単なるmarketingではなくuser feedback loopとして扱う。
+The Playbook treats X not as mere marketing but as a user feedback loop.
 
 ## Account separation
 
@@ -283,27 +283,27 @@ Project X:
 - reply / like
 
 Personal X:
-- founder自身のopinion
+- the founder's own opinions
 - insight
 - reply / like
 
 ## Do
 
 - X Premium
-- image / videoを付ける
-- linkはfirst postではなくreplyへ置く
+- Attach images / video
+- Put links in a reply, not the first post
 
 ## Don't
 
-- followerを買わない — red flag
-- influencer依存
-- hashtag乱用
-- mention / link等のblue textを多用
-- first postにlinkを置く
+- Buy followers — a red flag
+- Rely on influencers
+- Overuse hashtags
+- Overuse blue text such as mentions / links
+- Put a link in the first post
 
-### このリポジトリのルール
+### Rule for this repository
 
-Build in Publicはvanity metrics目的ではなく、以下を記録する。
+Build in Public is not for vanity metrics; it records:
 
 - user interviews
 - waitlist / signup
@@ -312,7 +312,7 @@ Build in Publicはvanity metrics目的ではなく、以下を記録する。
 - retention
 - feedback count
 - iteration history
-- partner / issuer / merchant / institution LOI等
+- LOIs from partners / issuers / merchants / institutions etc.
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/checklist/strategy-for-x
 
@@ -320,9 +320,9 @@ Source: https://superteam-japan.gitbook.io/hackathon-playbook/checklist/strategy
 
 # 11. Red Flag Word List
 
-目的はkeyword禁止ではなく、trend wordを寄せ集めただけのprojectを避け、Value Propositionを先に考えること。
+The aim is not to ban keywords but to avoid projects that merely assemble trend words, and to think about the value proposition first.
 
-Playbookがred flagとして挙げる例:
+Examples the Playbook lists as red flags:
 
 Proper / trend names:
 - pump.fun
@@ -351,95 +351,95 @@ Generic claims:
 
 ### Repo rule
 
-Idea descriptionで上記wordを使う場合、word自体を価値として扱わない。必ず具体的problem、user behavior、measurable benefitへ置換する。
+When an idea description uses these words, the word itself is not treated as value. Always replace it with a concrete problem, user behaviour and measurable benefit.
 
-悪い例:
-> AI × DePINで革新的に民主化する。
+Bad example:
+> Innovatively democratize with AI × DePIN.
 
-良い例:
-> 道路管理者が年1回しか取得できない路面データを、市民車載cameraから毎日取得し、AI判定結果のhashとcontributor reward settlementをSolanaで検証可能にする。
+Good example:
+> Road surface data that road managers can collect only once a year is collected daily from citizens' dashboard cameras, and the hash of the AI's assessment and the contributors' reward settlement are made verifiable on Solana.
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/checklist/red-flag-word-list
 
 ---
 
-# 12. Colosseum Interview
+# 12. Colosseum interview
 
-interview emailを受け取った場合:
+On receiving an interview email:
 
-1. callをASAPで予約する。slotが埋まる可能性がある。
-2. hackathon後の最新progressを示す1分videoを送る。
-3. file添付ではなくvideo URLをemail返信でshare。
-4. pitch reviewで指摘されたproblem / challengeを中心にinterview準備。
+1. Book the call ASAP; slots can fill up.
+2. Send a 1-minute video showing the latest progress since the hackathon.
+3. Share the video as a URL in the email reply, not as an attachment.
+4. Prepare for the interview around the problems / challenges raised in the pitch review.
 
-重要な意味: submission deadlineで開発を止めない。judge/interview時点までprogressを続ける。
+What this means: development does not stop at the submission deadline. Keep making progress until judging/interview.
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/to-those-close-to-winning/colosseum-interview
 
 ---
 
-# 13. Winner発表後
+# 13. After winners are announced
 
-Playbookはwinnerに対し、X上で短いOscar-style speechを推奨。
+The Playbook recommends that winners post a short Oscar-style speech on X.
 
-構造:
+Structure:
 
-1. 最初に率直な感情
-2. Solana developer/communityへのrespect
-3. 重要なcontributor 1–3名を優先して感謝
-4. 一つだけshort storyまたはnumberを入れる
+1. Honest emotion first
+2. Respect for Solana developers / the community
+3. Thank 1–3 key contributors first
+4. Include one short story or number
 
-長文にせず、before/afterやusage number等の具体的dataを一つ示す。
+Keep it short, with one piece of concrete data such as a before/after or a usage number.
 
-これはhackathon終了後のdistribution / reputation buildingまで含めてstartup processと捉える考え方。
+This reflects treating distribution / reputation building after the hackathon as part of the startup process.
 
 Source: https://superteam-japan.gitbook.io/hackathon-playbook/to-those-close-to-winning/oscar-style-speech
 
 ---
 
-# 14. 2026秋用 Mandatory Gate
+# 14. Mandatory gate for Fall 2026
 
-今後このリポジトリからColosseum候補を選ぶ際、以下をすべて確認する。
+When choosing a Colosseum candidate from this repository, confirm all of the following.
 
-## Problem / Founder
-- [ ] initial userが狭く具体的
-- [ ] problemが一次資料またはuser interviewで確認済み
-- [ ] founder-market fit / lived experience / obsessive curiosityを説明可能
-- [ ] existing alternativeの欠点を説明可能
+## Problem / founder
+- [ ] The initial user is narrow and concrete
+- [ ] The problem is confirmed by primary sources or user interviews
+- [ ] Founder-market fit / lived experience / obsessive curiosity can be explained
+- [ ] The weaknesses of existing alternatives can be explained
 
 ## Crypto / Solana
-- [ ] blockchainなしでは何が失われるか説明可能
-- [ ] Solanaである理由をtransaction pattern / latency / cost / composability等で説明可能
-- [ ] trend keywordだけで価値を説明していない
-- [ ] crypto-native market / network effectの可能性がある
+- [ ] Can explain what is lost without a blockchain
+- [ ] Can explain why Solana in terms of transaction pattern / latency / cost / composability etc.
+- [ ] Value is not explained by trend keywords alone
+- [ ] A crypto-native market / network effect is possible
 
 ## Product
-- [ ] hackathon期間中にworking MVPをship可能
-- [ ] judgeが数十秒でproductを理解可能
-- [ ] demo可能なon-chain actionがある
-- [ ] user feedback cycleを1–7日で回せる
+- [ ] A working MVP can ship during the hackathon
+- [ ] Judges can understand the product in tens of seconds
+- [ ] There is an on-chain action that can be demoed
+- [ ] The user feedback cycle can run in 1–7 days
 
-## Business / Distribution
-- [ ] distribution wedgeがある
-- [ ] first 10 usersの獲得方法が具体的
-- [ ] venture-scaleへ拡張するpathがある
-- [ ] tractionを数字で示せる
+## Business / distribution
+- [ ] There is a distribution wedge
+- [ ] How to get the first 10 users is concrete
+- [ ] There is a path to venture scale
+- [ ] Traction can be shown in numbers
 
 ## Pitch
 - [ ] Hook → Problem → Solution → Product → Demo → Business Model → Traction → Team → CTA
-- [ ] 3分未満
-- [ ] financial forecast/tokenomicsを初期pitchの中心にしない
-- [ ] text過多でない
-- [ ] founder storyがある
+- [ ] Under 3 minutes
+- [ ] Financial forecasts / tokenomics are not the centre of the early pitch
+- [ ] Not text-heavy
+- [ ] There is a founder story
 
 ## Execution
-- [ ] project Xを運用
-- [ ] personal Xでinsightを発信
+- [ ] Run the project X account
+- [ ] Share insight from the personal X account
 - [ ] Build in Public
 - [ ] Colosseum show-and-tell
-- [ ] Weekly Video Update
-- [ ] 2–3人 feedback → revise → 新しい2–3人、を反復
-- [ ] submission後も開発継続
+- [ ] Weekly video update
+- [ ] Repeat 2–3 people's feedback → revise → 2–3 new people
+- [ ] Keep developing after submission
 
 ## Submission assets
 - [ ] Hype Video
@@ -451,13 +451,13 @@ Source: https://superteam-japan.gitbook.io/hackathon-playbook/to-those-close-to-
 
 ---
 
-# 15. AI Agent Instructions
+# 15. Instructions for AI agents
 
-ChatGPT / Codex / Claude Code / OpenClaw等がhackathon案を評価・実装するときは、この文書と `docs/colosseum-hackathon-winners-2024-2026.md` を先に読む。
+When ChatGPT / Codex / Claude Code / OpenClaw etc. evaluate or implement hackathon ideas, read this document and `docs/colosseum-hackathon-winners-2024-2026.md` first.
 
-AIは「AI」「RWA」「DePIN」「x402」等のtrendに合わせること自体を推奨してはならない。
+An AI must not recommend aligning with trends such as "AI", "RWA", "DePIN" or "x402" for its own sake.
 
-各提案で必ず:
+Every proposal always gives:
 
 1. Problem
 2. Narrow initial user
@@ -472,9 +472,7 @@ AIは「AI」「RWA」「DePIN」「x402」等のtrendに合わせること自�
 11. Past Colosseum winner overlap
 12. Differentiation
 
-を出す。
-
-過去winnerと類似している場合は即rejectせず、「何が既に解決済みで、どの未解決wedgeを取るか」を明示する。
+If it resembles a past winner, do not reject it outright; state "what is already solved, and which unsolved wedge it takes".
 
 ---
 

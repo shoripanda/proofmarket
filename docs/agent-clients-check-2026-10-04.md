@@ -1,29 +1,29 @@
-# ほかの AI から本番の MCP につなぐ確認（担当 E）
+# Checking connections from other AIs to the production MCP (owner E)
 
-作成: 2026-10-05 ／ 対象: https://proofmarket.fun/mcp ／ 指示書: `docs/agents/E-agent-clients.md`
+Written: 2026-10-05 / Target: https://proofmarket.fun/mcp / Brief: `docs/agents/E-agent-clients.md`
 
-## 結果の一覧
+## Results
 
-| クライアント | 結果 | 確かめた日 | 備考 |
+| Client | Result | Checked | Notes |
 |---|---|---|---|
-| Claude Code（API キーをヘッダーで） | **つながった** | 2026-10-05 | `claude -p --mcp-config` で道具 4 つが見え、`get_reality_verification` の呼び出しがサーバーまで届いた（ID の形式違いを正しく 32602 で返した） |
-| REST（curl） | **つながった** | 2026-10-05 | `tools/list` を直接呼んで 4 つの道具。キー無しは 401 と `WWW-Authenticate: Bearer resource_metadata=...` |
-| OAuth の公開設定 | **そろっている** | 2026-10-05 | `/.well-known/oauth-protected-resource`・`/.well-known/oauth-authorization-server`。登録・認可・トークンの窓口、PKCE S256、公開クライアントのみ |
-| claude.ai のコネクタ | **つながった** | 2026-10-06 | `https://proofmarket.fun/mcp` をカスタムコネクタに登録。OAuth（動的クライアント登録 → ProofMarket の許可画面で API キー）を経て、会話から 7 つの道具が見えた |
-| Codex CLI（API キーを環境変数で） | **つながった** | 2026-10-10 | `codex mcp add proofmarket --url https://proofmarket.fun/mcp --bearer-token-env-var PROOFMARKET_API_KEY` → `codex exec` から道具の名前が返った（Codex CLI 0.145.0、既定の gpt-6-astra はこの版で使えず `-m gpt-5.5` で実行）。OAuth（`codex mcp login`）は手順のみ |
-| ChatGPT（開発者モードのコネクタ） | サーバー側は準備済み・接続は未確認 | 2026-10-10 | OpenAI の要件（S256・registration_endpoint・RFC 9207 の iss）を満たすよう、メタデータに `authorization_response_iss_parameter_supported: true` を足し、登録時に `token_endpoint_auth_method` が何でも公開クライアントとして受けるようにした。実際の接続はオーナーの ChatGPT（Plus 以上、開発者モード）で試す |
-| Cursor など | 未確認 | — | 手順のみ |
+| Claude Code (API key in a header) | **Connected** | 2026-10-05 | With `claude -p --mcp-config`, 4 tools were visible and a `get_reality_verification` call reached the server (an ID in the wrong format correctly returned 32602) |
+| REST (curl) | **Connected** | 2026-10-05 | Calling `tools/list` directly returned 4 tools. Without a key, 401 with `WWW-Authenticate: Bearer resource_metadata=...` |
+| OAuth public metadata | **Complete** | 2026-10-05 | `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`. Registration, authorization and token endpoints, PKCE S256, public clients only |
+| claude.ai connector | **Connected** | 2026-10-06 | Registered `https://proofmarket.fun/mcp` as a custom connector. After OAuth (dynamic client registration → API key on ProofMarket's consent screen), 7 tools were visible from a conversation |
+| Codex CLI (API key in an env var) | **Connected** | 2026-10-10 | `codex mcp add proofmarket --url https://proofmarket.fun/mcp --bearer-token-env-var PROOFMARKET_API_KEY` → `codex exec` returned the tool names (Codex CLI 0.145.0; the default gpt-6-astra was unavailable in this version, so run with `-m gpt-5.5`). OAuth (`codex mcp login`) documented only |
+| ChatGPT (developer-mode connector) | Server ready, connection not checked | 2026-10-10 | To meet OpenAI's requirements (S256, registration_endpoint, RFC 9207 iss), added `authorization_response_iss_parameter_supported: true` to the metadata, and registration now accepts any `token_endpoint_auth_method` as a public client. The actual connection is to be tried on the owner's ChatGPT (Plus or above, developer mode) |
+| Cursor etc. | Not checked | — | Steps only |
 
-## 試験で出した依頼
+## Test request placed
 
-- MCP 経由の依頼の作成は、Claude Code の自動判定（実際の取引）で止められたため、この画面からは出していない。代わりに x402 の見本のエージェントで本番に 1 件出し（`ver_01M43J9C0R5H04CE9XCW83D7HA`、DOCUMENT_TRANSCRIPTION、0.1 USDC）、402 → 支払い → 201 → OPEN まで通った（担当 A の本番手順）。
+- Creating a request over MCP was stopped by Claude Code's automatic check (a real transaction), so none was placed from this session. Instead, one request was placed in production with the x402 sample agent (`ver_01M43J9C0R5H04CE9XCW83D7HA`, DOCUMENT_TRANSCRIPTION, 0.1 USDC) and went through 402 → payment → 201 → OPEN (owner A's production steps).
 
-## 直したこと
+## Fixed
 
-- 見本のエージェントが、場所の要る依頼を場所なしで出して必ず 400 になっていた（PR #43 で 17 種類に対応）。
-- 公開の結果が文章の答えと AI の確認メモを返していた（PR #45 で修正）。
+- The sample agent sent location-requiring requests without a location and always got 400 (PR #43 now handles 17 types).
+- Public results returned text answers and the AI's check notes (fixed in PR #45).
 
-## 残り
+## Remaining
 
-- claude.ai と ChatGPT で実際につなぎ、依頼を 1 件出して結果を読む。うまくいかなければ、画面の文言から `apps/web/app/oauth/`・`.well-known/` を調べる。
-- 確かめたら `/developers` の「確認済み」の印（`CLIENTS[].checked`）を更新する。
+- Actually connect from claude.ai and ChatGPT, place one request and read the result. If it fails, investigate `apps/web/app/oauth/` and `.well-known/` from the on-screen text.
+- Once checked, update the "checked" marks on `/developers` (`CLIENTS[].checked`).

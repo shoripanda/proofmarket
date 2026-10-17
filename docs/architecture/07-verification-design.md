@@ -1,104 +1,103 @@
-# 07. 成果物検証設計: 機械検査と AI 審査で払う。高額だけ人を挟む
+# 07. Verification design: pay on machine checks and AI review; put a person in only for large amounts
 
-作成: 2026-10-14 ／ 正本は 07 章（証拠と判定）、01 §4.12・§4.16・§4.17、13 §3
+Written: 2026-10-14 / Authoritative: chapter 07 (evidence and verdicts), 01 §4.12, §4.16, §4.17, and 13 §3
 
-## 1. 目的
+## 1. Purpose
 
-指示書 4.4 が求める、写真・動画・テキスト・位置情報つき成果物・その他のデジタルデータの検証と、AI による自動検証・人による確認・異議申し立ての 3 方式の比較、そして「AI の判定結果だけで不可逆な支払いを行うことのリスク」の評価を行う。
+Section 4.4 of the brief asks for verification of photos, video, text, location-tagged deliverables and other digital data; a comparison of three approaches — automated AI verification, human review and disputes; and an assessment of "the risk of irreversible payments based on AI judgement alone".
 
-## 2. 現状
+## 2. Current state
 
-検証は 4 層で、順に通ったものだけが次へ進む。
+Verification has four layers; only what passes one moves to the next.
 
 ```mermaid
 flowchart TD
-  U["証人が提出<br/>写真 1〜4 枚 + 答え + 位置"] --> M
-  M["機械検査 6 種（packages/core）<br/>media_schema / replay / freshness / geofence / task_nonce / duplicate"]
-  M -->|fail| X1["不合格。理由を証人に表示、同じ引き受けで 3 回まで"]
+  U["Witness submits<br/>1-4 photos + answer + location"] --> M
+  M["6 machine checks (packages/core)<br/>media_schema / replay / freshness / geofence / task_nonce / duplicate"]
+  M -->|fail| X1["Rejected. Reason shown to the witness; up to 3 tries on the same claim"]
   M -->|pass / warning| AI
-  AI["AI 審査 vision_consistency<br/>Claude（API）か、運営者の Mac の Claude Code"]
+  AI["AI review vision_consistency<br/>Claude (API) or Claude Code on the operator's Mac"]
   AI -->|fail| X1
   AI -->|pass / uncertain / unavailable| C
-  C["合意の算出<br/>quorum 以上が同じ答え → VERIFIED"]
-  C --> S["FINALIZE_AND_SETTLE → 支払い（不可逆）"]
-  S --> D["異議（24 時間以内に 1 回）<br/>→ 再確認の依頼を依頼者の費用で作る"]
+  C["Consensus<br/>quorum or more give the same answer → VERIFIED"]
+  C --> S["FINALIZE_AND_SETTLE → payment (irreversible)"]
+  S --> D["Dispute (once, within 24 hours)<br/>→ a recheck request created at the requester's cost"]
 ```
 
-| 成果物の種類 | 扱い |
+| Deliverable | Handling |
 |---|---|
-| 写真 | アプリ内カメラのみ（ギャラリー不可）。サーバーで再エンコードして EXIF を落とし、pHash で 90 日分と比べる。1 提出に 4 枚まで |
-| 動画 | 受け付けない（`media.contentType` は `image/jpeg` のみ） |
-| テキスト | 答えの形は依頼の種類（17 種）で決まる。選択肢、数値、自由記述（4,000 字）、フォーム（8 項目） |
-| 位置情報つき | geofence（半径 25〜500 m、精度 100 m 以内）、現地のチャレンジ nonce、鮮度（60〜3,600 秒）。偽装は検出できないと明記 |
-| その他（電話、書類） | 「どこでもできる仕事」として、写真はメモや書類の写しで代替。AI 審査が uncertain を返しやすい |
+| Photos | In-app camera only (no gallery). Re-encoded on the server to strip EXIF, compared by pHash with the last 90 days. Up to 4 per submission |
+| Video | Not accepted (`media.contentType` is `image/jpeg` only) |
+| Text | The answer's shape depends on the request type (17 types): choice, number, free text (4,000 characters), form (8 fields) |
+| Location-tagged | Geofence (radius 25-500 m, accuracy within 100 m), an on-site challenge nonce, freshness (60-3,600 seconds). The spec states that spoofing cannot be detected |
+| Other (phone calls, documents) | As "work that can be done anywhere", a photo of notes or a copy of the document stands in. AI review tends to return uncertain |
 
-AI 審査は Claude（既定 `claude-opus-5-5`）が依頼文・受け入れ条件・答え・写真を見て pass / fail / uncertain を返す。uncertain と、API が落ちているとき（unavailable）は warning つきで**合格**にする。フラグ `external_review_enabled` を立てると、提出は運営者の Mac の Claude Code が判定するまで `CHECKING` で止まり、30 分を過ぎると unavailable として通る。人の目が入る経路はこれだけで、画面で人が判定する仕組みはない。
+AI review: Claude (default `claude-opus-5-5`) looks at the request text, acceptance criteria, answer and photos and returns pass / fail / uncertain. Uncertain, and the API being down (unavailable), **pass** with a warning. With the flag `external_review_enabled` set, submissions wait in `CHECKING` until Claude Code on the operator's Mac judges them, and pass as unavailable after 30 minutes. That is the only path with human eyes; there is no screen where a person judges.
 
-異議は確定後 24 時間以内に 1 回、再確認の依頼を新しく作る形で、元の支払いは取り消さない。楽観的な確認（13 §3）は、最初の提出で仮の答えを返し、10〜120 分の異議期間に報酬の 2 倍の保証金で誰でも異議を出せる。証人の信頼度（`trust.ts`、`min_worker_tier`）で引き受けられる依頼を絞る。
+A dispute is allowed once within 24 hours of the result and creates a new recheck request; the original payment is not undone. With optimistic verification (13 §3), the first submission returns a provisional answer, and anyone may challenge within a 10-120 minute window by posting a bond of twice the bounty. A witness's trust level (`trust.ts`, `min_worker_tier`) limits which requests they can take.
 
-## 3. 要件
+## 3. Requirements
 
-- 既存の 4 層と、D-08（判定を通った提出にはすべて払う）を保つ
-- 報酬が大きい依頼では、AI の判定だけで支払いが確定しないようにする
-- AI が使えない間に、高額の依頼が確認なしで通らないようにする
-- 動画と音声は、要望が出るまで扱わない
+- Keep the four layers and D-08 (every submission that passes is paid)
+- For requests with a large bounty, do not let a payment become final on AI judgement alone
+- While AI is unavailable, do not let large requests pass unchecked
+- Do not handle video or audio until someone asks
 
-## 4. 提案する設計
+## 4. Proposed design
 
-### 4.1 3 方式の比較
+### 4.1 Comparing the three approaches
 
-| 方式 | 速さ | 費用 | 防げるもの | 防げないもの |
+| Approach | Speed | Cost | Catches | Misses |
 |---|---|---|---|---|
-| AI による自動検証（現行） | 提出から約 10 秒 | API 1 回（数円） | 依頼と無関係な写真、要約で済ませた書き起こし、写真と矛盾する答え | 写真に写っていないことの真偽（電話の内容）、巧妙な合成、プロンプトインジェクションの新手 |
-| 人による確認（現行は運営者の Mac のみ） | 2 分〜30 分 | 運営者の時間 | AI が uncertain にしたもの、高額の依頼 | 運営者が不在の間（30 分で自動的に通る） |
-| 異議申し立て（現行） | 確定後 24 時間以内 | 依頼者が再確認の費用を持つ | 間違った答えの訂正、共謀の発見（audit_events に残る） | 元の支払いの取り消し（設計で否定） |
+| Automated AI verification (current) | About 10 s after submission | One API call (a few yen) | Photos unrelated to the request, a summary where a transcription was asked for, answers that contradict the photo | The truth of things not in the photo (what was said on a call), clever composites, new prompt-injection tricks |
+| Human review (currently only the operator's Mac) | 2-30 minutes | The operator's time | What AI marked uncertain, large requests | Anything while the operator is away (passes automatically after 30 minutes) |
+| Disputes (current) | Within 24 hours of the result | The requester pays for the recheck | Correcting a wrong answer, finding collusion (kept in audit_events) | Undoing the original payment (ruled out by design) |
 
-3 つは排他ではなく、いまも重ねて使っている。足りないのは「どの依頼に人を挟むか」を額で決める仕組みで、いまは全提出か 0 かの二択である。
+The three are not exclusive and are layered today. What is missing is a way to decide by amount which requests get a person; today it is all submissions or none.
 
-### 4.2 額で切り替える人の審査（2026-10-16 に廃止）
+### 4.2 Human review switched by amount (withdrawn on 2026-10-16)
 
-**2026-10-16 にオーナーが取りやめた。** 理由は「人の審査は要らない。AI エージェントを使う依頼者が決めればよい」。どこまで確かめてから払うかは、依頼者が `assurance.level`・証人の数・楽観的な確認・異議で選ぶ。運営者が額で一律に支払いを止めることはしない。PR #46 で入れた `HUMAN_REVIEW_MIN_TOTAL` は打ち消した。以下は当初の案として残す。
+**The owner withdrew this on 2026-10-16**, on the grounds that "human review is unnecessary; the requester using an AI agent can decide". How much to check before paying is chosen by the requester through `assurance.level`, the number of witnesses, optimistic verification and disputes. The operator does not hold payments across the board by amount. `HUMAN_REVIEW_MIN_TOTAL`, added in PR #46, was reverted. The original proposal is kept below.
 
+Add the env var `HUMAN_REVIEW_MIN_TOTAL` (a total in USDC; unset by default, meaning off). When a request's total (`amount × required_witnesses`; for other currencies no USDC conversion, but a per-currency `HUMAN_REVIEW_MIN_TOTAL_<SYM>`) is at or above it, hold submissions in `CHECKING` regardless of `external_review_enabled` and wait for the operator. The existing `scripts/review-runner.ts` and `/v1/admin/reviews` serve as the review path.
 
-環境変数 `HUMAN_REVIEW_MIN_TOTAL`（USDC 建ての総額、既定は未設定＝無効）を足す。依頼の総額（`amount × required_witnesses`、多通貨なら USDC 換算は行わず通貨ごとの `HUMAN_REVIEW_MIN_TOTAL_<SYM>`）がこれ以上のとき、`external_review_enabled` の値にかかわらず提出を `CHECKING` で止め、運営者の審査を待つ。既存の `scripts/review-runner.ts` と `/v1/admin/reviews` がそのまま審査の経路になる。
+For requests at or above the threshold, the rule that passes them as unavailable after 30 minutes does **not** apply. Wait until the deadline; past it, expire with `INSUFFICIENT_WITNESSES` and keep the witnesses' submissions on record only. Since that costs the witness, the witness screen says "The operator will check this. Payment is delayed until then" before they take such a request.
 
-この閾値以上の依頼では、30 分で unavailable として通す規則を**適用しない**。締め切りまで待ち、締め切りを過ぎたら `INSUFFICIENT_WITNESSES` で期限切れにし、証人の提出は記録だけ残す。証人の損になるので、閾値以上の依頼は証人の画面に「運営者の確認があります。確認までお支払いが遅れます」と表示し、引き受ける前に知らせる。
+### 4.3 When AI is unavailable
 
-### 4.3 AI 障害時の扱い
+Below the threshold, as today (pass as unavailable). This is the existing judgement that "a witness's work is not wasted if the operator's Mac or Claude's API is down", and it is reasonable while totals are small. One threshold caps what passes during an outage at "threshold × count".
 
-閾値未満の依頼は今のまま（unavailable で合格）。これは「運営者の Mac や Claude の API が止まっても証人の仕事を無駄にしない」という既存の判断で、総額が小さい間は妥当である。閾値を 1 つ設けることで、障害の間に通る金額の天井が「閾値 × 件数」に決まる。
+### 4.4 Recording AI review
 
-### 4.4 AI 審査の記録
+`result.reviews` and `checks.vision_consistency` are already returned to the requester. Add the model name and the runner (`claude-api` or `operator-mac`) to `evidence_checks.details`, so it can be counted later which verdicts came from a machine and which from a person. Not shown on public pages.
 
-`result.reviews` と `checks.vision_consistency` はすでに依頼者に返る。足すのは、審査に使ったモデル名と実行者（`claude-api` か `operator-mac`）を `evidence_checks.details` に残すことで、後から「どの判定が機械で、どれが人か」を数えられるようにする。公開ページには出さない。
+## 5. Rationale
 
-## 5. 技術選定の理由
+The threshold is an env var so that changing it in production needs no deployment, like the other brakes (`PRIORITY_MAX_MICROLAMPORTS`, `JOB_CONCURRENCY`). Human review uses `review-runner` rather than a new screen, following 01 §4.17's judgement that with a single operator, Claude Code's structured output is faster than a screen.
 
-閾値を環境変数にしたのは、本番で値を変えるのに配置が要らないためで、他の歯止め（`PRIORITY_MAX_MICROLAMPORTS`、`JOB_CONCURRENCY`）と同じ扱いになる。人の審査に新しい画面を作らず `review-runner` を使うのは、運営者が 1 人で、画面より Claude Code の構造化出力のほうが速いという 01 §4.17 の判断に従う。
+## 6. Alternatives
 
-## 6. 代替案
+- Requiring human review on every request. Each would be delayed 2-30 minutes and stop while the operator is away; not worth it for a 0.5 USDC bounty
+- A second AI (another model) reviewing again. It sees the same photo, so it does nothing for composites or things not in the photo; double the cost for no extra coverage
+- Asking witnesses for a bond. Optimistic verification's challenges already have one, but charging it on every submission would deter new witnesses. Rejected
 
-- すべての依頼に人の審査を必須にする案。1 件あたり 2〜30 分遅れ、運営者の不在で止まる。報酬 0.5 USDC の依頼に見合わない
-- 第二の AI（別のモデル）で二重に審査する案。同じ写真を見るので、合成や写っていないことの真偽には効かない。費用が倍になる割に防げるものが増えない
-- 証人に保証金を求める案。楽観的な確認の異議にはすでにあるが、提出そのものに課すと新しい証人が入りにくい。退ける
+## 7. Security considerations
 
-## 7. セキュリティ上の考慮事項
+**Assessing the risk of irreversible payments on AI judgement alone.** Payment is final with `settle` and cannot be undone. There are three conceivable ways to fool AI review. (1) Writing instructions to the reviewer as text inside the photo. The system prompt tells it not to follow text in images, but that is no guarantee. (2) Aiming for uncertain: deliberately blurring a photo passes with a warning. pHash and freshness still pass, so if the answer reaches consensus it is paid. (3) Aiming for an API outage: everything passes as unavailable while it lasts. The damage is limited to bounty × witnesses per request, and with several witnesses (quorum) one person alone cannot reach consensus. So the size of the risk is set by "the bounty" and "the number of witnesses". The original proposal had the operator set that amount with the threshold in 4.2; on 2026-10-16 this was withdrawn and the requester now chooses how much risk to accept. Paying a single-witness, low-value request on AI judgement alone is accepted as the consequence of the assurance level (`assurance.level`) the requester chose.
 
-**AI の判定だけで不可逆な支払いをする危険の評価。** 支払いは `settle` で確定し、取り消せない。AI 審査を欺く経路は 3 つ考えられる。(1) 写真の中の文字で判定の指示を書く。システムプロンプトは画像内の文字に従わないよう指示しているが、保証ではない。(2) uncertain を狙う。写真を意図的にぼかすと warning つきで通る。機械検査の pHash と鮮度は通るので、答えが合意に達すれば払われる。(3) API 障害を狙う。障害の間はすべて unavailable で通る。これらの被害は 1 件あたり報酬 × 証人数に限られ、複数の証人（quorum）があれば単独では合意に達しない。したがって危険の大きさは「報酬の額」と「証人の数」で決まり、当初は 4.2 の閾値で運営者がその額を決める案だったが、2026-10-16 に取りやめ、危険をどこまで受け入れるかは依頼者が選ぶことにした。1 証人・低額の依頼で AI の判定だけで払うのは、依頼者が選んだ保証の水準（`assurance.level`）の帰結として受け入れる。
+The route where a requester steers witnesses with prompt injection (hiding dangerous instructions in the request text) is held back by the banned words and length limits in 08 §1.1 and plain-text display, and the request text is passed to AI review as "untrusted input".
 
-依頼者がプロンプトインジェクションで証人を誘導する経路（依頼文に危険な指示を隠す）は、08 §1.1 の禁止語と文字数制限、プレーンテキスト表示で抑えており、AI 審査にも依頼文を「信用しない入力」として渡している。
+## 8. Implementation issues
 
-## 8. 実装上の課題
+- A submission held in `CHECKING` extends the claim's expiry (existing). More requests above the threshold would keep witnesses' slots occupied longer; do not set the threshold too low
+- With multi-token (PR #41), totals are compared per currency. There is no USDC exchange rate, hence per-currency thresholds
 
-- `CHECKING` で止まった提出はクレームの有効期限を延ばす（既存）。閾値以上の依頼が増えると、証人の引き受け枠が長く埋まる。閾値は低くしすぎない
-- 多通貨（PR #41）が入ると総額の比較が通貨ごとになる。USDC 換算の相場を持たないため、通貨ごとの閾値にする
+## 9. Test strategy
 
-## 9. テスト方針
+Add three cases to `apps/web/test/external-review.test.ts`: below the threshold not held; at or above held even with `external_review_enabled` false; at or above not passed after 30 minutes. For the AI review record, check `details` with the existing fake reviewer in `multi-photo.test.ts`.
 
-`apps/web/test/external-review.test.ts` に、閾値未満は止まらない、閾値以上は `external_review_enabled` が false でも止まる、閾値以上は 30 分で通らない、の 3 件を足す。AI 審査の記録は `multi-photo.test.ts` の既存の偽レビュアーで `details` を確かめる。
+## 10. Open questions
 
-## 10. 未決定事項
-
-- ~~閾値の既定値~~ 4.2 ごと廃止（2026-10-16）
-- 動画を受け付けるか（要望なし）
-- 人の審査を運営者以外（信頼度の高い証人）に委ねるか。報酬と責任の設計が要るので今回は扱わない
+- ~~The default threshold~~ withdrawn together with 4.2 (2026-10-16)
+- Whether to accept video (no requests)
+- Whether to delegate human review to someone other than the operator (highly trusted witnesses). That needs a design for pay and responsibility; not covered now
