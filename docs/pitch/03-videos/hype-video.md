@@ -1,26 +1,26 @@
-# 予告編の台本（30秒）
+# Trailer script (30 seconds)
 
-作成: 2026-10-04 ／ 長さ: 20〜40秒（目標30秒）
-使い道: X の固定投稿、提出ページの最初の動画、ピッチ動画への入口
-型: 物語型（`docs/colosseum-hackathon-playbook-2026-09-16.md` §5）。一言を覚えてもらうことだけを狙う。
+Written: 2026-10-04 / Length: 20–40 seconds (target 30)
+Uses: pinned post on X, the first video on the submission page, an entry point to the pitch video
+Type: narrative (`docs/colosseum-hackathon-playbook-2026-09-16.md` §5). The only aim is for the one-liner to stick.
 
-声は入れず、大きな字幕と音で見せる。音を出さずに見ても分かるようにするため。字幕は英語。日本語版を作るときは右の列を使う。
+No voice; large captions and sound only, so it works muted. Captions in English.
 
-## カット表
+## Shot list
 
-| 時間 | 画面 | 字幕（英語） | 字幕（日本語） | 音 |
-|---|---|---|---|---|
-| 0:00–0:04 | 黒地に、エージェントの文字が 3 行、打たれては消える: "Is the shop open right now?" → "What does the notice at the entrance say?" → "Is the station elevator working?" | — | — | キーを打つ音 |
-| 0:04–0:08 | 東京の夜の路地。店のシャッター | Your agent can't see this. | あなたのエージェントには、これが見えない。 | 街の音 |
-| 0:08–0:12 | スマホで店頭の掲示を撮る手元（顔は写さない） | A person can. | 人には見える。 | シャッター音 |
-| 0:12–0:17 | スマホに「確認できませんでした」→ 書き直し →「確認できました」 | Every answer is checked against the request. | 答えはすべて、依頼と突き合わせて確かめる。 | 低い警告音 → 明るい音 |
-| 0:17–0:22 | Solana Explorer の取引が3つ並ぶ（エスクロー・結果の記録・支払い） | Recorded and paid on Solana. | 記録も支払いも Solana に。 | 短い決定音 |
-| 0:22–0:26 | ターミナルに JSON の `"status": "VERIFIED"` が出る | Your agent gets an answer it can trust. | エージェントは、信用できる答えを受け取る。 | 無音にして間をとる |
-| 0:26–0:30 | ロゴと URL | ProofMarket | ProofMarket | 締めの音 |
+| Time | Screen | Caption | Sound |
+|---|---|---|---|
+| 0:00–0:04 | On black, three lines of agent text are typed and erased: "Is the shop open right now?" → "What does the notice at the entrance say?" → "Is the station elevator working?" | — | Typing |
+| 0:04–0:08 | A Tokyo alley at night; a shop shutter | Your agent can't see this. | Street sounds |
+| 0:08–0:12 | Hands photographing a shop notice with a phone (no face) | A person can. | Shutter sound |
+| 0:12–0:17 | Phone shows "Could not be confirmed" → rewritten → "Confirmed" | Every answer is checked against the request. | Low warning tone → bright tone |
+| 0:17–0:22 | Three Solana Explorer transactions side by side (escrow, result record, payment) | Recorded and paid on Solana. | Short confirmation tone |
+| 0:22–0:26 | `"status": "VERIFIED"` appears in JSON in a terminal | Your agent gets an answer it can trust. | Silence for a beat |
+| 0:26–0:30 | Logo and URL | ProofMarket | Closing sound |
 
-## 撮影と編集のメモ
+## Filming and editing notes
 
-- 0:04 と 0:08 は実際の東京の店で撮る。店主の了解をとり、人の顔と店の名前が読める看板は写さないか、ぼかす
-- 0:12 と 0:22 は `demo-video.md` の録画を切り出して使う
-- 縦（9:16）と横（16:9）の2つを書き出す。X の投稿は横、短尺の動画サイト向けは縦
-- 音源は商用利用できる無料素材か自作にする。出典を投稿の返信に書く必要があるものは避ける
+- Shoot 0:04 and 0:08 at a real Tokyo shop with the owner's consent. Keep faces and legible shop-name signs out of frame, or blur them
+- Cut 0:12 and 0:22 from the `demo-video.md` recordings
+- Export vertical (9:16) and horizontal (16:9). Horizontal for X posts, vertical for short-video sites
+- Use royalty-free music cleared for commercial use, or make it. Avoid anything that needs attribution in a reply

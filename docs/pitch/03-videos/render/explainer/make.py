@@ -1,4 +1,4 @@
-"""Narration for the home page's "30 秒でわかる" (13 §7).
+"""Narration for the home page's "Understand it in 30 seconds" (13 §7).
 
 Reads apps/web/public/audio/explainer-<lang>.json (the six caption lines), speaks each line with Kokoro, joins
 them with a short pause, writes explainer-<lang>.mp3 next to it and rewrites the JSON with each line's start
@@ -29,9 +29,9 @@ k = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin", espeak_config=EspeakConfig(
 if lang == "ja":
     from misaki import ja as misaki_ja
     g2p = misaki_ja.JAG2P(version="pyopenjtalk")  # the default (cutlet) needs the 770MB unidic dictionary
-    # Read "AI" as the word people say ("エーアイ"); the caption keeps the letters.
+    # Read "AI" as the word people say (katakana "ē-ai"); the caption keeps the letters.
     def say(text):
-        both, _ = g2p(text.replace("AI", "エーアイ"))
+        both, _ = g2p(text.replace("AI", "\u30a8\u30fc\u30a2\u30a4"))
         # the pyopenjtalk path returns the phonemes and an equally long pitch string glued together
         ph = both[: len(both) // 2]
         return k.create(ph, voice=voice, speed=speed, is_phonemes=True)

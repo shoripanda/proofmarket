@@ -1,26 +1,26 @@
-# X の投稿（10/5〜10/12、10本）
+# X posts (10/5–10/12, 10 posts)
 
-作成: 2026-10-04
-- 個人のアカウント用（日本語）: `personal-ja.md`
-- プロジェクトのアカウント用（英語）: `project-en.md`
+Written: 2026-10-04
+- For the founder's personal account (published in Japanese; English translation): `personal.md`
+- For the project account (English): `project-en.md`
 
-同じ番号の投稿は同じ日に出す。画像の案と返信のリンクは `personal-ja.md` に書いてある。
+Posts with the same number go out on the same day. Image ideas and reply links are in `personal.md`.
 
-## 決まり（`docs/colosseum-hackathon-playbook-2026-09-16.md` §10）
+## Rules (`docs/colosseum-hackathon-playbook-2026-09-16.md` §10)
 
-- リンクは最初の投稿に入れず、自分の返信に置く。`personal-ja.md` の各投稿の「返信」がそれ
-- 画像か動画を必ず付ける
-- ハッシュタグは付けない。付けるなら1つまで（例: #Solana）
-- @ の付け先は、その投稿に本当に関係する相手だけにする（Colosseum の公式アカウントなど）。青い字を増やさない
-- 個人のアカウントは考えたことと気づき、プロジェクトのアカウントは出したものと進み具合
-- 数字は投稿の直前に `/stats` から写す。【】のまま投稿しない
-- 「初の」「唯一の」「革新的」とは書かない。他社を名指しで下げない
-- 本番の URL: https://proofmarket.fun
+- No link in the first post; put it in your own reply. That is the "Reply" of each post in `personal.md`
+- Always attach an image or video
+- No hashtags; at most one if any (e.g. #Solana)
+- @-mention only accounts truly relevant to the post (such as Colosseum's official account). Keep blue text to a minimum
+- The personal account shares thinking and observations; the project account shares what shipped and progress
+- Copy numbers from `/stats` just before posting. Never post with [brackets] left in
+- Do not write "first", "only" or "innovative". Do not name and disparage other companies
+- Production URL: https://proofmarket.fun
 
-## 前提が付いている投稿
+## Posts with prerequisites
 
-| 回 | 前提 | 満たされないとき |
+| No. | Prerequisite | If not met |
 |---|---|---|
-| 2 | A（x402）が本番に入っている | 3 と入れ替える |
-| 4・9 | C（`/stats`）が本番に入っている | 数字を本文から外し、画面の写真だけにする |
-| 6 | B（写真を最大4枚）が本番に入っている（10/4 に main へ取り込み済み。前提は満たした） | 7 と入れ替える |
+| 2 | A (x402) is in production | Swap with 3 |
+| 4, 9 | C (`/stats`) is in production | Drop the numbers from the text and use only a screenshot |
+| 6 | B (up to 4 photos) is in production (merged to main on 10/4; met) | Swap with 7 |

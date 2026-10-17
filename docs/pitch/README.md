@@ -1,50 +1,52 @@
-# 提出用の資料（ProofMarket・Colosseum 10/12 提出）
+# Submission materials (ProofMarket, Colosseum submission on 10/12)
 
-作成: 2026-10-04（担当 D）。資料は種類ごとにフォルダを分けてある。番号は読む順。
+Written: 2026-10-04 (owner D). Materials are in one folder per kind; the numbers give the reading order.
 
-| フォルダ | ファイル | 中身 | いつ使う |
+| Folder | File | Contents | When to use |
 |---|---|---|---|
-| `01-canvas/` | `canvas.md` | Hackathon Canvas の10項目と、Matty Taylor の6つの問いへの答え | すべての資料の土台。最初に読む |
-| `02-deck/` | `deck-ja.md` | ピッチ資料11枚の構成（日本語）。題・一言・絵の案・話すこと | スライドを作るとき |
-| | `deck-en.md` | 同じ11枚の英語版 | 提出するスライドは英語 |
-| `03-videos/` | `pitch-video.md` | ピッチ動画の台本（2分50秒）。英語のナレーションと日本語訳 | 10/7〜10/11 の収録 |
-| | `demo-video.md` | 技術デモの台本（2分45秒）と、収録する画面11個の一覧 | 同上 |
-| | `hype-video.md` | 予告編の台本（30秒）。字幕と音だけ | X の固定投稿・提出ページ |
-| `04-x-posts/` | `README.md` | 投稿の決まりと、ほかの担当の作業が前提になっている投稿 | 投稿する前に読む |
-| | `personal-ja.md` | 個人のアカウント用（日本語）10本。画像の案と返信のリンクつき | 10/5〜10/12、毎日 |
-| | `project-en.md` | プロジェクトのアカウント用（英語）10本 | 同じ番号を同じ日に |
-| `06-business-scale.md` | | エージェントと人の役割分担を軸にした事業規模の見立て（8 領域・既存市場の数字・作業仮説）。ピッチ v3 の土台 | 対外の説明やサイトの言い方を変えるとき |
-| `07-landscape-and-edge.md` | | 2026-10 の競合の地図（人を雇う市場・現地データ収集・DePIN・オラクル）と、拡大できる箇所、他社に無い機能の案 7 つ、まず作る 3 つ | 機能を足す前・差別化を語るとき |
-| `05-workers/` | `recruiting-messages.md` | worker の募集文（知人・大学・X） | 10/5〜10/10 |
-| | `worker-guide.md` | はじめての worker 手順。招待コードと一緒にそのまま送る | 参加が決まった人に |
+| `01-canvas/` | `canvas.md` | The 10 items of the Hackathon Canvas, and answers to Matty Taylor's 6 questions | The base for all materials. Read first |
+| `02-deck/` | `deck-en.md` | Structure of the 12-slide pitch deck: title, message, visual idea, talk track | When making slides |
+| `03-videos/` | `pitch-video.md` | Pitch video script (2:50), English narration | Recording 10/7–10/11 |
+| | `demo-video.md` | Technical demo script (2:45) and a list of 11 screens to record | Same |
+| | `hype-video.md` | Trailer script (30 s), captions and sound only | Pinned X post, submission page |
+| | `render/README.md` | How the submitted videos were actually rendered (synthesized narration, Playwright, ffmpeg) | When re-rendering |
+| `04-x-posts/` | `README.md` | Posting rules, and posts that depend on other owners' work | Read before posting |
+| | `personal.md` | 10 posts for the personal account (published in Japanese; English translation), with image ideas and reply links | Daily, 10/5–10/12 |
+| | `project-en.md` | 10 posts for the project account (English) | Same number on the same day |
+| | `testers-2026-10-09.md` | Posts recruiting agent-side and worker-side testers | From 10/9 |
+| `05-workers/` | `recruiting-messages.md` | Worker recruiting messages (acquaintances, universities, X) | 10/5–10/10 |
+| | `worker-guide.md` | First steps for workers. Send as is with the invite code | To people who join |
+| `06-business-scale.md` | | Estimating business scale around the division of roles between agents and people (8 areas, existing market figures, working hypotheses). The base of pitch v3 | When changing external messaging or site wording |
+| `07-landscape-and-edge.md` | | Map of competitors as of 2026-10 (people-hiring markets, field data collection, DePIN, oracles), where to expand, 7 feature ideas no one else has, and the 3 to build first | Before adding features, when talking about differentiation |
+| `08-revenue-model.md` | | How ProofMarket makes money | When discussing fees and pricing |
 
-## あなた（オーナー）が埋める所
+## What you (the owner) fill in
 
-資料の中の【】が埋める所。ファイルごとの数は `grep -c "【" docs/pitch/*/*.md` で数えられる。
+[Brackets] in the materials are to be filled in. Count them per file with `grep -c "\[" docs/pitch/*/*.md`.
 
-### 数字（`/stats` から写す。推測で入れない）
+### Numbers (copy from `/stats`; never guess)
 
-完了件数、worker 数、支払い総額（USDC）、依頼から結果までの中央値、Claude が差し戻した数、再提出で合格した数、外部の開発者の数とその意見、公開してからの日数。
-出てくる所: `canvas.md`、`deck-ja.md`・`deck-en.md` の 9 枚目、`pitch-video.md` の 2:08、`demo-video.md` の 2:20、X の 4・8・9 番。
+Completed requests, workers, total paid (USDC), median time from request to result, submissions Claude sent back, those that passed after resubmission, number of outside developers and their feedback, days since launch.
+Where they appear: `canvas.md`, slide 9 of `deck-en.md`, 2:08 in `pitch-video.md`, 2:20 in `demo-video.md`, X posts 4, 8 and 9.
 
-### あなたにしか書けないこと
+### What only you can write
 
-1. **創業者の物語**: `canvas.md` の問い 1・2・6、`deck-ja.md` の 10 枚目、`pitch-video.md` の 2:28。次の3つに答えると埋まる
-   - AI に頼んだ調べものが、現地や紙の情報のせいで行き詰まった経験は何か
-   - なぜ「頼む」より「確かめる」が大事だと思ったのか
-   - ハッカソンの後も続ける理由は何か
-2. **ピッチ動画の冒頭**: いまは作り話でない一般的な場面。実体験があれば差し替える（`pitch-video.md` の末尾）
-3. **最初の入口**: 「日本の、紙と現地にしか無い情報」で確定するか（`canvas.md`、`deck-ja.md` の 3 枚目）
+1. **The founder's story**: questions 1, 2 and 6 in `canvas.md`, slide 10 of `deck-en.md`, 2:28 in `pitch-video.md`. Answering these three fills it in:
+   - What research you asked an AI for got stuck because of on-site or paper information?
+   - Why did you think "checking" matters more than "asking"?
+   - Why will you keep going after the hackathon?
+2. **The opening of the pitch video**: currently a generic scene, not an invented story. Replace it if you have a real experience (end of `pitch-video.md`)
+3. **The first entry point**: confirm whether it is "information in Japan that exists only on paper and on site" (`canvas.md`, slide 3 of `deck-en.md`)
 
-### 募集と収録の準備
+### Preparing recruiting and recording
 
-- 連絡先、試してほしい件数と期間、招待コード（`05-workers/`）
-- デモで撮る店と、店主の了解（`demo-video.md`、`hype-video.md`）
+- Contact details, how many requests to ask for and over what period, invite codes (`05-workers/`)
+- The shop to film for the demo, and the shop owner's consent (`demo-video.md`, `hype-video.md`)
 
-## ほかの担当の作業が前提になっている所
+## Parts that depend on other owners' work
 
-| 前提 | 使う所 | 状態（10/4 時点） |
+| Dependency | Where used | Status (as of 10/4) |
 |---|---|---|
-| A: x402 | deck 6 枚目、ピッチ動画 1:55、デモ 0:10、X の 2 番 | 作業中。入らなければ MCP に差し替える（各台本に手順あり） |
-| B: 写真を最大4枚 | X の 6 番、worker 手順の 5 | main に取り込み済み |
-| C: `/stats` | deck 9 枚目、各動画の実績の場面、X の 4・9 番 | 作業中 |
+| A: x402 | Slide 6, pitch video 1:55, demo 0:10, X post 2 | In progress. If it does not land, switch to MCP (steps in each script) |
+| B: up to 4 photos | X post 6, step 5 of the worker guide | Merged to main |
+| C: `/stats` | Slide 9, the results scene of each video, X posts 4 and 9 | In progress |

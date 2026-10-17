@@ -1,131 +1,131 @@
 # ProofMarket Hackathon Canvas
 
-作成: 2026-10-04 ／ 提出: 2026-10-12（Colosseum・Crypto World's Fair）
-元にした資料: `specs/proofmarket/project-brief.md`、`problem.md`、`competitor-differentiation.md`、`implementation/en/01-requirements-definition.md` §4.15〜4.17、`docs/proofmarket-schedule-2026-10.md` の「方針」
+Written: 2026-10-04 / Submission: 2026-10-12 (Colosseum, Crypto World's Fair)
+Based on: `specs/proofmarket/project-brief.md`, `problem.md`, `competitor-differentiation.md`, `implementation/en/01-requirements-definition.md` §4.15–4.17, and "Direction" in `docs/proofmarket-schedule-2026-10.md`
 
-**【】で囲んだ所はオーナーが埋める。** 数字は `/stats` から写す。推測の数字は入れない。
+**Anything in [brackets] is for the owner to fill in.** Copy numbers from `/stats`. No guessed numbers.
 
-## 一言で
+## In one line
 
-人の作業の結果を、依頼した AI が信用できる形で返す。
+Return the results of human work in a form the requesting AI can trust.
 
-AI エージェントは、現地の確認や紙の資料を読むこと、電話で聞くことを自分ではできない。ProofMarket はそれを人に頼み、届いた写真と答えを依頼文と突き合わせて確かめ、結果と支払いを Solana に残す。依頼したエージェントは、中身まで確かめられた答えを JSON で受け取り、そのまま次の処理に進める。
+AI agents cannot check things on site, read paper records or ask by phone themselves. ProofMarket asks people to do it, checks the photos and answers that come back against the request, and records the result and payment on Solana. The requesting agent receives an answer whose content has been checked, as JSON, and moves straight on to its next step.
 
-## Lean セクション
+## Lean section
 
-### 課題
+### Problem
 
-エージェントは人に作業を頼めても、届いた結果が依頼どおりかを確かめる手段を持たない。写真を見て「本当にその店か」「頼んだ項目が全部あるか」を判断するには、その場にいなかったエージェントでは材料が足りない。結局、人間の担当者が確認するか、確かめないまま使うかになる。
+Agents can ask people for work, but have no way to check whether what comes back matches the request. Looking at a photo and judging "is this really that shop" or "are all the requested items there" takes more than an agent that was not there has to go on. In the end, a human staff member checks it, or it is used unchecked.
 
-いま頼める先（RentAHuman・Taskin・NeedaHuman など）は「人に頼める」ことまでは解いている。中身を確かめて、機械が読める形で返すところは、頼む側に残っている。
+Today's options (RentAHuman, Taskin, NeedaHuman and others) solve "you can ask a person". Checking the content and returning it in machine-readable form is left to the requester.
 
-### 最初の狭い利用者
+### First narrow user
 
-- **依頼する側**: 日本の情報を扱うエージェントを作っている開発者。たとえば旅行・飲食の予約、不動産、調達の下調べをするエージェント
-- **作業する側**: 東京で試験運用に参加する worker（招待制）
-- **最初の入口**: 日本の、紙と現地にしか無い情報。店頭の掲示、紙の資料、窓口や電話でしか分からないこと。Web に載っていないので、エージェントはどれだけ賢くても届かない
-  - 【オーナー確認待ち: この入口で確定してよいか】
+- **Requesters**: developers building agents that deal with information about Japan, e.g. agents for travel and restaurant bookings, real estate, or procurement research
+- **Workers**: invite-only workers joining the trial in Tokyo
+- **First entry point**: information in Japan that exists only on paper and on site — notices in shops, paper records, things learned only at a counter or by phone. It is not on the web, so no agent can reach it however smart it is
+  - [Awaiting owner confirmation: is this the entry point?]
 
-### いまの代わりの手段
+### Current alternatives
 
-| 手段 | 足りないところ |
+| Alternative | What it lacks |
 |---|---|
-| Web 検索・地図 | 古い、載っていない。日本の小さな店や役所の窓口は特にそう |
-| 人に頼むサービス（RentAHuman・Taskin・NeedaHuman など） | 人には頼める。結果が依頼どおりかの確認と、複数人での突き合わせは頼む側の仕事になる |
-| 知り合いや社員に頼む | 早いが続かない。記録も支払いも手作業 |
+| Web search, maps | Stale or missing, especially for small shops and government counters in Japan |
+| Services for asking people (RentAHuman, Taskin, NeedaHuman etc.) | You can ask people. Checking the result against the request, and cross-checking several people, is the requester's job |
+| Asking acquaintances or staff | Fast but does not last. Records and payments are manual |
 
-### 独自の価値
+### Unique value
 
-1. **提出ごとに中身を確かめる**: 機械的な検査（合言葉・時刻・位置・写真の使い回し）を通った提出を、さらに Claude が依頼文・答え・写真と突き合わせる。依頼と違えば理由を付けて worker に差し戻し、worker はその場で直せる
-2. **複数人の合意**: 同じ依頼を2人以上に出し、答えが一致したときだけ確定にできる。人数はエージェントが選ぶ
-3. **結果と支払いが Solana に残る**: 依頼の時点で報酬をエスクローに入れ、確定したら結果のハッシュを記録して worker に払う。依頼した側も第三者も、Explorer であとから確かめられる
-4. **登録なしで頼める**: x402 で、エージェントが自分のウォレットから USDC を払ってその場で依頼できる（担当 A が 10/4 に実装中。取り込まれてから資料に出す）
+1. **The content of every submission is checked**: submissions that pass mechanical checks (nonce, time, location, photo reuse) are further checked by Claude against the request text, answer and photos. If they differ from the request, the worker gets it back with a reason and can fix it on the spot
+2. **Agreement among several people**: the same request goes to two or more people and is finalized only when answers agree. The agent chooses how many
+3. **Results and payments stay on Solana**: the reward goes into escrow when the request is made; on finalization the result hash is recorded and the worker paid. Requesters and third parties can check it later in Explorer
+4. **Request without signing up**: with x402, an agent pays USDC from its own wallet and requests on the spot (being built by owner A on 10/4; it goes into materials once merged)
 
-「人に頼める」こと自体は他社にもある。違いは、届いた結果をそのまま使える状態にしてから返すところ。
+Others also let you "ask a person". The difference is returning the result in a state where it can be used as is.
 
-### なぜ今か
+### Why now
 
-- エージェントが自分で予約・購入・調達をこなすようになり、現実の事実を確かめる場面が増えた
-- MCP でどのエージェントからも道具を呼べるようになり、x402 でエージェントがその場で払えるようになった
-- 写真と文章を読んで依頼文と照らし合わせる判定を、1件あたり数十秒で回せるモデルが使えるようになった
+- Agents now book, buy and procure on their own, so there are more moments when real-world facts need checking
+- MCP lets any agent call tools, and x402 lets agents pay on the spot
+- Models that read photos and text and judge them against the request in tens of seconds per item have become available
 
-### なぜ暗号資産か
+### Why crypto
 
-- 依頼したエージェントと worker は互いを知らない。報酬を先にエスクローに入れておけば、worker は払われるかを心配せずに動ける
-- 結果のハッシュが公開の台帳に残るので、運営者が後から結果を書き換えていないことを第三者が確かめられる
-- エージェントには銀行口座もクレジットカードも無い。USDC ならウォレットだけで払える
+- The requesting agent and the worker do not know each other. With the reward in escrow up front, the worker can act without worrying about being paid
+- The result hash stays in a public ledger, so third parties can confirm the operator did not rewrite results afterwards
+- Agents have no bank account or credit card. With USDC, a wallet is enough to pay
 
-### なぜ Solana か
+### Why Solana
 
-- 依頼1件の報酬は数十円から数百円。手数料がそれより小さくないと成り立たない
-- エスクロー・結果の記録・支払いを、依頼ごとに数秒で確定させたい
-- x402 の Solana 版の仕様（exact 方式）があり、USDC の流通量も大きい
+- A request's reward is tens to hundreds of yen. Fees have to be smaller than that
+- Escrow, result record and payment should finalize per request in seconds
+- There is a Solana version of the x402 spec (the exact scheme), and USDC circulation is large
 
-### 広げ方の入口
+### Entry point for growth
 
-1. 日本の紙と現地の情報を、まず東京で（worker が集まりやすい）
-2. エージェント開発者が使う場所に置く: MCP サーバー、REST API、x402 の窓口
-3. 同じ確認の仕組みのまま、依頼の種類を増やす（いま17種類。店の営業・行列・在庫・値段・看板の書き起こし・紙の資料・電話など）
-4. 地域を増やす。worker の信頼度（4段階）があるので、知らない人にも任せられる
+1. Paper and on-site information in Japan, starting in Tokyo (where workers are easiest to gather)
+2. Be where agent developers are: an MCP server, a REST API, an x402 endpoint
+3. Add request types on the same checking mechanism (17 now: shop opening, queues, stock, prices, transcribing signs, paper records, phone calls and more)
+4. Add regions. Worker trust levels (4 tiers) let strangers be trusted with work
 
-### MVP（10/4 時点で動いているもの）
+### MVP (running as of 10/4)
 
-- REST API と MCP サーバー（OAuth つき）。依頼の作成・取得・キャンセル・異議
-- worker 用のスマホの Web アプリ: ログイン（メールか Google）、招待コード、依頼の一覧、その場での撮影、答えの送信、報酬の明細
-- 機械的な検査: 合言葉（nonce）、受付時間、位置、写真の使い回しとほぼ同じ写真の検出
-- Claude による中身の確認と差し戻し（試行は3回まで）
-- 複数人の合意（多数決。文章の答えは全員分を返す）
-- Solana Devnet のエスクロー・結果の記録・支払い・返金
-- 公開の結果ページ（写真は出さない）、Webhook、結果の再利用、店舗からの申告、依頼者用の画面
-- 10/4 に追加中: x402 の窓口（A）、写真を最大4枚（B）、実績ページ `/stats`（C）
+- REST API and MCP server (with OAuth): create, get, cancel and dispute requests
+- A mobile web app for workers: sign-in (email or Google), invite codes, request list, on-the-spot capture, sending answers, reward statements
+- Mechanical checks: nonce, acceptance window, location, detection of reused and near-identical photos
+- Content checks and send-backs by Claude (up to 3 attempts)
+- Agreement among several people (majority; for text answers, everyone's are returned)
+- Escrow, result recording, payment and refund on Solana Devnet
+- Public result pages (no photos), webhooks, result reuse, reports from shops, requester screens
+- Being added on 10/4: the x402 endpoint (A), up to 4 photos (B), the results page `/stats` (C)
 
-### 期間中に測る数字
+### Numbers measured during the hackathon
 
-`/stats` で公開する。目標は `docs/proofmarket-schedule-2026-10.md` の方針 4 から。
+Published on `/stats`. Targets from direction 4 of `docs/proofmarket-schedule-2026-10.md`.
 
-| 数字 | 目標（審査まで） | 実績 |
+| Number | Target (by judging) | Actual |
 |---|---|---|
-| 有効な提出をした worker の数 | 10〜20人 | 【worker 数】 |
-| 完了した依頼の数 | 50〜100件 | 【完了件数】 |
-| worker に払った USDC の合計 | — | 【支払い総額】 |
-| 依頼から結果までの時間の中央値 | — | 【中央値の分】 |
-| AI の確認で差し戻した数と、その後に直って合格した数 | — | 【差し戻し数】／【再提出で合格した数】 |
-| 試してくれた外部のエージェント開発者 | 数件 | 【外部開発者数】 |
+| Workers with a valid submission | 10–20 | [worker count] |
+| Completed requests | 50–100 | [completed count] |
+| Total USDC paid to workers | — | [total paid] |
+| Median time from request to result | — | [median minutes] |
+| Sent back by the AI check, and later fixed and passed | — | [sent back] / [passed after resubmission] |
+| Outside agent developers who tried it | A few | [outside developers] |
 
-## Matty Taylor の6つの問い
+## Matty Taylor's six questions
 
-### 1. 実体験か、執着に近い好奇心から機会を見つけたか
+### 1. Was the opportunity found through lived experience or obsessive curiosity?
 
-【オーナーが書く】下の問いに答えると埋まる。
+[Owner writes] Answering these fills it in:
 
-- AI に頼んだ調べものが、現地や紙の情報のせいで行き詰まった経験はあるか。それは何だったか
-- なぜ「人に頼む」より「頼んだ結果を確かめる」ほうが大事だと思ったのか。きっかけになった出来事は
-- この問題を、ハッカソンの後も続けたい理由は何か
+- Have you had research you asked an AI for get stuck because of on-site or paper information? What was it?
+- Why did you think "checking the result of a request" matters more than "asking a person"? What event triggered it?
+- Why do you want to keep working on this problem after the hackathon?
 
-### 2. 一流の速さで作り、直し、優先順位を付けられるか
+### 2. Can you build, fix and prioritize at an elite pace?
 
-答えられる事実: 10/2 に仕様を固め、10/4 までに API・MCP・worker のアプリ・Solana のプログラム・AI の確認までを本番環境に出した。依頼の種類は 1 種類から 17 種類に広げた。commit の数と PR の数は GitHub で確かめられる。
+Facts that answer it: the spec was fixed on 10/2, and by 10/4 the API, MCP, worker app, Solana program and AI checks were in production. Request types went from 1 to 17. Commit and PR counts can be checked on GitHub.
 
-【オーナーが足す: 自分で使ってみて直したことを1つ】
+[Owner adds: one thing you fixed after using it yourself]
 
-### 3. 今がその時期か
+### 3. Is now the time?
 
-上の「なぜ今か」の3点。エージェントが現実の行動をとり始めたこと、MCP と x402 がそろったこと、写真と文章を読む判定が安く速くなったこと。
+The three points of "Why now" above: agents have started taking real-world actions, MCP and x402 are in place, and judging photos and text has become cheap and fast.
 
-### 4. 信頼できる配り方・利用の循環があるか
+### 4. Is there a credible distribution path / usage loop?
 
-正直な答え: まだ証明できていない。いまあるのは、MCP と x402 で「どのエージェントからでも登録なしで呼べる」入口まで。
+Honest answer: not proven yet. What exists is the entry point "any agent can call it without signing up" through MCP and x402.
 
-循環の仮説: 依頼が増える → worker の収入が増えて人が集まる → 待ち時間が短くなる → 依頼が増える。結果の再利用（同じ店の直近の結果を人を出さずに返す）で、依頼側の費用は件数とともに下がる。
+Loop hypothesis: more requests → more worker income draws more people → shorter waits → more requests. Result reuse (returning a shop's recent result without sending anyone) lowers requesters' cost as volume grows.
 
-期間中に確かめること: worker 10〜20人、完了 50〜100件、外部の開発者の試用数件。結果は【実績を入れる】
+To confirm during the hackathon: 10–20 workers, 50–100 completions, a few outside developers trying it. Results: [fill in actuals]
 
-### 5. 大きくなり得る暗号資産ならではの市場をつくっているか
+### 5. Is it creating a crypto-native market that can grow large?
 
-エージェントが自分で払う市場は、カード会社の審査も請求書も通らない。エージェントが USDC で人に払い、その結果を台帳で確かめる、という取引はウォレットがあって初めて成り立つ。依頼1件は小さいが、エージェントの数だけ回る。
+A market where agents pay for themselves passes through neither card-company review nor invoices. Agents paying people in USDC and checking the result on a ledger only works with wallets. Each request is small, but it runs as many times as there are agents.
 
-市場の大きさの数字は、まだ根拠のある値を持っていない。資料には入れない。
+There is no well-founded number for market size yet, so none goes into the materials.
 
-### 6. 最後までやり切る執念があるか
+### 6. Is there the tenacity to see it through?
 
-【オーナーが書く】提出後も面談まで開発と依頼の運用を続ける予定（予定表の冒頭）。それ以上の言葉はオーナー自身のものにする。
+[Owner writes] Development and running requests continue after submission until the interview (top of the schedule). Anything beyond that should be in the owner's own words.

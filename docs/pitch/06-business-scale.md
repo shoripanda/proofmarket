@@ -1,65 +1,65 @@
-# ProofMarket は「17 種類の仕事」ではなく「人の体と五感をエージェントに貸す市場」として語り直す
+# Retelling ProofMarket as "a market that lends agents a human body and senses", not "17 kinds of work"
 
-作成: 2026-10-08。ピッチ動画 v2 への指摘を受けて書いた、たたき台。指摘は 2 つあった。店に行く・紙を書き取る、では視野が狭い。事業としてどこまで大きくなるかを考えてほしい。読者はオーナー。決めてほしいことは末尾の 3 つ。
+Written: 2026-10-08. A first draft written after feedback on pitch video v2. The feedback had two points: going to shops and copying paper is too narrow a view, and think about how big this can get as a business. The reader is the owner. The three decisions needed are at the end.
 
-## 中心主張
+## Central claim
 
-AI エージェントと人は、欠点がきれいに逆向きになっている。エージェントは一度に大量の情報を読み、比べ、まとめて、製品まで作る。だが体がない。現地に立てず、暑さも匂いも景色も分からない。人はその場に立ち、五感で確かめられるが、一度に扱える情報は少なく、遅い。ProofMarket の価値は、この非対称をつなぐ接続点であることにある。店の営業確認や掲示の書き起こしは、その接続点を最初に通る仕事にすぎない。入口であって、全体ではない。
+AI agents and people have weaknesses that point in exactly opposite directions. An agent reads, compares and summarizes vast amounts of information at once, and can even build products. But it has no body. It cannot stand on site, and does not know heat, smell or a view. A person can stand there and check with their senses, but handles little information at once, slowly. ProofMarket's value lies in being the connection point across this asymmetry. Checking whether a shop is open or transcribing a notice is just the first work to pass through that point. It is the entrance, not the whole.
 
-だから、ピッチでもサイトでも「17 種類の仕事」を主語にしない。**主語は「エージェントに、人の体と五感を貸す」**で、17 種類はその見本として後ろに置く。
+So neither the pitch nor the site should lead with "17 kinds of work". **The subject is "lending agents a human body and senses"**, with the 17 kinds placed behind it as examples.
 
-| | AI エージェント | 人 |
+| | AI agent | Person |
 |---|---|---|
-| 一度に読める量 | 数百万ページ | 数ページ |
-| 速さ | 秒 | 分〜時間 |
-| 現地に立てるか | 立てない | 立てる |
-| 五感 | ない（写真と文字だけ） | 暑い・冷たい・匂う・景色が良い、と言える |
-| 得意な役 | 問いを立てる。結果を比べ、次を決める | 行く。感じる。確かめる |
+| Reading at once | Millions of pages | A few pages |
+| Speed | Seconds | Minutes to hours |
+| Can stand on site | No | Yes |
+| Senses | None (photos and text only) | Can say hot, cold, smelly, a nice view |
+| Best role | Ask the question. Compare results, decide what next | Go. Feel. Confirm |
 
-## いまの 17 種類は、接続点の片隅しか見せていない
+## Today's 17 types show only a corner of the connection point
 
-仕様（01 §4.15）の 17 種類は「現地の事実を選択肢か数値で答える」ものに寄っている。`CUSTOM_TASK`・`SITE_REPORT`・`CUSTOM_CHOICE` があるので実際には何でも頼めるのに、見せ方が店頭の確認に見える。種類を増やすより、頼める領域を括り直して見せるほうが効く。
+The 17 types in the spec (01 §4.15) lean towards "answer an on-site fact as a choice or a number". With `CUSTOM_TASK`, `SITE_REPORT` and `CUSTOM_CHOICE`, anything can actually be requested, yet the presentation looks like shop-front checks. Regrouping and showing the areas that can be requested works better than adding types.
 
-| 領域 | 誰のエージェントが頼むか | 今の種類で受けられるか | 足りないもの |
+| Area | Whose agent requests | Possible with today's types? | What is missing |
 |---|---|---|---|
-| 地元の商いと地図（営業・行列・在庫・値段） | 旅行・飲食・地図 | 受けられる | なし。いまの主戦場 |
-| 小売の棚と値段の監査 | メーカー・卸 | `PRICE_CHECK`・`STOCK_CHECK`・`SITE_REPORT` | 一括発注の API。見守り依頼（§4.23）で定期化はできる |
-| 保険・不動産の現況確認 | 保険・不動産 | `SITE_REPORT`・`PRODUCT_INSPECTION`、写真 4 枚 | 室内に入る仕事の扱い（下の未解決 2） |
-| 配送・供給網の「そこにあった」証明 | 物流・EC | 写真＋位置＋時刻＝証明ページそのもの | 荷物や資産の識別子を依頼に持たせる欄 |
-| AI の学習・評価用の新鮮な実世界データ | AI 企業・研究 | 公開データセット `/data`（CC BY 4.0）が入口 | 数千件を一度に出す一括依頼 |
-| 介護・安全・アクセシビリティの確認 | 自治体・家族 | `scope=anywhere`、見守り依頼 | なし |
-| 五感の判断（味・匂い・手触り・景色） | 飲食・観光・不動産 | `CUSTOM_CHOICE`・`SITE_REPORT` | 検査の考え方（下の未解決 1） |
-| 手足を貸す（受け取る・渡す・その場にいる） | あらゆる領域 | 受けられない。いまは「確かめる」だけ | 時間を伴う仕事の状態遷移と報酬の決め方 |
+| Local business and maps (opening, queues, stock, prices) | Travel, dining, maps | Yes | Nothing. Today's main battlefield |
+| Retail shelf and price audits | Manufacturers, wholesalers | `PRICE_CHECK`, `STOCK_CHECK`, `SITE_REPORT` | A bulk-ordering API. Watches (§4.23) can make it recurring |
+| Condition checks for insurance and real estate | Insurance, real estate | `SITE_REPORT`, `PRODUCT_INSPECTION`, 4 photos | How to handle work that enters a building (open issue 2 below) |
+| Proof that something "was there" in delivery and supply chains | Logistics, e-commerce | Photo + location + time = the proof page itself | A field on the request for a parcel or asset identifier |
+| Fresh real-world data for AI training and evaluation | AI companies, research | The public dataset `/data` (CC BY 4.0) is the entry point | Batch requests issuing thousands at once |
+| Care, safety and accessibility checks | Municipalities, families | `scope=anywhere`, watches | Nothing |
+| Sensory judgements (taste, smell, texture, view) | Dining, tourism, real estate | `CUSTOM_CHOICE`, `SITE_REPORT` | How to check them (open issue 1 below) |
+| Lending hands (receive, hand over, be present) | Every area | No. Today it only "checks" | State transitions for work that takes time, and how to price it |
 
-上 6 行は、仕様を変えずに言い方を変えるだけで今日から頼める。下 2 行が次の拡張。
+The top six rows can be requested today just by changing the wording, with no spec change. The bottom two are the next extensions.
 
-## 規模の見立て
+## Estimating scale
 
-確かめた数字と、自分の仮定を分けて書く。
+Verified numbers and my own assumptions are written separately.
 
-**確かめた数字**。覆面調査（ミステリーショッピング）だけで世界 23 億ドル規模（2025 年、Straits Research と Fortune Business Insights の推計がともに 23 億ドル台）。小売の棚の監査を人の群れで行う Streetbees は 4,000 万ドルを調達している。ギグ経済全体の流通額は 2025〜26 年で 4,550 億〜5,820 億ドルと推計に幅がある。どれも「人が現地で確かめる」か「人に短い仕事を頼む」を、人間の発注者向けに売っている市場で、依頼から答えまで数日から数週間かかる。
+**Verified numbers.** Mystery shopping alone is a $2.3 billion market worldwide (2025; estimates from Straits Research and Fortune Business Insights are both around $2.3 billion). Streetbees, which audits retail shelves with crowds of people, has raised $40 million. Estimates of total gig-economy volume for 2025–26 range from $455 billion to $582 billion. All of these sell "people checking on site" or "asking people for short tasks" to human buyers, taking days to weeks from request to answer.
 
-**仮定（推定ラベル）**。発注者が人からエージェントに替わると、問いの数は桁で増え、1 件の単価は桁で下がる。今の覆面調査は 1 件数千円で月に数件だが、エージェントは 1 件 0.3 USDC で、必要なときに毎回聞く。日本だけで 1 日 1 万件、1 件 300 円なら、流通額は年 11 億円。手数料を 15% とすると売上 1.6 億円。世界で 1 日 100 万件、1 件 0.5 ドルなら、流通額は年 1.8 億ドル。この「1,000 倍」はピッチにも入れたが、測った数ではなく、こう置いて事業を組む、という作業仮説だと動画内にも注記した。
+**Assumptions (estimates).** When the buyer changes from a person to an agent, the number of questions grows by orders of magnitude and the price per item falls by orders of magnitude. Mystery shopping today costs thousands of yen per visit, a few times a month; an agent pays 0.3 USDC per item and asks every time it needs to. At 10,000 a day in Japan alone at 300 yen each, volume is 1.1 billion yen a year; with a 15% fee, revenue is 160 million yen. At 1 million a day worldwide at $0.5 each, volume is $180 million a year. This "1,000×" also went into the pitch, but it is not measured; it is a working hypothesis to build the business on, and the video says so in a note.
 
-肝心なのは単価ではない。回数だ。回数を伸ばすのは「頼みやすさ」と「返ってきた答えを疑わずに使えること」の 2 つ。前者は MCP・REST・x402 で済んでいる。後者が ProofMarket の中核（機械の検査、Claude の照合、複数人の合意、Solana の記録）で、ここは領域が広がっても変わらない。
+What matters is not the unit price but the count. Two things drive the count: "ease of asking" and "being able to use the answer without doubting it". The former is covered by MCP, REST and x402. The latter is ProofMarket's core (mechanical checks, Claude's review, agreement among several people, the Solana record), and it does not change as areas widen.
 
-## 変えること（提案）
+## Proposed changes
 
-1. **言い方**。サイトの見出し・`/developers`・MCP の説明文を「人の体と五感をエージェントに貸す」を主語に書き換える。17 種類は「今日すぐ頼める見本」として一段下げる。ピッチ v3 は先にこの順で作った
-2. **領域ごとの見本**。種類は増やさず、上の表の 6 領域それぞれに依頼文の例（JSON）を 1 つずつ `/developers` に置く。開発者は自分の領域の例から入れる
-3. **一括依頼**。同じ依頼文を場所だけ変えて数百件出す API を足す。小売の監査と AI 用データの 2 領域はこれが無いと始まらない
-4. **手足を貸す仕事**は、確かめる仕事が回ってから。状態遷移（受け取った・渡した）と、時間に応じた報酬の決め方が要るので、仕様を 1 本書いてから
+1. **Wording.** Rewrite the site headings, `/developers` and the MCP descriptions with "lending agents a human body and senses" as the subject. Move the 17 types one step down as "examples you can request today". Pitch v3 was already built in this order
+2. **One example per area.** Do not add types; put one example request (JSON) for each of the six areas in the table on `/developers`, so developers start from their own area's example
+3. **Batch requests.** Add an API that issues hundreds of the same request with only the place changed. Retail audits and AI data cannot start without it
+4. **Lending hands** comes after checking work is running. It needs state transitions (received, handed over) and time-based pricing, so write a spec first
 
-## 未解決の論点と、いまの見立て
+## Open issues and current view
 
-**1. 五感の答えは Claude では確かめられない**。「この部屋は湿っぽい」「この店はいい匂いがする」が正しいかを、写真から判定はできない。見立て: この領域は複数人の合意（2〜3 人）と worker の信頼度（4 段階）を主な検査にし、Claude の照合は「依頼の形に合っているか」だけに絞る。仕様の変更は要らず、依頼者が `witnesses` を 2 以上にするだけで動く。
+**1. Claude cannot check sensory answers.** Whether "this room feels damp" or "this shop smells good" is right cannot be judged from a photo. View: for this area, make agreement among several people (2–3) and worker trust levels (4 tiers) the main checks, and limit Claude's review to "does it fit the shape of the request". No spec change is needed; the requester just sets `witnesses` to 2 or more.
 
-**2. 室内に入る仕事をどう扱うか**。保険・不動産の現況確認は、建物の中に入る場面が出る。これまでの方針は「安全の決まりは足さない」だった。見立て: 方針は変えず、依頼者が「立ち会いあり」を依頼文に明記する運用で始める。問題が出てから決まりを作る。
+**2. How to handle work that enters a building.** Condition checks for insurance and real estate involve going inside. The policy so far has been "do not add safety rules". View: keep the policy and start with requesters stating "accompanied" in the request text. Make rules once problems appear.
 
-**3. 0.3 USDC は五感の判断には安い**。移動と時間がかかる仕事を 30 セントで受ける人はいない。見立て: 報酬は今も依頼者が自由に決められるので、仕様は変えない。ただし見本の依頼文では、領域ごとに相場らしい額（現地の判断なら 3〜5 USDC）を入れておく。
+**3. 0.3 USDC is too cheap for sensory judgements.** Nobody takes work involving travel and time for 30 cents. View: requesters already set rewards freely, so the spec does not change. But example requests should carry plausible going rates per area (3–5 USDC for on-site judgements).
 
-## 決めてほしいこと
+## Decisions needed
 
-- 主語を「人の体と五感をエージェントに貸す」に替えてよいか。よければサイトと `/developers` の書き換えを進める
-- 一括依頼の API を、提出（10/12）の前に足すか、後にするか。自分は後に回し、提出資料には「次に作るもの」として書く見立て
-- 五感の判断を複数人合意で検査する、という整理でよいか
+- May the subject change to "lending agents a human body and senses"? If so, proceed with rewriting the site and `/developers`
+- Add the batch request API before submission (10/12) or after? My view is after, listing it in the submission as "what we build next"
+- Is checking sensory judgements by agreement among several people the right framing?
