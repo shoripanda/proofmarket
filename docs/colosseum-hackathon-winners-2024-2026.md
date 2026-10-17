@@ -1,14 +1,14 @@
-# Colosseum Hackathon 過去入賞プロジェクト調査（2024–2026）
+# Past Colosseum hackathon winners (2024–2026)
 
-調査日: 2026-09-16
+Researched: 2026-09-16
 
-## 目的
+## Purpose
 
-2026年秋のColosseum Hackathon（Crypto World's Fair）への出場準備として、ColosseumがSolana Foundationの公式ハッカソン運営を引き継いだ2024年以降の主要大会について、入賞プロジェクトと傾向を整理する。
+To prepare for the Fall 2026 Colosseum hackathon (Crypto World's Fair), this organizes the winning projects and trends of the major hackathons since 2024, when Colosseum took over running the Solana Foundation's official hackathons.
 
-調査ではColosseum公式発表、Solana公式、Superteam等のSolana ecosystem一次・準一次資料を優先する。
+Primary and near-primary Solana ecosystem sources are preferred: Colosseum's official announcements, Solana's official sources, Superteam and the like.
 
-## 対象大会
+## Hackathons covered
 
 1. Renaissance — 2024
 2. Radar — 2024
@@ -18,21 +18,21 @@
 
 ## Grand Champions
 
-| Hackathon | Grand Champion | 概要 |
+| Hackathon | Grand Champion | Summary |
 |---|---|---|
-| Renaissance | ORE | Solana上のPoW型デジタル通貨 / mining protocol |
-| Radar | Reflect | hedge-backed stablecoinを利用するDeFi FX |
+| Renaissance | ORE | A PoW digital currency / mining protocol on Solana |
+| Radar | Reflect | DeFi FX using a hedge-backed stablecoin |
 | Breakout | TAPEDRIVE | decentralized data storage |
-| Cypherpunk | Unruggable | Solana専用hardware wallet |
-| Frontier | CrowdBrain | robotics / Physical AI向けDePIN |
+| Cypherpunk | Unruggable | A Solana-only hardware wallet |
+| Frontier | CrowdBrain | DePIN for robotics / Physical AI |
 
-Grand Championだけを見ても、単純なDEX/NFT marketplaceではなく、新しいcrypto-native market、infrastructure、stablecoin、hardware、physical-world networkが強い。
+Even the Grand Champions alone show that new crypto-native markets, infrastructure, stablecoins, hardware and physical-world networks do well, rather than plain DEXes or NFT marketplaces.
 
 ---
 
 ## Renaissance 2024
 
-規模: 8,300+ participants、95+ countries、1,071 submissions。
+Scale: 8,300+ participants、95+ countries、1,071 submissions。
 
 ### Grand Champion
 - ORE
@@ -84,7 +84,7 @@ Grand Championだけを見ても、単純なDEX/NFT marketplaceではなく、�
 - Zircon — Public Goods
 - AquaSave — Climate
 
-重要な示唆: 初期からDePIN、payments、AI/automation、real-world infrastructureの芽がある。Blockmeshはbandwidth、DeChargeはEV charging、CHRO+はhealthcare data networkであり、ProofMarketの「人が現実を確かめる」路線との接点が大きい。
+Key takeaway: the seeds of DePIN, payments, AI/automation and real-world infrastructure were there from the start. Blockmesh is bandwidth, DeCharge is EV charging and CHRO+ is a healthcare data network, with much in common with ProofMarket's "people check reality" direction.
 
 Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-renaissance-hackathon/
 
@@ -92,7 +92,7 @@ Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-renaissa
 
 ## Radar 2024
 
-規模: 10,000+ participants、120+ countries、1,359 submissions。
+Scale: 10,000+ participants、120+ countries、1,359 submissions。
 
 ### Grand Champion
 - Reflect
@@ -151,7 +151,7 @@ Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-renaissa
 - Attest Protocol
 - Endcoin
 
-重要な示唆: DePIN × energy / infrastructureが強い。SvachSakthiはoff-grid renewable energy networkで、社会インフラをSolanaでcoordinationする方向が評価された。
+Key takeaway: DePIN × energy / infrastructure is strong. SvachSakthi is an off-grid renewable energy network; coordinating social infrastructure on Solana was rewarded.
 
 Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-radar-hackathon/
 
@@ -159,7 +159,7 @@ Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-radar-ha
 
 ## Breakout 2025
 
-規模: 10,000+ participants、140+ countries、1,412 submissions。
+Scale: 10,000+ participants、140+ countries、1,412 submissions。
 
 ### Grand Champion
 - TAPEDRIVE
@@ -225,7 +225,7 @@ Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-radar-ha
 - IDL Space — Public Good
 - LootGo — Solana Mobile
 
-重要な示唆: AIとStablecoinが独立track化。LatinumはAI/MCP service向けpayment middlewareであり、後のx402 / agentic paymentsの方向と整合する。
+Key takeaway: AI and Stablecoins became their own tracks. Latinum is payment middleware for AI/MCP services, consistent with the later direction of x402 / agentic payments.
 
 Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-breakout-hackathon/
 
@@ -233,7 +233,7 @@ Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-breakout
 
 ## Cypherpunk 2025
 
-規模: 9,000+ participants、150+ countries、1,576 submissions。
+Scale: 9,000+ participants、150+ countries、1,576 submissions。
 
 ### Grand Champion
 - Unruggable
@@ -284,7 +284,7 @@ Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-breakout
 - Pythia
 - Samui Wallet
 
-重要な示唆: RWAが独立track化。Bore.fiはSMB/private-equity tokenization、Pencil Financeはstudent loans、Watchtowerはspace infrastructure financing。日本株式会社のequity on-chain構想ではBore.fiを必ず競合・先行事例として調査する。
+Key takeaway: RWA became its own track. Bore.fi is SMB/private-equity tokenization, Pencil Finance student loans, Watchtower space infrastructure financing. Any idea of putting Japanese company equity on chain must study Bore.fi as a competitor and precedent.
 
 Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-cypherpunk-hackathon/
 
@@ -292,9 +292,9 @@ Source: https://blog.colosseum.com/announcing-the-winners-of-the-solana-cypherpu
 
 ## Frontier 2026
 
-規模: 10,000+ participants、150+ countries、2,857 submissions。
+Scale: 10,000+ participants、150+ countries、2,857 submissions。
 
-Frontierから従来のtrack別評価をやめ、engineering + business sprintとしてstartup全体を評価する形式へ変化。
+From Frontier on, judging by track was dropped in favour of evaluating the whole startup as an engineering + business sprint.
 
 ### Grand Champion
 - CrowdBrain — robotics / Physical AI DePIN
@@ -330,7 +330,7 @@ Frontierから従来のtrack別評価をやめ、engineering + business sprint�
 - IOChain — University Award
 - Zoneless — Public Good Award
 
-### 観察されるcluster
+### Observed clusters
 - AI / agentic products
 - RWA / Internet Capital Markets
 - stablecoin / payments
@@ -338,7 +338,7 @@ Frontierから従来のtrack別評価をやめ、engineering + business sprint�
 - consumer trading
 - physical-world / robotics
 
-特にCraftsはStakeholder Token Offerings / equity-linked tokenによるstartup capital formationを扱っており、日本株式会社の株式オンチェーン化構想との比較対象になる。
+Crafts in particular deals with startup capital formation through Stakeholder Token Offerings / equity-linked tokens, a point of comparison for putting Japanese company shares on chain.
 
 Sources:
 - https://blog.colosseum.com/announcing-the-winners-of-the-solana-frontier-hackathon/
@@ -346,36 +346,36 @@ Sources:
 
 ---
 
-## 5大会を通した変化
+## Change across the five hackathons
 
 ### 2024
 DeFi / Gaming / DAO / NFT / DePIN
 
 ### 2025
-AI / Stablecoin / RWA / Privacy / Infrastructure が急増
+Sharp growth in AI / Stablecoin / RWA / Privacy / Infrastructure
 
 ### 2026
-AI Agent × Finance / RWA / Stablecoin / Prediction Markets / Physical AI / Robotics / Internet Capital Marketsへ重心が移動。
+The centre of gravity moves to AI Agent × Finance / RWA / Stablecoin / Prediction Markets / Physical AI / Robotics / Internet Capital Markets.
 
-重要なのは「流行keywordを使う」ことではない。Colosseumのwinnerは、Solanaの特性を使って新しいmarket、distribution、coordination、settlement、ownership modelを成立させるprojectが多い。
+What matters is not "using trending keywords". Many Colosseum winners use Solana's properties to make a new market, distribution, coordination, settlement or ownership model work.
 
-## 継続出場の示唆
+## Lessons from repeat entries
 
-Unruggableは複数大会で改善を続け、Renaissance/Radarでの露出、Breakout Infrastructure 3位を経てCypherpunk Grand Championになった。Colosseumでは一度で完成させるより、ship → feedback → iterateを高速に続けるfounder behaviorも重要。
+Unruggable kept improving across several hackathons: exposure at Renaissance/Radar, 3rd in Breakout Infrastructure, then Cypherpunk Grand Champion. At Colosseum, the founder behaviour of fast ship → feedback → iterate matters as much as finishing in one go.
 
-## ProofMarketとの接続
+## Connection to ProofMarket
 
-ProofMarketは最近のwinner clusterのうち、real-world proof / DePIN / AI agent infrastructure / payments（x402・stablecoin settlement）に接続する。ただし「カテゴリーが合う」こと自体に価値はない。過去winnerとの重複を調べ、既存winnerが解決していないproblem（AI agentが物理世界の事実を確かめられない）とdistribution wedge（MCP / x402でagentから直接呼べる）を明確にする。
+Among recent winner clusters, ProofMarket connects to real-world proof / DePIN / AI agent infrastructure / payments (x402, stablecoin settlement). But "fitting a category" has no value in itself. Check overlap with past winners and make clear the problem no winner has solved (AI agents cannot confirm facts in the physical world) and the distribution wedge (agents call it directly over MCP / x402).
 
-## 2026秋に向けた評価原則
+## Evaluation principles for Fall 2026
 
-1. Solanaを外したら価値が大きく失われるか。
-2. 実際のproblem / userが存在するか。
-3. founder自身にproblemへのlived experience / obsessive curiosityがあるか。
-4. hackathon中にworking productをshipできるか。
-5. user feedbackを受けて高速iterationできるか。
-6. distribution pathがあるか。
-7. venture-scale / crypto-native marketになり得るか。
-8. pitchだけでなくtraction / usage / proofを示せるか。
+1. Would much of the value be lost without Solana?
+2. Does a real problem / user exist?
+3. Does the founder have lived experience of, or obsessive curiosity about, the problem?
+4. Can a working product ship during the hackathon?
+5. Can it iterate fast on user feedback?
+6. Is there a distribution path?
+7. Can it become a venture-scale / crypto-native market?
+8. Can it show traction / usage / proof, not just a pitch?
 
-この文書は次のPlaybook分析とセットで使用する: `docs/colosseum-hackathon-playbook-2026-09-16.md`。
+Use this document together with the playbook analysis: `docs/colosseum-hackathon-playbook-2026-09-16.md`。
