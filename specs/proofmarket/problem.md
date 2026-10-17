@@ -1,6 +1,6 @@
 # Problem Definition
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 ## Core problem
 

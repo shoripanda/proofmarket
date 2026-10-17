@@ -1,6 +1,6 @@
 # KPI Framework
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 ## North-star metric
 

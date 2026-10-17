@@ -62,7 +62,9 @@ create table requester_credentials (
   allowed_bbox         double precision[],            -- optional. {minLat,minLng,maxLat,maxLng}. If null, PILOT_BBOX
   status               text not null default 'active' check (status in ('active','suspended')),
   created_at           timestamptz not null default now(),
-  revoked_at           timestamptz
+  revoked_at           timestamptz,
+  deposit_reference    text unique,                   -- Solana Pay reference attached to deposits; null until the requester issues one on screen (15 §4.3)
+  deposit_checked_at   timestamptz                    -- when the tick last looked for deposits; the oldest are checked first
 );
 ```
 
@@ -560,7 +562,14 @@ create table verification_schedules (
   last_verification_id text,
   last_error           text,                      -- error code of the latest failure
   consecutive_failures int not null default 0,    -- 3 failures in a row set active=false
-  created_at           timestamptz not null default now()
+  created_at           timestamptz not null default now(),
+  -- watch requests (01 §4.23, added 2026-10-05)
+  every_minutes        int,                       -- when running at an interval: 15-1440; times_jst/days_jst are empty arrays
+  max_runs             int,                       -- cap on the number of runs
+  runs                 int not null default 0,    -- requests created so far
+  stop_when            jsonb,                     -- condition to stop: answer / answer_in / number
+  stopped_reason       text,                      -- condition_met / max_runs / ended / failures / suspended / stopped
+  matched_verification_id text                    -- the request that met the condition
 );
 create index on verification_schedules (active, next_run_at);
 ```
@@ -602,6 +611,80 @@ create table console_sessions (
 );
 ```
 
+### 3.26 x402_wallets and x402_payments (x402 payments, added 2026-10-04)
+
+01 §4.19. Migration 0019. RLS enabled on both.
+
+`x402_wallets`: maps paying wallets to principals.
+
+| Column | Type | Description |
+|---|---|---|
+| pubkey | text PK | Public key of the payer (the TransferChecked authority) |
+| principal_id | text FK → principals | Created on the first payment |
+| created_at | timestamptz | |
+
+`x402_payments`: one row per payment transaction; prevents double settlement.
+
+| Column | Type | Description |
+|---|---|---|
+| signature | text PK | Transaction ID (the fee payer's signature) |
+| payer | text | Payer's public key |
+| amount | numeric(20,6) | Amount received (USDC) |
+| state | text | `PENDING` (sending), `CONFIRMED`, `FAILED` |
+| request_hash | bytea | Hash of the body; one payment cannot create a different request |
+| credential_id | text FK NULL | The key issued for this payment |
+| verification_id | text FK NULL | The request created with this payment |
+| error | text NULL | Why sending failed |
+| created_at / updated_at | timestamptz | Still `PENDING` after 120 seconds may be resent |
+
+### 3.27 deposits (requester deposits, added 2026-10-11)
+
+15 §4.3. Migration 0028. RLS enabled. One row per currency per transaction for transfers to the treasury that carry a requester's reference and are finalized. A TOPUP is written to `requester_ledger` in the same transaction, so the balance is never credited twice.
+
+2026-10-14 (16 §6, migration 0029): the primary key changed from `signature` alone to (`signature`, `asset`). With 0028's key, sending SOL and USDC in one transaction failed to record the second currency. The `asset` constraint now only checks the symbol's shape (2-10 alphanumerics); which currencies are accepted is decided by the application's registry.
+
+| Column | Type | Description |
+|---|---|---|
+| signature | text PK (with asset) | Transaction ID; the key that prevents double counting |
+| credential_id | text FK → requester_credentials | Owner of the reference |
+| asset | text PK (with signature) | Registry symbol (16 §3) |
+| amount | numeric(20,6) | Amount credited. Currencies with more than 6 decimals (SOL etc.) are truncated to 10^-6, and fractions that become 0 are not recorded |
+| slot | bigint | The transaction's slot; sets the starting point (`until`) for the next search |
+| from_pubkey | text NULL | Sender (the transaction's first signer) |
+| created_at | timestamptz | When the balance was credited |
+
+### 3.28 verification_quotes (request quotes, added 2026-10-15)
+
+05 §2.1b. Migration 0030 (the same migration makes `requester_credentials.max_task_amount` and `daily_spend_limit` nullable, adds `x402_enabled` to `platform_flags` and creates an index `(credential_id, created_at desc)` on `verification_requests`). RLS enabled. Stores not the body but only the SHA-256 of the body normalised with RFC 8785. Expires after 5 minutes; rows older than a day are deleted by the tick.
+
+| Column | Type | Description |
+|---|---|---|
+| id | text PK | `qte_` + ULID |
+| credential_id | text FK → requester_credentials | The key that asked; unusable by other keys |
+| request_hash | bytea | Hash of the body (without `quote_id`), compared with the confirming body |
+| asset | text | Reward currency |
+| total | numeric(20,6) > 0 | `amount × required_witnesses` (the ceiling for a rising bounty) plus the platform fee (since 2026-10-16) |
+| created_at / expires_at | timestamptz | Issued and expiry (5 minutes later) |
+| consumed_at | timestamptz NULL | When it was used to confirm; once only |
+| verification_id | text FK NULL | The request the confirm created |
+
+### 3.29 tick_runs (tick durations, added 2026-10-15)
+
+`docs/architecture/` 06 §4.3. Migration 0031 (the same migration adds `RECONCILE_SETTLEMENTS` to `outbox_jobs.kind`). RLS enabled. One row per finished tick; `GET /v1/health/ready` returns the latest as `last_tick`. Deleted after 7 days.
+
+| Column | Type | Description |
+|---|---|---|
+| id | bigserial PK | |
+| started_at | timestamptz | Tick start (application clock) |
+| duration_ms | integer | Total duration |
+| steps | jsonb | `{ step name: milliseconds }` in the order they ran |
+| jobs_run | integer | Outbox jobs run |
+| failed | text[] | Names of steps that failed |
+
+### 3.30 Platform fee and general tasks (added 2026-10-16)
+
+`docs/architecture/13-marketplace-migration.md` §4. Migration 0032 adds `fee_rate_bps` and `platform_fee_earned` to `verification_requests`. Migration 0033 adds `market_tasks`, `task_applications`, `task_seats`, `task_submissions` and `seat_payments`, the columns `market_task_id` and `seat_id` on `requester_ledger`, the job kinds `FUND_SEAT` / `SETTLE_SEAT` / `REFUND_SEAT`, and the flag `tasks_enabled` (seeded false). Migration 0034 adds `task_messages`. All with RLS enabled. Column-level definitions are in `packages/db/src/schema.ts`.
+
 ## 4. Retention and Deletion
 
 | Retention class | Target | Period | How it is deleted |
@@ -613,6 +696,8 @@ create table console_sessions (
 | audit | audit_events | 1 year | Same as above |
 | participation | participation_requests | 90 days | Delete the rows |
 | removal | removal_requests | 1 year | Delete the rows |
+| quotes | verification_quotes | 1 day | Delete the rows (they expire after 5 minutes; kept only as a record) |
+| tick_runs | tick_runs | 7 days | Delete the rows |
 
 Deletion is performed once a day by the outbox `PURGE_EVIDENCE` job, and the counts are recorded in audit_events.
 

@@ -1,6 +1,6 @@
 # MVP Plan — Crypto World's Fair 2026
 
-更新日: 2026-10-02  
+Updated: 2026-10-02  
 Submission deadline: 2026-10-12
 
 This file defines product milestones, not coding instructions.

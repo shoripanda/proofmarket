@@ -1,6 +1,6 @@
 # Off-chain Data Model
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 Names are semantic; implementation may map them to SQL tables/documents differently.
 

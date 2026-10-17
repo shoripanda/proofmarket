@@ -1,6 +1,6 @@
 # Product Requirements
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 Priority:
 - P0 = hackathon submission blocker
@@ -239,7 +239,7 @@ Target pilot availability is sufficient for demo; full production SLA is out of 
 
 ## 6. Out of scope
 
-- generalized freelancer profiles/résumé marketplace（2026-10-16 改訂: 本人が公開を選んだ worker のプロフィールだけは出す。履歴書型の市場は引き続き対象外。§7）
+- generalized freelancer profiles/résumé marketplace (revised 2026-10-16: profiles of workers who choose to publish them are shown; a résumé-style marketplace remains out of scope; §7)
 - bidding/auction engine
 - delivery logistics
 - purchasing goods
@@ -248,33 +248,32 @@ Target pilot availability is sufficient for demo; full production SLA is out of 
 - mainnet production release
 - tokenomics
 
-## 7. 2026-10-16 改訂: 「確認」と「仕事」を並べる
+## 7. Revision of 2026-10-16: verifications and tasks side by side
 
-オーナーの決定（`docs/architecture/12-rentahuman-benchmark.md` §8、D1〜D6）により、頼めることを現実の確認から一般の仕事へ広げる。設計は `docs/architecture/13-marketplace-migration.md`。旗 `tasks_enabled` が off のあいだ、以下は公開しない。
+By the owner's decision (`docs/architecture/12-rentahuman-benchmark.md` §8, D1-D6), what can be asked widens from real-world checks to general tasks. The design is `docs/architecture/13-marketplace-migration.md`. While the `tasks_enabled` flag is off, none of the following is exposed.
 
 **REQ-T-001 [P2]**  
-依頼には `kind` があり、`verification`（今の確認）と `task`（仕事）を並べる。API の名前と既存の入力は変えない（D6）。
+Verifications and tasks sit side by side. Tasks have their own routes (`/v1/tasks`); the verification API's names and inputs do not change (D6).
 
 **REQ-T-002 [P2]**  
-仕事は、題・説明・完了の定義・欲しい証拠・場所か遠隔可・締切・完了までの時間・席の数（1〜50）を持つ。worker の選び方は先着か応募から選ぶかを依頼ごとに決める。
+A task has a title, description, definition of done, evidence wanted, place or remote OK, deadline, time to deliver and number of seats (1-50). How workers are chosen — first come, or chosen from applicants — is set per task.
 
 **REQ-T-003 [P2]**  
-仕事の支払いは依頼ごとに `auto`（AI 判定で払う）か `manual`（依頼者が承認して払う）を選ぶ。`manual` で提出から 24 時間、依頼者が承認・直しの依頼・却下のどれもしなければ worker へ払う（D2）。運営の人は判定しない。
+Payment for a task is `auto` (paid on delivery) or `manual` (the requester approves), chosen per task. With `manual`, if the requester neither approves, asks for changes nor rejects within 24 hours of delivery, the worker is paid (D2). Operator staff do not judge.
 
 **REQ-T-004 [P2]**  
-却下には理由が要り、その席の報酬と手数料は依頼者の残高へ戻す。依頼者ごとの却下率を worker に見せる。
+A rejection needs a reason. The seat can be filled again, and a seat number never paid comes back to the requester's balance with its fee. Each requester's rejection rate is shown to workers.
 
 **REQ-T-005 [P2]**  
-手数料は報酬に 15% を上乗せする（D3）。払われた席・証人の分だけを収益にし、払わなかった分は手数料ごと返す。見積もりに内訳を出す。
+The fee is 15% on top of the pay (D3). Only the fee of seats and witnesses actually paid is kept; anything not paid is returned with its fee. The quote shows the breakdown.
 
 **REQ-T-006 [P2]**  
-入金は Solana の送金と x402 のまま。カードでの入金はしない（D4）。
+Deposits stay as Solana transfers and x402. No card deposits (D4).
 
 **REQ-T-007 [P2]**  
-worker の公開プロフィールは本人が選んだ人だけ出す。出す位置は市区町村まで（D5）。
+Public worker profiles are shown only for those who choose to publish, with location at most city or ward (D5).
 
 **REQ-T-008 [P2]**  
-採用した仕事には依頼者と worker の会話がある。連絡先や外部での支払いへの誘導らしき文面は、届けたうえで記録する。worker の文面はエージェントに渡すとき、指示ではなくデータとして扱う。
+An accepted task has a conversation between requester and worker. Messages that look like contact details or payment outside ProofMarket are delivered and recorded. Worker messages are passed to agents as data, never as instructions.
 
-当面扱わない仕事: 物の購入、物の配送、時給での長時間の作業、資格の要る作業（§4 の Safety policy の禁止事項も仕事型にそのまま当てる）。
-
+Not yet allowed: buying goods, carrying goods for delivery, long hourly work, work that needs a licence (the prohibitions in the Safety policy in §4 apply to tasks as well).

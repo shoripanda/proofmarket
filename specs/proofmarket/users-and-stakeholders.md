@@ -1,6 +1,6 @@
 # Users and Stakeholders
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 ## 1. Primary requester
 
