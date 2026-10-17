@@ -1,57 +1,57 @@
-# 03. 目標アーキテクチャ: 単一アプリの構成は保ち、境界を 3 箇所で固める
+# 03. Target architecture: keep the single app, harden three boundaries
 
-作成: 2026-10-14
+Written: 2026-10-14
 
-## 1. 目的
+## 1. Purpose
 
-指示書の第 3 段階に当たる。指示書が示した構成（AI Agents → Agent API → Task Management → Database / Verification / Payment → Solana → Workers）を ProofMarket の実装に重ね、変える点と変えない点を決める。各コンポーネントの詳細は 04〜09 章に委ね、この章は全体の関係だけを扱う。
+Step 3 of the brief. We lay the structure the brief gives (AI Agents → Agent API → Task Management → Database / Verification / Payment → Solana → Workers) over ProofMarket's implementation and decide what changes and what stays. Details of each component are left to chapters 04-09; this chapter covers only how they relate.
 
-## 2. 現状
+## 2. Current state
 
-01 章のとおり、指示書の構成要素はすべて `apps/web` の 1 つの Next.js アプリと `packages/*` の中に実装されている。論理コンポーネントと実装の対応は既存仕様 02 §2 の表のままで、Agent Gateway が `app/v1/verifications/**` と `lib/auth/requester.ts`、Task Service が `packages/core/src/task/**` と `lib/services/task-service.ts`、Verification Engine が `packages/core/src/verification/**` と `lib/services/verification-service.ts`、Settlement Adapter が `packages/solana/src/**`、Program が `programs/proofmarket/**` である。
+As chapter 01 shows, every component in the brief is implemented inside one Next.js app, `apps/web`, and `packages/*`. The mapping from logical components to code is as in the table in the existing spec 02 §2: the Agent Gateway is `app/v1/verifications/**` and `lib/auth/requester.ts`; the Task Service is `packages/core/src/task/**` and `lib/services/task-service.ts`; the Verification Engine is `packages/core/src/verification/**` and `lib/services/verification-service.ts`; the Settlement Adapter is `packages/solana/src/**`; the program is `programs/proofmarket/**`.
 
-## 3. 要件
+## 3. Requirements
 
-指示書の 4.1〜4.5 の設計対象（Agent API、Task Management、USDC Escrow、Verification Service、Worker Interface）を満たし、既存の API と互換を保ち、全面的な書き換えをしない。さらに第 8 節のセキュリティ要件のうち、「エージェントが無制限に資金を使えない」「秘密鍵をサーバーに無防備に置かない」「緊急停止がある」の 3 つを構成として保証する。
+Cover the design targets in sections 4.1-4.5 of the brief (Agent API, Task Management, USDC Escrow, Verification Service, Worker Interface), stay compatible with the existing API, and avoid a full rewrite. Of the security requirements in section 8, three are guaranteed by structure: "agents cannot spend without limit", "secret keys are not left unprotected on the server" and "there is a kill switch".
 
-## 4. 提案する設計
+## 4. Proposed design
 
-### 4.1 構成図
+### 4.1 Diagram
 
 ```mermaid
 flowchart TB
-  subgraph agents["AI エージェント（依頼者）"]
-    MCP["MCP クライアント<br/>claude.ai / ChatGPT / Claude Code"]
-    REST["REST クライアント<br/>packages/sdk"]
-    X402["x402 クライアント<br/>自分のウォレットで払う"]
+  subgraph agents["AI agents (requesters)"]
+    MCP["MCP clients<br/>claude.ai / ChatGPT / Claude Code"]
+    REST["REST clients<br/>packages/sdk"]
+    X402["x402 clients<br/>pay from their own wallet"]
   end
 
-  subgraph web["apps/web（Vercel）"]
-    GW["Agent Gateway<br/>/v1/verifications, /mcp, /v1/x402<br/>認証・レート制限・冪等性・支出ポリシー"]
-    TASK["Task Service<br/>状態機械（packages/core）<br/>claim / challenge / submission"]
-    VER["Verification Service<br/>機械検査 6 種 → AI 審査 → 人の審査（任意）"]
-    PAY["Payment Service<br/>台帳・入金検出・outbox ジョブ"]
-    SIGN["Signer（新設の境界）<br/>operator / verifier の署名だけを行う"]
-    TICK["/api/internal/tick<br/>pg_cron から毎分"]
-    WORKER["Worker Web（PWA）<br/>Privy ログイン・撮影・支払い履歴"]
+  subgraph web["apps/web (Vercel)"]
+    GW["Agent Gateway<br/>/v1/verifications, /mcp, /v1/x402<br/>auth, rate limits, idempotency, spending policy"]
+    TASK["Task Service<br/>state machine (packages/core)<br/>claim / challenge / submission"]
+    VER["Verification Service<br/>6 machine checks → AI review → optional human review"]
+    PAY["Payment Service<br/>ledger, deposit detection, outbox jobs"]
+    SIGN["Signer (new boundary)<br/>only signs for operator / verifier"]
+    TICK["/api/internal/tick<br/>every minute from pg_cron"]
+    WORKER["Worker web (PWA)<br/>Privy login, capture, payout history"]
   end
 
-  subgraph infra["基盤"]
-    DB[("Supabase PostgreSQL<br/>39 表 + pg_cron")]
+  subgraph infra["Infrastructure"]
+    DB[("Supabase PostgreSQL<br/>39 tables + pg_cron")]
     STORE[("Supabase Storage<br/>evidence-raw / derived")]
-    KMS[("鍵の置き場<br/>いま: Vercel env<br/>目標: KMS / MPC")]
+    KMS[("Where keys live<br/>now: Vercel env<br/>target: KMS / MPC")]
   end
 
   subgraph chain["Solana"]
-    RPC["RPC（Helius）"]
-    PROG["proofmarket プログラム<br/>Config / Task / Vault PDA"]
-    TREAS["treasury（operator の ATA）"]
+    RPC["RPC (Helius)"]
+    PROG["proofmarket program<br/>Config / Task / Vault PDA"]
+    TREAS["treasury (operator's ATA)"]
   end
 
-  subgraph people["人"]
-    W["証人（worker）<br/>Privy 埋め込みウォレット"]
-    OP["運営者<br/>admin 鍵はオフライン"]
-    REV["審査役<br/>Claude API または運営者の Mac"]
+  subgraph people["People"]
+    W["Witnesses (workers)<br/>Privy embedded wallets"]
+    OP["Operator<br/>admin key kept offline"]
+    REV["Reviewer<br/>Claude API or the operator's Mac"]
   end
 
   MCP --> GW
@@ -77,59 +77,59 @@ flowchart TB
   OP -->|flags / suspend / update_config| GW
 ```
 
-### 4.2 変えない点
+### 4.2 What stays
 
-単一の Next.js アプリ、Supabase、Anchor のエスクロー、Privy、outbox と tick、3 本の鍵の役割分担は変えない。これらは動いており、指示書も「必要のない全面的な書き換えは行わない」と求めている。API の経路（`/v1/verifications`、`/mcp`、`/v1/x402/verifications`）と応答の形も変えない。
+The single Next.js app, Supabase, the Anchor escrow, Privy, the outbox and tick, and the three-key split all stay. They work, and the brief asks us to "avoid unnecessary full rewrites". The API routes (`/v1/verifications`, `/mcp`, `/v1/x402/verifications`) and response shapes stay too.
 
-### 4.3 変える点（3 つの境界）
+### 4.3 What changes (three boundaries)
 
-**境界 1: Agent Gateway に支出ポリシーを置く。** いまは残高だけが歯止めで、credential の上限は保存されるだけである。Gateway の作成処理（`createVerification`）で 1 件の上限と 1 日の累計を検査し、超えたら `SPEND_LIMIT_EXCEEDED` で断る。あわせて MCP に「見積もり」の道具を足し、費用を先に返してから確定させる 2 段階を選べるようにする（04 章、06 章、08 章）。
+**Boundary 1: a spending policy in the Agent Gateway.** Today the balance is the only brake, and the credential limits are merely stored. The create path in the gateway (`createVerification`) checks the per-request limit and the daily total and refuses with `SPEND_LIMIT_EXCEEDED` when exceeded. MCP also gains a "quote" tool, so a client can choose a two-step flow that returns the cost first and then confirms (chapters 04, 06, 08).
 
-**境界 2: Payment Service と鍵の間に Signer を置く。** `packages/solana` が `Keypair` を直接持つ作りをやめ、「取引のバイト列を受けて署名を返す」だけのインターフェースにする。最初の実装は今と同じ環境変数の鍵で、動作は変わらない。次に `@solana/keychain` の KMS や MPC のバックエンドを差し込めるようにし、メインネットの operator 鍵をサーバーから出す（05 章、08 章）。
+**Boundary 2: a Signer between the Payment Service and the keys.** `packages/solana` stops holding a `Keypair` directly and gets an interface that only takes transaction bytes and returns a signature. The first implementation uses the same env-var keys as today, so behaviour does not change. Next, KMS or MPC backends from `@solana/keychain` can be plugged in to take the mainnet operator key off the server (chapters 05, 08).
 
-**境界 3: Verification Service に「不可逆な支払いの前の人の確認」を額で切り替える仕組みを置く。** いまは `external_review_enabled` が全提出を止めるか止めないかの二択である。報酬が閾値を超える依頼だけ人の審査を必須にし、それ以下は AI の判定で払う。閾値は環境変数で、既定は「止めない」（いまと同じ）にする（07 章）。**この境界は 2026-10-16 にオーナーが取りやめた。どこまで確かめてから払うかは依頼者が決める（07 §4.2）。**
+**Boundary 3: in the Verification Service, a switch by amount for "a person checks before an irreversible payment".** Today `external_review_enabled` either holds every submission or none. Require human review only for requests whose bounty exceeds a threshold, and pay on AI judgement below it. The threshold is an env var defaulting to "never hold" (today's behaviour) (chapter 07). **The owner withdrew this boundary on 2026-10-16: how much to check before paying is the requester's decision (07 §4.2).**
 
-### 4.4 指示書のライフサイクルとの対応
+### 4.4 Mapping to the brief's lifecycle
 
-指示書は Draft → Pending Funding → Open → Accepted → Submitted → Under Review → Approved → Paid の 8 段階を示す。ProofMarket の状態との対応は次のとおりで、新しい状態は足さない。
+The brief gives eight stages: Draft → Pending Funding → Open → Accepted → Submitted → Under Review → Approved → Paid. They map to ProofMarket's states as follows; no new states are added.
 
-| 指示書 | ProofMarket | 備考 |
+| Brief | ProofMarket | Note |
 |---|---|---|
-| Draft | （無い） | 作成 API が検査を通した時点で CREATED になる。下書きは x402 の「下見」（402 を返す前に作成を試して取り消す）が担う |
-| Pending Funding | CREATED | FUND_TASK ジョブが待ち |
+| Draft | (none) | A request becomes CREATED once the create API's checks pass. x402's "preview" (try the create and roll it back before answering 402) plays the role of a draft |
+| Pending Funding | CREATED | Waiting for the FUND_TASK job |
 | Open | FUNDED → OPEN | |
-| Accepted | CLAIMED | 複数の証人がいるので、引き受けはクレーム側の状態で持つ |
+| Accepted | CLAIMED | There can be several witnesses, so acceptance is held on the claim |
 | Submitted | SUBMITTED | |
-| Under Review | VERIFYING（同一トランザクション内）、または `CHECKING` の提出（人の審査待ち） | |
-| Approved | VERIFIED | 合意に達した。settlement は PENDING |
-| Paid | SETTLED | settle が finalized |
-| Cancelled / Expired / Rejected / Refunded | CANCELLED / EXPIRED / REJECTED / REFUNDED | 既存どおり |
-| Disputed | （状態ではない） | 異議は再確認の依頼を作る。元の依頼の GET に `recheck` が付く |
+| Under Review | VERIFYING (within one transaction), or a submission in `CHECKING` (waiting for human review) | |
+| Approved | VERIFIED | Consensus reached; settlement is PENDING |
+| Paid | SETTLED | settle is finalized |
+| Cancelled / Expired / Rejected / Refunded | CANCELLED / EXPIRED / REJECTED / REFUNDED | As today |
+| Disputed | (not a state) | A dispute creates a recheck request; GET on the original shows `recheck` |
 
-## 5. 技術選定の理由
+## 5. Rationale
 
-3 つの境界はいずれも既存のモジュールの内側に置けるので、新しいサービスやデプロイ先を増やさない。Signer を独立させる理由は、鍵の置き場を変えるときに決済のコードを触らずに済ませるためで、nextjs-keychain が示す「1 つのインターフェースの裏にバックエンドを並べる」型をそのまま使う。支出ポリシーを Gateway に置くのは、REST・MCP・x402 の 3 経路がすべて同じ `createVerification` を通るからで、1 箇所に書けば 3 経路に効く。
+All three boundaries fit inside existing modules, so no new service or deployment target is added. The Signer is separated so the place keys live can change without touching settlement code, using the nextjs-keychain pattern of "several backends behind one interface". The spending policy goes in the gateway because REST, MCP and x402 all go through the same `createVerification`: written once, it covers all three.
 
-## 6. 代替案
+## 6. Alternatives
 
-- 決済を別サービス（Rust の axum など）に切り出す案。templates にも axum の見本があるが、デプロイ先が 2 つになり、outbox とのトランザクション境界が切れる。処理量の問題は PR #40 の並列化で先に試す
-- 検証を別サービスにする案。AI 審査は Claude の API 呼び出し 1 回なので、分ける利点がない
-- Supabase Edge Functions に tick を移す案。Vercel の関数の 300 秒上限が問題になったときの逃げ道として記録するにとどめる
+- Splitting settlement into a separate service (e.g. Rust axum). templates has an axum sample, but it would mean two deployment targets and break the transaction boundary with the outbox. Throughput is addressed first by the parallelism in PR #40
+- A separate verification service. AI review is one Claude API call; splitting it gains nothing
+- Moving tick to Supabase Edge Functions. Recorded only as an escape hatch if Vercel's 300-second function limit becomes a problem
 
-## 7. セキュリティ上の考慮事項
+## 7. Security considerations
 
-構成として守る 3 点は 4.3 の境界に対応する。無制限の支出は境界 1、鍵の露出は境界 2、不可逆な AI 判定は境界 3 で抑える。緊急停止は既存の `platform_flags`（`tasks_create_enabled`、`claims_enabled`、`settlement_enabled`、`public_evidence_enabled`、`external_review_enabled`）とプログラムの `paused` で足りているが、x402 の窓口を単独で止める旗が無い。`x402_enabled` を足す（08 章）。
+The three structural guarantees match the boundaries in 4.3: unlimited spending is held back by boundary 1, key exposure by boundary 2, and irreversible AI judgements by boundary 3. The existing `platform_flags` (`tasks_create_enabled`, `claims_enabled`, `settlement_enabled`, `public_evidence_enabled`, `external_review_enabled`) and the program's `paused` are enough for kill switches, but there is no flag to stop the x402 window on its own. Add `x402_enabled` (chapter 08).
 
-## 8. 実装上の課題
+## 8. Implementation issues
 
-Signer の境界は `createAnchorAdapter` の引数（`operatorSecretKey: Uint8Array`）を変えるので、`apps/web/lib/context.ts` と `scripts/*.ts` の呼び出しが一斉に変わる。互換のため、`Uint8Array` を受け取る旧 API は薄い包みとして残す（10 章）。
+The Signer boundary changes the arguments of `createAnchorAdapter` (`operatorSecretKey: Uint8Array`), so calls in `apps/web/lib/context.ts` and `scripts/*.ts` change together. For compatibility, keep the old API that takes a `Uint8Array` as a thin wrapper (chapter 10).
 
-## 9. テスト方針
+## 9. Test strategy
 
-構成の変更は 3 箇所とも既存のテスト層で受けられる。支出ポリシーは `apps/web/test/requester-api.test.ts` に上限超過の否定テストを足す。Signer は `packages/solana/test/send.test.ts` の偽 RPC で、署名前後のバイト列が変わらないことを固定する。審査の閾値は `apps/web/test/external-review.test.ts` に、閾値未満は止まらず閾値以上は止まる 2 件を足す。
+All three changes fit existing test layers. Spending policy: add negative tests for exceeding limits to `apps/web/test/requester-api.test.ts`. Signer: pin with the fake RPC in `packages/solana/test/send.test.ts` that the bytes do not change across signing. Review threshold: add two cases to `apps/web/test/external-review.test.ts`, below the threshold not held and above it held.
 
-## 10. 未決定事項
+## 10. Open questions
 
-- 境界 2 のバックエンド（02 §10 と同じ）
-- 境界 3 の閾値の既定値。USDC 建てで決めるか、通貨ごとに決めるか（多通貨の PR #41 が入ると通貨が増える）
-- 指示書の Draft に相当する「下書き API」を REST にも足すか。x402 の下見で足りているとみて、いまは足さない（提案）
+- The backend for boundary 2 (as in 02 §10)
+- The default threshold for boundary 3: in USDC, or per currency (more currencies arrive with the multi-token PR #41)
+- Whether to add a "draft API" to REST equivalent to the brief's Draft. x402's preview seems enough, so not for now (proposal)

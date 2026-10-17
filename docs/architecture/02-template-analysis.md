@@ -1,186 +1,186 @@
-# 02. テンプレート分析: 置き換える層はない。採るのは 4 つの「型」
+# 02. Template analysis: no layer to replace; four patterns to adopt
 
-作成: 2026-10-14 ／ 対象: [solana-foundation/templates](https://github.com/solana-foundation/templates) コミット `d7961ba`（2026-10-11）／ npm の版と公開日は 2026-10-14 時点
+Written: 2026-10-14 / Scope: [solana-foundation/templates](https://github.com/solana-foundation/templates) commit `d7961ba` (2026-10-11) / npm versions and publish dates as of 2026-10-14
 
-## 1. 目的
+## 1. Purpose
 
-指示書の第 2・第 4 段階に当たる。優先テンプレート 6 本（kit/nextjs、kit/nextjs-anchor、solana-chatgpt-kit、x402-template、eve-pay、phantom-embedded-react）を実物で確かめ、ProofMarket で再利用できるかを判定する。名前から機能を推測しないため、各テンプレートの package.json・README・主要なソースを読んだ。あわせて、調べるうちに関係が深いと分かった 3 本（kit/nextjs-keychain、community/kit-node-solanax402、community/supabase-auth）も扱う。
+This covers steps 2 and 4 of the brief. We checked the six priority templates (kit/nextjs, kit/nextjs-anchor, solana-chatgpt-kit, x402-template, eve-pay, phantom-embedded-react) in their actual code and judged whether ProofMarket can reuse them. To avoid guessing features from names, we read each template's package.json, README and main sources. Three more turned out to be closely related and are covered too (kit/nextjs-keychain, community/kit-node-solanax402, community/supabase-auth).
 
-## 2. 現状: リポジトリの全体像
+## 2. Current state: the repository
 
-templates は `create-solana-dapp` の素材集で、MIT ライセンス（ルートの LICENSE）である。グループは kit（`@solana/kit` 系 10 本）、web3js（8 本、うち 6 本は legacy）、mobile（6 本）、community（21 本）に分かれ、`templates.json` と `TEMPLATES.md` は `pnpm generate` で作られる。AGENTS.md は AI エージェント向けの作業規約で、「ウォレットや取引を自動化するテンプレートは、認証・権限・利用者の承認の境界を明記せよ」と求めている。
+templates is the material for `create-solana-dapp`, under the MIT licence (LICENSE at the root). It is grouped into kit (10 `@solana/kit` templates), web3js (8, of which 6 are legacy), mobile (6) and community (21); `templates.json` and `TEMPLATES.md` are generated with `pnpm generate`. AGENTS.md is a working agreement for AI agents and requires that "templates which automate wallets or transactions state the boundaries of authentication, authority and user approval".
 
-保守の状態は、公式（kit）と community で差がある。`docs/agents/known-gotchas.md` によれば、テンプレートの自動テスト（`test-templates.yml`）は community を対象から外している。2026-10 に加わった `pnpm health`（インストール・ビルド・依存の鮮度を機械で確かめる）は全テンプレートを見るが、community の中身が動くかどうかは保証されない。
+Maintenance differs between official (kit) and community. According to `docs/agents/known-gotchas.md`, the automated template tests (`test-templates.yml`) exclude community. `pnpm health`, added in 2026-10 (machine checks for install, build and dependency freshness), covers every template, but does not guarantee that community code actually works.
 
-6 本の最終コミット日と、依存の鮮度は次のとおり。
+Last commit dates and dependency freshness of the six:
 
-| テンプレート | 最終コミット | 主な依存（テンプレートの指定 → npm の最新） | ライセンス |
+| Template | Last commit | Main dependencies (template's range → latest on npm) | Licence |
 |---|---|---|---|
-| kit/nextjs | 2026-10-02 | `@solana/kit` ^7.0.0 → 8.5.0、`@solana/surfpool` ~1.5.0 | MIT |
-| kit/nextjs-anchor | 2026-09-10 | `@solana/kit` ^6.3.0 → 8.5.0、`anchor-lang` 1.1.2、`litesvm` 0.10.0、Codama 1.10.0 | MIT |
-| community/solana-chatgpt-kit | 2026-09-10 | `x402-solana` ^0.1.1 → 3.0.1、`mcp-handler` 1.1.0 → 2.3.0、`@modelcontextprotocol/sdk` 1.26.0 | MIT |
-| community/x402-template | 2026-09-10 | `x402-next` ^1.1.0 → 1.2.0（最終公開 2026-04-16）、`viem` ^2.38.5 | MIT（README） |
-| community/eve-pay | 2026-07-14 | `eve` 0.22.5 → 0.79.0、`ai` 7.0.22、`@solana/addresses` 6.9.0 | 記載なし（ルートの MIT に従う） |
-| community/phantom-embedded-react | 2026-09-10 | `@phantom/react-sdk` ^2.0.2 → 2.0.4、`@solana/web3.js` ^1.95.0 | ISC（package.json） |
+| kit/nextjs | 2026-10-02 | `@solana/kit` ^7.0.0 → 8.5.0, `@solana/surfpool` ~1.5.0 | MIT |
+| kit/nextjs-anchor | 2026-09-10 | `@solana/kit` ^6.3.0 → 8.5.0, `anchor-lang` 1.1.2, `litesvm` 0.10.0, Codama 1.10.0 | MIT |
+| community/solana-chatgpt-kit | 2026-09-10 | `x402-solana` ^0.1.1 → 3.0.1, `mcp-handler` 1.1.0 → 2.3.0, `@modelcontextprotocol/sdk` 1.26.0 | MIT |
+| community/x402-template | 2026-09-10 | `x402-next` ^1.1.0 → 1.2.0 (last published 2026-04-16), `viem` ^2.38.5 | MIT (README) |
+| community/eve-pay | 2026-07-14 | `eve` 0.22.5 → 0.79.0, `ai` 7.0.22, `@solana/addresses` 6.9.0 | not stated (root MIT applies) |
+| community/phantom-embedded-react | 2026-09-10 | `@phantom/react-sdk` ^2.0.2 → 2.0.4, `@solana/web3.js` ^1.95.0 | ISC (package.json) |
 
-最終コミットが 2026-09-10 で揃っているのは、Next.js を 16.3.4 に上げる一括 PR（#463）のためで、中身の更新ではない。eve-pay は 7 月の初回コミット以来触られておらず、依存の `eve` は 0.22 から 0.79 まで進んでいる。
+The shared last commit of 2026-09-10 comes from a bulk PR upgrading Next.js to 16.3.4 (#463), not from changes to the content. eve-pay has not been touched since its first commit in July, and its dependency `eve` has moved from 0.22 to 0.79.
 
-## 3. 要件（判定の基準）
+## 3. Requirements (judging criteria)
 
-指示書の表の列に従う。対象機能、現在の実装、再利用可能性（高・中・低）、必要な変更、依存関係、セキュリティリスク、推奨対応（採用・部分採用・不採用）。「採用」はコードを取り込むこと、「部分採用」は設計や一部の実装の型を取り入れること、「不採用」は参考にとどめることを指す。既存コードとの互換性を最も重く見る。
+We follow the columns of the brief's table: target feature, current implementation, reusability (high / medium / low), changes needed, dependencies, security risk, recommendation (adopt / partly adopt / reject). "Adopt" means taking in the code, "partly adopt" means taking the design or the shape of part of the implementation, and "reject" means reference only. Compatibility with the existing code weighs most.
 
-## 4. 提案する設計（テンプレートごとの判定）
+## 4. Proposed design (judgement per template)
 
-### 4.1 kit/nextjs: 不採用（テストの型だけ参考にする）
+### 4.1 kit/nextjs: reject (use the test setup as a reference)
 
-`@solana/kit` v7 と `@solana/react` で、ブラウザのウォレットを wallet-standard で見つけ、SOL 送金・SPL トークンの作成と送金・メモを `client.sendTransaction([instruction])` の 1 行で送る見本である。クラスタ切り替え、残高の表示、Explorer リンクつきのトースト、エラーの読み替え（`parseTransactionError`）を含む。
+A sample on `@solana/kit` v7 and `@solana/react` that discovers browser wallets through wallet-standard and sends SOL transfers, SPL token creation and transfers, and memos with one line, `client.sendTransaction([instruction])`. It includes cluster switching, balance display, toasts with Explorer links and error translation (`parseTransactionError`).
 
-差は 2 点ある。第一に、利用者がブラウザのウォレットを持たない。worker は Privy の埋め込みウォレットで一度も署名せず、エージェントは API キーか x402 で入ってくる。ウォレット接続の部品に使い道がない。第二に、`@solana/kit` への移行は `@anchor-lang/core` 1.2 が web3.js v1 を前提にする間は部分的にしかできず、型が二重になる（既存仕様 02 §1 が退けた理由と同じ）。
+Two differences. First, our users have no browser wallet: workers never sign with their Privy embedded wallet, and agents come in with an API key or x402, so wallet-connection components have no use. Second, moving to `@solana/kit` can only be partial while `@anchor-lang/core` 1.2 assumes web3.js v1, leaving two sets of types (the same reason the existing spec 02 §1 rejected it).
 
-参考になるのはテストの作りで、`@solana/surfpool` をプロセス内で起動し、本物のウォレット発見と署名の経路を jsdom で通している。いまは `solana-test-validator` を手で立てて localnet テストを流しており（CLAUDE.md の台帳に起動直後の不安定さの記録がある）、Surfpool に替えれば CI でも本物に近い往復を回せる可能性がある。ただし Surfpool は Rust 製のネイティブアドオンで、Anchor 1.2 の SBPF v3 の `.so` を読めるかは未確認である（11 章 Phase 1 の調査項目）。
+The useful part is the test setup: it starts `@solana/surfpool` in-process and runs real wallet discovery and signing through jsdom. We currently start `solana-test-validator` by hand for localnet tests (the failure log in CLAUDE.md records its flakiness right after start-up); switching to Surfpool might let CI run near-real round trips. Surfpool is a native Rust addon, though, and whether it can load Anchor 1.2's SBPF v3 `.so` is unverified (an investigation item in Phase 1 of chapter 11).
 
-| 項目 | 内容 |
+| Item | Content |
 |---|---|
-| 対象機能 | ウォレット接続、送金、エラー表示、テスト基盤 |
-| 現在の実装 | 接続は Privy、送金はサーバー側の web3.js v1、テストは PGlite と localnet |
-| 再利用可能性 | 低（接続・送金）、中（テスト基盤） |
-| 必要な変更 | 取り込まない。Surfpool は調査のうえ判断 |
-| 依存関係 | `@solana/kit` 7〜8 系、`@solana/surfpool`（ネイティブ） |
-| セキュリティリスク | 無し（クライアント側の見本） |
-| 推奨対応 | 不採用 |
+| Target feature | Wallet connection, transfers, error display, test setup |
+| Current implementation | Privy for connection, server-side web3.js v1 for transfers, PGlite and localnet for tests |
+| Reusability | Low (connection, transfers), medium (test setup) |
+| Changes needed | Do not take it in. Decide on Surfpool after investigating |
+| Dependencies | `@solana/kit` 7-8, `@solana/surfpool` (native) |
+| Security risk | None (client-side sample) |
+| Recommendation | Reject |
 
-### 4.2 kit/nextjs-anchor: 部分採用（Codama によるクライアント生成）
+### 4.2 kit/nextjs-anchor: partly adopt (client generation with Codama)
 
-Anchor の vault プログラム（SOL を自分の PDA に入れて引き出すだけ、Rust 70 行）と、その IDL から Codama で `@solana/kit` 向けの型つきクライアントを生成する流れ（`codama.json`、`app/generated/vault/`）を示す。wallet-standard の署名を `TransactionModifyingSigner` に包む `signer.ts` は、ウォレットが取引を書き換えて返す場合に署名と本文の不一致を防ぐ工夫で、丁寧に書かれている。Cargo の release プロファイル（`overflow-checks = true`、`lto = "fat"`）は ProofMarket の `Cargo.toml` と同じである。
+Shows an Anchor vault program (just deposit SOL into your own PDA and withdraw, 70 lines of Rust) and generating a typed `@solana/kit` client from its IDL with Codama (`codama.json`, `app/generated/vault/`). `signer.ts`, which wraps a wallet-standard signer in a `TransactionModifyingSigner`, is a careful touch that prevents a mismatch between signature and message when the wallet rewrites the transaction. The Cargo release profile (`overflow-checks = true`, `lto = "fat"`) matches ProofMarket's `Cargo.toml`.
 
-vault プログラムそのものは ProofMarket のエスクロー（命令 8 本、Config PDA、LiteSVM テスト 23 本。Token-2022 対応は PR #42 で審査中）に比べて単純すぎ、取り込むものはない。価値があるのは Codama である。いま `packages/sdk/src/onchain.ts`（公開結果ページがブラウザからチェーンを照合する部分）は web3.js v1 で Task 口座を手で読んでいる。Codama で IDL から kit 用のクライアントを生成すれば、ブラウザ側だけを軽い `@solana/kit` に寄せられ、サーバー側の Anchor クライアントはそのまま残せる。IDL は CI で一致を確かめているので、生成物も同じ検査に載せられる。
+The vault program itself is far simpler than ProofMarket's escrow (8 instructions, a Config PDA, 23 LiteSVM tests; Token-2022 support under review in PR #42), so there is nothing to take from it. Codama is what is valuable. Today `packages/sdk/src/onchain.ts` (where the public result page checks the chain from the browser) reads the Task account by hand with web3.js v1. Generating a kit client from the IDL with Codama would move only the browser side to the lighter `@solana/kit` while the server-side Anchor client stays. The IDL is already checked for drift in CI, so the generated code can go through the same check.
 
-| 項目 | 内容 |
+| Item | Content |
 |---|---|
-| 対象機能 | プログラムと Web の連携、PDA、エスクロー |
-| 現在の実装 | `@anchor-lang/core` の `Program` と手書きの PDA 関数（`packages/solana/src/pda.ts`） |
-| 再利用可能性 | 中 |
-| 必要な変更 | `codama.json` を足し、`packages/sdk/onchain` の読み取りを生成クライアントに替える。サーバー側は変えない |
-| 依存関係 | `codama` 1.10、`@codama/nodes-from-anchor`、`@codama/renderers-js`、`@solana/kit`（ブラウザのみ） |
-| セキュリティリスク | 低。生成物は読み取り専用に使う |
-| 推奨対応 | 部分採用（Phase 1） |
+| Target feature | Program ↔ web integration, PDAs, escrow |
+| Current implementation | `Program` from `@anchor-lang/core` and hand-written PDA functions (`packages/solana/src/pda.ts`) |
+| Reusability | Medium |
+| Changes needed | Add `codama.json` and switch the reads in `packages/sdk/onchain` to the generated client. No server change |
+| Dependencies | `codama` 1.10, `@codama/nodes-from-anchor`, `@codama/renderers-js`, `@solana/kit` (browser only) |
+| Security risk | Low. The generated code is used read-only |
+| Recommendation | Partly adopt (Phase 1) |
 
-### 4.3 community/solana-chatgpt-kit: 部分採用（ChatGPT のウィジェット）
+### 4.3 community/solana-chatgpt-kit: partly adopt (the ChatGPT widget)
 
-ChatGPT の Apps SDK 向けに MCP サーバー（`mcp-handler`）を Next.js に置き、Jupiter の交換、SOL 送金、残高、ステーキングを自然言語で動かす。道具ごとに HTML ウィジェットを MCP リソースとして登録し、`openai/outputTemplate` のメタデータで ChatGPT の画面に描かせる。ウォレットは 2 方式で、サーバーに秘密鍵を置く方式（`SOLANA_PRIVATE_KEY`）と、ブラウザのウォレットに署名させる方式がある。後者では送金 API に `x402-solana` で 0.001 USDC の手数料を課し、検証は PayAI の facilitator に委ねる。ヘッダーは x402 v1 の `X-PAYMENT` である。
+Puts an MCP server (`mcp-handler`) for the ChatGPT Apps SDK in Next.js and drives Jupiter swaps, SOL transfers, balances and staking in natural language. Each tool registers an HTML widget as an MCP resource, and ChatGPT renders it through the `openai/outputTemplate` metadata. There are two wallet modes: a secret key on the server (`SOLANA_PRIVATE_KEY`) or signing in the browser wallet. In the latter, the transfer API charges a 0.001 USDC fee with `x402-solana` and delegates verification to the PayAI facilitator. The header is x402 v1 `X-PAYMENT`.
 
-MCP はすでに HTTP で公開され（OAuth 2.1、道具 8 本）、ChatGPT と claude.ai のコネクタとして動いている。したがって MCP の実装は要らない。x402 も既存のほうが進んでおり、v2 のヘッダー、自前の facilitator、仕様の MUST の全検証を持つ。秘密鍵をサーバーに置く方式は指示書が禁じる形なので採らない。
+Our MCP is already public over HTTP (OAuth 2.1, 8 tools) and works as a ChatGPT and claude.ai connector, so no MCP implementation is needed. Our x402 is also further along: v2 headers, our own facilitator, every MUST of the spec verified. A secret key on the server is a form the brief forbids, so we do not take it.
 
-採る価値があるのは、ChatGPT に結果の画面を描かせる型である。いま `get_reality_verification` は JSON を返し、証明ページ（`/r/[id]`）へのリンクを含む。Apps SDK のウィジェットにすれば、写真の判定結果と証明ページを ChatGPT の中に出せる。ただし Apps SDK のメタデータは OpenAI 固有で、claude.ai には効かない。需要が見えてから足す。
+What is worth adopting is having ChatGPT draw a result view. Today `get_reality_verification` returns JSON with a link to the proof page (`/r/[id]`). As an Apps SDK widget it could show the photo verdict and the proof page inside ChatGPT. Apps SDK metadata is OpenAI-specific and has no effect in claude.ai; add it once there is demand.
 
-| 項目 | 内容 |
+| Item | Content |
 |---|---|
-| 対象機能 | AI エージェントと Solana の接続、道具の呼び出し、権限 |
-| 現在の実装 | リモート MCP（`apps/web/app/mcp`、`packages/mcp`）、x402 v2 |
-| 再利用可能性 | 低（MCP・x402）、中（ウィジェット） |
-| 必要な変更 | MCP リソースにウィジェットの HTML を足す。`mcp-handler` は使わず既存の `@modelcontextprotocol/sdk` で書く |
-| 依存関係 | 追加なし（Apps SDK のメタデータは文字列） |
-| セキュリティリスク | ウィジェットは iframe で動く。秘密を含めない |
-| 推奨対応 | 部分採用（Phase 3、任意） |
+| Target feature | Connecting AI agents to Solana, tool calls, authority |
+| Current implementation | Remote MCP (`apps/web/app/mcp`, `packages/mcp`), x402 v2 |
+| Reusability | Low (MCP, x402), medium (widget) |
+| Changes needed | Add the widget HTML as an MCP resource, written with the existing `@modelcontextprotocol/sdk`, not `mcp-handler` |
+| Dependencies | None added (Apps SDK metadata is strings) |
+| Security risk | The widget runs in an iframe; keep secrets out of it |
+| Recommendation | Partly adopt (Phase 3, optional) |
 
-### 4.4 community/x402-template: 不採用
+### 4.4 community/x402-template: reject
 
-`x402-next` の `paymentMiddleware` でページに支払いの門を付ける見本である。宛先、ネットワーク（`solana-devnet`）、facilitator（`https://x402.org/facilitator`）、Coinbase Developer Platform のクライアントキーを環境変数で与え、Coinbase Pay の画面で人が払う。型は EVM 向けの `viem` の `Address` を流用している。README には CDP のクライアントキーがそのまま書かれており、見本としての注意が要る。
+A sample that puts a payment gate on a page with `paymentMiddleware` from `x402-next`. The recipient, network (`solana-devnet`), facilitator (`https://x402.org/facilitator`) and a Coinbase Developer Platform client key come from env vars, and a person pays on the Coinbase Pay screen. Types borrow EVM's `viem` `Address`. The README contains a CDP client key in plain text, which deserves a caution as a sample.
 
-既存の x402 とは利用者が違う。このテンプレートは**人がブラウザで**払う流れで、セッション Cookie を発行する。こちらは**エージェントがプログラムで**払う流れで、支払いが依頼そのものの認証になる。さらに `x402-next` 1.2.0 の最終公開は 2026-04-16 で、Coinbase の x402 は同じ時期に `@x402/core`・`@x402/svm`（2.28 系、2026-09 公開）へ移っている。古い方の系統に乗る理由がない。
+The user differs from ours. This template is a **person paying in a browser**, and it issues a session cookie. Ours is an **agent paying programmatically**, where the payment itself authenticates the request. Also, `x402-next` 1.2.0 was last published on 2026-04-16, and Coinbase's x402 moved to `@x402/core` and `@x402/svm` (2.28, published 2026-09) around the same time. There is no reason to ride the older line.
 
-| 項目 | 内容 |
+| Item | Content |
 |---|---|
-| 対象機能 | x402、HTTP ベースの決済、USDC 支払い、支払い検証 |
-| 現在の実装 | `POST /v1/x402/verifications`（v2、自前 facilitator） |
-| 再利用可能性 | 低 |
-| 必要な変更 | 無し |
-| 依存関係 | `x402-next`（保守が止まりつつある）、`viem`、CDP のキー |
-| セキュリティリスク | 外部の facilitator と CDP に依存。README に鍵の直書き |
-| 推奨対応 | 不採用 |
+| Target feature | x402, HTTP-based payment, USDC payment, payment verification |
+| Current implementation | `POST /v1/x402/verifications` (v2, our own facilitator) |
+| Reusability | Low |
+| Changes needed | None |
+| Dependencies | `x402-next` (maintenance winding down), `viem`, a CDP key |
+| Security risk | Depends on an external facilitator and CDP; key written in the README |
+| Recommendation | Reject |
 
-### 4.5 community/eve-pay: 部分採用（承認の門と事前照合の型）
+### 4.5 community/eve-pay: partly adopt (the approval gate and re-checking terms)
 
-Vercel の Eve（エージェントの実行基盤）で、HTTP 402 の支払い条件を読み、人の承認を待ってから Pay.sh のサンドボックスで払う見本である。名前に x402 とあるが、使っている手順は MPP（`WWW-Authenticate` ヘッダーに base64url の条件を入れる方式）で、x402 ではない。仕組みは小さく、`inspect_stock_quote` が条件（額、mint、宛先、ネットワーク）を取り出し、`buy_stock_quote` が `approval: always()` で必ず人を止め、承認後にもう一度条件を取り直して 1 つでも違えば払わない。README の「本番に進むときの境界」は実用的で、毎回の承認か別途審査した支出ポリシー、宛先・額・mint・ネットワーク・手数料支払者の表示と検証、上限と宛先の許可リストをコードで持つこと、支払いに冪等キーを使うこと、確定をチェーンで確かめること、署名権限を KMS か MPC に置くこと、を挙げる。
+A sample on Vercel's Eve (an agent runtime) that reads HTTP 402 payment terms, waits for a person's approval and then pays in a Pay.sh sandbox. Despite x402 in the name, the protocol it uses is MPP (terms base64url-encoded in a `WWW-Authenticate` header), not x402. The mechanism is small: `inspect_stock_quote` extracts the terms (amount, mint, recipient, network), `buy_stock_quote` always stops for a person with `approval: always()`, and after approval it fetches the terms again and refuses to pay if anything differs. The README's "boundaries before production" are practical: approval every time or a separately reviewed spending policy; show and verify recipient, amount, mint, network and fee payer; keep limits and a recipient allow list in code; use an idempotency key for payments; confirm settlement on chain; keep signing authority in a KMS or MPC.
 
-払われる側である ProofMarket でも、同じ型が 2 箇所で効く。1 つは `scripts/x402-agent.ts`（見本のエージェント）で、402 を受け取ってそのまま払う。条件を表示して承認を待ち、送る前に条件を取り直す形に直すと、見本としての教育効果が上がる。もう 1 つは MCP の道具で、`request_reality_verification` は呼ばれた時点で残高を引き当てる。費用を先に返して確認を取る「見積もり → 確定」の 2 段階を設けると、エージェントの実行基盤（Eve や Claude の承認機能）が人を止めやすくなる（04 章）。Eve 自体は採らない。エージェントを動かす側ではないからである。
+ProofMarket is the one being paid, but the same pattern helps in two places. One is `scripts/x402-agent.ts` (our sample agent), which pays a 402 as soon as it receives it; showing the terms, waiting for approval and re-fetching the terms before sending would make it a better example. The other is the MCP tools: `request_reality_verification` reserves the balance the moment it is called. A two-step "quote → confirm" that returns the cost first makes it easier for agent runtimes (Eve, Claude's approval features) to stop for a person (chapter 04). We do not adopt Eve itself; we are not the side that runs agents.
 
-| 項目 | 内容 |
+| Item | Content |
 |---|---|
-| 対象機能 | エージェントの決済、支払い権限、承認、支出上限、不正利用防止 |
-| 現在の実装 | 見本エージェントは承認なしで払う。MCP は呼ばれた時点で引き当てる |
-| 再利用可能性 | 中（型のみ） |
-| 必要な変更 | 見本エージェントの承認と事前照合、MCP の見積もり段階、支出上限の検査（08 章） |
-| 依存関係 | 追加なし |
-| セキュリティリスク | 無し。むしろ下げる |
-| 推奨対応 | 部分採用（Phase 3） |
+| Target feature | Agent payments, payment authority, approval, spending limits, abuse prevention |
+| Current implementation | The sample agent pays without approval; MCP reserves at call time |
+| Reusability | Medium (pattern only) |
+| Changes needed | Approval and term re-check in the sample agent, a quote step in MCP, checking spending limits (chapter 08) |
+| Dependencies | None added |
+| Security risk | None; it lowers risk |
+| Recommendation | Partly adopt (Phase 3) |
 
-### 4.6 community/phantom-embedded-react: 不採用（代替候補として記録）
+### 4.6 community/phantom-embedded-react: reject (recorded as an alternative)
 
-Phantom の埋め込みウォレット SDK（`@phantom/react-sdk` 2.0）で、Google・Apple・Phantom・ブラウザ拡張の 4 通りからログインし、Solana のアドレスを得る見本である。`PhantomProvider` に appId と redirectUrl を渡すだけで、画面は接続ボタンと残高表示にとどまる。README には Phantom の MCP サーバー（`@phantom/mcp-server`、道具 28 本）の案内があり、Claude Desktop からウォレットを操作できる。
+A sample of Phantom's embedded wallet SDK (`@phantom/react-sdk` 2.0) that logs in with Google, Apple, Phantom or a browser extension and gets a Solana address. You pass an appId and redirectUrl to `PhantomProvider`; the screen is just a connect button and a balance. The README points to Phantom's MCP server (`@phantom/mcp-server`, 28 tools), which lets Claude Desktop operate the wallet.
 
-worker 側の要件（メールか Google でログインし、ウォレットを意識させず、署名させない）は Privy で満たしており、Phantom に替えても worker 体験は変わらない。移行には worker 全員のウォレットの付け替えが要り、支払い履歴の宛先も変わる。採らない。ただし、Privy の価格や方針が変わったときの代替候補として、同じ埋め込みウォレットの型であることを記録しておく。
+Privy already meets the worker requirements (log in with email or Google, never think about a wallet, never sign), and switching to Phantom would not change the worker experience. Migrating would mean re-assigning every worker's wallet and changing the destination of past payouts. Rejected. We record it as an alternative of the same embedded-wallet kind in case Privy's pricing or policy changes.
 
-もう 1 つの接点は依頼者側で、Phantom の MCP サーバーを持つ Claude なら、x402 の支払い取引をその場で署名できる。ProofMarket の `/developers` ページで接続方法の 1 つとして案内する価値はある（Phase 3、文書のみ）。
+The other point of contact is the requester side: a Claude with Phantom's MCP server could sign x402 payment transactions on the spot. Worth mentioning on `/developers` as one way to connect (Phase 3, documentation only).
 
-| 項目 | 内容 |
+| Item | Content |
 |---|---|
-| 対象機能 | ウォレット認証、接続状態、セッション、モバイル対応 |
-| 現在の実装 | Privy（`@privy-io/react-auth` 3.46） |
-| 再利用可能性 | 低 |
-| 必要な変更 | 無し |
-| 依存関係 | `@phantom/react-sdk`、Phantom Portal の appId |
-| セキュリティリスク | 移行時にウォレットの付け替えが要る |
-| 推奨対応 | 不採用 |
+| Target feature | Wallet auth, connection state, sessions, mobile |
+| Current implementation | Privy (`@privy-io/react-auth` 3.46) |
+| Reusability | Low |
+| Changes needed | None |
+| Dependencies | `@phantom/react-sdk`, an appId from Phantom Portal |
+| Security risk | Migration requires re-assigning wallets |
+| Recommendation | Reject |
 
-### 4.7 追加で調べた 3 本
+### 4.7 Three more templates
 
-**kit/nextjs-keychain: 採用候補（Phase 2〜5）。** `@solana/keychain` 2.0 の `SolanaSigner` という 1 つのインターフェースの裏に、ローカル鍵、HashiCorp Vault、AWS KMS、GCP KMS、Turnkey、CDP、Privy、Fireblocks、Dfns、Para、Crossmint、Openfort、Utila の 13 の署名バックエンドを置き、環境変数だけで切り替える。鍵はブラウザに出ず、サーバーの Route Handler が署名だけを行う。これは指示書の「秘密鍵をサーバー上に無防備に保存しないこと」と、15 §4.2 の operator 鍵の課題に直接答える。制約は、`SolanaSigner` が `@solana/kit` の `TransactionPartialSigner` を拡張しており、ProofMarket の web3.js v1 の `Keypair` とは型が違う点である。ただし署名の対象は取引のバイト列なので、`VersionedTransaction.serialize()` した本文を kit の形に変換して署名を受け取る薄い橋で足りる（05 章と 08 章）。テンプレートの署名 API に認証が無い点は README 自身が注意している。
+**kit/nextjs-keychain: candidate to adopt (Phases 2-5).** Puts 13 signing backends behind one interface, `SolanaSigner` from `@solana/keychain` 2.0 — a local key, HashiCorp Vault, AWS KMS, GCP KMS, Turnkey, CDP, Privy, Fireblocks, Dfns, Para, Crossmint, Openfort and Utila — switched by env vars alone. Keys never reach the browser; a server route handler only signs. This directly answers the brief's "do not store secret keys unprotected on the server" and the operator-key problem in 15 §4.2. The catch: `SolanaSigner` extends `@solana/kit`'s `TransactionPartialSigner`, a different type from ProofMarket's web3.js v1 `Keypair`. What gets signed is the transaction bytes, though, so a thin bridge suffices: convert the message from `VersionedTransaction.serialize()` into kit's shape and take the signature back (chapters 05 and 08). The template's own README warns that its signing API has no authentication.
 
-**community/kit-node-solanax402: 不採用。** Express の facilitator とサーバーを分けた x402 の実装で、SOL の送金と自前の nonce による再送防止を持つ。既存の実装は facilitator を同じプロセスに持ち、再送防止は取引 ID（手数料支払者の署名）を主キーにした `x402_payments` で行っている。構成を分ける理由はいまのところない。
+**community/kit-node-solanax402: reject.** An x402 implementation with separate Express facilitator and server, SOL transfers and its own nonce for replay protection. Ours keeps the facilitator in-process and protects against replay with `x402_payments` keyed by the transaction ID (the fee payer's signature). There is no reason to split the service for now.
 
-**community/supabase-auth: 不採用。** Supabase の Web3 認証でウォレット署名によりログインする。ウォレット署名を認証に使わない方針（`api-contract.md`）があり、Supabase の Auth も使っていない。
+**community/supabase-auth: reject.** Logs in with a wallet signature through Supabase's Web3 auth. We have a policy of not using wallet signatures for authentication (`api-contract.md`), and do not use Supabase Auth.
 
-## 5. 技術選定の理由（判定のまとめ）
+## 5. Rationale (summary of judgements)
 
-| テンプレート | 判定 | 理由の要点 |
+| Template | Judgement | Key reason |
 |---|---|---|
-| kit/nextjs | 不採用 | 利用者がブラウザのウォレットを持たない。kit 移行は Anchor クライアントに阻まれる |
-| kit/nextjs-anchor | 部分採用 | Codama でブラウザ側の読み取りクライアントを生成できる |
-| solana-chatgpt-kit | 部分採用 | ChatGPT のウィジェットの型だけ。MCP と x402 は既存のほうが進んでいる |
-| x402-template | 不採用 | 人向けの流れで、依存の系統が古い |
-| eve-pay | 部分採用 | 承認の門と事前照合の型を見本エージェントと MCP に移す |
-| phantom-embedded-react | 不採用 | Privy で足りる。代替候補として記録 |
-| nextjs-keychain | 採用候補 | operator 鍵を KMS や MPC に逃がす署名インターフェース |
-| kit-node-solanax402 | 不採用 | facilitator を分ける理由がない |
-| supabase-auth | 不採用 | ウォレット署名での認証は方針で退けている |
+| kit/nextjs | Reject | Users have no browser wallet; moving to kit is blocked by the Anchor client |
+| kit/nextjs-anchor | Partly adopt | Codama can generate the browser-side read client |
+| solana-chatgpt-kit | Partly adopt | Only the ChatGPT widget pattern; our MCP and x402 are further along |
+| x402-template | Reject | Built for people paying, on an outdated dependency line |
+| eve-pay | Partly adopt | Move the approval gate and term re-check into the sample agent and MCP |
+| phantom-embedded-react | Reject | Privy suffices; recorded as an alternative |
+| nextjs-keychain | Candidate to adopt | A signing interface that moves the operator key to a KMS or MPC |
+| kit-node-solanax402 | Reject | No reason to split out the facilitator |
+| supabase-auth | Reject | Wallet-signature authentication is ruled out by policy |
 
-テンプレートを使うこと自体を目的にしない、という指示書の最重要指示に照らすと、コードをそのまま取り込むものは 1 本もない。これは ProofMarket が 10 月 2 日からの 12 日間で既にテンプレート相当の層を作り終えているためで、テンプレートの価値は「公式がどの境界を守れと言っているか」の確認にある。
+Against the brief's most important instruction — do not make using templates the goal — not one template's code is taken in as is. That is because in the 12 days since 2 October ProofMarket had already built the layers the templates offer; their value is in confirming which boundaries the official side says to keep.
 
-## 6. 代替案
+## 6. Alternatives
 
-- `@solana/kit` へ全面移行する案。Anchor 1.2 の TS クライアントが web3.js v1 を要求するため、エスクローの送信部分を手書きに戻す必要があり、いまは割に合わない。Anchor が kit 対応のクライアントを出した時点で再評価する
-- `x402-next` や `x402-solana` の npm パッケージに検証を置き換える案。既存の自前実装は仕様の MUST を網羅し、テストがある。外部パッケージの版の揺れ（`x402-solana` は 0.1 から 3.0 まで 1 年で進んだ）を受けるほうが危ない
-- Phantom の埋め込みウォレットに替える案。4.6 のとおり退ける
+- Moving fully to `@solana/kit`. Anchor 1.2's TS client requires web3.js v1, so the escrow send path would have to be hand-written again; not worth it now. Re-evaluate when Anchor ships a kit client
+- Replacing verification with the `x402-next` or `x402-solana` npm packages. Our own implementation covers every MUST in the spec and has tests. Absorbing version churn from an external package (`x402-solana` went from 0.1 to 3.0 in a year) is riskier
+- Switching to Phantom's embedded wallet. Rejected as in 4.6
 
-## 7. セキュリティ上の考慮事項
+## 7. Security considerations
 
-テンプレートから学ぶべき境界は AGENTS.md の一文に集約される。「エージェント、MCP、ウォレット、取引の自動化のテンプレートは、認証・権限・利用者の承認の境界を明記せよ」。ProofMarket の `/developers` と MCP の道具の説明は、費用がいつ引き当てられるかを明記していない（推測: 利用者は `request_reality_verification` を呼んだ時点で残高が減ることを知らない）。04 章でこの境界を文書と API の両方に書く。
+The boundary to learn from the templates is summed up by one line in their AGENTS.md: "templates for agents, MCP, wallets and transaction automation must state the boundaries of authentication, authority and user approval". ProofMarket's `/developers` page and MCP tool descriptions do not say when the cost is reserved (guess: users do not know the balance drops the moment `request_reality_verification` is called). Chapter 04 writes this boundary into both the docs and the API.
 
-テンプレートの依存を取り込む場合の注意は 2 点ある。community の依存は固定されていないものが多く（`x402-solana` ^0.1.1）、`pnpm install` した時点で README と違う版になる。もう 1 点は Surfpool のようなネイティブアドオンで、`pnpm-workspace.yaml` の `allowBuilds` に明示しないと postinstall が止まる（CLAUDE.md の台帳 2026-10-02）。
+Two cautions if template dependencies are taken in. Many community dependencies are not pinned (`x402-solana` ^0.1.1), so `pnpm install` yields different versions from the README. And native addons such as Surfpool need an explicit entry in `allowBuilds` in `pnpm-workspace.yaml`, or postinstall is blocked (failure log in CLAUDE.md, 2026-10-02).
 
-## 8. 実装上の課題
+## 8. Implementation issues
 
-- Codama の生成物は `biome` の整形対象から外すか、生成後に整形するかを決める（IDL と同じく CI で一致を確かめる）
-- `@solana/keychain` と web3.js v1 の橋は小さいが、署名の前後で取引のバイト列が変わらないことをテストで固定する
-- Apps SDK のウィジェットは ChatGPT の開発者モードが要り、手元で確かめるにはトンネルが必要（CLAUDE.md の台帳 2026-10-03 に HMR の注意がある）
+- Decide whether Codama's output is excluded from `biome` formatting or formatted after generation (check for drift in CI, like the IDL)
+- The bridge between `@solana/keychain` and web3.js v1 is small, but a test must pin that the transaction bytes do not change across signing
+- Apps SDK widgets need ChatGPT's developer mode, and testing locally needs a tunnel (the failure log in CLAUDE.md, 2026-10-03, has a note on HMR)
 
-## 9. テスト方針
+## 9. Test strategy
 
-採り入れる 4 つの型それぞれに、既存のテスト層で受ける場所がある。Codama の生成クライアントは `packages/sdk/test/onchain.test.ts` の偽口座で、keychain の橋は `packages/solana/test/send.test.ts` の偽 RPC と localnet で、MCP の見積もり段階は `apps/web/test/mcp-http.test.ts` で、見本エージェントの承認は `apps/web/test/x402.test.ts` の 402 往復で確かめる。
+Each of the four adopted patterns has a place in the existing test layers: the Codama client against fake accounts in `packages/sdk/test/onchain.test.ts`, the keychain bridge against the fake RPC in `packages/solana/test/send.test.ts` and localnet, the MCP quote step in `apps/web/test/mcp-http.test.ts`, and the sample agent's approval through the 402 round trip in `apps/web/test/x402.test.ts`.
 
-## 10. 未決定事項
+## 10. Open questions
 
-- Surfpool を CI の localnet 代わりに使うか（SBPF v3 の読み込み可否が未確認）
-- ChatGPT のウィジェットを作るか（需要が未確認）
-- keychain のバックエンドをどれにするか（AWS KMS、GCP KMS、Privy のサーバーウォレット、Turnkey のどれも ProofMarket では未検証。費用と Vercel からの到達性で決める）
+- Whether to use Surfpool instead of localnet in CI (loading SBPF v3 is unverified)
+- Whether to build the ChatGPT widget (demand unverified)
+- Which keychain backend to use (AWS KMS, GCP KMS, Privy server wallets and Turnkey are all unverified for ProofMarket; decide on cost and reachability from Vercel)

@@ -1,138 +1,137 @@
-# 11. 実装ロードマップ: Phase 2〜4 の大半は済んでいる。残りは歯止めと本番運用
+# 11. Implementation roadmap: most of Phases 2-4 is done; what remains is brakes and production operations
 
-作成: 2026-10-14 ／ **実装はこの文書の承認を待つ。** 承認までコードは変えない
+Written: 2026-10-14 / **Implementation waits for approval of this document.** No code changes until then
 
-## 1. 目的
+## 1. Purpose
 
-指示書第 7 節の Phase 1〜5 を、01 章の評価に照らして「済んだもの」と「残るもの」に分け、残るものについて作業・依存・難易度・完了条件を書く。難易度は、小（1 PR、半日）、中（1〜2 PR、1〜2 日）、大（複数 PR か外部の手配を伴う）の 3 段階とする。
+Split Phases 1-5 of section 7 of the brief into "done" and "remaining" against chapter 01's ratings, and for what remains give the work, dependencies, difficulty and done criteria. Difficulty has three levels: small (one PR, half a day), medium (1-2 PRs, 1-2 days), large (several PRs or arrangements with outside parties).
 
-## 2. 現状
+## 2. Current state
 
-指示書の Phase と実装の対応を先に示す。
+The brief's phases mapped to the implementation:
 
-| Phase | 指示書の内容 | 状態 |
+| Phase | Brief | State |
 |---|---|---|
-| 1 基盤の整理 | 既存アーキテクチャの確認、Solana SDK の整理、ウォレット接続の改善、API 仕様の統一 | 確認はこの文書群で完了。SDK は web3.js v1 と Anchor で統一済み。ウォレットは Privy で改善の余地なし。API 仕様は OpenAPI で統一済み |
-| 2 決済基盤 | USDC エスクロー、資金預入確認、報酬解放、返金処理、決済テスト | 実装済み（Devnet）。残るのはメインネットの運用と鍵の置き場 |
-| 3 AI エージェント連携 | Agent API、API キー認証、依頼作成、依頼状況取得、支払い連携 | 実装済み。残るのは一覧、見積もり、支出ポリシー |
-| 4 成果物検証 | アップロード、AI による検証、承認・却下、再提出、紛争処理 | 実装済み（承認・却下は設計で置かない）。残るのは額による人の審査 |
-| 5 本番運用 | セキュリティ監査、負荷テスト、監視・ログ、障害復旧、Mainnet 対応 | 監視と障害手順は仕様 08 §5〜6 にあり動いている。監査、負荷テスト、Mainnet は未了 |
+| 1 Groundwork | Review the existing architecture, tidy the Solana SDK, improve wallet connection, unify the API spec | The review is done in these documents. The SDK is unified on web3.js v1 and Anchor. Wallets are Privy, with nothing to improve. The API spec is unified in OpenAPI |
+| 2 Settlement | USDC escrow, deposit confirmation, releasing rewards, refunds, settlement tests | Implemented (Devnet). Remaining: mainnet operations and where keys live |
+| 3 AI agent integration | Agent API, API key auth, creating requests, getting status, payment integration | Implemented. Remaining: list, quotes, spending policy |
+| 4 Verifying deliverables | Uploads, AI verification, approve/reject, resubmission, disputes | Implemented (approve/reject left out by design). Remaining: human review by amount |
+| 5 Production | Security audit, load testing, monitoring and logs, recovery, mainnet | Monitoring and recovery procedures are in spec 08 §5-6 and working. Audit, load testing and mainnet not done |
 
-## 3. 要件
+## 3. Requirements
 
-各 Phase に、作業、依存、難易度、完了条件を明記する。承認が要る作業は運営者の作業として分ける。
+For each phase, state the work, dependencies, difficulty and done criteria. Work that needs approval is listed as operator work.
 
-## 4. 提案する設計: 残る作業
+## 4. Proposed design: remaining work
 
-### Phase 1: 基盤の整理（残り 3 件）
+### Phase 1: groundwork (3 left)
 
-| 作業 | 依存 | 難易度 | 完了条件 |
+| Work | Depends on | Difficulty | Done when |
 |---|---|---|---|
-| 1-a Signer の境界（05 §4.1、移行 M2） | 無し。PR #40 が先なら `send.ts` はその上で | 中 | `createAnchorAdapter` が `Signer` を受け、`memory` で既存のテスト（Web 243、solana の単体、localnet 7）が全て通る。署名前後のバイト列が一致するテストが 1 件以上ある |
-| 1-b Codama の生成クライアント（02 §4.2、M7） | 1-a と独立 | 小 | `codama.json` と生成物がリポジトリにあり、CI が IDL との一致を確かめる。`packages/sdk/test/onchain.test.ts` が通る |
-| 1-c Surfpool の調査（02 §4.1） | 無し | 小（調査のみ） | Anchor 1.2 の `.so` を読んで `initialize_task` が通るかの結果を `docs/` に記録。通れば localnet テストの置き換えを Phase 5 に積む |
+| 1-a The Signer boundary (05 §4.1, migration stage M2) | Nothing. If PR #40 lands first, `send.ts` builds on it | Medium | `createAnchorAdapter` takes a `Signer`, and with `memory` all existing tests pass (web 243, solana unit tests, localnet 7). At least one test pins that bytes match before and after signing |
+| 1-b The Codama-generated client (02 §4.2, M7) | Independent of 1-a | Small | `codama.json` and the generated code are in the repo, CI checks them against the IDL, and `packages/sdk/test/onchain.test.ts` passes |
+| 1-c Investigating Surfpool (02 §4.1) | Nothing | Small (investigation only) | A record in `docs/` of whether it loads Anchor 1.2's `.so` and runs `initialize_task`. If it does, queue replacing the localnet tests in Phase 5 |
 
-### Phase 2: 決済基盤（残り 4 件）
+### Phase 2: settlement (4 left)
 
-| 作業 | 依存 | 難易度 | 完了条件 |
+| Work | Depends on | Difficulty | Done when |
 |---|---|---|---|
-| 2-a PR #39〜#42 の取り込みと Devnet への v1.3 配置（M0） | 運営者のマージと配置 | 中（運営者） | 12 §9a のとおり Devnet で `devnet-setup --test-mints` が通り、`ASSETS_ENABLED` の通貨で資金化と支払いが 1 件ずつ通る |
-| 2-b treasury の上限と警告（05 §4.3） | 無し | 小 | 環境変数 `TREASURY_MAX_USDC`・`TREASURY_MAX_SOL` を超えると tick が警告ログを出す。テスト 1 件 |
-| 2-c 日次の突き合わせ（06 §4.2、M6） | 無し | 小 | 前日の CONFIRMED と Task 口座の不一致で `reconciliation_mismatch` が記録される。テスト 1 件 |
-| 2-d KMS バックエンド（05 §4.1、M8） | 1-a、運営者の契約 | 大 | Devnet で `keychain` バックエンドの往復が通り、本番の operator と verifier が環境変数から消える |
+| 2-a Merging PRs #39-#42 and deploying v1.3 to Devnet (M0) | The operator merges and deploys | Medium (operator) | As in 12 §9a, `devnet-setup --test-mints` passes on Devnet and one funding and one payout pass for each currency in `ASSETS_ENABLED` |
+| 2-b The treasury cap and warning (05 §4.3) | Nothing | Small | The tick logs a warning above the env vars `TREASURY_MAX_USDC` and `TREASURY_MAX_SOL`; one test |
+| 2-c Daily reconciliation (06 §4.2, M6) | Nothing | Small | A mismatch between yesterday's CONFIRMED rows and Task accounts records `reconciliation_mismatch`; one test |
+| 2-d A KMS backend (05 §4.1, M8) | 1-a, an operator contract | Large | A `keychain` backend round trip passes on Devnet, and production operator and verifier keys disappear from env vars |
 
-### Phase 3: AI エージェント連携（残り 5 件）
+### Phase 3: AI agent integration (5 left)
 
-| 作業 | 依存 | 難易度 | 完了条件 |
+| Work | Depends on | Difficulty | Done when |
 |---|---|---|---|
-| 3-a 移行 0030（09 章、M1） | 無し | 小 | 本番に当たり、`migrations.test.ts` が通る |
-| 3-b 支出ポリシーと `x402_enabled`（04 §4.3、08 §4.1・§4.3、M3） | 3-a | 小 | 上限超過が既存のエラーコードで返る。null は無制限。旗 false で x402 が 503。否定テスト 4 件以上 |
-| 3-c 一覧 API（04 §4.1、M4） | 3-a | 小 | `GET /v1/verifications` と MCP の `list_reality_verifications` が動き、他人の依頼が出ない |
-| 3-d 見積もりと確定（04 §4.2、M4） | 3-a | 中 | `mode: "quote"` と `confirm: false` が残高を引き当てず、`quote_id` で確定できる。本文違いは 409。失効 5 分 |
-| 3-e 文書と見本（02 §4.5・§4.6、M9） | 3-d | 小 | `/developers` に「費用が引き当てられる時点」と承認の勧め、Phantom MCP での支払いの案内。`scripts/x402-agent.ts` が条件を表示して承認を待つ |
+| 3-a Migration 0030 (chapter 09, M1) | Nothing | Small | Applied in production; `migrations.test.ts` passes |
+| 3-b Spending policy and `x402_enabled` (04 §4.3, 08 §4.1 and §4.3, M3) | 3-a | Small | Exceeding a limit returns the existing error codes; null means no limit; with the flag false x402 returns 503. Four or more negative tests |
+| 3-c List API (04 §4.1, M4) | 3-a | Small | `GET /v1/verifications` and MCP `list_reality_verifications` work and never show others' requests |
+| 3-d Quote and confirm (04 §4.2, M4) | 3-a | Medium | `mode: "quote"` and `confirm: false` reserve nothing, and `quote_id` confirms. A different body gets 409. Expiry 5 minutes |
+| 3-e Docs and samples (02 §4.5, §4.6, M9) | 3-d | Small | `/developers` says when the cost is reserved and recommends approval, and explains paying with Phantom MCP. `scripts/x402-agent.ts` shows the terms and waits for approval |
 
-### Phase 4: 成果物検証（残り 2 件）
+### Phase 4: verifying deliverables (2 left)
 
-| 作業 | 依存 | 難易度 | 完了条件 |
+| Work | Depends on | Difficulty | Done when |
 |---|---|---|---|
-| 4-a 額による人の審査（07 §4.2、M5） | 無し | 小 | `HUMAN_REVIEW_MIN_TOTAL` 以上の依頼が `CHECKING` で止まり、30 分で通らない。証人の画面に表示が出る。テスト 3 件 |
-| 4-b 審査の実行者の記録（07 §4.4） | 無し | 小 | `evidence_checks.details` にモデル名と実行者が入る |
+| 4-a Human review by amount (07 §4.2, M5) | Nothing | Small | Requests at or above `HUMAN_REVIEW_MIN_TOTAL` wait in `CHECKING` and do not pass after 30 minutes; the witness screen says so; three tests |
+| 4-b Recording who reviewed (07 §4.4) | Nothing | Small | `evidence_checks.details` contains the model name and the runner |
 
-### Phase 5: 本番運用（残り 5 件）
+### Phase 5: production (5 left)
 
-| 作業 | 依存 | 難易度 | 完了条件 |
+| Work | Depends on | Difficulty | Done when |
 |---|---|---|---|
-| 5-a 処理量の計測（06 §4.3） | 2-a | 小 | tick の戻り値に段ごとの所要時間が入り、`/v1/health/ready` の本文に直近の値が出る。localnet で 50 件の資金化の所要時間を記録 |
-| 5-b 負荷試験 | 5-a、1-c | 中 | 16 §7.1 の目標（50 件の資金化 5 分以内、確定から支払い 2 分以内）を localnet か Surfpool で測り、`docs/ops/` に記録 |
-| 5-c 第三者監査（08 §4.4） | 2-a（v1.3 配置後）、運営者の手配 | 大（運営者） | 監査報告が `docs/security/` にあり、指摘が修正されるか受け入れ理由が書かれている |
-| 5-d メインネット移行（15 §4.5、12 §10） | 2-b、2-d、5-c（または監査なしで進む決定）、運営者の作業 | 大（運営者） | `SOLANA_CLUSTER=mainnet-beta` で起動の門を通り、1 USDC 以下の依頼が資金化・支払い・返金の 3 経路で通る |
-| 5-e 障害復旧の手順書の更新 | 2-d | 小 | 08 §6 の表に KMS の鍵の無効化と、`x402_enabled` の停止を足す |
+| 5-a Measuring throughput (06 §4.3) | 2-a | Small | The tick returns per-step durations and `/v1/health/ready` shows the latest values. Record the time to fund 50 requests on localnet |
+| 5-b Load testing | 5-a, 1-c | Medium | Measure the targets in 16 §7.1 (fund 50 within 5 minutes; final to paid within 2 minutes) on localnet or Surfpool and record in `docs/ops/` |
+| 5-c Third-party audit (08 §4.4) | 2-a (after v1.3 deployment), arranged by the operator | Large (operator) | An audit report in `docs/security/`, with each finding fixed or a reason for accepting it |
+| 5-d Moving to mainnet (15 §4.5, 12 §10) | 2-b, 2-d, 5-c (or a decision to proceed without an audit), operator work | Large (operator) | Startup passes the gate with `SOLANA_CLUSTER=mainnet-beta`, and a request of 1 USDC or less goes through funding, payout and refund |
+| 5-e Updating recovery procedures | 2-d | Small | Add disabling the KMS key and stopping `x402_enabled` to the table in 08 §6 |
 
-## 5. 技術選定の理由（順番の考え方）
+## 5. Rationale (ordering)
 
-Phase 3 の 3-a〜3-c は互いに小さく、本番の動作を変えるのは 3-b だけなので、最初にまとめて入れると歯止めが早く効く。Phase 1 の 1-a は Phase 2 の 2-d の前提で、2-d はメインネット移行（5-d）の前提である。したがって最短の道は 3-a → 3-b → 1-a → 2-b → 2-c → 2-d → 5-d で、残りはその間に挟む。
+3-a to 3-c in Phase 3 are all small and only 3-b changes production behaviour, so putting them in first gets the brakes working early. 1-a in Phase 1 is a prerequisite for 2-d in Phase 2, which is a prerequisite for moving to mainnet (5-d). The shortest path is therefore 3-a → 3-b → 1-a → 2-b → 2-c → 2-d → 5-d, with the rest fitted in between.
 
-依存の図を示す。
+Dependencies:
 
 ```mermaid
 flowchart LR
-  A3a["3-a 移行 0030"] --> A3b["3-b 支出ポリシー"]
-  A3a --> A3c["3-c 一覧"]
-  A3a --> A3d["3-d 見積もり"]
-  A3d --> A3e["3-e 文書と見本"]
+  A3a["3-a migration 0030"] --> A3b["3-b spending policy"]
+  A3a --> A3c["3-c list"]
+  A3a --> A3d["3-d quotes"]
+  A3d --> A3e["3-e docs and samples"]
   A1a["1-a Signer"] --> A2d["2-d KMS"]
-  A2a["2-a PR #39〜42"] --> A5a["5-a 計測"]
-  A5a --> A5b["5-b 負荷試験"]
-  A1c["1-c Surfpool 調査"] --> A5b
-  A2a --> A5c["5-c 監査"]
-  A2b["2-b treasury 上限"] --> A5d["5-d メインネット"]
+  A2a["2-a PRs #39-42"] --> A5a["5-a measurement"]
+  A5a --> A5b["5-b load test"]
+  A1c["1-c Surfpool investigation"] --> A5b
+  A2a --> A5c["5-c audit"]
+  A2b["2-b treasury cap"] --> A5d["5-d mainnet"]
   A2d --> A5d
   A5c --> A5d
 ```
 
-## 6. 代替案
+## 6. Alternatives
 
-- メインネット移行を KMS（2-d）の前に行う案。オーナーの決定（2026-10-13）は移行を前倒ししており、treasury の上限（2-b）だけで進む道もある。その場合 2-d は移行後の作業になり、被害の天井は上限の値で決まる。選ぶのはオーナー
-- 第三者監査を省く案。費用と期間を考えて省くなら、`docs/legal/2026-10-13-owner-decision.md` と同じ形で決定を文書に残す
+- Moving to mainnet before the KMS (2-d). The owner's decision (2026-10-13) brought the move forward, and proceeding with only the treasury cap (2-b) is possible. Then 2-d becomes post-move work and the ceiling on damage is the cap. The owner chooses
+- Skipping the third-party audit. If skipped for cost and time, record the decision in a document, as in `docs/legal/2026-10-13-owner-decision.md`
 
-## 7. セキュリティ上の考慮事項
+## 7. Security considerations
 
-Phase 3 の 3-b を先に入れる理由は、メインネットで実際のお金が動く前に、身元を知らない依頼者（`/join`、x402）の支出に天井を付けるためである。Phase 5 の 5-d は、5-c の監査を待つか、待たずに進むかの決定を含む。
+3-b goes first so that, before real money moves on mainnet, spending by requesters whose identity is unknown (`/join`, x402) has a ceiling. 5-d includes the decision whether to wait for the audit in 5-c.
 
-## 8. 実装上の課題
+## 8. Implementation issues
 
-- 作業はいずれも Claude Code が 1 画面で進められる大きさに分けた（サブエージェントは使わない）。並行させるなら `docs/agents/` の指示書の形で分ける
-- 運営者の作業（2-a、2-d、5-c、5-d）は PR の本文に手順を書き、運営者が行う
-- PR は CI の 3 ジョブが通ってから、運営者がマージする（`gh pr merge` は自動判定で止められるため）
+- Each piece of work is sized so Claude Code can do it in one session (no subagents). To parallelise, split it as briefs in `docs/agents/`
+- Operator work (2-a, 2-d, 5-c, 5-d) goes in the PR description as a procedure for the operator to follow
+- PRs are merged by the operator after the three CI jobs pass (`gh pr merge` is blocked by the auto-mode classifier)
 
-## 9. テスト方針
+## 9. Test strategy
 
-各作業の完了条件に含めたテストを CI で回す。負荷試験（5-b）と KMS の往復（2-d）は CI に入れず、手順と結果を `docs/ops/` に残す。
+The tests in each done criterion run in CI. Load testing (5-b) and the KMS round trip (2-d) are not in CI; their procedure and results go in `docs/ops/`.
 
-## 10. 未決定事項（オーナーに決めてほしいこと）
+## 10. Open questions (for the owner)
 
-**2026-10-15 にオーナーが決めた。** (1) 実装してよい。(2) 支出上限は無制限（null）を既定にする。(3) メインネット移行は KMS の前に行い、被害の天井は treasury の上限で決める。(4) 人の審査の閾値は総額 5 USDC（**2026-10-16 に取りやめ。人の審査は置かず、依頼者が決める**）。(5) 第三者監査は受けない。(6) MCP の道具を増やす（一覧と見積もり）。(7) ChatGPT のウィジェットを作る。(8) 最初に開く通貨は USDC・SOL・USDT・PYUSD の 4 つで、その後に増やす。
+**The owner decided on 2026-10-15:** (1) implementation may proceed; (2) spending limits default to no limit (null); (3) move to mainnet before the KMS, with the treasury cap as the ceiling on damage; (4) a human-review threshold of 5 USDC total (**withdrawn on 2026-10-16: no human review; the requester decides**); (5) no third-party audit; (6) add MCP tools (list and quotes); (7) build the ChatGPT widget; (8) open four currencies first — USDC, SOL, USDT, PYUSD — and add more later.
 
-**同日の実装の状況**（PR は #42 → #44 → #45 → #46 → #47 の順に積んである）。
+**Implementation status the same day** (PRs stacked #42 → #44 → #45 → #46 → #47):
 
-| 作業 | 状況 |
+| Work | Status |
 |---|---|
-| 3-a 移行 0030、3-b 支出ポリシーと `x402_enabled`、3-c 一覧、3-d 見積もり、3-e 文書と見本 | PR #44 |
-| 1-a Signer の境界、2-b treasury の上限、2-c 日次の突き合わせ、5-a 処理量の計測（`tick_runs`、`last_tick`） | PR #45 |
-| 4-a 額による人の審査（既定 5 USDC）、4-b 審査の実行者の記録 | PR #46 で入れたが、2026-10-16 のオーナーの決定で打ち消した（07 §4.2） |
-| ChatGPT のウィジェット、5-e 障害手順の追記 | PR #47 |
-| 1-c Surfpool の調査 | 済み。配置用バイナリと決済アダプタの 4 命令が 330 ms で通った（`docs/ops/surfpool-spike-2026-10-15.md`）。確定が即時なので処理量の計測には使えない。5-b に積む |
-| 1-b Codama の生成クライアント | 見送り。`packages/sdk/src/onchain.ts` は IDL も Anchor クライアントも使わず口座のバイト列を直接読む作りで、生成クライアントより軽い。`@solana/kit` を足す理由が無くなった |
-| 2-a PR #39〜#42 の取り込みと Devnet への v1.3 配置、2-d KMS、5-b 負荷試験、5-c 監査（受けない）、5-d メインネット | 運営者の作業、または移行後 |
+| 3-a migration 0030, 3-b spending policy and `x402_enabled`, 3-c list, 3-d quotes, 3-e docs and samples | PR #44 |
+| 1-a the Signer boundary, 2-b the treasury cap, 2-c daily reconciliation, 5-a throughput measurement (`tick_runs`, `last_tick`) | PR #45 |
+| 4-a human review by amount (default 5 USDC), 4-b recording who reviewed | Added in PR #46, then reverted by the owner's decision of 2026-10-16 (07 §4.2) |
+| The ChatGPT widget, 5-e additions to the recovery procedures | PR #47 |
+| 1-c Investigating Surfpool | Done. The deployment binary and the settlement adapter's four instructions passed in 330 ms (`docs/ops/surfpool-spike-2026-10-15.md`). Finality is instant, so it cannot be used to measure throughput; queued for 5-b |
+| 1-b The Codama-generated client | Not pursued. `packages/sdk/src/onchain.ts` reads account bytes directly without the IDL or an Anchor client, which is lighter than a generated client; there is no longer a reason to add `@solana/kit` |
+| 2-a merging PRs #39-#42 and deploying v1.3 to Devnet, 2-d KMS, 5-b load testing, 5-c audit (not done), 5-d mainnet | Operator work, or after the move |
 
-下の 8 件は決定前の問いとして残す。
+The eight questions below are kept as they were before the decision.
 
-
-1. **この文書群を承認し、実装を始めてよいか。** 始めるなら 3-a → 3-b から
-2. 支出上限の既定を null（無制限）にするか、`/join` と x402 のキーの 5 USDC・20 USDC をそのまま効かせるか（M3）
-3. KMS のバックエンド（AWS、GCP、Privy、Turnkey）と、メインネット移行を KMS の前に行うか後に行うか
-4. ~~人の審査の閾値の既定値~~ 2026-10-16 に人の審査ごと取りやめ
-5. 第三者監査を受けるか、受けるなら v1.3 の配置後か
-6. 一覧 API と見積もりを MCP の道具に足すか（道具が 8 本から 10 本に増える）
-7. ChatGPT のウィジェット（3-e の延長）を作るか
-8. 16 §9 の多通貨の 4 件（最初に開く通貨、発行元への信頼、証人の口座代、x402 の通貨）
+1. **Approve these documents and start implementing?** If so, start with 3-a → 3-b
+2. Default spending limits to null (no limit), or enforce the 5 USDC / 20 USDC on `/join` and x402 keys as they are (M3)?
+3. The KMS backend (AWS, GCP, Privy, Turnkey), and whether to move to mainnet before or after the KMS
+4. ~~The default human-review threshold~~ withdrawn together with human review on 2026-10-16
+5. Whether to get a third-party audit, and if so after deploying v1.3
+6. Whether to add the list API and quotes as MCP tools (from 8 tools to 10)
+7. Whether to build the ChatGPT widget (an extension of 3-e)
+8. The four multi-token questions in 16 §9 (which currency first, trust in issuers, witnesses' account costs, x402 currencies)
