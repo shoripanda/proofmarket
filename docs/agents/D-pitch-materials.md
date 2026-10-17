@@ -1,33 +1,33 @@
-# 担当 D: 提出用の資料（文書だけ）
+# Owner D: submission materials (documents only)
 
-ブランチ: `docs/pitch-materials` ／ worktree: `../Solana-idea-d` ／ コードは書かない
+Branch: `docs/pitch-materials` / worktree: `../Solana-idea-d` / no code
 
-## 先に読むもの
-- `docs/colosseum-hackathon-playbook-2026-09-16.md`（攻略メモ。ピッチ動画が最重要、3分未満、構成、Red Flag Word List）
-- `docs/colosseum-hackathon-winners-2024-2026.md`（過去の入賞作）
-- `specs/proofmarket/competitor-differentiation.md`（RentAHuman・Taskin・NeedaHuman との違い）
-- `specs/proofmarket/project-brief.md`、`problem.md`
-- `specs/proofmarket/implementation/en/01-requirements-definition.md` の 4.15〜4.17 節（実際に作ったもの）
-- `docs/proofmarket-schedule-2026-10.md` の「方針」
+## Read first
+- `docs/colosseum-hackathon-playbook-2026-09-16.md` (strategy notes: the pitch video matters most, under 3 minutes, structure, Red Flag Word List)
+- `docs/colosseum-hackathon-winners-2024-2026.md` (past winners)
+- `specs/proofmarket/competitor-differentiation.md` (differences from RentAHuman, Taskin, NeedaHuman)
+- `specs/proofmarket/project-brief.md`, `problem.md`
+- Sections 4.15–4.17 of `specs/proofmarket/implementation/en/01-requirements-definition.md` (what was actually built)
+- "Direction" in `docs/proofmarket-schedule-2026-10.md`
 
-## 方針（資料はこれに合わせる）
-- 看板: **人の作業の結果を、依頼した AI が信用できる形で返す。**
-- 差のつく点: 提出ごとの AI による内容の確認、複数人の合意、Solana に残る結果の記録とエスクローでの支払い、x402 で登録なしに依頼できること（担当 A が今日作る）。
-- 最初の入口（オーナーの確認待ち）: 日本の、紙と現地にしか無い情報。AI はそこに手が届かない。
-- **数字は作らない。** 実績は `【完了件数】` のような置き場所にし、オーナーが `/stats` から埋める。
-- **創業者の物語は作らない。** はっきり分かる置き場所にし、オーナーが答える問いを3つ添える。
+## Direction (the materials follow it)
+- Headline: **return the results of human work in a form the requesting AI can trust.**
+- What sets it apart: an AI content check on every submission, agreement among several people, results recorded on Solana and payment through escrow, and requesting without sign-up over x402 (built today by owner A).
+- First entry point (awaiting the owner's confirmation): information in Japan that exists only on paper and on site, out of AI's reach.
+- **Do not invent numbers.** Leave placeholders such as `[completed count]` for the owner to fill from `/stats`.
+- **Do not invent the founder's story.** Leave a clearly marked placeholder with three questions for the owner to answer.
 
-## 作るもの（`docs/pitch/` に置く）
-1. `canvas.md` — Hackathon Canvas（課題、最初の狭い利用者、いまの代わりの手段、独自の価値、なぜ今か、なぜ暗号資産か、なぜ Solana か、広げ方の入口、MVP、期間中に測る数字）と、Matty Taylor の6つの問いへの正直な答え（埋められない所は置き場所に）。
-2. `deck.md` — ピッチ資料のスライドごとの構成。Hook→Problem→Solution→Product→Demo→Business Model→Traction→Team→CTA、12枚以内。各スライドに題・一言・見せる絵の案・話す内容。日本語版と英語版。
-3. `pitch-video-script.md` — 3分未満。秒数つきのカット表とナレーション（審査員向けに英語、横に日本語訳）。
-4. `demo-video-script.md` — 3分未満の技術デモ: エージェントが x402 か MCP で依頼 → worker のアプリ → AI が差し戻し → 直して合格 → Solana Explorer でエスクロー・結果の記録・支払い → `/stats`。収録する画面の一覧つき。
-5. `hype-video-script.md` — 20〜40秒の予告編。
-6. `x-posts.md` — 10/5〜10/12 の Build in Public の投稿10本。創業者の個人アカウント用（日本語）とプロジェクトのアカウント用（英語）。投稿ごとに画像・動画の案。リンクは最初の投稿ではなく返信に置く。ハッシュタグは多用しない。
-7. `worker-recruiting.md` — 知人・大学・X 向けの短い募集文（日本語）と、1ページの「はじめての worker 手順」（ログイン → 招待コード → 依頼を引き受ける → 写真と答え → AI の確認 → 報酬）。
+## What to build (in `docs/pitch/`)
+1. `canvas.md` — the Hackathon Canvas (problem, first narrow user, current alternative, unique value, why now, why crypto, why Solana, entry point for growth, MVP, numbers measured during the hackathon) and honest answers to Matty Taylor's six questions (placeholders where they cannot be filled).
+2. `deck.md` — slide-by-slide structure of the pitch deck: Hook → Problem → Solution → Product → Demo → Business Model → Traction → Team → CTA, at most 12 slides. Each slide gets a title, a one-liner, an idea for the visual and the talking points. Japanese and English versions.
+3. `pitch-video-script.md` — under 3 minutes. A shot list with timings and narration (English for the judges, Japanese translation alongside).
+4. `demo-video-script.md` — a technical demo under 3 minutes: an agent requests over x402 or MCP → the worker app → AI sends it back → fixed and passed → escrow, result record and payment in Solana Explorer → `/stats`. With a list of screens to record.
+5. `hype-video-script.md` — a 20–40 second trailer.
+6. `x-posts.md` — 10 Build in Public posts for 10/5–10/12, for the founder's personal account (Japanese) and the project account (English). An image or video idea per post. Put links in a reply, not the first post. Few hashtags.
+7. `worker-recruiting.md` — short recruiting messages for acquaintances, universities and X (Japanese), and a one-page "first steps for workers" (log in → invite code → take a request → photo and answer → AI check → reward).
 
-日本語は `natural-japanese` スキルを呼び出し、その基準でチェックする。
+Run Japanese text through the `natural-japanese` skill and check it against its criteria.
 
-## 完了の条件
-- 7つのファイルがそろい、オーナーが埋める置き場所の一覧を PR の本文と報告に書く。
-- README の「仕上げ」のうち、PR と報告の部分を満たす（コードのテストは不要。`pnpm exec biome ci .` だけ通す）。
+## Done when
+- All seven files exist, and the list of placeholders for the owner is in the PR body and the report.
+- The PR and report parts of the README's "Finishing" are satisfied (no code tests needed; just pass `pnpm exec biome ci .`).

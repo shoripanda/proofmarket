@@ -1,31 +1,31 @@
-# メインネット移行についてのオーナーの決定（2026-10-13）
+# The owner's decision on moving to mainnet (2026-10-13)
 
-このファイルは `LEGAL_SIGNOFF` が指す文書です。起動の門（`apps/web/lib/cluster.ts`、仕様 15 §4.1）は「法務の確認結果を記した文書の場所」を要求しますが、ここに書いてあるのは弁護士の確認結果ではなく、**確認を待たずに切り替えるというオーナーの決定**です。読む人が取り違えないよう、最初に書いておきます。
+This is the document `LEGAL_SIGNOFF` points to. The start-up gate (`apps/web/lib/cluster.ts`, spec 15 §4.1) requires "the location of a document recording the outcome of legal review", but what is written here is not a lawyer's conclusion. It is **the owner's decision to switch without waiting for that review**. This is stated first so no reader mistakes one for the other.
 
-## 決めたこと
+## What was decided
 
-- 2026-10-13、オーナー（橋本 博樹）は、資金決済法上の扱い（`specs/proofmarket/legal-checklist.md` §1・§3・§7、未解決項目 D-05）について弁護士の確認を受ける前に、ProofMarket の決済を Solana メインネットの実際の USDC と SOL に切り替えると決めた。
-- 選択肢は 3 つ示された。(1) 確認済みの文書がある、(2) これから弁護士に相談し、結論が出るまで待つ、(3) 確認を待たずに切り替える。オーナーは (3) を選んだ。
-- この決定に伴う法律上の責任は、オーナー個人が負う。運営者情報のページ（`/legal/operator`）にあるとおり、法人は設立していない。
+- On 2026-10-13 the owner (Hiroki Hashimoto) decided to switch ProofMarket's settlement to real USDC and SOL on Solana mainnet before receiving a lawyer's review of its treatment under Japan's Payment Services Act (`specs/proofmarket/legal-checklist.md` §1, §3, §7; open item D-05).
+- Three options were presented: (1) a reviewed document exists, (2) consult a lawyer now and wait for the conclusion, (3) switch without waiting. The owner chose (3).
+- The legal responsibility arising from this decision rests with the owner personally. As the operator information page (`/legal/operator`) says, no company has been incorporated.
 
-## 未解決のまま残る論点（legal-checklist.md から）
+## Issues that remain open (from legal-checklist.md)
 
-| 番号 | 論点 | いまの作り |
+| No. | Issue | How it is built today |
 |---|---|---|
-| D-05 | 依頼者の前払い残高と、エスクローに入れた報酬を運営者の鍵が動かすことが、資金決済法の「資金移動業」や「前払式支払手段」に当たるか | 残高は DB の台帳、報酬は運営者の operator 鍵がプログラムの vault へ入れ、確定後に worker へ払う。運営者が預かる形 |
-| §1 | 証人（worker）を業務委託として扱えるか | 1 件ごとの報酬、指揮命令なし。契約書は `/legal/worker-terms` の下書き |
-| §7 | 証人への支払いの源泉徴収・支払調書 | 未対応。円での支払いは始めていない |
+| D-05 | Whether requesters' prepaid balances, and the operator's key moving rewards placed in escrow, amount to a "funds transfer business" or "prepaid payment instrument" under the Payment Services Act | Balances are a ledger in the DB; rewards are put into the program's vault by the operator key and paid to the worker after finalization. The operator holds the funds |
+| §1 | Whether witnesses (workers) can be treated as independent contractors | Paid per task, no direction or supervision. The contract is a draft at `/legal/worker-terms` |
+| §7 | Withholding tax and payment records for witnesses | Not handled. Yen payouts have not started |
 
-## 代わりに講じる歯止め
+## Safeguards taken instead
 
-法律の確認の代わりにはならないが、被害を小さくするために、切り替えと同時に次を行う。
+These do not replace legal review, but limit the damage. They take effect with the switch:
 
-1. treasury（operator の財布）に置く額の上限を決め、超えた分は admin の財布へ移す（仕様 15 §4.2、§6）
-2. 依頼の額に上限は設けていない（PR #14、2026-10-09）。動かせるのは前払い残高の範囲だけで、メインネットでは試験用の残高を配らないので、依頼者が自分で入金した額しか動かない
-3. メインネットでは試験用の残高を配らない（15 §4.5）。残高は依頼者が自分で入金した分だけ
-4. プログラム v1.2 の差分を運営者が点検し、結果を `docs/security/program-review-2026-10-13.md` に残す。第三者の監査は受けていない
-5. 弁護士の確認が取れたら、この文書を確認結果の文書に差し替え、`LEGAL_SIGNOFF` も差し替える
+1. Cap the amount kept in the treasury (the operator's wallet) and move the excess to the admin wallet (spec 15 §4.2, §6)
+2. There is no cap on request amounts (PR #14, 2026-10-09). Only prepaid balances can move, and mainnet hands out no test balances, so only what a requester deposited themselves can move
+3. Mainnet hands out no test balances (15 §4.5). Balances are only what requesters deposit themselves
+4. The operator reviews the diff of program v1.2 and records the result in `docs/security/program-review-2026-10-13.md`. There has been no third-party audit
+5. Once a lawyer's review is obtained, replace this document with the review's outcome and update `LEGAL_SIGNOFF`
 
-## 記録
+## Record
 
-- 決定の経緯は Claude Code の会話記録（session_01HKnNetBup2CiDWoVXHYw62、2026-10-13）にある。この文書は、その決定を運営者に代わって書き起こしたもの。
+- How the decision was reached is in a Claude Code conversation log (session_01HKnNetBup2CiDWoVXHYw62, 2026-10-13). This document writes up that decision on the operator's behalf.

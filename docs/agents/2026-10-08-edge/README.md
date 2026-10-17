@@ -1,55 +1,55 @@
-# 並行作業の指示書（尖った機能と初心者の導線・2026-10-08）
+# Briefs for parallel work (distinctive features and a beginner's path, 2026-10-08)
 
-設計の正本: `specs/proofmarket/implementation/en/13-edge-features.md`（以下「設計書」）。背景: `docs/pitch/07-landscape-and-edge.md`。要件: 01 §4.26。
+Authoritative design: `specs/proofmarket/implementation/en/13-edge-features.md` ("the design" below). Background: `docs/pitch/07-landscape-and-edge.md`. Requirements: 01 §4.26.
 
-オーナーがターミナルで Claude Code の画面を担当の数だけ開き、それぞれに次のように頼む。
+The owner opens one Claude Code session per workstream in the terminal and asks each one:
 
 ```
-docs/agents/2026-10-08-edge/README.md と docs/agents/2026-10-08-edge/<担当のファイル> を読んで、その作業を最後まで進めて
+Read docs/agents/2026-10-08-edge/README.md and docs/agents/2026-10-08-edge/<your brief>, then carry that work through to the end
 ```
 
-**エージェントは自分でサブエージェント（Agent / fork / Workflow）を起動しない。** 1 つの画面で 1 つの担当を、最後まで自分で進める。
+**Agents do not start sub-agents of their own (Agent / fork / Workflow).** One session owns one workstream and carries it through to the end.
 
-## 割り振り
+## Assignments
 
-| 担当 | 指示書 | 中身（設計書の節） | 触る主な場所 | 大きさ |
+| Owner | Brief | Contents (section of the design) | Main places touched | Size |
 |---|---|---|---|---|
-| A | `A-rising-bounty.md` | 急ぐほど上がる報酬（§1）。Solana プログラム v1.1 を含む | `programs/`、`packages/solana`、`requester-service`、`worker-service`、`settlement-jobs`、worker の一覧・詳細 | 大 |
-| B | `B-onchain-facts.md` | 他のプログラムから読める事実（§2） | `packages/sdk`、`apps/web/app/v1/public/`、`apps/web/app/r/[id]`、`docs/onchain-facts.md` | 中 |
-| C | `C-attestation-and-scale.md` | エージェントの行いの証明（§5）と五感の指数（§4） | `api.ts`、`answers.ts`、worker の撮影画面、`views.ts`、証明ページ、`/developers` の見本 | 中 |
-| D | `D-worker-assist.md` | worker 側のブラウザ内の助け（§6）: 読み上げ・声で答える・撮影の案内・音 | `apps/web/app/(worker)/`、`apps/web/components/ui.tsx`、新規 `apps/web/lib/client/speech.ts`・`sound.ts` | 中 |
-| E | `E-onboarding.md` | 初心者の導線（§7）: 30 秒の動く説明と語り、やさしい言葉、絵、/workers、worker の初回案内、/try の読み上げ | `apps/web/app/(site)/`、`apps/web/components/`、`apps/web/public/audio/` | 大 |
-| F | `F-optimistic.md` | 楽観的な確認（§3） | `verification-service`、`requester-service`、`task-engine`、新規 `challenge-service`、API・MCP・Webhook | 大 |
-| G | `G-location-privacy.md` | 公開面の位置の丸め（§9 の PR 7） | `public-service`、`map-service`、`bundle.ts`、証明ページ、データセット | 小〜中 |
+| A | `A-rising-bounty.md` | A reward that rises with urgency (§1), including Solana program v1.1 | `programs/`, `packages/solana`, `requester-service`, `worker-service`, `settlement-jobs`, worker list and detail | Large |
+| B | `B-onchain-facts.md` | Facts other programs can read (§2) | `packages/sdk`, `apps/web/app/v1/public/`, `apps/web/app/r/[id]`, `docs/onchain-facts.md` | Medium |
+| C | `C-attestation-and-scale.md` | Attesting an agent's claim (§5) and a sensory scale (§4) | `api.ts`, `answers.ts`, worker capture screen, `views.ts`, proof page, `/developers` samples | Medium |
+| D | `D-worker-assist.md` | In-browser help for workers (§6): read-aloud, voice answers, capture guidance, sounds | `apps/web/app/(worker)/`, `apps/web/components/ui.tsx`, new `apps/web/lib/client/speech.ts` and `sound.ts` | Medium |
+| E | `E-onboarding.md` | A beginner's path (§7): a 30-second animated explainer with narration, plain words, illustrations, /workers, a first-run tour for workers, read-aloud on /try | `apps/web/app/(site)/`, `apps/web/components/`, `apps/web/public/audio/` | Large |
+| F | `F-optimistic.md` | Optimistic verification (§3) | `verification-service`, `requester-service`, `task-engine`, new `challenge-service`, API, MCP, webhooks | Large |
+| G | `G-location-privacy.md` | Rounding locations on public surfaces (PR 7 of §9) | `public-service`, `map-service`, `bundle.ts`, proof page, dataset | Small–medium |
 
-本体（この指示書を書いたエージェント）は、移行 `0023_edge_features` と `schema.ts` を先に main へ入れる（PR 「db: migration 0023」）。**全員、その PR が main に入ってから始める**（`git log origin/main --oneline | head` に `db: migration 0023` が見えること）。入っていなければオーナーに聞く。
+The main session (the agent that wrote these briefs) lands migration `0023_edge_features` and `schema.ts` on main first (PR "db: migration 0023"). **Everyone starts only after that PR is on main** (`db: migration 0023` visible in `git log origin/main --oneline | head`). If it is not, ask the owner.
 
-## 全員の決まり
+## Rules for everyone
 
-### 始める前に
-1. リポジトリの `CLAUDE.md`（特に「失敗ルート台帳」）と `AGENTS.md` を読む。設計書の自分の節を全部読む。分からない点は設計書の決めごと（§0）に従い、勝手に設計を変えない。変えたいときは PR の説明に理由を書く。
-2. 自分用の worktree を作る。同じフォルダで 2 つの画面がブランチを切り替えると壊れるため。
+### Before starting
+1. Read the repository's `CLAUDE.md` (especially the failure log) and `AGENTS.md`. Read your whole section of the design. Where unclear, follow the design's decisions (§0) and do not change the design on your own. If you want to change it, give the reason in the PR description.
+2. Create your own worktree; two sessions switching branches in the same folder breaks things.
    ```
-   cd ~/proofmarket && git fetch -q && git worktree add ../proofmarket-<担当> -b <ブランチ名> origin/main
-   cd ../proofmarket-<担当> && pnpm install
+   cd ~/proofmarket && git fetch -q && git worktree add ../proofmarket-<owner> -b <branch> origin/main
+   cd ../proofmarket-<owner> && pnpm install
    git config user.email 131566598+shoripanda@users.noreply.github.com && git config user.name shoripanda
    ```
-   `pnpm build`（Next.js のビルド）は worktree では**回さない**（ディスクが 1GB 減る。CI が回す）。
-3. `docs/agents/2026-10-08-edge/STATUS.md` の自分の行を「作業中」にして最初のコミットに含める。
+   **Do not run** `pnpm build` (the Next.js build) in a worktree (it costs 1 GB of disk; CI runs it).
+3. Set your row in `docs/agents/2026-10-08-edge/STATUS.md` to "in progress" and include it in your first commit.
 
-### 禁止
-- `git stash`、`git checkout <別ブランチ>`（worktree 内で）、`git commit -am`、`git push --force`。
-- 本番（Supabase・Vercel・proofmarket.fun・Solana devnet の Config）への書き込み。例外は A のプログラムのデプロイ（指示書に手順あり）。
-- 移行ファイルの追加。列が足りなければ本体に言う（STATUS.md に書く）。
-- 他の担当の節の実装。自分の節だけ。
+### Forbidden
+- `git stash`, `git checkout <other branch>` (inside a worktree), `git commit -am`, `git push --force`.
+- Writing to production (Supabase, Vercel, proofmarket.fun, the Solana devnet Config). The exception is A's program deployment (steps in that brief).
+- Adding migration files. If a column is missing, tell the main session (write it in STATUS.md).
+- Implementing another owner's section. Only your own.
 
-### ぶつかりやすい場所
-- `packages/core/src/schemas/api.ts`・`packages/core/openapi.json`・`packages/core/src/domain/enums.ts`・`apps/web/lib/answers.ts` は複数の担当が触る。PR を出す前に `git fetch && git rebase origin/main` し、`pnpm openapi` で作り直してからコミットする。衝突したら、相手の変更を残して自分の分を足す。
-- MCP のツールの説明（`packages/mcp/src/tools.ts`）は A・C・F が 1 文ずつ足す。既存の文を消さない。
-- `CLAUDE.md` の失敗ルート台帳に足すときは末尾に 1 行だけ。
+### Places that collide easily
+- Several owners touch `packages/core/src/schemas/api.ts`, `packages/core/openapi.json`, `packages/core/src/domain/enums.ts` and `apps/web/lib/answers.ts`. Before opening a PR, `git fetch && git rebase origin/main` and regenerate with `pnpm openapi` before committing. On conflict, keep the other side's change and add yours.
+- A, C and F each add one sentence to the MCP tool descriptions (`packages/mcp/src/tools.ts`). Do not delete existing sentences.
+- When adding to the failure log in `CLAUDE.md`, append exactly one line at the end.
 
-### 終わり方
-1. 手元で `pnpm typecheck`・`pnpm exec biome ci .`・`pnpm --filter @proofmarket/core exec vitest run`・`pnpm --filter @proofmarket/web exec vitest run --no-file-parallelism` を通す（負荷が高いときは直列で）。
-2. `git fetch && git rebase origin/main` → push → `gh pr create`。題は `feat(<担当の英名>): ...`。説明には設計書の節と「できたの判定」をどう確かめたかを書く。末尾に `🤖 Generated with [Claude Code](https://claude.com/claude-code)`。
-3. CI（program / typescript / secrets）が全部 pass になったら自分で `gh pr merge <番号> --merge --delete-branch` してよい（オーナーの許可済み）。`gh pr merge` は CI 未完了でも通ってしまうので、`gh pr checks` で pass を確かめてから。
-4. STATUS.md の自分の行を「完了」にし、分かったこと（はまりどころ・残り）を 3 行以内で書く。これは main に直接コミットして push してよい（この 1 ファイルだけ）。
+### Finishing
+1. Locally pass `pnpm typecheck`, `pnpm exec biome ci .`, `pnpm --filter @proofmarket/core exec vitest run` and `pnpm --filter @proofmarket/web exec vitest run --no-file-parallelism` (serially when the machine is loaded).
+2. `git fetch && git rebase origin/main` → push → `gh pr create`. Title `feat(<owner's English name>): ...`. In the description, give the design section and how the "done when" was checked. End with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
+3. Once CI (program / typescript / secrets) is all green, you may run `gh pr merge <number> --merge --delete-branch` yourself (approved by the owner). `gh pr merge` goes through even before CI finishes, so confirm pass with `gh pr checks` first.
+4. Mark your row in STATUS.md "done" and write what you learned (pitfalls, leftovers) in at most 3 lines. This may be committed and pushed directly to main (this one file only).

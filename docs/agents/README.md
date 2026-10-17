@@ -1,55 +1,55 @@
-# 並行作業の指示書（ProofMarket・提出前の追い込み）
+# Briefs for parallel work (ProofMarket, final push before submission)
 
-作成: 2026-10-04 16:00 JST ／ 予定表: `docs/proofmarket-schedule-2026-10.md`
+Written: 2026-10-04 16:00 JST / Schedule: `docs/proofmarket-schedule-2026-10.md`
 
-オーナーがターミナルで Claude Code の画面を担当の数だけ開き、それぞれに次のように頼む。
+The owner opens one Claude Code session per workstream in the terminal and asks each one:
 
 ```
-docs/agents/README.md と docs/agents/<担当のファイル> を読んで、その作業を進めて
+Read docs/agents/README.md and docs/agents/<your brief>, then carry out that work
 ```
 
-**エージェントは自分でサブエージェント（Agent / fork / Workflow）を起動しない。** トークンを大量に使うため。1つの画面で1つの担当を、最後まで自分で進める。
+**Agents do not start sub-agents of their own (Agent / fork / Workflow)**, because they use a lot of tokens. One session owns one workstream and carries it through to the end.
 
-## 割り振り
+## Assignments
 
-| 担当 | 指示書 | 内容 | 触る主な場所 | 目安 |
+| Owner | Brief | Contents | Main places touched | Estimate |
 |---|---|---|---|---|
-| A | `A-x402.md` | x402: API キーなしで USDC を払って依頼できる窓口と、払って依頼する見本のエージェント | `apps/web/app/v1/x402/`、`apps/web/lib/services/`、`scripts/` | 2.5 時間 |
-| B | `B-multi-photo.md` | 証拠の写真を最大4枚に | `evidence-service.ts`、撮影画面、`review-runner.ts` | 2 時間 |
-| C | `C-stats-and-copy.md` | 公開の実績ページ `/stats` と、サイトの看板の言い換え | `apps/web/app/(site)/` | 2 時間 |
-| D | `D-pitch-materials.md` | ピッチ資料・動画3本の台本・X の投稿文・worker 募集文（文書だけ） | `docs/pitch/` | 2 時間 |
-| E | `E-agent-clients.md` | Claude・ChatGPT などから本番の MCP / API につなぐ確認と、接続手順のページ | `apps/web/app/(site)/developers/`、`docs/` | 1.5 時間（オーナーの画面操作あり） |
+| A | `A-x402.md` | x402: an endpoint where anyone can pay USDC and request without an API key, plus a sample agent that pays and requests | `apps/web/app/v1/x402/`, `apps/web/lib/services/`, `scripts/` | 2.5 h |
+| B | `B-multi-photo.md` | Up to 4 evidence photos | `evidence-service.ts`, capture screen, `review-runner.ts` | 2 h |
+| C | `C-stats-and-copy.md` | A public results page `/stats`, and rewording the site's headline copy | `apps/web/app/(site)/` | 2 h |
+| D | `D-pitch-materials.md` | Pitch materials, scripts for 3 videos, X posts, worker recruiting copy (documents only) | `docs/pitch/` | 2 h |
+| E | `E-agent-clients.md` | Checking connections from Claude, ChatGPT etc. to the production MCP / API, and a page with connection steps | `apps/web/app/(site)/developers/`, `docs/` | 1.5 h (needs the owner at the screen) |
 
-## 全員の決まり
+## Rules for everyone
 
-### 始める前に
-1. リポジトリの `CLAUDE.md`（特に「失敗ルート台帳」）と `AGENTS.md` を読む。
-2. `docs/proofmarket-schedule-2026-10.md` の自分の行の「状態」を「作業中」にする（コミットは自分の PR に含める）。
-3. 作業はリポジトリの複製で行う。同じフォルダで2つの画面が同時にブランチを切り替えると壊れるため、最初に自分用の worktree を作る。
+### Before starting
+1. Read the repository's `CLAUDE.md` (especially the failure log) and `AGENTS.md`.
+2. Set your row's status in `docs/proofmarket-schedule-2026-10.md` to "in progress" (commit it in your own PR).
+3. Work in a copy of the repository. Two sessions switching branches in the same folder at once breaks things, so first create your own worktree:
    ```
-   cd ~/Solana-idea && git fetch -q && git worktree add ../Solana-idea-<担当> -b <ブランチ名> origin/main
-   cd ../Solana-idea-<担当> && pnpm install
+   cd ~/Solana-idea && git fetch -q && git worktree add ../Solana-idea-<owner> -b <branch> origin/main
+   cd ../Solana-idea-<owner> && pnpm install
    git config user.email 131566598+shoripanda@users.noreply.github.com && git config user.name shoripanda
    ```
 
-### ぶつかりやすい場所
-- `packages/core/src/schemas/api.ts` と `packages/core/openapi.json` は A・B・C が触る。PR を出す前に `git rebase origin/main` し、`pnpm openapi` で作り直してからコミットする。
-- DB の移行の番号は先に決めておく。**A は 0019、B は 0020**。C・D・E は移行を作らない。番号を飛ばしても drizzle は動く。
-- `CLAUDE.md` の失敗ルート台帳に足すときは、末尾に1行足すだけにする（並べ替えない）。
+### Places that collide easily
+- A, B and C all touch `packages/core/src/schemas/api.ts` and `packages/core/openapi.json`. Before opening a PR, `git rebase origin/main` and regenerate with `pnpm openapi` before committing.
+- DB migration numbers are fixed in advance: **A uses 0019, B uses 0020**. C, D and E create no migrations. Drizzle works even if numbers are skipped.
+- When adding to the failure log in `CLAUDE.md`, append one line at the end only (do not reorder).
 
-### 本番には触らない
-- Supabase への `db:migrate`、Vercel の設定、本番の管理 API（`/v1/admin/*`）、本番の DB への書き込みはしない。必要なら PR の本文と報告に「本番で必要な手順」として書く。本番の作業はオーナーの最初の画面（この指示書を書いたセッション）がまとめて行う。
-- 秘密の値は `~/.config/proofmarket/` にだけある。リポジトリ・PR・チャットに書かない。
+### Do not touch production
+- No `db:migrate` against Supabase, no Vercel settings, no production admin API (`/v1/admin/*`), no writes to the production DB. If something is needed, write it in the PR body and your report as "steps needed in production". Production work is done together by the owner's first session (the one that wrote these briefs).
+- Secrets live only in `~/.config/proofmarket/`. Never write them in the repository, PRs or chat.
 
-### 仕上げ
-1. `pnpm exec biome check --write .` のあと `pnpm exec biome ci .` でエラー 0。
-2. `pnpm typecheck`、`pnpm --filter @proofmarket/web exec vitest run --no-file-parallelism`、`pnpm -r --filter '!@proofmarket/web' run test`。
-3. 画面や API を変えたら `APP_ENV=demo pnpm build`（終了コードで判断する）。
-4. 日本語の文章（画面の文言・仕様書・資料）は `natural-japanese` スキルの基準を通す。
-5. push して PR を出す。本文の最後に、Claude Code が示す帰属表示の行を付ける。
-6. CI（typescript・program・secrets）がすべて通ったら、自分で `gh pr merge --merge` してよい（オーナーの許可済み）。Vercel のプレビューの失敗は、コードの問題でなければ止める理由にしない。
-7. `docs/proofmarket-schedule-2026-10.md` の自分の行を「完了」にし、本番で必要な手順があれば同じファイルの末尾「本番で必要な手順」に書く（別の PR でよい）。
-8. 最後にオーナーへ、日本語で短く報告する: PR の URL、できたこと、確かめたこと、本番で必要な手順、残したこと。
+### Finishing
+1. `pnpm exec biome check --write .`, then `pnpm exec biome ci .` with 0 errors.
+2. `pnpm typecheck`, `pnpm --filter @proofmarket/web exec vitest run --no-file-parallelism`, `pnpm -r --filter '!@proofmarket/web' run test`.
+3. If screens or the API changed, `APP_ENV=demo pnpm build` (judge by the exit code).
+4. Japanese prose (screen copy, specs, materials) goes through the `natural-japanese` skill's checks.
+5. Push and open a PR, ending the body with the attribution lines Claude Code provides.
+6. Once CI (typescript, program, secrets) is green, you may merge with `gh pr merge --merge` yourself (approved by the owner). A failing Vercel preview is not a reason to stop unless the code is at fault.
+7. Mark your row "done" in `docs/proofmarket-schedule-2026-10.md`, and write any production steps under "Steps needed in production" at the end of the same file (a separate PR is fine).
+8. Finally, report briefly to the owner in Japanese: the PR URL, what was built, what was checked, steps needed in production, what was left.
 
-### 迷ったら
-仕様は `specs/proofmarket/implementation/en/` が正本。範囲や P0 の要件を変えるときは、先に仕様書に理由を書く（`CLAUDE.md` の決まり）。判断に迷うことはオーナーに聞く。推測で範囲を広げない。
+### When unsure
+The spec in `specs/proofmarket/implementation/en/` is authoritative. Before changing scope or P0 requirements, write the reason in the spec first (a rule in `CLAUDE.md`). Ask the owner when unsure. Do not widen scope on a guess.

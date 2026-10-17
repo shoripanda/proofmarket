@@ -1,19 +1,19 @@
-# 担当 B: 他のプログラムから読める事実（設計書 §2）
+# Owner B: facts other programs can read (design §2)
 
-ブランチ: `feat/onchain-facts`。worktree: `~/proofmarket-b`。プログラムも DB も触らない。
+Branch: `feat/onchain-facts`. Worktree: `~/proofmarket-b`. Touch neither the program nor the DB.
 
-## 作るもの
+## What to build
 
-1. **SDK**（`packages/sdk/src/`）
-   - `onchain.ts`: `taskPda(verificationId, programId)`（seed `["task", sha256("proofmarket:task:v1:" + id)]`。`taskIdHash` は `@proofmarket/core` にある）、`readTaskAccount(rpcUrl, address)`（`@solana/web3.js` の `getAccountInfo` で生のバイト列を取り、Anchor の口座レイアウト = 8 バイトの判別子 + `programs/proofmarket/src/state.rs` の `Task` を Borsh で手で読む。`recipients` は `[Pubkey; MAX_RECIPIENTS]`、定数は `constants.rs`）、`verifyOnChain({ verificationId, result, rpcUrl, programId })` → `resultHash(result)`（`@proofmarket/core` の `resultHash`。除外項目はそこで処理される）と口座の `result_hash` を比べ、`{ matches, task_account, finalized_at, outcome, evidence_root, result_hash }` を返す
-   - `packages/sdk` に `@solana/web3.js` を足す（`packages/solana` が使っている版に合わせる）。Anchor の IDL や `@coral-xyz/anchor` は持ち込まない
-   - テスト: `packages/sdk/test/onchain.test.ts`。Borsh の読みは `packages/solana/test/localnet.test.ts` のやり方で LiteSVM か、固定のバイト列（手で作る）で確かめる。本番の結果 1 件（`GET /v1/public/verifications/{id}` にある `attestation.task_account`）で `matches: true` になることも手元で確かめ、PR の説明に書く
+1. **SDK** (`packages/sdk/src/`)
+   - `onchain.ts`: `taskPda(verificationId, programId)` (seed `["task", sha256("proofmarket:task:v1:" + id)]`; `taskIdHash` is in `@proofmarket/core`), `readTaskAccount(rpcUrl, address)` (fetch the raw bytes with `getAccountInfo` from `@solana/web3.js` and decode by hand with Borsh using Anchor's account layout = an 8-byte discriminator + `Task` from `programs/proofmarket/src/state.rs`; `recipients` is `[Pubkey; MAX_RECIPIENTS]`, constants in `constants.rs`), and `verifyOnChain({ verificationId, result, rpcUrl, programId })` → compare `resultHash(result)` (`resultHash` from `@proofmarket/core`, which handles the excluded fields) with the account's `result_hash` and return `{ matches, task_account, finalized_at, outcome, evidence_root, result_hash }`
+   - Add `@solana/web3.js` to `packages/sdk` (same version as `packages/solana`). Do not bring in the Anchor IDL or `@coral-xyz/anchor`
+   - Tests: `packages/sdk/test/onchain.test.ts`. Check the Borsh decoding with LiteSVM, following `packages/solana/test/localnet.test.ts`, or with fixed hand-made bytes. Also check locally that one production result (`attestation.task_account` in `GET /v1/public/verifications/{id}`) gives `matches: true`, and write it in the PR description
 
-2. **公開 API**: `GET /v1/public/verifications/{id}/onchain`（`apps/web/app/v1/public/verifications/[id]/onchain/route.ts`、`public-service.ts` に関数）。返すもの: `task_account`、`program_id`、`result_hash`、`evidence_root`、`outcome`、`finalized_at`、`explorer_url`、`how_to_read: { rust, typescript }`（10 行ずつの断片）。認証なし、`Cache-Control: public, max-age=60`。結果が無い依頼は 404。`openapi/build.ts` に足して `pnpm openapi`
+2. **Public API**: `GET /v1/public/verifications/{id}/onchain` (`apps/web/app/v1/public/verifications/[id]/onchain/route.ts`, with the function in `public-service.ts`). Returns `task_account`, `program_id`, `result_hash`, `evidence_root`, `outcome`, `finalized_at`, `explorer_url` and `how_to_read: { rust, typescript }` (10-line snippets each). No auth, `Cache-Control: public, max-age=60`. 404 for requests without a result. Add it to `openapi/build.ts` and run `pnpm openapi`
 
-3. **証明ページ `/r/[id]`**: 「プログラムから読む」の節を結びの前に足す。上に初心者向けの 1 文「この答えは、だれにも書き換えられない台帳に 1 行で残っています」と台帳の絵（SVG の線画、既存の `flow-diagram.tsx` の `chain` アイコンを流用してよい）。下に折りたたみ（`<details>`）で PDA のアドレス、`result_hash` の作り方（JCS、除外項目）、Rust と TypeScript の断片。日英両方（`pick(lang, …)`）
+3. **Proof page `/r/[id]`**: add a "Read it from a program" section before the closing. Above, one sentence for beginners — "This answer is recorded as one line in a ledger nobody can rewrite" — and a ledger illustration (SVG line art; the `chain` icon of the existing `flow-diagram.tsx` may be reused). Below, a collapsible `<details>` with the PDA address, how `result_hash` is made (JCS, excluded fields), and the Rust and TypeScript snippets. Japanese and English (`pick(lang, …)`)
 
-4. **文書**: `docs/onchain-facts.md`（英語）。保険の自動支払いと予約の切り替えの例を、`verifyOnChain` の呼び出しと Anchor の `AccountDeserialize` の両方で。`/developers` の MCP の節の下に「On-chain facts」の短い節（日英）とリンク
+4. **Docs**: `docs/onchain-facts.md` (English), with examples of automatic insurance payout and switching a booking, using both `verifyOnChain` and Anchor's `AccountDeserialize`. A short "On-chain facts" section (Japanese and English) with a link, below the MCP section of `/developers`
 
-## できたの判定
-`verifyOnChain` が本番の結果で `matches: true`。`/r/{id}` に PDA と読み方が出る。`/v1/public/verifications/{id}/onchain` が 200 で返る。
+## Done when
+`verifyOnChain` gives `matches: true` on a production result. `/r/{id}` shows the PDA and how to read it. `/v1/public/verifications/{id}/onchain` returns 200.
