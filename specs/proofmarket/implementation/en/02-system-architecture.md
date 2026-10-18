@@ -1,6 +1,4 @@
-# 02. Basic Design (System Architecture) (English translation)
-
-> English translation. The Japanese version in [`../ja/02-system-architecture.md`](../ja/02-system-architecture.md) is authoritative; if they differ, the Japanese version wins.
+# 02. Basic Design (System Architecture)
 
 Created: 2026-10-02
 

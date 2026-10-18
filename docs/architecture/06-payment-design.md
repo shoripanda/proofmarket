@@ -1,26 +1,26 @@
-# 06. 決済設計: 前払い残高と x402 の 2 本立てを保ち、上限と見積もりを足す
+# 06. Payment design: keep the prepaid balance and x402, add limits and quotes
 
-作成: 2026-10-14 ／ 正本は 15 章（メインネットと SOL）、16 章（多通貨と処理量、PR #39〜#42 で審査中）
+Written: 2026-10-14 / Authoritative: chapter 15 (mainnet and SOL) and chapter 16 (multi-token and throughput, under review in PRs #39-#42)
 
-## 1. 目的
+## 1. Purpose
 
-指示書 4.1 と 4.3 のうち決済に関わる部分（依頼者がどう払い、証人がどう受け取り、運営者がどう帳尻を合わせるか）を設計する。エスクローの内側は 05 章、支出の歯止めは 08 章に分け、この章は資金の流れと処理量を扱う。
+Design the payment parts of sections 4.1 and 4.3 of the brief: how requesters pay, how witnesses receive, and how the operator reconciles. The inside of the escrow is chapter 05 and spending brakes are chapter 08; this chapter covers the flow of funds and throughput.
 
-## 2. 現状
+## 2. Current state
 
-資金の流れは次の 3 段で、「支払い」と「報酬のエスクロー」を分ける既存の決まり（`architecture.md` 6 節）を守っている。
+Funds flow in three stages, keeping the existing rule that separates "payment" from "escrow of the bounty" (`architecture.md` §6).
 
 ```mermaid
 flowchart LR
-  subgraph in["入金（依頼者 → 運営者）"]
-    A1["運営者が手で TOPUP<br/>issue-api-key / join のお試し 5 USDC"]
-    A2["Solana Pay 入金<br/>参照つき送金を tick が検出"]
-    A3["x402<br/>402 → 支払い取引を検証・共同署名・送信 → TOPUP"]
+  subgraph in["Deposits (requester → operator)"]
+    A1["Manual TOPUP by the operator<br/>issue-api-key / 5 USDC trial from join"]
+    A2["Solana Pay deposit<br/>transfer with a reference, detected by the tick"]
+    A3["x402<br/>402 → verify, co-sign and send the payment → TOPUP"]
   end
   L[("requester_ledger<br/>TOPUP / RESERVE / RELEASE / REFUND")]
-  subgraph esc["エスクロー（運営者 → vault → 証人）"]
+  subgraph esc["Escrow (operator → vault → witnesses)"]
     F["FUND_TASK<br/>treasury → vault"]
-    S["FINALIZE_AND_SETTLE<br/>vault → 証人、余りは treasury"]
+    S["FINALIZE_AND_SETTLE<br/>vault → witnesses, rest → treasury"]
     R["REFUND_TASK<br/>vault → treasury"]
   end
   A1 --> L
@@ -29,66 +29,66 @@ flowchart LR
   L -->|RESERVE| F
   F --> S
   F --> R
-  S -->|RELEASE（差額）| L
+  S -->|RELEASE (difference)| L
   R -->|REFUND| L
 ```
 
-入金のうち Solana Pay は、credential ごとに作った ed25519 の参照鍵を送金に付けてもらう。tick は参照を持つ credential を 25 件ずつ順に `getSignaturesForAddress` で見て、finalized の送金を `deposits` に 1 行ずつ記録する。x402 は `POST /v1/x402/verifications` で、通貨は USDC だけ、額は `bounty.amount × required_witnesses` に固定で、支払いごとに新しい API キーを返す。
+For Solana Pay, each credential gets an ed25519 reference key that the requester attaches to the transfer. The tick goes through credentials with a reference, 25 at a time, with `getSignaturesForAddress`, and records each finalized transfer as one row in `deposits`. x402 is `POST /v1/x402/verifications`: USDC only, the amount fixed at `bounty.amount × required_witnesses`, and a new API key returned per payment.
 
-証人への支払いは `settle` 1 回で行い、USDC は証人の ATA（無ければ operator が作る）、SOL は財布へ直接送る（wSOL を task 口座経由で lamports に戻す、15 §3.1）。手数料と rent は operator が持つ。プラットフォーム手数料の列（`platform_fee_amount`、移行 0027）はあるが、値は 0 で読む処理もない。円での受け取りは希望の登録だけで、支払いは始めていない。
+Witnesses are paid with a single `settle`: USDC to the witness's ATA (created by the operator if missing), SOL straight to the wallet (wSOL turned back into lamports through the task account, 15 §3.1). The operator pays fees and rent. A platform fee column exists (`platform_fee_amount`, migration 0027), but it is 0 and nothing reads it. Yen payouts are only a registration of interest; none have started.
 
-処理量は 16 §2.3 で問題になり、メインネットの finalized 待ち（公開 RPC で約 7 秒）では 1 件ずつ直列に流す今の tick が 300 秒に収まらない見込みである。PR #40 で並列化（既定 6 並列、1 回 60 件、200 秒で新規の取り出しを止める）と送信の改善を入れたが、本番での実測はまだない。
+Throughput became an issue in 16 §2.3: with mainnet's wait for finalized (about 7 seconds on public RPC), today's tick, which runs jobs one at a time, is not expected to fit in 300 seconds. PR #40 added parallelism (6 at a time by default, 60 per run, stop taking new jobs at 200 seconds) and better sending, but there is no production measurement yet.
 
-## 3. 要件
+## 3. Requirements
 
-- 依頼者の支出が、残高・1 件の上限・1 日の上限の 3 つで抑えられること（上限は null で無効にできる）
-- 支払いの前に費用が分かること（04 章の見積もり）
-- 運営者が、チェーンの支払いと DB の記録を日次で突き合わせられること
-- メインネットの処理量が計測され、目標値（16 §7.1）と比べられること
+- Requester spending is bounded by three things: balance, per-request limit and daily limit (limits can be disabled with null)
+- The cost is known before paying (the quote in chapter 04)
+- The operator can reconcile on-chain payments with DB records daily
+- Mainnet throughput is measured and compared with the targets (16 §7.1)
 
-## 4. 提案する設計
+## 4. Proposed design
 
-### 4.1 支出ポリシーの置き場
+### 4.1 Where the spending policy lives
 
-04 §4.3 のとおり `createVerification` に入れる。検査の順番は、ポリシー（種別・場所・締切）→ 1 件の上限 → 1 日の累計 → 残高とし、エラーコードは既存のものを使う。x402 の下見（402 を返す前に作成を試す）もこの順番を通るので、上限を超える依頼は払う前に断られる。
+In `createVerification`, as in 04 §4.3. Order of checks: policy (type, place, deadline) → per-request limit → daily total → balance, using the existing error codes. x402's preview (try the create before answering 402) goes through the same order, so a request over the limits is refused before payment.
 
-### 4.2 日次の突き合わせ
+### 4.2 Daily reconciliation
 
-点検記録 7 項が勧める「`TaskSettled` の `paid_total` と `payment_records` の照合」を tick の 1 日 1 回の段（保持期限の削除と同じ段）に入れる。前日に CONFIRMED になった `payment_records` ごとに Task 口座を読み、`paid_total` と `recipients` が DB と一致するかを数え、違いがあれば警告ログと `audit_events`（`operator_action` ではなく新しい `reconciliation_mismatch`）に残す。RPC の呼び出しは 1 件 1 回なので、1 日 100 件なら 100 回で済む。
+Put the review's item 7 recommendation, "compare `paid_total` in `TaskSettled` with `payment_records`", into the tick's once-a-day step (the same step as retention deletion). For each `payment_records` row that became CONFIRMED the previous day, read the Task account, count whether `paid_total` and `recipients` match the DB, and on a mismatch write a warning log and an `audit_events` row (a new `reconciliation_mismatch`, not `operator_action`). One RPC call per row: 100 rows a day means 100 calls.
 
-### 4.3 処理量の計測
+### 4.3 Measuring throughput
 
-PR #40 の並列化が入ったあと、tick の戻り値に段ごとの所要時間と件数を含め、`/v1/health/ready` が「直近の tick が 200 秒を超えたか」を見る。目標値は 16 §7.1 のまま（50 件の一括依頼の資金化が 5 分以内、確定から支払いまで 2 分以内）で、メインネット移行後の最初の 1 週間で実測し、`docs/ops/` に記録する。実測が目標に届かなければ、Vercel の関数ではなく Supabase の pg_cron から複数の tick を並べて呼ぶ（`JOB_CONCURRENCY` を上げるより、関数の 300 秒上限を 2 本に分けるほうが効く。推測）。
+Once PR #40's parallelism is in, include per-step durations and counts in the tick's return value, and have `/v1/health/ready` check whether the latest tick went over 200 seconds. The targets stay as in 16 §7.1 (funding a batch of 50 within 5 minutes; from final to paid within 2 minutes). Measure during the first week after moving to mainnet and record it in `docs/ops/`. If the targets are missed, call several ticks in parallel from Supabase pg_cron rather than from Vercel (splitting the function's 300-second limit into two likely helps more than raising `JOB_CONCURRENCY`; guess).
 
-### 4.4 変えないこと
+### 4.4 What stays
 
-前払い残高の方式（D-05）、x402 を USDC に限ること（16 §9）、プラットフォーム手数料 0、円での支払いを始めないこと。いずれも法務（D-05、`legal-checklist.md` §3・§7）が片付くまで動かさない。
+The prepaid balance (D-05), x402 limited to USDC (16 §9), a platform fee of 0, and no yen payouts. None of these move until the legal questions (D-05, `legal-checklist.md` §3 and §7) are settled.
 
-## 5. 技術選定の理由
+## 5. Rationale
 
-突き合わせを tick に入れるのは、新しい常駐プロセスを持たないためで、1 日 1 回なら Vercel の関数の中で終わる。処理量の計測を `/v1/health/ready` に出すのは、外からの監視（`uptime.yml`）がすでにそれを 5 分ごとに見ているからで、警告の経路を増やさずに済む。
+Reconciliation goes into the tick to avoid a new long-running process; once a day fits inside a Vercel function. Throughput goes into `/v1/health/ready` because external monitoring (`uptime.yml`) already checks it every 5 minutes, so no new alert path is needed.
 
-## 6. 代替案
+## 6. Alternatives
 
-- x402 を USDT や PYUSD に広げる案。`exact` 方式は SPL トークンの送金なので技術的には可能で、PR #41 の通貨台帳があれば mint の切り替えは小さい。需要が見えてから（16 §9）
-- 入金の検出を Helius の Webhook（アドレスの監視）に替える案。tick の `getSignaturesForAddress` を減らせるが、Webhook の受け口と署名検証が増える。依頼者が 100 を超えてから検討する
-- 証人への支払いをまとめて日次で行う案（G-11 の P2）。証人の公開鍵が依頼ごとに Explorer に出る問題を解くが、エスクローの「1 依頼 1 取引」という証明の形が崩れる。メインネット移行後に別途設計する
+- Widening x402 to USDT or PYUSD. The `exact` scheme is an SPL token transfer, so it is technically possible, and with PR #41's currency registry switching mints is small. Wait for demand (16 §9)
+- Detecting deposits with Helius webhooks (address monitoring). It would cut the tick's `getSignaturesForAddress` calls but adds a webhook receiver and signature verification. Consider once there are over 100 requesters
+- Paying witnesses in one daily batch (G-11, P2). It solves witnesses' public keys appearing on Explorer per request, but breaks the escrow's "one request, one transaction" proof. Design separately after mainnet
 
-## 7. セキュリティ上の考慮事項
+## 7. Security considerations
 
-08 §1.5 の表のとおり二重支払いは 3 層で防いでいる。足す突き合わせは検出であって予防ではないが、鍵の濫用（点検記録 1 項）や DB とチェーンのずれを翌日には見つけられる。x402 の再送防止は `x402_payments` の主キー（取引 ID）で、120 秒を超えて送信中のままの行は送り直せるが、送り直す前にチェーン上の有無を確かめる。
+As in the table in 08 §1.5, double payment is prevented in three layers. Reconciliation is detection, not prevention, but it finds key abuse (review item 1) or drift between the DB and the chain by the next day. x402 replay protection is the primary key of `x402_payments` (the transaction ID); a row left sending for over 120 seconds may be resent, but its presence on chain is checked first.
 
-## 8. 実装上の課題
+## 8. Implementation issues
 
-- 日次の突き合わせは Task 口座を読むので、settle から 1 年以上たった依頼（保持期間 365 日）では `payment_records` が消えている。前日分だけを対象にすれば問題にならない
-- `/v1/health/ready` の判定を増やすと `uptime.yml` が失敗する回数が増えうる。処理量の警告は 503 ではなく本文のフィールドに出し、503 は DB と tick の生死だけにする
+- Reconciliation reads Task accounts, and for requests settled more than a year ago (365-day retention) the `payment_records` are gone. Limiting it to the previous day avoids the problem
+- More checks in `/v1/health/ready` could make `uptime.yml` fail more often. Report throughput warnings in a body field rather than as 503; keep 503 for whether the DB and tick are alive
 
-## 9. テスト方針
+## 9. Test strategy
 
-突き合わせは `apps/web/test/jobs.test.ts` に、偽のチェーンアダプタが DB と違う `paid_total` を返す 1 件を足して警告が出ることを確かめる。処理量は単体テストでは測れないので、localnet で 50 件の資金化を流して所要時間を記録する手順を 09 章（既存仕様）の F 層に足す。
+For reconciliation, add one case to `apps/web/test/jobs.test.ts` where the fake chain adapter returns a `paid_total` different from the DB and check a warning is raised. Throughput cannot be measured in unit tests; add a procedure to layer F of chapter 09 (existing spec) that funds 50 requests on localnet and records the time.
 
-## 10. 未決定事項
+## 10. Open questions
 
-- 16 §9 の 4 件（最初に開く通貨、発行元への信頼、証人の口座代、x402 の通貨）
-- 処理量の目標が届かないときに pg_cron で tick を複数呼ぶか、別の実行基盤に移すか
-- プラットフォーム手数料をいつ、どの通貨で取るか（`docs/pitch/08-revenue-model.md`）
+- The four items in 16 §9 (which currency to open first, trust in issuers, witnesses' account costs, x402 currencies)
+- If throughput targets are missed, whether to call several ticks from pg_cron or move to another runtime
+- When, and in which currency, to take a platform fee (`docs/pitch/08-revenue-model.md`)

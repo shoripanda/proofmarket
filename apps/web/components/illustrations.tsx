@@ -175,7 +175,7 @@ export function Picture({ k, lang }: { k: PictureKey; lang: "ja" | "en" }) {
 
 /**
  * A section built picture-first: the drawing, the heading and one sentence. Everything else goes in `more`,
- * folded under "くわしく" so the page reads with the pictures alone.
+ * folded under "More detail" so the page reads with the pictures alone.
  */
 export function PictureSection({
   k,

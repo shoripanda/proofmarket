@@ -1,4 +1,4 @@
-// S-01 「最近の判定結果」 — results the operator featured (05 §4). Hidden when there are none or the DB is down.
+// S-01 "Recent results" — results the operator featured (05 §4). Hidden when there are none or the DB is down.
 import Link from "next/link";
 import { answerLabel } from "@/lib/answers";
 import { appContext } from "@/lib/context";

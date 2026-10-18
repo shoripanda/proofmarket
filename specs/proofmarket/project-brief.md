@@ -1,6 +1,6 @@
 # ProofMarket Project Brief
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 ## Product thesis
 
@@ -16,7 +16,7 @@ ProofMarket provides a standardized escalation path:
 AI agent developer/operator.
 
 ### Worker
-Pilot地域内のhuman witness。
+A human witness in the pilot area.
 
 ### First use case
 `PLACE_STATUS_VERIFICATION`
@@ -27,23 +27,23 @@ Example:
 
 ### Why this wedge
 
-- judgeが数十秒で理解できる
-- physical-world gapが明確
-- answerがbinaryでacceptance判定しやすい
-- photo + geofence + freshnessでproof pipelineをdemoできる
-- API resultをagent workflowへ戻せる
-- Solana settlement / attestationを自然に見せられる
+- A judge understands it in tens of seconds
+- The physical-world gap is obvious
+- The answer is binary, so acceptance is easy to judge
+- Photo + geofence + freshness demonstrate the proof pipeline
+- The API result goes back into the agent workflow
+- Solana settlement and attestation can be shown naturally
 
 ## Value proposition
 
 ### Agent side
-Web検索の「たぶん」を、fresh human evidence付きの「検証済み」に変える。
+Turn a web search's "probably" into "verified", with fresh human evidence.
 
 ### Worker side
-近距離・短時間のverification taskを受け、完了条件が明確な形で報酬を得る。
+Take short, nearby verification tasks and get paid on clear completion criteria.
 
 ### Platform side
-task marketplaceではなく、physical-world verification primitiveを提供する。
+Provide a physical-world verification primitive, not a task marketplace. (2026-10-16: general tasks were added next to verifications; see `requirements.md` §7.)
 
 ## Product promise
 
@@ -68,36 +68,36 @@ without manually coordinating with a human.
 
 ## MVP business model hypothesis
 
-初期仮説:
+Initial hypothesis:
 
 - requester pays verification fee + worker bounty
 - ProofMarket takes a platform fee
 - high-assurance verification uses multiple witnesses and costs more
 
-具体的fee率はMVPで固定しない。実際のworker cost / response time / requester willingness-to-payを測定して決める。
+The exact fee rate is not fixed in the MVP; decide it by measuring actual worker cost, response time and requester willingness to pay. (2026-10-16: set at 15% on top of the bounty.)
 
 ## Main assumptions to validate
 
-1. agent developerがfresh real-world evidenceに支払う
-2. API/MCPからtaskを発行するUXに需要がある
-3. workerが短時間のverification taskを受ける
-4. photo + location + freshness checksで最低限のtrustを作れる
-5. multi-witness verificationに追加価値がある
-6. Solana settlement/attestationがcentralized payout DBより価値を増す
+1. Agent developers pay for fresh real-world evidence
+2. There is demand for issuing tasks from an API or MCP
+3. Workers take short verification tasks
+4. Photo, location and freshness checks establish a minimum of trust
+5. Multi-witness verification adds value
+6. Solana settlement and attestation add value over a centralised payout DB
 
 ## Success for hackathon
 
-「platformが完成した」ではなく、以下を示せれば成功。
+Success is not "the platform is finished" but showing that:
 
-- actual human verificationが動く
-- actual agent/API requestから始まる
-- evidence validationが見える
-- Solana transaction/attestationが見える
-- resultがagentへ戻る
-- 少数でもreal user feedbackがある
+- Actual human verification works
+- It starts from an actual agent or API request
+- Evidence validation is visible
+- The Solana transaction and attestation are visible
+- The result goes back to the agent
+- There is real user feedback, even from a few people
 
 ## Non-goal
 
-“AI replaces humans” narrativeは使わない。
+Do not use the "AI replaces humans" narrative.
 
-ProofMarketは、softwareが物理世界へアクセスできない境界で、**人間の知覚・存在・行動を明示的に呼び出すhuman-in-the-loop infrastructure**として扱う。
+Treat ProofMarket as **human-in-the-loop infrastructure that explicitly calls on human perception, presence and action** at the boundary where software cannot reach the physical world.

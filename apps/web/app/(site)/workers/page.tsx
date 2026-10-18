@@ -1,4 +1,4 @@
-// S-04 worker 向け — what the work is, what it pays, safety and privacy, and how to join.
+// S-04 For workers — what the work is, what it pays, safety and privacy, and how to join.
 import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";

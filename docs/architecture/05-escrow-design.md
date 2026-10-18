@@ -1,126 +1,126 @@
-# 05. エスクロー設計: プログラムは十分に固い。弱いのは鍵の置き場
+# 05. Escrow design: the program is solid; where the keys live is weak
 
-作成: 2026-10-14 ／ 正本は `specs/proofmarket/implementation/ja/06-solana-program-design.md`、点検記録は `docs/security/program-review-2026-10-13.md`
+Written: 2026-10-14 / Authoritative: `specs/proofmarket/implementation/en/06-solana-program-design.md`; review record: `docs/security/program-review-2026-10-13.md`
 
-## 1. 目的
+## 1. Purpose
 
-指示書 4.3 の 8 項目（預け入れ、預入の確認、ロック、承認後の解放、キャンセル時の返金、紛争時の保全、二重支払い防止、取引履歴）を既存のプログラムに照らし、足りないものを設計する。あわせて「秘密鍵をサーバー上に無防備に保存しない」を満たす署名の境界を決める。
+Check the eight items in section 4.3 of the brief (deposit, confirming the deposit, locking, release after approval, refund on cancellation, protecting funds during a dispute, preventing double payment, transaction history) against the existing program, and design what is missing. Also decide a signing boundary that satisfies "do not store secret keys unprotected on the server".
 
-## 2. 現状
+## 2. Current state
 
-Anchor 1.2 のプログラム v1.2 が Devnet（`A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s`）で動いている。口座は 4 種で、`Config`（seeds `["config"]`。admin、operator、verifier、bounty_mint、treasury、max_witnesses、paused）、`AllowedMint`（seeds `["mint", mint]`。USDC 以外に預かれる mint）、`Task`（seeds `["task", task_id_hash]`。公開の領収書として永久に残る）、`Vault`（seeds `["vault", task]`。トークン口座、settle か refund で閉じる）である。`task_id_hash` は `SHA-256("proofmarket:task:v1:" + verification_id)` で、同じ依頼は二度資金化できない。
+Program v1.2 on Anchor 1.2 runs on Devnet (`A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s`). There are four account types: `Config` (seeds `["config"]`; admin, operator, verifier, bounty_mint, treasury, max_witnesses, paused), `AllowedMint` (seeds `["mint", mint]`; mints other than USDC that may be escrowed), `Task` (seeds `["task", task_id_hash]`; stays forever as a public receipt) and `Vault` (seeds `["vault", task]`; a token account closed by settle or refund). `task_id_hash` is `SHA-256("proofmarket:task:v1:" + verification_id)`, so the same request cannot be funded twice.
 
-命令と状態の対応を下に示す。状態は `Funded → Finalized → Settled` と `Funded → Refunded` の 2 本道で、`Settled` と `Refunded` から先はない。
+Instructions and states below. There are two paths, `Funded → Finalized → Settled` and `Funded → Refunded`, and nothing follows `Settled` or `Refunded`.
 
 ```mermaid
 sequenceDiagram
-  participant S as サーバー（outbox）
-  participant OP as operator 鍵
-  participant VF as verifier 鍵
-  participant P as proofmarket プログラム
+  participant S as Server (outbox)
+  participant OP as operator key
+  participant VF as verifier key
+  participant P as proofmarket program
   participant V as Vault PDA
-  participant W as 証人の ATA / 財布
+  participant W as Witness ATA / wallet
 
   S->>OP: FUND_TASK
   OP->>P: initialize_task(args)
-  P->>V: treasury → vault（amount × required）
-  Note over P: Task = Funded。paused なら拒否
-  S->>VF: FINALIZE_AND_SETTLE（判定後）
+  P->>V: treasury → vault (amount × required)
+  Note over P: Task = Funded. Refused when paused
+  S->>VF: FINALIZE_AND_SETTLE (after the verdict)
   VF->>P: finalize_verification(root, hash, outcome, recipients)
-  Note over P: Task = Finalized。Funded のときだけ
-  S->>OP: 続けて settle
-  OP->>P: settle(recipient 口座 ×n)
+  Note over P: Task = Finalized. Only from Funded
+  S->>OP: then settle
+  OP->>P: settle(recipient accounts ×n)
   P->>W: amount_per_witness × n
-  P->>P: 余りは treasury、vault を閉じる
+  P->>P: the rest to treasury, close the vault
   Note over P: Task = Settled
-  alt キャンセル・期限切れで提出 0
+  alt Cancelled, or expired with 0 submissions
     S->>OP: REFUND_TASK
     OP->>P: refund(reason)
-    P->>P: 全額 treasury へ、vault を閉じる
-    Note over P: Task = Refunded。Funded のときだけ
+    P->>P: everything to treasury, close the vault
+    Note over P: Task = Refunded. Only from Funded
   end
 ```
 
-指示書の 8 項目との対応は次のとおり。
+Against the eight items:
 
-| 項目 | 実装 | 評価 |
+| Item | Implementation | Rating |
 |---|---|---|
-| 報酬の預け入れ | `initialize_task`。treasury（operator の ATA）から vault へ | Implemented |
-| 預入資金の確認 | サーバーは Task 口座を読んでから次に進む（`anchor-adapter.ts`）。公開ページはブラウザから照合（`packages/sdk/onchain`） | Implemented |
-| 資金のロック | vault は PDA で、プログラム以外は動かせない | Implemented |
-| 承認後の解放 | `finalize_verification` → `settle`。受取人は verifier が決め、operator が払う | Implemented |
-| キャンセル時の返金 | `refund(Cancelled)`。`Funded` のときだけ | Implemented |
-| 紛争時の資金保全 | 無し。異議は再確認の依頼を新しく作る（01 §4.12）ので、元の資金は止めない | Missing（設計どおり） |
-| 二重支払い防止 | 状態検査、`settle` と `refund` の排他、`payment_records` の `settle_xor_refund` 索引、outbox の `dedupe_key` | Implemented |
-| 取引履歴 | `payment_records`（署名の配列、確認時刻）、イベント 4 種（`TaskInitialized`、`VerificationFinalized`、`TaskSettled`、`TaskRefunded`） | Implemented |
+| Depositing the bounty | `initialize_task`: treasury (operator's ATA) → vault | Implemented |
+| Confirming the deposit | The server reads the Task account before moving on (`anchor-adapter.ts`); the public page checks it from the browser (`packages/sdk/onchain`) | Implemented |
+| Locking funds | The vault is a PDA; only the program can move it | Implemented |
+| Release after approval | `finalize_verification` → `settle`. The verifier decides recipients, the operator pays | Implemented |
+| Refund on cancellation | `refund(Cancelled)`, only from `Funded` | Implemented |
+| Protecting funds in a dispute | None. A dispute creates a new recheck request (01 §4.12), so the original funds are not held | Missing (by design) |
+| Preventing double payment | State checks, `settle` and `refund` exclusive, the `settle_xor_refund` index on `payment_records`, the outbox `dedupe_key` | Implemented |
+| Transaction history | `payment_records` (array of signatures, confirmation time) and four events (`TaskInitialized`, `VerificationFinalized`, `TaskSettled`, `TaskRefunded`) | Implemented |
 
-鍵は 3 本に分かれ、admin はサーバーに置かず、operator と verifier は Vercel の環境変数に base58 で置く。`initialize_config` は operator ≠ verifier を要求するので、1 本が漏れただけでは自分を受取人にして払えない。LiteSVM のテストは 23 本で、v1.3（PR #42、Token-2022 対応）で 29 本になる。
+Keys are split three ways: admin is never on the server; operator and verifier are in Vercel env vars as base58. `initialize_config` requires operator ≠ verifier, so leaking one key is not enough to pay yourself. There are 23 LiteSVM tests, 29 with v1.3 (PR #42, Token-2022 support).
 
-## 3. 要件
+## 3. Requirements
 
-- 命令と口座の設計は変えない（v1.3 の差分は審査中の PR #42 に委ねる）
-- operator と verifier の署名を、鍵の置き場から切り離せる境界を設ける
-- プログラムの更新権限を、配置した鍵から別の鍵へ移す手順を決める
-- treasury に置く額の上限と、超えた分を admin へ移す手順を決める
+- Do not change the instruction and account design (v1.3's differences are left to PR #42 under review)
+- Add a boundary that separates operator and verifier signing from where the keys are kept
+- Decide how to move the program's upgrade authority from the deploying key to another key
+- Decide a cap on what the treasury holds, and how to move the excess to admin
 
-## 4. 提案する設計
+## 4. Proposed design
 
-### 4.1 Signer の境界
+### 4.1 The Signer boundary
 
-`packages/solana` に次のインターフェースを置く。
+Add this interface to `packages/solana`:
 
 ```ts
 export interface Signer {
   readonly publicKey: PublicKey;
-  /** 署名すべきメッセージのバイト列を受け、64 バイトの署名を返す。本文は変えない */
+  /** Takes the bytes of the message to sign and returns a 64-byte signature. Never changes the message */
   sign(message: Uint8Array): Promise<Uint8Array>;
 }
 ```
 
-`createAnchorAdapter` は `operatorSecretKey: Uint8Array` の代わりに `operator: Signer` と `verifier: Signer` を受ける。最初の実装 `keypairSigner(secret)` は今と同じ `Keypair` を包むだけで、動作は変わらない。`send.ts` は `VersionedTransaction.message.serialize()` を `sign()` に渡し、返った署名を `addSignature` で付ける。Anchor の `Program` は `AnchorProvider` にウォレットを要求するが、ProofMarket はすでに自前の最小ウォレット（`keypairWallet`）を渡しているので、そこを `Signer` 経由にする。
+`createAnchorAdapter` takes `operator: Signer` and `verifier: Signer` instead of `operatorSecretKey: Uint8Array`. The first implementation, `keypairSigner(secret)`, just wraps today's `Keypair`, so behaviour does not change. `send.ts` passes `VersionedTransaction.message.serialize()` to `sign()` and attaches the returned signature with `addSignature`. Anchor's `Program` wants a wallet from `AnchorProvider`, but ProofMarket already passes its own minimal wallet (`keypairWallet`), which is routed through `Signer`.
 
-2 つ目の実装 `keychainSigner(backend)` は `@solana/keychain` の `SolanaSigner` を包む。keychain は `@solana/kit` の型で取引を受けるので、web3.js v1 の `VersionedTransaction` を `getTransactionDecoder` で kit の形に変換して `signTransactions` を呼び、署名だけを取り出す。bytes が同じなら署名は同じなので、橋は 30 行程度で済む（推測。実装時に `send.test.ts` で固定する）。バックエンドは環境変数（`SIGNER_BACKEND=memory|aws-kms|gcp-kms|privy|turnkey`）で選び、`OPERATOR_SECRET_KEY` は `memory` のときだけ読む。
+The second implementation, `keychainSigner(backend)`, wraps a `SolanaSigner` from `@solana/keychain`. keychain takes transactions in `@solana/kit` types, so convert the web3.js v1 `VersionedTransaction` with `getTransactionDecoder`, call `signTransactions`, and take only the signature. Same bytes give the same signature, so the bridge is about 30 lines (guess; to be pinned in `send.test.ts` when implemented). The backend is chosen by env var (`SIGNER_BACKEND=memory|aws-kms|gcp-kms|privy|turnkey`), and `OPERATOR_SECRET_KEY` is read only for `memory`.
 
-### 4.2 更新権限とマルチシグ
+### 4.2 Upgrade authority and multisig
 
-プログラムの upgrade authority は、メインネットに配置した直後に `solana program set-upgrade-authority` で admin 鍵（ハードウェア財布）へ移す。Squads のマルチシグ（2-of-3）が望ましいが、運営者が 1 人のあいだは閾値を 1 にしたマルチシグに意味がないので、ハードウェア財布 1 本から始め、共同運営者ができた時点でマルチシグに移す。`Config.admin` も同じ鍵にする。手順は 12 §10 に追記する。
+Right after deploying to mainnet, move the program's upgrade authority to the admin key (a hardware wallet) with `solana program set-upgrade-authority`. A Squads multisig (2-of-3) is preferable, but with a single operator a threshold-1 multisig means nothing, so start with one hardware wallet and move to a multisig once there is a co-operator. `Config.admin` uses the same key. The procedure goes into 12 §10.
 
-### 4.3 treasury の上限
+### 4.3 Treasury cap
 
-15 §4.2 の「1 日の支払い見込みの 2 倍」を数字にする。開始時の見込みは 1 日 50 USDC 以下（推測。本番の実数は未読）なので、上限を 200 USDC と 2 SOL（手数料と rent 用）に置き、tick が毎分の残高検査（08 §5 の既存の警告）で上限の 1.5 倍を超えたら警告する。移し替えは自動化せず、運営者が admin の財布へ送る。自動化すると operator 鍵が admin への送金もできることになり、漏えい時に被害が広がる。
+Turn 15 §4.2's "twice the expected daily payouts" into numbers. Expected payouts at launch are 50 USDC a day or less (guess; production figures not read), so cap at 200 USDC and 2 SOL (for fees and rent), and have the tick warn when the balance goes over 1.5 times the cap (the existing warnings in 08 §5). Sweeping is not automated; the operator sends to the admin wallet. Automating it would let the operator key send to admin as well, widening the damage from a leak.
 
-### 4.4 紛争時の保全について
+### 4.4 Protecting funds during a dispute
 
-指示書は紛争時の資金保全を求めるが、いまの設計では異議が元の資金を止めない。これは D-08（判定を通った提出にはすべて払う）の帰結で、証人を守るための決定である。保全を入れるなら、`finalize_verification` の後に「異議期間」を置いて `settle` を遅らせる形になるが、証人への支払いが遅れ、プログラムに時間の制限を入れることになる（D-11 と衝突する）。足さない。代わりに、楽観的な確認（13 §3）が異議期間つきの道として既にあり、依頼者はそれを選べる。
+The brief asks for funds to be protected during a dispute, but in the current design a dispute does not hold the original funds. That follows from D-08 (every submission that passes is paid), a decision to protect witnesses. Adding protection would mean a "dispute window" after `finalize_verification` that delays `settle`, delaying witness pay and putting a time limit into the program (which conflicts with D-11). Not added. Optimistic verification (13 §3) already offers a path with a challenge window, and requesters can choose it.
 
-## 5. 技術選定の理由
+## 5. Rationale
 
-Signer を `sign(bytes)` の 1 メソッドにしたのは、KMS も MPC もハードウェア財布も最終的にこの形に落ちるからで、nextjs-keychain が 13 のバックエンドを 1 つの型で扱えているのも同じ理由による。Anchor の `Program` をそのまま使い続けるのは、命令の組み立てと口座の検証を IDL に任せられるからで、ここを手書きに戻す利点はない。
+The Signer has one method, `sign(bytes)`, because KMS, MPC and hardware wallets all reduce to this in the end; that is also why nextjs-keychain can handle 13 backends with one type. Anchor's `Program` stays because building instructions and validating accounts can be left to the IDL; hand-writing them again gains nothing.
 
-## 6. 代替案
+## 6. Alternatives
 
-- operator 鍵を Privy のサーバーウォレットに置く案。Privy はすでに worker 側で契約しているので、追加の契約が要らない。keychain に `privy` バックエンドがあるので 4.1 の枠で試せる
-- 署名サーバーを別に立てる案（nextjs-keychain の形）。Vercel の関数から別サーバーへの往復が増え、署名 1 回に数百 ms が足される。決済ジョブの処理量（16 §7）に響くので、まずは同じプロセスで KMS を呼ぶ
-- プログラムに依頼者ごとの支出上限を持たせる案。04 章で退けた
+- Keeping the operator key in a Privy server wallet. We already have a Privy contract for workers, so no new contract is needed, and keychain has a `privy` backend, so it can be tried within 4.1
+- A separate signing server (the nextjs-keychain layout). It adds a round trip from the Vercel function, a few hundred ms per signature, which hurts settlement throughput (16 §7). Call the KMS from the same process first
+- Per-requester spending limits in the program. Rejected in chapter 04
 
-## 7. セキュリティ上の考慮事項
+## 7. Security considerations
 
-点検記録が挙げた注意点のうち、設計で答えるのは 1（operator は `Funded` の task をいつでも返金できる）と 5（更新権限）である。1 は Signer を KMS に移しても消えない。KMS は署名を速く出すだけで、何に署名するかは判断しない。operator 鍵の濫用に対する歯止めは、サーバー側の検査（向かっている証人がいれば取り消さない）と treasury の上限であり、4.3 の上限がその被害の天井になる。
+Of the cautions in the review record, the design answers 1 (the operator can refund a `Funded` task at any time) and 5 (upgrade authority). Item 1 does not go away with a KMS: a KMS signs quickly but does not judge what it signs. The brakes on operator-key abuse are server-side checks (never cancel while a witness is on the way) and the treasury cap, and the cap in 4.3 is the ceiling on that damage.
 
-`settle` の受取人は verifier が記録し、operator はそれを変えられない。verifier 鍵も Signer の裏に置くので、KMS に移すときは 2 本とも移す。1 本だけ移しても、もう 1 本が環境変数にある限り「サーバーの鍵 2 本が漏れる」事故の確率は下がらない。
+The verifier records `settle`'s recipients and the operator cannot change them. The verifier key also sits behind the Signer, so when moving to a KMS, move both. Moving only one does not lower the chance of "both server keys leak" while the other remains in an env var.
 
-## 8. 実装上の課題
+## 8. Implementation issues
 
-- `scripts/devnet-setup.ts` と `mainnet-setup.ts` は `Keypair` を直接使う。Signer に揃えるか、スクリプトは手元で動くので `memory` のままにするかを決める（後者を提案。配置の作業は手元で admin が行う）
-- KMS の呼び出しには Vercel の関数からの到達性と IAM の設定が要る。手元の localnet テストでは `memory` を使う
-- `send.ts` の再送（2 秒ごと）は署名済みの同じバイト列を送り直すので、再送のたびに KMS を呼ぶことはない
+- `scripts/devnet-setup.ts` and `mainnet-setup.ts` use `Keypair` directly. Decide whether to move them to Signer or keep them on `memory` since scripts run locally (proposal: the latter; deployment is done locally by admin)
+- Calling a KMS needs reachability from Vercel functions and IAM setup. Local localnet tests use `memory`
+- `send.ts` resends (every 2 seconds) the same signed bytes, so a resend does not call the KMS again
 
-## 9. テスト方針
+## 9. Test strategy
 
-`packages/solana/test/send.test.ts` に、`keypairSigner` と「署名を記録する偽の Signer」で同じ取引を署名し、署名と本文が一致することを固定するテストを足す。localnet（`PM_LOCALNET=1`）では `memory` で全命令を往復させる（既存の 7 件）。KMS のバックエンドは、契約後に Devnet で `devnet-setup` 相当の往復を 1 回流して確かめる（CI には入れない。鍵が要るため）。
+Add a test to `packages/solana/test/send.test.ts` that signs the same transaction with `keypairSigner` and with "a fake Signer that records what it signs", pinning that signature and message match. On localnet (`PM_LOCALNET=1`), round-trip every instruction with `memory` (the existing 7). A KMS backend is checked once on Devnet, after contracting, with a round trip equivalent to `devnet-setup` (not in CI; it needs keys).
 
-## 10. 未決定事項
+## 10. Open questions
 
-- KMS のバックエンド（AWS、GCP、Privy、Turnkey）と費用
-- treasury の上限の値（4.3 の 200 USDC と 2 SOL は仮）
-- 第三者監査を受けるか、受けるなら v1.3 の配置前か後か
+- The KMS backend (AWS, GCP, Privy, Turnkey) and its cost
+- The treasury cap values (200 USDC and 2 SOL in 4.3 are provisional)
+- Whether to get a third-party audit, and if so before or after deploying v1.3

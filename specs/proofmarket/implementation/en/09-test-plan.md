@@ -1,7 +1,5 @@
 # 09. Test Plan
 
-> English translation. The Japanese version in [`../ja/09-test-plan.md`](../ja/09-test-plan.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 ## 1. Test Layers

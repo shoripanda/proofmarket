@@ -1,6 +1,6 @@
 # Acceptance Criteria / Definition of Done
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 ## A. P0 Submission-ready criteria
 

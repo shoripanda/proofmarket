@@ -5,7 +5,7 @@ ProofMarket program. Its outcome, `result_hash`, `evidence_root`, the wallets pa
 changed afterwards, not even by the operator. Another program, or an off-chain service, can read that account
 directly and act on the answer without trusting the ProofMarket API.
 
-Design: `specs/proofmarket/implementation/ja/13-edge-features.md` §2.
+Design: `specs/proofmarket/implementation/en/13-edge-features.md` §2.
 
 - Network: Solana **Devnet**
 - Program: `A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s`

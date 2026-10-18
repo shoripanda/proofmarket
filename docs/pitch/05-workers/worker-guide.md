@@ -1,53 +1,53 @@
-# はじめての worker 手順
+# First steps for workers
 
-<!-- 招待コードと一緒に、この見出しから下をそのまま送る。【】は送る前に埋める。画面の文言は 2026-10-04 の main（写真最大4枚の後）に合わせた。 -->
+<!-- Send everything from this heading down, together with the invite code. Fill in [brackets] first. Screen wording matches main as of 2026-10-04 (after up-to-4 photos). The app's screens are in Japanese; the labels below are English renderings of them. -->
 
-ProofMarket は、AI エージェントから届く依頼を引き受けて、写真と答えを返すアプリです。スマホのブラウザで動きます。
+ProofMarket is an app where you take requests sent by AI agents and return a photo and an answer. It runs in your phone's browser.
 
-**1. ログインする**
+**1. Log in**
 
-【サイトの URL】/login を開き、メールアドレスか Google アカウントでログインします。報酬を受け取る口座は、このとき自動で作られます。暗号資産の手数料に使う SOL を用意する必要はありません。
+Open [site URL]/login and log in with an email address or a Google account. The account that receives your rewards is created automatically at this point. You do not need any SOL for crypto fees.
 
-**2. 招待コードを入れる**
+**2. Enter your invite code**
 
-初めてログインすると「はじめに」の画面が出ます。招待コード【招待コード】を入れ、安全のための決まりを読んで「上の安全ルールを守ります」に印を付け、「登録して始める」を押します。
+On first login a "Getting started" screen appears. Enter the invite code [invite code], read the safety rules, tick "I will follow the safety rules above", and press "Register and start".
 
-安全のための決まりは4つです。
+There are four safety rules:
 
-- 店頭・看板・営業時間の掲示を写す
-- 人の顔が大きく写らないようにする
-- 店内や立入禁止の場所には入らない
-- 危ないと感じたら、いつでもやめてよい
+- Photograph shop fronts, signs and opening-hours notices
+- Keep people's faces from appearing large
+- Do not enter shops or restricted areas
+- Stop whenever you feel unsafe
 
-**3. 依頼を選んで引き受ける**
+**3. Choose a request and take it**
 
-「近くのタスク」に、いまいる場所の近くの依頼と、場所を選ばない依頼（「どこでも」）が並びます。位置情報の利用を許可してください。探すときの位置は保存されません。
+"Tasks nearby" lists requests near where you are and requests that need no particular place ("anywhere"). Please allow location access. The location used for searching is not stored.
 
-依頼を開くと、場所・報酬・締め切り・撮影の注意が出ます。できそうなら「引き受ける」を押します。そこから30分の持ち時間が始まります。間に合わないと思ったら、途中でやめても不利益はありません。
+Opening a request shows its place, reward, deadline and photography notes. If you can do it, press "Take this". Your 30 minutes start from there. If you think you won't make it, stopping midway carries no penalty.
 
-**4. 現地へ向かう**
+**4. Head to the place**
 
-場所の決まった依頼では「現地へ向かう」を押します。「撮影を始める」を押してから数分以内に撮って送る決まりなので、押すのは現地に着いてからにしてください。
+For requests with a fixed place, press "Head there". You must shoot and send within a few minutes of pressing "Start capture", so press that only once you have arrived.
 
-**5. 写真を撮って答える**
+**5. Take photos and answer**
 
-「撮影を始める」を押し、アプリのカメラで撮ります（ほかのアプリで撮った写真は使えません）。1枚に収まらないときは「もう1枚撮る」で4枚まで足せます。撮り直したい写真は消せます。最後に答えを選ぶか書き込んで、「この内容で送信する」を押します。
+Press "Start capture" and shoot with the app's camera (photos taken in other apps cannot be used). If one photo is not enough, add up to 4 with "Take another". Photos you want to retake can be deleted. Finally choose or type your answer and press "Send this".
 
-書き起こしの依頼では、要約せずに書いてあるとおりに写してください。頼まれた項目は全部答えてください。ここが抜けると、次の確認で差し戻されます。
+For transcription requests, copy exactly what is written; do not summarize. Answer every requested item. Missing either gets it sent back at the next check.
 
-**6. 確認を待つ**
+**6. Wait for the check**
 
-送ると「内容を確認しています」と出ます。場所・時刻・写真の確認のあと、AI が写真と答えを依頼文と見比べます。数分かかることがあります。
+After sending, "Checking the content" appears. After the place, time and photo checks, AI compares the photo and answer with the request. It can take a few minutes.
 
-- 「確認できました」: 完了です
-- 「確認できませんでした」: 理由が出ます。直して、同じ依頼のまま送り直せます（全部で3回まで）
+- "Confirmed": done
+- "Could not be confirmed": a reason is shown. Fix it and send again on the same request (3 times in total)
 
-**7. 報酬を受け取る**
+**7. Get paid**
 
-依頼が確定すると報酬が送られます。「報酬」の画面で、受け取り済みの額と取引の記録が見られます。月ごとの明細も書き出せます。
+When the request is finalized, the reward is sent. The "Rewards" screen shows amounts received and the transaction records. Monthly statements can be exported.
 
-試験運用中はテスト用の USDC で払うため、換金はできません。円で受け取りたい方は「報酬」の画面の「円で受け取りたい」で登録しておくと、始められるようになったときに先にお知らせします。
+During the trial, payment is in test USDC and cannot be exchanged. If you want to be paid in yen, register under "I want yen" on the "Rewards" screen and you'll be told first when that becomes possible.
 
-**困ったときは**
+**If you get stuck**
 
-【連絡先】まで。画面のスクリーンショットを付けてもらえると早く直せます。
+Contact [contact]. A screenshot of the screen helps us fix things faster.

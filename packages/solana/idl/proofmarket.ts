@@ -10,7 +10,7 @@ export type Proofmarket = {
     name: "proofmarket";
     version: "0.1.0";
     spec: "0.1.0";
-    description: "ProofMarket escrow + attestation program (specs/proofmarket/implementation/ja/06-solana-program-design.md)";
+    description: "ProofMarket escrow + attestation program (specs/proofmarket/implementation/en/06-solana-program-design.md)";
   };
   instructions: [
     {

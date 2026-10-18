@@ -1,61 +1,61 @@
-# ProofMarket 提出までのスケジュール（Crypto World's Fair）
+# ProofMarket schedule to submission (Crypto World's Fair)
 
-最終更新: 2026-10-04 16:10 JST
-締め切り: 2026-10-12（Colosseum への提出）。提出後も開発は止めない（面談まで進捗を見せる）。
+Last updated: 2026-10-04 16:10 JST
+Deadline: 2026-10-12 (submission to Colosseum). Development does not stop after submission (progress is shown until the interview).
 
-このファイルは、作業する人とエージェント全員の共有の予定表。作業を始めるとき・終えたときに「状態」を書き換える。
-判断の根拠は `docs/colosseum-hackathon-winners-2024-2026.md` と `docs/colosseum-hackathon-playbook-2026-09-16.md`。
+This file is the shared schedule for everyone working, people and agents alike. Update "Status" when starting and finishing work.
+The reasoning behind the decisions is in `docs/colosseum-hackathon-winners-2024-2026.md` and `docs/colosseum-hackathon-playbook-2026-09-16.md`.
 
-## 方針（2026-10-04 に決定）
+## Direction (decided 2026-10-04)
 
-1. **看板は「人の作業の結果を、依頼した AI が信用できる形で返す」**。「AI が人を雇う」だけでは RentAHuman・Taskin・NeedaHuman と重なる（`specs/proofmarket/competitor-differentiation.md`）。差は、AI による内容の確認（01 §4.16–4.17）・複数人の合意・Solana に残る結果の記録の3つ。
-2. **どの AI でも、登録なしで使える**。x402 で、エージェントが Solana の USDC をその場で払って依頼できるようにする。
-3. **最初の入口は「日本の紙と現地にしか無い情報」**（紙の資料・店頭の掲示・窓口や電話でしか分からないこと）。※オーナーの最終確認待ち
-4. **実績を数字で見せる**。審査までの目標: worker 10〜20人、完了した依頼 50〜100件、外部の AI 開発者の試用数件。
-5. 作業は1つずつ終わらせて次へ進む。終わったものから宣伝（X）に使う。
+1. **The headline is "return the results of human work in a form the requesting AI can trust".** "AI hires humans" alone overlaps with RentAHuman, Taskin and NeedaHuman (`specs/proofmarket/competitor-differentiation.md`). The difference is three things: an AI content check (01 §4.16–4.17), agreement among several people, and results recorded on Solana.
+2. **Any AI can use it without signing up.** With x402, an agent can pay Solana USDC on the spot and request.
+3. **The first entry point is "information in Japan that exists only on paper and on site"** (paper records, notices in shops, things only learned at a counter or by phone). Note: awaiting the owner's final confirmation
+4. **Show results in numbers.** Targets by judging: 10–20 workers, 50–100 completed requests, a few trials by outside AI developers.
+5. Finish one task before moving to the next. Use whatever is finished for promotion (X).
 
-## 今日（10/4）19:00 JST までの作業
+## Work until 19:00 JST today (10/4)
 
-オーナーがターミナルで画面を担当の数だけ開き、それぞれに `docs/agents/README.md` と担当の指示書を読ませて進める。エージェントは自分でサブエージェントを起動しない（トークンを大量に使うため）。
+The owner opens one terminal session per workstream and has each read `docs/agents/README.md` and its brief. Agents do not start sub-agents of their own (they use a lot of tokens).
 
-| 担当 | 作業 | 指示書 | 状態 |
+| Owner | Work | Brief | Status |
 |---|---|---|---|
-| — | この予定表と指示書をリポジトリに置く | — | 完了 |
-| A | x402 で、API キーなしに USDC を払って依頼できる窓口と、払って依頼する見本のエージェント | `docs/agents/A-x402.md` | 完了（feat/x402。本番の反映待ち） |
-| B | 証拠の写真を最大4枚にする | `docs/agents/B-multi-photo.md` | 完了（DB の移行なし） |
-| C | 公開の実績ページ `/stats` と、サイトの看板の言い換え | `docs/agents/C-stats-and-copy.md` | 完了（本番の手順なし。x402 への言及は A の取り込み後） |
-| D | ピッチ資料・動画3本の台本・X の投稿文・worker 募集文（文書だけ） | `docs/agents/D-pitch-materials.md` | 完了 |
-| E | Claude・ChatGPT から本番の MCP / API につなぐ確認と、接続手順のページ | `docs/agents/E-agent-clients.md` | 手順のページ完了。claude.ai・ChatGPT の実機確認はオーナー待ち（`docs/agent-clients-check-2026-10-04.md`） |
-| 本体 | 各担当の「本番で必要な手順」（Supabase の移行、launchd の入れ直しなど）をまとめて行う | — | 待機 |
+| — | Put this schedule and the briefs in the repository | — | Done |
+| A | x402: an endpoint for paying USDC and requesting without an API key, and a sample agent that pays and requests | `docs/agents/A-x402.md` | Done (feat/x402, awaiting production rollout) |
+| B | Up to 4 evidence photos | `docs/agents/B-multi-photo.md` | Done (no DB migration) |
+| C | A public results page `/stats`, and rewording the site's headline | `docs/agents/C-stats-and-copy.md` | Done (no production steps; x402 mentioned after A merges) |
+| D | Pitch materials, scripts for 3 videos, X posts, worker recruiting copy (documents only) | `docs/agents/D-pitch-materials.md` | Done |
+| E | Checking connections from Claude and ChatGPT to the production MCP / API, and a connection-steps page | `docs/agents/E-agent-clients.md` | Steps page done. Real checks on claude.ai and ChatGPT await the owner (`docs/agent-clients-check-2026-10-04.md`) |
+| Main | Carry out every owner's "steps needed in production" together (Supabase migrations, reinstalling launchd, etc.) | — | Waiting |
 
-## 10/5〜10/12
+## 10/5–10/12
 
-| 日程 | 作業 | 担当 |
+| Dates | Work | Owner |
 |---|---|---|
-| 10/5〜10/10 | worker を集める（知人・大学・X）。招待コードは `issue-invite.ts` で発行 | オーナー（Claude は募集文・手順書を用意） |
-| 10/5〜10/10 | 実際の依頼を毎日回す（見本のエージェントから定期的に）。数字を `/stats` で公開 | Claude |
-| 10/5〜10/9 | 外部の AI 開発者に試してもらう（x402 / MCP の手順を渡す） | オーナー |
-| 10/7〜10/11 | ピッチ資料の仕上げ、動画3本の収録と編集 | オーナー（声・出演）、Claude（台本・画面収録の段取り・編集素材） |
-| 毎日 | X で開発の進み具合を発信（Build in Public） | オーナー（下書きは Claude） |
-| 10/12 | 提出 | オーナー |
+| 10/5–10/10 | Recruit workers (acquaintances, universities, X). Issue invite codes with `issue-invite.ts` | Owner (Claude prepares recruiting copy and guides) |
+| 10/5–10/10 | Run real requests every day (regularly from the sample agent). Publish the numbers on `/stats` | Claude |
+| 10/5–10/9 | Have outside AI developers try it (hand over the x402 / MCP steps) | Owner |
+| 10/7–10/11 | Finish the pitch deck; record and edit the 3 videos | Owner (voice, appearance), Claude (scripts, screen-recording plan, editing material) |
+| Daily | Post development progress on X (Build in Public) | Owner (Claude drafts) |
+| 10/12 | Submit | Owner |
 
-## オーナーにしか決められないこと
+## What only the owner can decide
 
-- 最初の入口（方針 3）の確定
-- 創業者の物語（なぜこの問題をやるのか）
-- worker を頼める人の当て
-- ピッチ動画の声・出演
+- Confirming the first entry point (direction 3)
+- The founder's story (why this problem)
+- Who could be asked to be workers
+- Voice and appearance in the pitch video
 
-## 動いている環境
+## Running environments
 
-- 本番: https://proofmarket.fun （旧 https://proofmarket-rosy.vercel.app は転送。GitHub main に入ると自動で公開）
-- データベース: Supabase（移行は `DATABASE_URL=<Session pooler> pnpm db:migrate`）
-- Solana: Devnet（program `A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s`）
-- AI による内容の確認: オーナーの Mac の launchd `com.proofmarket.review-runner`（2分ごと、`scripts/review-runner.ts`）
-- 秘密の値は `~/.config/proofmarket/` にだけ置く。リポジトリとチャットには書かない
+- Production: https://proofmarket.fun (the old https://proofmarket-rosy.vercel.app redirects; merging to GitHub main publishes automatically)
+- Database: Supabase (migrate with `DATABASE_URL=<Session pooler> pnpm db:migrate`)
+- Solana: Devnet (program `A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s`)
+- AI content check: launchd `com.proofmarket.review-runner` on the owner's Mac (every 2 minutes, `scripts/review-runner.ts`)
+- Secrets live only in `~/.config/proofmarket/`. Never in the repository or chat
 
-## 本番で必要な手順（各担当が書き足す）
+## Steps needed in production (each owner adds theirs)
 
-- B（写真4枚）: DB の移行は無い。取り込み後に `git -C ~/Solana-idea pull` で main を最新にする。launchd は `~/Solana-idea` の `scripts/review-runner.ts` をそのまま動かすので、入れ直しは要らない。pull するまでは古い runner が1枚目（`image_url`）だけで判定する
-- A（x402）: Supabase に移行 0019（`x402_wallets`・`x402_payments`、どちらも RLS 有効）を当てる。Vercel の環境変数は足さなくてよい（既存の `OPERATOR_SECRET_KEY`・`BOUNTY_MINT`・`SOLANA_RPC_URL`・`SOLANA_EXPECTED_GENESIS_HASH` を使う）。x402 の手数料は運営者のウォレットの SOL から出るので、残高を見ておく
-- A（x402）: 反映後に Devnet の実取引で確かめる。`pnpm --filter @proofmarket/scripts run run x402-fund-agent.ts --amount 1`（treasury から見本のエージェントへ 1 USDC）→ `pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url https://proofmarket-rosy.vercel.app`。402、支払いの取引、201 と verification_id が出れば成功
+- B (4 photos): no DB migration. After the merge, bring main up to date with `git -C ~/Solana-idea pull`. launchd runs `scripts/review-runner.ts` from `~/Solana-idea` as is, so no reinstall is needed. Until the pull, the old runner judges only the first photo (`image_url`)
+- A (x402): apply migration 0019 (`x402_wallets`, `x402_payments`, both with RLS) to Supabase. No new Vercel env vars (it uses the existing `OPERATOR_SECRET_KEY`, `BOUNTY_MINT`, `SOLANA_RPC_URL`, `SOLANA_EXPECTED_GENESIS_HASH`). x402 fees come from SOL in the operator's wallet, so watch the balance
+- A (x402): after rollout, check with a real Devnet transaction: `pnpm --filter @proofmarket/scripts run run x402-fund-agent.ts --amount 1` (1 USDC from the treasury to the sample agent) → `pnpm --filter @proofmarket/scripts run run x402-agent.ts --base-url https://proofmarket-rosy.vercel.app`. Success is a 402, a payment transaction, and a 201 with a verification_id

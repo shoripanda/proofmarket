@@ -20,7 +20,7 @@ export interface ProofFacts {
 const jst = (iso: string, lang: Lang, opts: Intl.DateTimeFormatOptions) =>
   new Date(iso).toLocaleString(dateLocale(lang), { timeZone: "Asia/Tokyo", ...opts });
 
-/** 2026年10月5日 14:02 / 5 October 2026, 14:02 */
+/** 5 October 2026, 14:02 (date order follows the language) */
 export const proofTimeLong = (iso: string, lang: Lang = "ja") =>
   jst(iso, lang, { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -30,7 +30,7 @@ export const proofTimeShort = (iso: string, lang: Lang = "ja") =>
     ? jst(iso, lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
     : jst(iso, lang, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
-/** たった今 / 12分前 / 3時間前 / 2日前 — just now / 12 min ago / 3 h ago / 2 days ago */
+/** just now / 12 min ago / 3 h ago / 2 days ago (in either language) */
 export function ago(iso: string, now: Date, lang: Lang = "ja"): string {
   const min = Math.floor((now.getTime() - new Date(iso).getTime()) / 60_000);
   if (lang === "en") {

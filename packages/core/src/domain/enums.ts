@@ -1,4 +1,4 @@
-// State and value enums. Source of truth: specs/proofmarket/implementation/ja/03-state-machine.md
+// State and value enums. Source of truth: specs/proofmarket/implementation/en/03-state-machine.md
 
 /** Task lifecycle (03 §2). Names are those of requirements.md. DISPUTED (P1) is intentionally absent. */
 export const TASK_STATUSES = [

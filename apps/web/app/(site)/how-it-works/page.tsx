@@ -1,4 +1,4 @@
-// S-05 仕組み — how evidence is checked (incl. the AI review, 01 §4.16), how answers are combined, and what goes on Solana (07 / 06).
+// S-05 How it works — how evidence is checked (incl. the AI review, 01 §4.16), how answers are combined, and what goes on Solana (07 / 06).
 import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { PictureSection } from "@/components/illustrations";

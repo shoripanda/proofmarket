@@ -1,6 +1,6 @@
 # API / MCP Contract
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
 This document defines external behavior, not implementation framework.
 

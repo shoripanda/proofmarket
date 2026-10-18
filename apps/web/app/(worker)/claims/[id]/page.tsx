@@ -1,5 +1,5 @@
 "use client";
-// W-05 移動中 — 残り時間、「現地に着いた」、「やめる」。
+// W-05 On the way — time left, "I've arrived", "Give up".
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button, Card, Notice, remaining, Shell, useNow } from "@/components/ui";

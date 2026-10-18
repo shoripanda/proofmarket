@@ -1,5 +1,5 @@
 "use client";
-// B-01 プッシュ通知の受け取り設定 (04 §3.22). The worker picks coarse areas; their location is never sent.
+// B-01 Push notification settings (04 §3.22). The worker picks coarse areas; their location is never sent.
 import { useCallback, useEffect, useState } from "react";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";

@@ -1,5 +1,5 @@
 "use client";
-// S-B09 店舗からの申告フォーム. Posts to /v1/store/{token} (01 §4.13).
+// S-B09 Shop report form. Posts to /v1/store/{token} (01 §4.13).
 import { useState } from "react";
 import { useLang } from "@/lib/client/lang";
 import { dateLocale, type Lang, pick } from "@/lib/lang";
@@ -9,7 +9,7 @@ const LABEL: Record<Lang, Record<NonNullable<Current>["status"], string>> = {
   ja: { CLOSED_TODAY: "本日は臨時休業", OPEN_AS_USUAL: "通常どおり営業" },
   en: { CLOSED_TODAY: "Closed today", OPEN_AS_USUAL: "Open as usual" },
 };
-/** "10/4 の終わりまで" / "until the end of 4 Oct" for a JST midnight, otherwise the date and time. */
+/** "until the end of 4 Oct" (in either language) for a JST midnight, otherwise the date and time. */
 function until(iso: string, lang: Lang) {
   const d = new Date(iso);
   const loc = dateLocale(lang);

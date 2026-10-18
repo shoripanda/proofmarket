@@ -1,5 +1,5 @@
 "use client";
-// S-12 みんなの地図 (01 §4.22). Leaflet with OpenStreetMap tiles; loaded in the browser only.
+// S-12 Shared map (01 §4.22). Leaflet with OpenStreetMap tiles; loaded in the browser only.
 import "leaflet/dist/leaflet.css";
 import { useEffect, useRef } from "react";
 import { useLang } from "@/lib/client/lang";

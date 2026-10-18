@@ -1,68 +1,68 @@
-# ProofMarket の収益は、取引の料率ではなく「預からない 3 つの料金」から始める
+# ProofMarket's revenue starts from "three fees that hold no funds", not a cut of transactions
 
-作成: 2026-10-08。読者はオーナー。このメモで決めてほしいことは末尾の 3 つ。前提は `06-business-scale.md`（規模の見立て）と `docs/audit-2026-10-08.md`（手数料の欄が無い、D-05 未解決）。
+Written: 2026-10-08. The reader is the owner. The three decisions this memo needs are at the end. Background: `06-business-scale.md` (scale estimate) and `docs/audit-2026-10-08.md` (no fee field, D-05 unresolved).
 
-## 中心主張
+## Central claim
 
-いまの料金ページは「試験運用中は手数料 0。料率は測ってから決める」で止まっている。これを「取引額の何％を取る」で埋めようとすると、2 つの壁に当たる。1 つは単価。1 件 0.3 USDC の 15% は 4.5 セントで、AI 照合 1 回の費用（推定 3〜8 円）に届かない。もう 1 つは法律。料率を取る＝依頼者の資金を預かって分配する形で、未解決の D-05（資金決済法上の扱い）に正面からぶつかる。
+The pricing page currently stops at "no fees during the trial; the rate will be set after measuring". Filling that with "take X% of the transaction" hits two walls. One is unit price: 15% of 0.3 USDC is 4.5 cents, which does not cover one AI review (estimated at 3–8 yen). The other is law: taking a rate means holding and distributing requesters' funds, which runs straight into the unresolved D-05 (treatment under the Payment Services Act).
 
-だから最初の売上は、資金に触れない 3 つの料金で作る。**依頼者の月額（鍵のプラン）・確認料（確かさの付加料金）・データの利用料**。取引の料率は、運営が資金を預からない設計（依頼者のウォレットから直接 escrow、x402 の facilitator を外部化）に移してから乗せる。順番の問題であって、料率を捨てる話ではない。
+So the first revenue comes from three fees that do not touch funds: **a monthly fee for requesters (key plans), verification fees (a surcharge for assurance), and data licensing**. A transaction rate is added after moving to a design where the operator holds no funds (escrow directly from the requester's wallet, an external x402 facilitator). This is about order, not about giving up the rate.
 
-## 事実として押さえていること
+## Facts established
 
-料金ページと規約は「試験運用中は手数料をいただかない」と明記している。コードに fee の計算は 1 行も無く、DB にも Solana の `Task` にも欄が無い（01 §4.1 の「欄だけ用意する」は未実装）。プログラムの `treasury` は運営が依頼者の前払い残高を預かる口座で、escrow への入金も返金もここを通る。つまり現状は完全な預かり型。x402 の都度払いも、運営が facilitator と手数料の支払者を兼ね、受け取った USDC を台帳の TOPUP として扱う。
+The pricing page and terms say plainly "no fees during the trial". There is not one line of fee calculation in the code, and no field for it in the DB or in Solana's `Task` (01 §4.1's "prepare the field only" is not implemented). The program's `treasury` is the account where the operator holds requesters' prepaid balances; funding escrow and refunds both pass through it. So today it is fully custodial. For x402 pay-per-use too, the operator acts as both facilitator and fee payer, and treats the USDC received as a TOPUP in the ledger.
 
-運営側の 1 件あたり費用は、Solana の取引手数料（運営が fee payer。2〜3 取引で 0.00002 SOL 前後）、新しい worker の受取口座（ATA）の作成費（1 人 1 回、約 0.002 SOL のレント）、写真の保存（1 件 4 枚まで、8MiB 上限）、AI 照合。AI 照合はいまオーナーの Claude サブスクリプションで動いていて、サーバー内判定に替えると API 費用が 1 件ごとに乗る。固定費は Vercel・Supabase・Privy・ドメインで、月 1〜2 万円（推定。Privy は無料枠を超えると跳ねる）。
+The operator's cost per request: Solana transaction fees (the operator is the fee payer; about 0.00002 SOL over 2–3 transactions), creating a new worker's receiving account (ATA) (once per person, about 0.002 SOL of rent), photo storage (up to 4 per request, 8 MiB cap), and AI review. AI review currently runs on the owner's Claude subscription; switching to in-server review adds API cost per request. Fixed costs are Vercel, Supabase, Privy and the domain, 10,000–20,000 yen a month (estimate; Privy jumps once past its free tier).
 
-利用実績は依頼 3 件・完了 1 件（2026-10-08 時点）。支払ってよい額の実測はゼロで、以下の価格はすべて仮置き。
+Usage is 3 requests and 1 completion (as of 2026-10-08). There are zero measurements of willingness to pay; every price below is a placeholder.
 
-## 3 つの料金
+## The three fees
 
-| | 月額（鍵のプラン） | 確認料 | データの利用料 |
+| | Monthly (key plans) | Verification fee | Data licensing |
 |---|---|---|---|
-| 誰が払う | 依頼者（開発者・企業） | 依頼者 | 地図・小売・AI 企業・研究 |
-| 何に対して | API 鍵 1 本の利用枠（月の件数・レート・一括依頼・Webhook・見守り） | 1 件ごとの確かさ（2 人一致・3 人多数決・楽観的確認・AI 照合・証明バッジ） | 匿名化した集計データ、鮮度つきの街の事実、領域別の一括取得 |
-| 資金決済法との距離 | 遠い。円建ての SaaS 料金で、USDC には触れない | 遠い。円建てで月額に合算して請求 | 遠い。利用許諾 |
-| 実装の大きさ | 小。鍵には `rateLimitPerMin`・`dailySpendLimit`・`allowedTaskTypes` が既にあるので、プラン列と Stripe の請求を足す | 中。確認料の欄を依頼に足し、月末に集計 | 中。データセットのページ送りと商用ライセンス文 |
-| いつから | ハッカソン後すぐ。試験運用のまま「有料プランの先行申込」を取れる | 月額の次 | 一括依頼の売り先が決まってから |
-| 月の売上の目安（推定） | Starter 3,000 円 × 10 社 ＝ 3 万円。Team 3 万円 × 3 社 ＝ 9 万円 | 1 件 10 円 × 月 3,000 件 ＝ 3 万円 | 年額 30〜100 万円 × 数社 |
+| Who pays | Requesters (developers, companies) | Requesters | Mapping, retail and AI companies, research |
+| For what | Usage allowance of one API key (monthly volume, rate, batch requests, webhooks, watches) | Assurance per request (2-person agreement, 3-person majority, optimistic verification, AI review, proof badge) | Anonymized aggregate data, fresh facts about the city, bulk retrieval per area |
+| Distance from the Payment Services Act | Far. A yen-denominated SaaS fee; never touches USDC | Far. Yen-denominated, billed together with the monthly fee | Far. A licence |
+| Implementation size | Small. Keys already have `rateLimitPerMin`, `dailySpendLimit` and `allowedTaskTypes`; add a plan column and Stripe billing | Medium. Add a verification-fee field to requests and total it monthly | Medium. Dataset paging and commercial licence text |
+| When | Right after the hackathon. "Early sign-up for paid plans" can be taken while still in trial | After the monthly fee | Once a buyer for batch requests is decided |
+| Monthly revenue guide (estimate) | Starter 3,000 yen × 10 companies = 30,000 yen. Team 30,000 yen × 3 = 90,000 yen | 10 yen × 3,000 requests a month = 30,000 yen | 300,000–1,000,000 yen a year × a few companies |
 
-月額は 4 段を考えている。無料（月 50 件、1 人確認のみ）、Starter（3,000 円、500 件、Webhook）、Team（3 万円、1 万件、一括依頼・見守り・楽観的確認）、Enterprise（個別。SLA、専用エリア、自社 worker の持ち込み）。固定費は Starter 5 社か Team 1 社で賄える計算になる。
+The monthly fee has four tiers in mind: Free (50 requests a month, single-person checks only), Starter (3,000 yen, 500 requests, webhooks), Team (30,000 yen, 10,000 requests, batch requests, watches, optimistic verification), Enterprise (custom: SLA, dedicated areas, bring your own workers). Five Starter customers or one Team covers the fixed costs.
 
-確認料は料率ではなく定額にする。「2 人一致なら 1 件 10 円、3 人多数決なら 20 円」のように、確かさの段階に値段を付ける。worker への報酬（bounty）は依頼者が決めて USDC で払い、確認料だけが運営の売上として円で立つ。これなら報酬の額と無関係に、運営の原価（AI 照合・保存・照合の人手）を回収できる。
+The verification fee is a flat amount, not a rate: a price per level of assurance, such as "10 yen per request for 2-person agreement, 20 yen for 3-person majority". The worker's reward (bounty) is set by the requester and paid in USDC; only the verification fee becomes the operator's revenue, in yen. This recovers the operator's cost (AI review, storage, human review effort) independently of the reward amount.
 
-データは 2 層に分ける。公開データセットは CC BY 4.0 のまま（入口として残す）。有料にするのは、依頼者が一括で出した依頼から生まれる領域別の非公開データの再販ではなく、運営が集計して匿名化した「街の鮮度データ」と、API で大量に引く権利。worker 規約の「証拠の権利」条項（legal-checklist §4）を先に確かめる必要がある。
+Data is split in two tiers. The public dataset stays CC BY 4.0 (kept as an entry point). What becomes paid is not reselling private per-area data generated by requesters' batch requests, but "city freshness data" the operator aggregates and anonymizes, and the right to pull it in bulk via API. The "rights to evidence" clause in the worker terms (legal-checklist §4) needs checking first.
 
-## 取引の料率をいつ乗せるか
+## When to add a transaction rate
 
-料率（取引額の 10〜20%）を乗せる条件は、運営が資金を預からないことに整理できる。設計の候補は 2 つ。
+The condition for adding a rate (10–20% of the transaction) comes down to the operator not holding funds. Two candidate designs:
 
-1. 依頼者のウォレットから直接 escrow に入れる。運営は Task の作成と判定の署名だけを担い、`treasury` を経由しない。プログラム v1.2 で `initialize_task` の資金源を依頼者に替え、手数料の欄（fee_bps）を Task に持たせて settle 時に運営の口座へ分ける
-2. x402 の facilitator を外部（Coinbase の facilitator 等）に出す。運営は PAYMENT-REQUIRED を返すだけで、USDC の受け取りに関与しない
+1. Fund escrow directly from the requester's wallet. The operator only signs Task creation and the verdict, without going through `treasury`. In program v1.2, change the funding source of `initialize_task` to the requester, give Task a fee field (fee_bps), and split it to the operator's account at settle
+2. Move the x402 facilitator outside (Coinbase's facilitator etc.). The operator only returns PAYMENT-REQUIRED and is not involved in receiving USDC
 
-どちらも mainnet と法務の確認（D-05）が前提。それまでは devnet の試験運用として料率 0 を維持し、料金ページは「本番では月額＋確認料。取引の料率は mainnet 移行時に別途案内」と書き換える。
+Both assume mainnet and legal review (D-05). Until then, keep the rate at 0 as a devnet trial, and rewrite the pricing page to "In production: monthly fee + verification fee. Transaction rates will be announced separately on moving to mainnet".
 
-## 価格の相場感
+## Sense of market prices
 
-覆面調査は 1 件数千円で納期数日〜数週間（06 章の数字）。保険・不動産の現況確認は 1 件 3,000〜10,000 円が通る領域で、ProofMarket の報酬 3〜5 USDC に確認料 20 円を乗せても桁が違う。安さで競う必要はなく、速さと証明（Solana の記録・証明ページ）で値段を守る。逆に店の営業確認は 0.3〜1 USDC が天井で、ここは件数で稼ぐしかない。月額の件数枠は、この 2 つの領域が同じ鍵で混ざることを前提に組む。
+Mystery shopping is thousands of yen per visit with days-to-weeks turnaround (figures from chapter 06). Condition checks for insurance and real estate are a field where 3,000–10,000 yen per check is accepted; adding a 20-yen verification fee to ProofMarket's 3–5 USDC reward is still an order of magnitude apart. No need to compete on cheapness; defend the price with speed and proof (the Solana record, the proof page). Conversely, shop opening checks top out at 0.3–1 USDC, and there the only way to earn is volume. Monthly volume allowances are designed assuming these two areas mix on the same key.
 
-## 未解決の論点と、いまの見立て
+## Open issues and current view
 
-**AI 照合の費用を誰が持つか**。サーバー内判定に替えると 1 件 3〜8 円（推定）。見立て: 確認料に含める。無料プランは 1 人確認のみで AI 照合を付けず、費用が出ないようにする。
+**Who bears the cost of AI review.** In-server review costs 3–8 yen per request (estimate). View: include it in the verification fee. The free plan is single-person checks without AI review, so no cost arises.
 
-**worker 側から取るか**。手数料・優先表示・即時払いなどの課金は考えられるが、見立て: 取らない。worker の数が市場の価値そのもので、日本のフリーランス法の観点でも報酬からの天引きは避けたい。
+**Whether to charge workers.** Fees, priority listing, instant payout and the like are conceivable, but view: do not. The number of workers is the market's value itself, and from the standpoint of Japan's Freelance Act, deductions from rewards are best avoided.
 
-**円建て請求と USDC 報酬の二重構造**。依頼者は円で月額を払い、報酬は USDC の前払い残高から出る。見立て: 試験運用中は許容。mainnet では「報酬も円で払い、運営が USDC に替えて渡す」形が最も使いやすいが、それは資金移動業の典型なので、登録業者との提携が要る。これは 2027 年以降の論点。
+**The dual structure of yen billing and USDC rewards.** Requesters pay the monthly fee in yen, while rewards come from prepaid USDC balances. View: acceptable during the trial. On mainnet, "rewards also paid in yen, converted to USDC by the operator" would be easiest to use, but that is the textbook case of a funds transfer business and would need a partnership with a registered provider. An issue for 2027 and beyond.
 
-## 最初の 90 日
+## The first 90 days
 
-1. 料金ページと規約の文面を「試験運用は無料。本番は月額＋確認料」に書き換え、`platform_fee` の欄を DB に足す（01 §4.1 の未実装分。プログラムは触らない）
-2. 鍵に `plan` 列を足し、Stripe で Starter 1 つだけ作って先行申込を受ける。目標は有料 3 社
-3. 一括依頼を 50 件から数百件に広げ、データセットにページ送りを付けて、小売の棚監査と AI データの 2 領域に売り込む
-4. 預からない設計（上の 1 と 2）の仕様を 1 本書く。法務の相談はこの仕様を持って行く
+1. Rewrite the pricing page and terms to "free during the trial; in production, monthly fee + verification fee", and add a `platform_fee` field to the DB (the unimplemented part of 01 §4.1; the program is not touched)
+2. Add a `plan` column to keys, create just a Starter plan in Stripe, and take early sign-ups. Target: 3 paying companies
+3. Widen batch requests from 50 to hundreds, add paging to the dataset, and pitch to the two areas of retail shelf audits and AI data
+4. Write one spec for the non-custodial design (1 and 2 above), and take it to legal consultation
 
-## 決めてほしいこと
+## Decisions needed
 
-- 最初の売上を円建ての月額＋確認料で作ることに同意するか。同意なら料金ページの書き換えと `plan` 列から着手する
-- x402 の facilitator を外部に出すか、自前のまま mainnet まで保留するか
-- データの利用料を売るために、worker 規約の「証拠の権利」条項を先に確かめてよいか
+- Do you agree to build the first revenue from a yen-denominated monthly fee + verification fee? If so, start with rewriting the pricing page and the `plan` column
+- Move the x402 facilitator outside, or keep it in-house and defer until mainnet?
+- To sell data licences, may the worker terms' "rights to evidence" clause be checked first?

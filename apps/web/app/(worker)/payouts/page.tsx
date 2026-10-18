@@ -1,5 +1,5 @@
 "use client";
-// W-08 支払い履歴 — 金額、日時、状態、「取引記録を見る」。
+// W-08 Payout history — amount, date and time, status, "View transaction".
 import { fromMicro, toMicro } from "@proofmarket/core";
 import { useEffect, useState } from "react";
 import { Button, Card, Notice, Shell, yen } from "@/components/ui";

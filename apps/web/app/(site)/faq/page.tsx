@@ -1,4 +1,4 @@
-// S-09 よくある質問 — short answers, each pointing to the page with the details.
+// S-09 FAQ — short answers, each pointing to the page with the details.
 import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";

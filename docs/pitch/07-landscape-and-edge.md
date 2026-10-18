@@ -1,56 +1,56 @@
-# 競合は「人を雇える」で横並び。ProofMarket は「現実のオラクル」に寄せて尖らせる
+# Competitors all stand level on "you can hire people". ProofMarket sharpens towards "an oracle for reality"
 
-作成: 2026-10-08。2026-10-02 の `specs/proofmarket/competitor-differentiation.md` を今日の時点で更新し、拡大できる箇所と、他社に無い機能の案をまとめた。読者はオーナー。末尾に「まず作る 3 つ」の提案がある。
+Written: 2026-10-08. Updates `specs/proofmarket/competitor-differentiation.md` (2026-10-02) to today, and collects where to expand and feature ideas no one else has. The reader is the owner. A proposal for "the 3 to build first" is at the end.
 
-## 今日の地図（2026 年 10 月）
+## Today's map (October 2026)
 
-| 層 | 主な顔ぶれ | 強み | 弱み・空白 |
+| Layer | Main players | Strengths | Weaknesses / gaps |
 |---|---|---|---|
-| エージェントが人を雇う市場 | RentAHuman（2 月公開、登録 50 万超、時給 5〜500 ドル、MCP、ステーブルコインのエスクロー）、Human API（6,500 万ドル調達、Eclipse と提携、Stripe Connect で支払い、音声や感覚の仕事に寄せたスマホアプリ）、Taskin（区切られた仕事と構造化された結果、エスクロー無し）、NeedaHuman（GPS と合言葉付き写真、手数料 15%）、Human4Hire、Apify の Hire a Human、HumanInLoop | 供給（登録者）と資金。法定通貨での支払い | 1 人の答えをそのまま返す。複数人の合意、内容の照合、鎖上の証明が無い。RentAHuman は登録 7 万と言いつつ見える人は 83 人という指摘もある |
-| 昔からの現地データ収集 | Premise（売上 3,000 万ドル、顧客 80 社、協力者 8 万人・30 か国、国連開発計画・世界銀行・Google・Bloomberg、指数の購読と年間契約）、Streetbees（4,000 万ドル調達）、Field Agent・Gigwalk・Observa（1 件 2〜25 ドル） | 企業と政府の購買、指数という商品、人の供給網 | 発注者は人間の担当者。数日〜数週間。エージェントからは呼べない |
-| 受動的なセンサー網（DePIN） | Hivemapper・NATIX（ドライブレコーダーと車のカメラで地図と Physical AI 用データ）、FrodoBots（ロボットの遠隔操作でデータ） | 常時・大量・安い | 「問いに答える」ことはできない。カメラが向いていない所と、匂いや手触りは取れない |
-| 事実を決める仕組み | UMA（楽観的オラクル。保証金を積んで主張し、異議期間に反論、票で決着。LLM に提案と反論をさせ始めた）、Kleros（陪審） | 鎖上の契約から使える。異議の仕組みが枯れている | 判定者は現地にいない。画面上の証拠で決める |
+| Markets where agents hire people | RentAHuman (launched in February, over 500k sign-ups, $5–500/hour, MCP, stablecoin escrow), Human API ($65M raised, partnered with Eclipse, pays via Stripe Connect, a phone app leaning to voice and sensory work), Taskin (bounded tasks and structured results, no escrow), NeedaHuman (photos with GPS and a passphrase, 15% fee), Human4Hire, Apify's Hire a Human, HumanInLoop | Supply (sign-ups) and capital. Fiat payouts | Return one person's answer as is. No agreement among several people, no content check, no on-chain proof. One report notes RentAHuman claims 70k sign-ups but only 83 people are visible |
+| Traditional field data collection | Premise ($30M revenue, 80 customers, 80k contributors in 30 countries; UNDP, the World Bank, Google, Bloomberg; index subscriptions and annual contracts), Streetbees ($40M raised), Field Agent, Gigwalk, Observa ($2–25 per task) | Corporate and government purchasing, indexes as a product, a supply network of people | The buyer is a human staff member. Days to weeks. Agents cannot call them |
+| Passive sensor networks (DePIN) | Hivemapper, NATIX (maps and Physical AI data from dashcams and car cameras), FrodoBots (data from remote-controlled robots) | Always on, high volume, cheap | Cannot "answer a question". Cannot capture places cameras don't face, or smell and texture |
+| Mechanisms that decide facts | UMA (an optimistic oracle: assert with a bond, dispute within a window, settle by vote; has started letting LLMs propose and dispute), Kleros (juries) | Usable from on-chain contracts. Mature dispute mechanisms | The deciders are not on site. They decide on on-screen evidence |
 
-**位置づけ**。ProofMarket はこの 4 層のどこにも収まらない。上 2 層と同じ「人が現地で答える」を、下 2 層の「鎖上で他の仕組みから使える事実」として返している。今ある差は、複数人の合意、Claude による内容の照合、証拠と結果のハッシュの Solana 記録、受け取りの条件、複数項目の答え、一括依頼、見守り、CC BY の公開データ、x402 の口座なし利用。足りないのは供給（人の数）、法定通貨での支払い、企業の購買に乗る形（契約・指数・請求書）。
+**Position.** ProofMarket fits none of these four layers. It takes "a person answers on site", like the top two, and returns it as "a fact other on-chain mechanisms can use", like the bottom two. Today's differences: agreement among several people, Claude's content check, Solana records of evidence and result hashes, acceptance criteria, multi-field answers, batch requests, watches, CC BY public data, and account-free use over x402. What is missing: supply (number of people), fiat payouts, and a form that fits corporate purchasing (contracts, indexes, invoices).
 
-## 拡大できる箇所
+## Where to expand
 
-1. **供給は自前で集めず、借りる**。RentAHuman・Taskin・Human API を「供給側のアダプタ」として接続し、ProofMarket は検証層に徹する。依頼は ProofMarket に来て、人の手配は提携先に流し、戻ってきた提出をこちらの検査・照合・合意・記録に通す。登録 50 万人の市場と争わず、その上に乗る
-2. **Premise 型の商品**。見守りと一括依頼を束ねた「指数」（例: 都内コンビニ価格指数、渋谷の行列指数）を購読で売る。公開データセットがある今、指数は自然な延長。企業と自治体はこの形でしか買わない
-3. **法定通貨の口**。Human API も NeedaHuman も Stripe Connect。worker の円受け取り（§4.10）と、依頼者の請求書払いを置く。Solana は見えない配管として残す
-4. **企業向けの土台**。組織アカウント、SLA、監査証跡の一括出力、Sheets・Slack 連携（`06-business-scale.md`）
+1. **Borrow supply instead of building it.** Connect RentAHuman, Taskin and Human API as "supply-side adapters" and let ProofMarket be purely the verification layer. Requests come to ProofMarket, finding people goes to the partner, and returning submissions pass through our checks, review, agreement and recording. Ride on top of a 500k-person market instead of fighting it
+2. **A Premise-style product.** Sell "indexes" bundling watches and batch requests by subscription (e.g. a Tokyo convenience-store price index, a Shibuya queue index). With the public dataset in place, indexes are a natural extension. Companies and municipalities only buy in this form
+3. **A fiat path.** Human API and NeedaHuman both use Stripe Connect. Offer yen payouts for workers (§4.10) and invoice payment for requesters, with Solana kept as invisible plumbing
+4. **An enterprise foundation.** Organization accounts, SLAs, bulk export of audit trails, Sheets and Slack integration (`06-business-scale.md`)
 
-## 尖った機能の案（他社に無く、今の土台で作れるもの）
+## Sharp feature ideas (none of the others have them, and they can be built on today's base)
 
-**A. 楽観的な確認（optimistic verification）**。1 人目の答えを「仮確定」として即返し、依頼者が決めた異議期間（たとえば 30 分）に、他の worker かエージェントが保証金を積んで異議を出せる。異議が出れば追加の witness が現地で再確認し、負けた側の保証金が勝った側に渡る。UMA の仕組みを「画面の証拠」から「現地の人」に置き換えたもの。速さ（1 人）と確からしさ（多数）を同時に取れる。既存の異議→再確認（§4.12）と見守りで 8 割はできている。
+**A. Optimistic verification.** Return the first person's answer immediately as "provisional"; during a challenge window the requester sets (say 30 minutes), other workers or agents can post a bond and challenge it. If challenged, extra witnesses re-check on site, and the losing side's bond goes to the winner. UMA's mechanism with "on-screen evidence" replaced by "a person on site". It gets speed (one person) and confidence (many) at once. The existing dispute → re-check (§4.12) and watches already cover 80% of it.
 
-**B. Solana の他のプログラムから読める事実**。結果のハッシュは既に鎖上にあるが、他のプログラムが使う前提で設計し直す。「この店が閉まっていたら保険金を払う」「この行列が 10 人を超えたら予約を切り替える」を Solana の契約が直接判断できる。SDK に鎖上の記録を検証する関数を足し、`/r/{id}` の証明ページに「プログラムからの読み方」を載せる。審査員が最も評価しやすい差で、競合は全員 Web2 の API 止まり。
+**B. Facts other Solana programs can read.** Result hashes are already on chain, but redesign them on the premise that other programs will use them. A Solana contract could decide directly "pay the insurance if this shop was closed" or "switch the booking if this queue exceeds 10 people". Add a function to the SDK that verifies the on-chain record, and put "how to read it from a program" on the `/r/{id}` proof page. The easiest difference for judges to appreciate; every competitor stops at a Web2 API.
 
-**C. 急ぐほど上がる報酬（rising bounty）**。依頼者は上限だけ置き、時間が経つにつれて報酬が自動で上がる。受け手が付かない依頼が放置される事故を無くし、「急ぎ」を市場の価格で表す。競合は固定額。実装は小さい（`bounty.max` と上がり方、クレーム時点の額で確定）。
+**C. A reward that rises with urgency (rising bounty).** The requester sets only a ceiling, and the reward rises automatically over time. It ends the accident of requests sitting untaken, and expresses "urgent" as a market price. Competitors use fixed amounts. The implementation is small (`bounty.max`, the rise curve, fixed at the amount when claimed).
 
-**D. 五感の指数（sense index）**。匂い・騒音・清潔感・暖かさを、複数人の合意で 1〜5 の標準尺度に落とす。AI には原理的に取れず、カメラ網にも無い。Human API が音声に寄せたのに対し、こちらは現地の五感全般。form の選択項目として今日から頼めるので、必要なのは尺度の標準化と「3 人以上の中央値」の判定。
+**D. A sense index.** Turn smell, noise, cleanliness and warmth into a standard 1–5 scale through agreement among several people. AI cannot capture this in principle, and camera networks do not have it. Human API leans to voice; this covers the senses on site in general. It can be requested today as a form choice field, so what is needed is standardizing the scales and judging by "the median of 3 or more people".
 
-**E. エージェントの行いを人が証明する（逆方向）**。エージェントが「配達した」「看板を出した」を人に見てもらい、証明として受け取る。企業の監査、委託先の検収、エージェント同士の取引の決済条件に使える。仕組みは今の依頼と同じで、依頼文の型と証明ページの文言が変わるだけ。
+**E. People attest to agents' actions (the reverse direction).** An agent has a person look at "delivered" or "put the sign out" and receives it as proof. Usable for corporate audits, acceptance of outsourced work, and settlement conditions between agents. The mechanism is the same as today's requests; only the request template and the proof page wording change.
 
-**F. worker 側にもエージェント**。撮影ガイド、書き起こしの自動化、翻訳を worker アプリに。「人とエージェントの対」を両側で成立させ、worker 1 人あたりの処理量を上げる。供給不足への答えでもある。
+**F. Agents on the worker side too.** Capture guidance, automated transcription and translation in the worker app. Makes the "person + agent" pair work on both sides and raises each worker's throughput. Also an answer to the supply shortage.
 
-**G. 位置を明かさない位置の証明**。worker の正確な位置を出さずに「半径内にいた」だけを鎖上で示す（ゼロ知識）。重いので後回しだが、プライバシーの面で他社が追いにくい。
+**G. Proof of location without revealing location.** Show on chain only "was within the radius", without revealing the worker's exact position (zero knowledge). Heavy, so later, but hard for others to follow on privacy.
 
-## まず作る 3 つ（提案）
+## The 3 to build first (proposal)
 
-| 順 | 案 | なぜ先か | 大きさ |
+| Order | Idea | Why first | Size |
 |---|---|---|---|
-| 1 | C. 急ぐほど上がる報酬 | 1 日で入る。供給不足のいま、依頼が放置されない効果が大きい | 小 |
-| 2 | B. 他のプログラムから読める事実 | 審査員向けに最も強い差。記録は既にあるので、SDK の検証関数と証明ページの説明で届く | 中 |
-| 3 | A. 楽観的な確認 | ProofMarket 固有の判定モデルになる。異議と見守りの仕組みを組み替えて作る | 中〜大 |
+| 1 | C. Rising bounty | Lands in a day. With supply short right now, keeping requests from sitting untaken matters a lot | Small |
+| 2 | B. Facts other programs can read | The strongest difference for judges. The records already exist, so an SDK verification function and an explanation on the proof page get there | Medium |
+| 3 | A. Optimistic verification | Becomes ProofMarket's own verdict model. Built by recombining the dispute and watch mechanisms | Medium–large |
 
-D（五感の指数）は form で今日から頼めるので、まず依頼の見本として `/developers` に置き、尺度の標準化は後に回す。供給のアダプタ（拡大 1）は提携の交渉が要るので、提出後に。
+D (sense index) can be requested today with a form, so first put it on `/developers` as an example request and standardize the scales later. Supply adapters (expansion 1) need partnership negotiations, so after submission.
 
-## 出典
+## Sources
 
-- RentAHuman: Yahoo Tech / WIRED 引用（登録 51.8 万、100 か国超）、Gadget Review（見える人は 83 人）、rentahuman.ai/docs
-- Human API: HackerNoon（6,500 万ドル、Eclipse、Stripe Connect）、TechStartups 2026-04-01（スマホアプリ）
-- Taskin: trytaskin.ai、GitHub taskin-ai/trytaskin。NeedaHuman: needahuman.ai（GPS・合言葉・15%）
-- Premise: Getlatka（売上 3,000 万ドル・顧客 80 社）、Fortune 2015、プレスリリース（8,500 万ドル調達）。Streetbees: dealroom。Field Agent・Gigwalk・Observa: Micromoola / research.com
-- Hivemapper・NATIX: Solana Compass、insights4vc。FrodoBots: dealroom
-- UMA: blog.uma.xyz（楽観的オラクル、LLM の提案と反論）。Kleros: interexy の比較
+- RentAHuman: Yahoo Tech / WIRED quotes (518k sign-ups, 100+ countries), Gadget Review (83 visible people), rentahuman.ai/docs
+- Human API: HackerNoon ($65M, Eclipse, Stripe Connect), TechStartups 2026-04-01 (phone app)
+- Taskin: trytaskin.ai, GitHub taskin-ai/trytaskin. NeedaHuman: needahuman.ai (GPS, passphrase, 15%)
+- Premise: Getlatka ($30M revenue, 80 customers), Fortune 2015, press release ($85M raised). Streetbees: dealroom. Field Agent, Gigwalk, Observa: Micromoola / research.com
+- Hivemapper, NATIX: Solana Compass, insights4vc. FrodoBots: dealroom
+- UMA: blog.uma.xyz (optimistic oracle, LLM proposals and disputes). Kleros: interexy's comparison

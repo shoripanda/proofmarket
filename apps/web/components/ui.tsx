@@ -87,7 +87,7 @@ export function useNow(intervalMs = 1000) {
   return now;
 }
 
-/** "12分34秒" / "12m 34s", or "終了" / "ended" once the moment has passed. */
+/** "12m 34s", or "ended" once the moment has passed. */
 export function remaining(iso: string, now: number, lang: Lang = "ja") {
   const ms = new Date(iso).getTime() - now;
   if (ms <= 0) return pick(lang, "終了", "ended");
@@ -213,7 +213,7 @@ export function SoundToggle() {
 }
 
 /**
- * "0.30 USDC（約 45 円）": the amount with a yen estimate, so no one has to know what USDC is worth. Other
+ * "0.30 USDC (about ¥45)": the amount with a yen estimate, so no one has to know what USDC is worth. Other
  * dollar stablecoins get the same hint; any other asset reads "0.01 SOL" with none (16 §6).
  */
 export const yen = (amount: string, lang: Lang = "ja", asset = "USDC") =>

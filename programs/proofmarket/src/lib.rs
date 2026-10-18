@@ -1,5 +1,5 @@
 //! ProofMarket on-chain program: per-task escrow, result attestation, settle XOR refund.
-//! Design: specs/proofmarket/implementation/ja/06-solana-program-design.md
+//! Design: specs/proofmarket/implementation/en/06-solana-program-design.md
 //!
 //! Only public-verifiable minimum lives here (06 §1): no photos, coordinates, question text,
 //! or worker/requester identity. The verifier is a single platform key (disclosed, not decentralized).

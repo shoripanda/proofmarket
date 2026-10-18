@@ -1,6 +1,6 @@
 // External API contract as zod schemas — the single source of truth for request validation,
 // TypeScript types and the generated OpenAPI document (packages/core/openapi.json).
-// Specs: api-contract.md, implementation/ja/05-api-design.md.
+// Specs: api-contract.md, implementation/en/05-api-design.md.
 
 import { z } from "zod";
 import { ASSET_SYMBOLS } from "../domain/assets.ts";

@@ -1,7 +1,5 @@
 # 10. Implementation Plan (Oct 2 to Oct 12)
 
-> English translation. The Japanese version in [`../ja/10-implementation-plan.md`](../ja/10-implementation-plan.md) is authoritative; if they differ, the Japanese version wins.
-
 Created: 2026-10-02
 
 ## 1. How We Proceed

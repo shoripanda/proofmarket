@@ -4,7 +4,7 @@ Status: fixed in PR #16 (`fix/tick-date-binding`). Written 2026-10-09.
 
 ## Summary
 
-From 13:29 UTC on 2026-10-08 (22:29 JST) the once-a-minute maintenance call `POST /api/internal/tick` failed with HTTP 500 on every run. The tick is what drains the outbox jobs, so nothing that depends on a job happened: no `FINALIZE_AND_SETTLE` (worker payout), no `NOTIFY_WORKERS` (push), no deadline expiry. Two verifications that had reached `VERIFIED` with a passing AI review sat at "確定待ち" (awaiting settlement) in the worker's payout screen for about three hours. `FUND_TASK` jobs still ran because the create route kicks them inline.
+From 13:29 UTC on 2026-10-08 (22:29 JST) the once-a-minute maintenance call `POST /api/internal/tick` failed with HTTP 500 on every run. The tick is what drains the outbox jobs, so nothing that depends on a job happened: no `FINALIZE_AND_SETTLE` (worker payout), no `NOTIFY_WORKERS` (push), no deadline expiry. Two verifications that had reached `VERIFIED` with a passing AI review sat at "awaiting settlement" in the worker's payout screen for about three hours. `FUND_TASK` jobs still ran because the create route kicks them inline.
 
 Root cause: the optimistic-verification step added that evening (PR #10) bound a JavaScript `Date` directly into a raw `` sql`…` `` fragment. The production driver (postgres-js) serialises an unannotated `Date` with `toString()` — `"Thu Oct 08 2026 16:40:00 GMT+0000 (Coordinated Universal Time)"` — which Postgres cannot parse as a timestamp. The test database (PGlite) serialises the same value as ISO 8601, so the test suite passed. Because the failing step ran second in the tick and nothing caught it, every later step was skipped.
 
@@ -23,7 +23,7 @@ Root cause: the optimistic-verification step added that evening (PR #10) bound a
 | 13:26 | PR #10 (optimistic verification) merged |
 | 13:29 | First 500 from the tick (Supabase `net._http_response`); 178 consecutive 200s before, 182 consecutive 500s after |
 | 15:50–16:22 | Two tasks created, submitted, reviewed (pass) and marked VERIFIED; their `FINALIZE_AND_SETTLE` jobs queued |
-| 16:27 | Owner reports payouts stuck at "確定待ち" |
+| 16:27 | Owner reports payouts stuck at "awaiting settlement" |
 | 16:30 | DB read: jobs `PENDING`, `attempts = 0`; pg_cron succeeding; tick responding 500 |
 | 16:40 | `vercel logs` shows the failing query and the `toString()`-formatted parameter |
 | 16:52 | Fix pushed (PR #16) |

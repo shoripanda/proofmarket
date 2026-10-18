@@ -1,26 +1,26 @@
-# 担当 C: エージェントの行いの証明（§5）と五感の指数（§4）
+# Owner C: attesting an agent's claim (§5) and a sensory scale (§4)
 
-ブランチ: `feat/attestation-and-scale`。worktree: `~/proofmarket-c`。移行 0023 の `verification_requests.attestation` を使う。
+Branch: `feat/attestation-and-scale`. Worktree: `~/proofmarket-c`. Uses `verification_requests.attestation` from migration 0023.
 
-## 作るもの
+## What to build
 
-### 五感の指数（§4）
-1. `packages/core/src/schemas/api.ts` の `FormFieldSchema` に `{ type: "scale", key, label, min: 1, max: 5|10, labels: [低い側, 高い側]（各 20 字）, required }` を足す。`AnswerSchemaSpec` の form はそのまま
-2. `packages/core/src/task/answers.ts`: scale は整数で `min..max` に収まること（`normalizeAnswer` の form の分岐に 1 行）。`validateAnswerSchema` で `max` は 5 か 10 だけ
-3. `apps/web/lib/answers.ts` の `FormFieldView` と `answerFormat`（「尺度で答える」）。撮影画面（`claims/[id]/capture/page.tsx`）の form の分岐に scale の入力: `max` 個の丸ボタンを横に並べ、両端に `labels`。文字は両端だけ
-4. 集計: `apps/web/lib/services/views.ts` の `buildResult` で、form の有効な提出が 3 件以上あれば数値項目と scale 項目ごとに `{ median, min, max, n }` を計算し `result.aggregate[key]` に返す（スキーマ `VerificationResultSchema` に `aggregate` を任意で足す。`result_hash` の除外項目には**入れない**＝ハッシュに含める。`bundle.ts` の `RESULT_HASH_EXCLUDED_FIELDS` は触らない）。中央値は偶数なら小さい方（整数のまま）
-5. 見本: `/developers` の `answer_schema` の説明に scale を 1 文、一括依頼の節の次に「店の雰囲気を 3 人で測る」の依頼文（匂い・騒音・清潔感・明るさの 4 尺度、`assurance: { level: "high" }`、`acceptance_criteria` 付き）を日英で
+### Sensory scale (§4)
+1. Add `{ type: "scale", key, label, min: 1, max: 5|10, labels: [low end, high end] (20 characters each), required }` to `FormFieldSchema` in `packages/core/src/schemas/api.ts`. The form in `AnswerSchemaSpec` stays as is
+2. `packages/core/src/task/answers.ts`: a scale answer is an integer within `min..max` (one line in the form branch of `normalizeAnswer`). In `validateAnswerSchema`, `max` may only be 5 or 10
+3. `FormFieldView` and `answerFormat` ("answer on a scale") in `apps/web/lib/answers.ts`. In the form branch of the capture screen (`claims/[id]/capture/page.tsx`), a scale input: `max` round buttons in a row with `labels` at both ends. Text only at the ends
+4. Aggregation: in `buildResult` in `apps/web/lib/services/views.ts`, when there are 3 or more valid form submissions, compute `{ median, min, max, n }` per numeric and scale field and return them in `result.aggregate[key]` (add an optional `aggregate` to `VerificationResultSchema`. Do **not** add it to `result_hash`'s excluded fields, i.e. it is hashed; do not touch `RESULT_HASH_EXCLUDED_FIELDS` in `bundle.ts`). For an even count the median is the lower one (stays an integer)
+5. Samples: one sentence about scale in the `answer_schema` description on `/developers`, and after the batch section a request "three people measure a shop's atmosphere" (four scales: smell, noise, cleanliness, brightness; `assurance: { level: "high" }`; with `acceptance_criteria`), in Japanese and English
 
-### 行いの証明（§5）
-1. `CreateVerificationRequestSchema` に `attestation: { subject: z.literal("agent_action"), description: string 1〜200 }`（任意）。`requester-service` で `attestation` 列に保存。`GET` と worker の一覧・詳細・クレーム詳細に `attestation` を返す（スキーマ追加）
-2. worker 画面: 依頼詳細と撮影画面の質問文の上に「確かめる相手: AI エージェントが『{description}』と言っています。本当かを見てきてください」（琥珀色の帯、受け取りの条件と同じ見た目。日英）
-3. 証明ページ `/r/[id]`: `attestation` があれば見出しを「{description} が行われたことを、人が確かめました」（英: "A person confirmed that {description} was done"）に。公開結果 `GET /v1/public/verifications/{id}` にも `attestation` を返す（文章は依頼者が書いた物なので公開してよい）。`proof-text.ts` に分岐
-4. MCP `REQUEST_TOOL` の説明に 1 文: 「attestation で、自分（エージェント）が行ったことを人に見てもらい証明として受け取れる（配達した・設置した・掃除した）」
+### Attesting an agent's claim (§5)
+1. Add an optional `attestation: { subject: z.literal("agent_action"), description: string 1–200 }` to `CreateVerificationRequestSchema`. Store it in the `attestation` column in `requester-service`. Return `attestation` in `GET` and in the worker list, detail and claim detail (add to the schemas)
+2. Worker screens: above the question on the request detail and capture screens, "What to check: an AI agent says '{description}'. Please go and see whether it is true" (an amber band, same look as the acceptance criteria; Japanese and English)
+3. Proof page `/r/[id]`: when `attestation` is present, the heading becomes "A person confirmed that {description} was done" (Japanese equivalent alongside). Also return `attestation` in the public result `GET /v1/public/verifications/{id}` (the requester wrote the text, so it may be public). Branch in `proof-text.ts`
+4. One sentence in the MCP `REQUEST_TOOL` description: "with attestation, an agent can have a person check something it did (delivered, installed, cleaned) and receive it as proof"
 
-## テスト
-- `packages/core/test/answers.test.ts` に scale の正常・範囲外・max が 7 の拒否
-- `apps/web/test/requester-api.test.ts` に attestation の往復と 201 字の拒否
-- `views` の集計: 新規 `apps/web/test/aggregate.test.ts`。3 件の form 提出を DB に直接入れて `buildResult` の `aggregate` を見る（`worker-flow.test.ts` の作り方を参考に）
+## Tests
+- In `packages/core/test/answers.test.ts`: scale valid, out of range, and rejection of max 7
+- In `apps/web/test/requester-api.test.ts`: attestation round trip and rejection at 201 characters
+- Aggregation in `views`: a new `apps/web/test/aggregate.test.ts` that inserts 3 form submissions directly into the DB and checks `aggregate` from `buildResult` (follow how `worker-flow.test.ts` builds things)
 
-## できたの判定
-依頼→worker 画面→証明ページで言葉が変わる。3 人の scale の中央値が返る。
+## Done when
+The wording changes from request → worker screen → proof page. The median of three people's scales is returned.

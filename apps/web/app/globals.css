@@ -98,7 +98,7 @@ button:disabled {
   transform: scale(0.98);
 }
 
-/* "30 秒でわかる": the current stage icon pops in when the scene changes (13 §7). */
+/* "Understand it in 30 seconds": the current stage icon pops in when the scene changes (13 §7). */
 @keyframes pm-pop {
   from {
     opacity: 0;

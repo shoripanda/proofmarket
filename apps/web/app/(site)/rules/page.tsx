@@ -1,4 +1,4 @@
-// S-08 依頼と撮影の決まり — what may be asked, what is refused (core policy rules), photo rules, and removal requests.
+// S-08 Rules for requests and photos — what may be asked, what is refused (core policy rules), photo rules, and removal requests.
 import { type PolicyRuleId, TASK_TYPE_ANSWERS, TASK_TYPE_SPECS, type TaskType } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { RemovalForm } from "@/components/removal-form";

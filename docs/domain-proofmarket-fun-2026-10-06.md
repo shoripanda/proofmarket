@@ -1,46 +1,46 @@
-# proofmarket.fun への移行手順（2026-10-06）
+# Moving to proofmarket.fun (2026-10-06)
 
-ドメイン `proofmarket.fun` は 2026-10-06 13:50 UTC に Cloudflare Registrar で登録済み。旧 URL `https://proofmarket-rosy.vercel.app` は転送用に残す。
+The domain `proofmarket.fun` was registered with Cloudflare Registrar at 13:50 UTC on 2026-10-06. The old URL `https://proofmarket-rosy.vercel.app` stays for redirects.
 
-## 順番（オーナーの作業。1〜5 の順に、合計 30 分ほど）
+## Order (the owner's work: steps 1–5 in order, about 30 minutes in total)
 
-1. **Cloudflare の DNS**（dash.cloudflare.com → proofmarket.fun → DNS）
-   - `A` レコード: 名前 `@`、値 `76.76.21.21`、プロキシは **オフ**（DNS only）
-   - `CNAME` レコード: 名前 `www`、値 `cname.vercel-dns.com`、プロキシは **オフ**
-   - プロキシをオンにすると Vercel の証明書発行と WebSocket が乱れるので、必ずオフにする
-2. **Vercel にドメインを足す**（vercel.com → proofmarket → Settings → Domains）
-   - `proofmarket.fun` を追加し、Production に割り当てる
-   - `www.proofmarket.fun` も追加し、「Redirect to proofmarket.fun」を選ぶ
-   - `proofmarket-rosy.vercel.app` はそのまま残す。Vercel は自動で新しい主ドメインへ 308 で転送する
-   - 証明書が「Valid」になるまで数分待つ
-3. **Vercel の環境変数**（Settings → Environment Variables、Production）
-   - `NEXT_PUBLIC_BASE_URL` = `https://proofmarket.fun`（無ければ新規、あれば書き換え）
-   - 保存したら Deployments → 最新 → Redeploy。OAuth の発行者（issuer）、証明のリンク、x402 の resource URL がこの値で作られる
-4. **Privy**（dashboard.privy.io → アプリ → Settings → Domains / Allowed origins）
-   - `https://proofmarket.fun` を許可ドメインに追加。旧ドメインも当面残す
-   - Google ログインの戻り先は Privy 側のドメインなので、Google Cloud 側の設定変更は不要
-5. **claude.ai のコネクタ**（claude.ai/settings/connectors）
-   - ProofMarket の URL を `https://proofmarket.fun/mcp` に変える（いま 502 になっているもの）
-   - つなぎ直すと ProofMarket の許可画面が開くので、API キーを貼る
+1. **Cloudflare DNS** (dash.cloudflare.com → proofmarket.fun → DNS)
+   - `A` record: name `@`, value `76.76.21.21`, proxy **off** (DNS only)
+   - `CNAME` record: name `www`, value `cname.vercel-dns.com`, proxy **off**
+   - Turning the proxy on disturbs Vercel's certificate issuance and WebSockets, so it must be off
+2. **Add the domain in Vercel** (vercel.com → proofmarket → Settings → Domains)
+   - Add `proofmarket.fun` and assign it to Production
+   - Add `www.proofmarket.fun` too and choose "Redirect to proofmarket.fun"
+   - Leave `proofmarket-rosy.vercel.app` as is; Vercel redirects it to the new primary domain with 308 automatically
+   - Wait a few minutes until the certificate shows "Valid"
+3. **Vercel env vars** (Settings → Environment Variables, Production)
+   - `NEXT_PUBLIC_BASE_URL` = `https://proofmarket.fun` (create or overwrite)
+   - After saving, Deployments → latest → Redeploy. The OAuth issuer, proof links and the x402 resource URL are built from this value
+4. **Privy** (dashboard.privy.io → app → Settings → Domains / Allowed origins)
+   - Add `https://proofmarket.fun` to the allowed domains. Keep the old domain for now
+   - Google sign-in returns to Privy's domain, so nothing changes on the Google Cloud side
+5. **claude.ai connector** (claude.ai/settings/connectors)
+   - Change ProofMarket's URL to `https://proofmarket.fun/mcp` (the one returning 502 now)
+   - Reconnecting opens ProofMarket's consent screen; paste the API key
 
-## 動作の確認（移行後に 1 回）
+## Checking (once after the move)
 
 ```
 curl -s https://proofmarket.fun/.well-known/oauth-authorization-server | head -c 200
-curl -s -o /dev/null -w "%{http_code}\n" -X POST https://proofmarket.fun/mcp      # 401 が正しい
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://proofmarket.fun/mcp      # 401 is correct
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://proofmarket-rosy.vercel.app/en   # 308 → proofmarket.fun
 ```
 
-## この Mac の確認係（launchd）
+## The checker on this Mac (launchd)
 
-`scripts/review-runner.ts` の既定の宛先はこの PR で `https://proofmarket.fun` に変えた。main を pull すれば次の実行から新しい宛先を使う。旧 URL への POST は転送されない可能性があるため、移行の当日中に `git -C ~/Solana-idea pull` を忘れない。
+This PR changed the default target of `scripts/review-runner.ts` to `https://proofmarket.fun`. Pulling main makes the next run use the new target. POSTs to the old URL may not be redirected, so do not forget `git -C ~/Solana-idea pull` on the day of the move.
 
-## 影響しないもの
+## Not affected
 
-API キー、データベース、Solana のプログラムと記録、worker のウォレット。ホスト名だけの変更。
+API keys, the database, the Solana program and its records, worker wallets. Only the host name changes.
 
-## 残る作業
+## Remaining work
 
-- サイトの文言と資料に残る旧 URL（`docs/pitch/`、`docs/agents/`、予定表、報告書）を新 URL に置き換える
-- Colosseum の提出フォームの URL を `https://proofmarket.fun/en` にする
-- `proofmarket.sns`（Solana Name Service）は運営ウォレットの表示名として使う。ブラウザからは開けないので、サイトの住所にはしない
+- Replace the old URL left in site copy and materials (`docs/pitch/`, `docs/agents/`, the schedule, the report) with the new one
+- Set the URL in the Colosseum submission form to `https://proofmarket.fun/en`
+- `proofmarket.sns` (Solana Name Service) is used as the display name of the operator wallet. Browsers cannot open it, so it is not the site's address

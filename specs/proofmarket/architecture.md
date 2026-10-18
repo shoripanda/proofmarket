@@ -1,8 +1,8 @@
 # Logical Architecture
 
-更新日: 2026-10-02
+Updated: 2026-10-02
 
-この文書は**technology-neutralなsystem boundary**を定義する。frameworkやcloud vendorは固定しない。
+This document defines a **technology-neutral system boundary**. It does not fix a framework or cloud vendor.
 
 ## 1. Components
 
@@ -31,7 +31,7 @@ Responsibilities:
 - evidence capture
 - status/rejection reason
 
-MVPはnative app不要。mobile browserで完結できればよい。
+The MVP needs no native app; it is enough for everything to work in a mobile browser.
 
 ### D. Evidence Service
 Responsibilities:

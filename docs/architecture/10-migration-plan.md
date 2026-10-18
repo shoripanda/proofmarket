@@ -1,65 +1,65 @@
-# 10. 移行計画: 互換を保つ変更だけを、戻せる順番で入れる
+# 10. Migration plan: only compatible changes, in an order that can be rolled back
 
-作成: 2026-10-14
+Written: 2026-10-14
 
-## 1. 目的
+## 1. Purpose
 
-03〜09 章の設計を、既存の API と本番の動作を壊さずに入れる順番と、各段階の戻し方を決める。指示書の「既存の機能を破壊する変更は行わない」「事前承認が必要な作業」に従い、承認が要る作業を明示する。
+Decide the order in which the designs in chapters 03-09 go in without breaking the existing API or production behaviour, and how to roll back each stage. Following the brief's "do not make changes that break existing features" and "work that needs prior approval", mark the work that needs approval.
 
-## 2. 現状
+## 2. Current state
 
-本番は Devnet で動き、未マージの PR #39〜#42（多通貨と並列決済）がある。この文書群の設計はそれらと独立だが、移行の番号（0029）と `packages/solana` の変更箇所（`send.ts`、`anchor-adapter.ts`）が重なる。PR #39〜#42 が先に入る前提で順番を組み、入らない場合の分岐も書く。
+Production runs on Devnet, and PRs #39-#42 (multi-token and parallel settlement) are unmerged. This design is independent of them, but the migration number (0029) and the touched files in `packages/solana` (`send.ts`, `anchor-adapter.ts`) overlap. The order assumes PRs #39-#42 go in first, with a branch for the case where they do not.
 
-## 3. 要件
+## 3. Requirements
 
-- 各段階は単独で取り込め、取り込んだ直後に本番の動作が変わらない（旗か環境変数で有効にする）
-- 戻すときはコードを戻すだけで済み、DB の移行を戻す必要がない
-- 承認が要る作業（本番の配置、DB の移行、鍵の変更、プログラムの配置、メインネットの送金）は運営者が行い、PR の本文に手順を書く
+- Each stage can be merged on its own and does not change production behaviour right after merging (it is enabled by a flag or env var)
+- Rolling back means reverting code only; no DB migration needs to be undone
+- Work that needs approval (production deployment, DB migrations, key changes, program deployment, mainnet transfers) is done by the operator, with the procedure written in the PR description
 
-## 4. 提案する設計: 段階
+## 4. Proposed design: stages
 
-| 段階 | 内容 | 本番への影響 | 戻し方 |
+| Stage | Content | Effect on production | Rollback |
 |---|---|---|---|
-| M0 | PR #39〜#42 の取り込み（審査中）。移行 0029 を先に当てる | `ASSETS_ENABLED` 未設定なら USDC のみで変わらず | コードを戻す。0029 は残しても害がない |
-| M1 | 移行 0030（09 章）。コードより先に当てる | 無し（null を許す、旗の候補を増やす、索引を足す） | 残しても害がない |
-| M2 | Signer の境界（05 §4.1）。`memory` バックエンドで今と同じ鍵を包む | 無し | コードを戻す |
-| M3 | 支出ポリシー（04 §4.3）と `x402_enabled` の旗（08 §4.3）。既存 credential の上限は値を保つので、上限が入っているキーは検査が始まる | **`/join` と x402 のキーで 5 USDC と 20 USDC が効き始める。** 運営者が手で出したキーに上限が入っていれば同じ | 旗は `platform_flags` で、上限は credential を null に更新 |
-| M4 | 一覧 API と見積もり（04 §4.1〜4.2）。MCP の道具に `confirm` と `list_reality_verifications` を足す | 新しいエンドポイントと引数のみ。既存の呼び出しは変わらない | コードを戻す |
-| M5 | ~~人の審査の閾値（07 §4.2）~~ 2026-10-16 に廃止。以下は当初の案 | 無し。環境変数を入れたときだけ効く | 環境変数を外す |
-| M6 | 日次の突き合わせと処理量の計測（06 §4.2〜4.3） | tick の最終段に 1 日 1 回の処理が増える | コードを戻す |
-| M7 | Codama の生成クライアントで `packages/sdk/onchain` を置き換え（02 §4.2） | 公開ページの照合の実装が変わる。表示は同じ | コードを戻す |
-| M8 | メインネットの準備: upgrade authority の移動、treasury の上限、KMS バックエンド（05 §4.2〜4.3、08 §4.2） | **運営者の作業。** 12 §10 の手順に沿う | KMS は `SIGNER_BACKEND=memory` に戻す |
-| M9 | ChatGPT のウィジェット、見本エージェントの承認（02 §4.3・§4.5） | 任意 | コードを戻す |
+| M0 | Merge PRs #39-#42 (under review). Apply migration 0029 first | None unless `ASSETS_ENABLED` is set (USDC only) | Revert code. 0029 is harmless if left |
+| M1 | Migration 0030 (chapter 09), applied before the code | None (allows null, adds a flag candidate, adds an index) | Harmless if left |
+| M2 | The Signer boundary (05 §4.1), wrapping today's keys with the `memory` backend | None | Revert code |
+| M3 | Spending policy (04 §4.3) and the `x402_enabled` flag (08 §4.3). Existing credentials keep their limits, so keys with limits start being checked | **Keys from `/join` and x402 start enforcing 5 USDC and 20 USDC.** Same for operator-issued keys that have limits | The flag via `platform_flags`; limits by setting the credential to null |
+| M4 | List API and quotes (04 §4.1-4.2). MCP tools gain `confirm` and `list_reality_verifications` | Only new endpoints and arguments; existing calls unchanged | Revert code |
+| M5 | ~~Human-review threshold (07 §4.2)~~ withdrawn on 2026-10-16. The original plan follows | None; only takes effect if the env var is set | Remove the env var |
+| M6 | Daily reconciliation and throughput measurement (06 §4.2-4.3) | A once-a-day step added at the end of the tick | Revert code |
+| M7 | Replace `packages/sdk/onchain` with the Codama-generated client (02 §4.2) | The public page's check is implemented differently; display unchanged | Revert code |
+| M8 | Mainnet preparation: moving the upgrade authority, the treasury cap, a KMS backend (05 §4.2-4.3, 08 §4.2) | **Operator work**, following 12 §10 | Set `SIGNER_BACKEND=memory` for the KMS |
+| M9 | The ChatGPT widget, approval in the sample agent (02 §4.3, §4.5) | Optional | Revert code |
 
-M3 だけが本番の動作を変える。`/join` と x402 のキーに書かれた 5 USDC と 20 USDC は、いまは表示だけで効いていない。M3 で効き始めると、お試し残高 5 USDC のキーは 1 件 5 USDC・1 日 20 USDC までになる。お試し残高が 5 USDC なので、実際に止まる依頼はほぼ無い（推測）。運営者が手で出したキーについては、M3 の前に `requester_credentials` の上限を確かめ、必要なら null にする。この確認は本番 DB の読み取りを伴うので、運営者が行う。
+Only M3 changes production behaviour. The 5 USDC and 20 USDC written on `/join` and x402 keys are display-only today. From M3, a key with the 5 USDC trial balance is limited to 5 USDC per request and 20 USDC per day. Since the trial balance is 5 USDC, almost no request will actually be stopped (guess). For keys issued by hand, the operator checks the limits in `requester_credentials` before M3 and sets them to null where needed. That check reads the production DB, so the operator does it.
 
-PR #39〜#42 が入らない場合、M1 の番号は 0030 のままにし（欠番を許す）、M2 は main の `send.ts` と `anchor-adapter.ts` に対して行う。後から #40〜#42 を取り込むときに衝突するが、Signer の差分は `operatorSecretKey` の受け渡しに限るので解消は小さい。
+If PRs #39-#42 do not go in, keep M1 numbered 0030 (gaps allowed) and do M2 against main's `send.ts` and `anchor-adapter.ts`. Merging #40-#42 later will conflict, but the Signer change is limited to how `operatorSecretKey` is passed, so resolving it is small.
 
-## 5. 技術選定の理由
+## 5. Rationale
 
-旗と環境変数で有効にする方式は、既存の `RISING_BOUNTY_ENABLED` や `external_review_enabled` と同じで、運営者が慣れている。DB の移行を「戻さなくてよい形」に限るのは、本番の移行が運営者の手作業（`pnpm db:migrate`）で、戻す手順を増やしたくないからである。
+Enabling through flags and env vars is how `RISING_BOUNTY_ENABLED` and `external_review_enabled` already work, and the operator is used to it. DB migrations are limited to forms that never need undoing because production migrations are run by hand by the operator (`pnpm db:migrate`), and we do not want more steps to undo them.
 
-## 6. 代替案
+## 6. Alternatives
 
-- 1 つの大きな PR にまとめる案。審査が長くなり、M3 の動作変更が他の変更に紛れる。段階ごとの PR にする
-- M8 を先に行う案。鍵の置き場はメインネット移行の前提だが、Signer の境界（M2）が無いと置き場だけ変えても差し込めない。M2 → M8 の順が要る
+- One big PR. Review takes longer and M3's behaviour change gets lost among the rest. One PR per stage
+- Doing M8 first. Where keys live is a prerequisite for mainnet, but without the Signer boundary (M2) a new place cannot be plugged in. M2 → M8 is required
 
-## 7. セキュリティ上の考慮事項
+## 7. Security considerations
 
-M3 の前に既存 credential の上限を確かめないと、運営者が手で出したキーが突然止まる。止まった依頼者は `TASK_AMOUNT_LIMIT_EXCEEDED` を受け取るので原因は分かるが、知らせずに変えるのは避ける。M8 の KMS への切り替えは、Devnet で `devnet-setup` 相当の往復を通してから本番に入れる。
+Without checking existing credential limits before M3, keys issued by hand could suddenly stop. Affected requesters receive `TASK_AMOUNT_LIMIT_EXCEEDED`, so the cause is clear, but changing it without notice is avoided. M8's switch to a KMS goes to production only after a round trip equivalent to `devnet-setup` passes on Devnet.
 
-## 8. 実装上の課題
+## 8. Implementation issues
 
-- M2〜M4 は `packages/core/src/schemas/api.ts` を触るので `pnpm openapi` と IDL の一致を CI で確かめる
-- M7 は Codama の生成物を `biome` の対象から外すか、生成後に整形するかを決める（02 §8）
-- 各 PR の本文に「本番で必要な手順」を書き、運営者が `docs/proofmarket-schedule-2026-10.md` の末尾に転記する（`docs/agents/README.md` の決まり）
+- M2-M4 touch `packages/core/src/schemas/api.ts`, so CI checks `pnpm openapi` and the IDL for drift
+- M7 needs a decision whether to exclude Codama's output from `biome` or format it after generation (02 §8)
+- Each PR description includes "steps needed in production", which the operator copies to the end of `docs/proofmarket-schedule-2026-10.md` (the rule in `docs/agents/README.md`)
 
-## 9. テスト方針
+## 9. Test strategy
 
-段階ごとに 04〜09 章の「テスト方針」を実行し、CI の 3 ジョブと `APP_ENV=demo pnpm build` を通す。M3 は手元の `pnpm dev:local` で、お試しキーの上限超過が 400 系で返ることを目で確かめる。M8 は Devnet で確かめ、本番の最初の 1 件は小額（1 USDC 以下）で運営者が送る。
+For each stage, run the "test strategy" of chapters 04-09 and pass the three CI jobs and `APP_ENV=demo pnpm build`. For M3, check by eye with `pnpm dev:local` that exceeding a trial key's limit returns a 4xx. M8 is verified on Devnet, and the first production transaction is a small amount (1 USDC or less) sent by the operator.
 
-## 10. 未決定事項
+## 10. Open questions
 
-- M0 と M1 の順番（PR #39〜#42 の取り込み時期）
-- M3 を入れる前に、運営者が手で出したキーの上限をどう扱うか（null にするか、値を保つか）
-- M8 の KMS のバックエンド
+- The order of M0 and M1 (when PRs #39-#42 are merged)
+- How to treat limits on hand-issued keys before M3 (set to null, or keep)
+- M8's KMS backend

@@ -517,7 +517,7 @@ const doc = {
     title: "ProofMarket API",
     version: "0.1.0",
     description:
-      "Generated from packages/core/src/schemas/api.ts. Spec: specs/proofmarket/implementation/ja/05-api-design.md",
+      "Generated from packages/core/src/schemas/api.ts. Spec: specs/proofmarket/implementation/en/05-api-design.md",
   },
   servers: [{ url: "/" }],
   components: {

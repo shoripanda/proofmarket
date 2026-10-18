@@ -1,4 +1,4 @@
-// S-12 みんなの地図 — results their requesters chose to publish (01 §4.22). The question, the requested place,
+// S-12 Shared map — results their requesters chose to publish (01 §4.22). The question, the requested place,
 // the answer and the time; never photos or workers.
 import { LIMITS } from "@proofmarket/core";
 import type { PublicMap } from "@proofmarket/core/schemas/api";

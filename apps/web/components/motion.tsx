@@ -1,7 +1,7 @@
 "use client";
 // Site motion (2026-10-16, "move like rentahuman.ai"). One observer, mounted in SiteShell, drives every page:
 //   [data-reveal]  fades and rises into place the first time it scrolls into view (globals.css)
-//   [data-count]   counts its leading number up from 0 when it comes into view ("12件", "3.50 USDC", "5分")
+//   [data-count]   counts its leading number up from 0 when it comes into view ("12 requests", "3.50 USDC", "5 min")
 // Server components only add the attributes, so pages stay server-rendered. Nothing moves when the reader asks
 // for reduced motion, and the CSS shows everything anyway if this script never runs (globals.css fallback).
 import { useEffect, useState } from "react";

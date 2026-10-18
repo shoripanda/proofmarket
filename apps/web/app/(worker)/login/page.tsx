@@ -1,5 +1,5 @@
 "use client";
-// W-01 ログイン — Privy のメール / Google ログイン（DEV_MODE では名前だけ）。
+// W-01 Login — Privy email / Google login (a name only in DEV_MODE).
 import { useState } from "react";
 import { Button, Card } from "@/components/ui";
 import { useSession } from "@/lib/client/auth";

@@ -1,10 +1,7 @@
-# ProofMarket Implementation Design & Requirements (English translation)
-
-> English translation. The Japanese version in [`../ja/00-README.md`](../ja/00-README.md) is authoritative; if they differ, the Japanese version wins.
+# ProofMarket Implementation Design & Requirements
 
 Created: 2026-10-02
 Scope: Crypto World's Fair 2026 submission (deadline 2026-10-12)
-Japanese version: [`../ja/00-README.md`](../ja/00-README.md) (the authoritative original; this English version is a translation. If they differ, the Japanese version is correct)
 
 ## Role of this document set
 
@@ -36,6 +33,9 @@ Priority follows the Precedence in the existing `specs/proofmarket/README.md`.
 | 10 | [10-implementation-plan.md](10-implementation-plan.md) | Schedule for 10/2 to 10/12, work breakdown, human responsibilities |
 | 11 | [11-code-skeleton.md](11-code-skeleton.md) | Design-to-code map, skeleton verification results, development setup |
 | 12 | [12-deploy-runbook.md](12-deploy-runbook.md) | First deployment to Devnet, Supabase, Privy and Vercel |
+| 13 | [13-edge-features.md](13-edge-features.md) | Distinctive features and a beginner's path |
+| 15 | [15-mainnet-and-sol.md](15-mainnet-and-sol.md) | Preparing to run with real money, and paying in SOL |
+| 16 | [16-multi-token-and-throughput.md](16-multi-token-and-throughput.md) | Paying in other SPL tokens, and settlement throughput |
 
 ## List of decisions
 
