@@ -6,7 +6,7 @@ A record of the operator re-reading the Anchor program `programs/proofmarket` (v
 
 - `src/lib.rs`, `state.rs`, `constants.rs`, `error.rs`, `events.rs`, `instructions.rs`
 - 7 instructions: `initialize_config`, `update_config`, `add_mint` / `remove_mint`, `initialize_task`, `finalize_verification`, `settle`, `refund`
-- LiteSVM tests `tests/program_tests.rs` (25 tests: P-INIT-01–03, P-FIN-01–04, P-SET-01–05, P-REF-01–03, P-OVF-01, P-CFG-01, P-MINT-01–05 and others). `cargo test -p proofmarket` passed 23/23 on 2026-10-11, and all after the v1.2 additions
+- LiteSVM tests `tests/program_tests.rs` (23 tests at v1.2: P-INIT-01–03, P-FIN-01–04, P-SET-01–05, P-REF-01–03, P-OVF-01, P-CFG-01, P-MINT-01–05). On 2026-10-13 all 23 passed against the deployable .so (`cargo build-sbf --tools-version v1.57`, 318,120 B, SBPF v0). v1.3 brings it to 29 (see the addendum)
 
 ## Paths where funds move, and what protects them
 
