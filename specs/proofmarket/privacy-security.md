@@ -122,6 +122,7 @@ Requester ordinarily receives only:
 
 ### Public worker profiles (2026-10-16)
 A worker profile is public only when the worker turns it on (default off). It may show: display name, city or ward (never a street, station or coordinates), skills, languages, completed count and rating. Workers who keep it off stay pseudonymous to requesters, as before.
+A public profile has its own random id, separate from the worker id and from `worker_ref`, so it cannot be joined with past results. Search engine indexing is a second switch, also off by default. Profile text that looks like contact details is refused. Ratings are shown only as an average from 3 ratings; rating comments are shown to the worker only. A requester's "blocked" mark is never shown to the worker. Design: `docs/architecture/14-public-profiles.md`.
 
 ### Conversations (2026-10-16)
 Tasks of `kind = task` open a conversation between the requester and the accepted worker. Messages are stored for the same period as evidence and deleted with it. Messages that look like contact details or off-platform payment are delivered but flagged and recorded. Worker messages and files are passed to agents marked as data, never as instructions.

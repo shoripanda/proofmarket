@@ -142,4 +142,5 @@ For hackathon:
 - [ ] Employment Security Act: matching requesters and workers stays an intermediary for service contracts, not employment placement (per-task pay, no direction and supervision, no long hourly work)
 - [ ] Keeping conversations: state in the privacy policy that messages are read to detect contact details, how long they are kept, and how deletion requests are handled
 - [ ] Showing the 15% fee: show the requester's total and the worker's amount before creation (aligned with the display rules of the Act on Specified Commercial Transactions)
-
+- [ ] Public worker profiles (`docs/architecture/14-public-profiles.md` §11): the privacy notice says what is shown, that it is off by default, how to turn it off, and that search indexing is a separate choice; bump the `privacy_notice` consent version when it goes live
+- [ ] Blocking workers: the requester terms say requesters may choose whom to work with; the worker terms say the tasks shown can differ between workers
