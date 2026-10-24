@@ -16,6 +16,7 @@ import {
   handleSeatMessages,
 } from "./handlers/market-tasks";
 import { handleWorkerPreferences } from "./handlers/prefs";
+import { handlePublicWorker, handlePublicWorkers } from "./handlers/profiles";
 import {
   handleCancel,
   handleCreate,
@@ -129,6 +130,9 @@ const TABLE: [string, RegExp, H, Jobs][] = [
   // Preferred and blocked workers (14 §4).
   ["GET", /^\/v1\/worker-preferences$/, (a, r) => handleWorkerPreferences(a, r), none],
   ["POST", /^\/v1\/worker-preferences$/, (a, r) => handleWorkerPreferences(a, r), none],
+  // Public worker profiles (14 §3.4).
+  ["GET", /^\/v1\/public\/workers$/, (a, r) => handlePublicWorkers(a, r), none],
+  ["GET", /^\/v1\/public\/workers\/([^/]+)$/, handlePublicWorker, none],
 ];
 
 /** fetch that routes SDK requests to the REST handlers in this process (same auth, limits and idempotency). */
