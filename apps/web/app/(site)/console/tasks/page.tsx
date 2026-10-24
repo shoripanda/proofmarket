@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  SeatRatingForm,
   TaskApplicationButtons,
   TaskMessageForm,
   TaskSeatButtons,
@@ -219,6 +220,14 @@ export default async function ConsoleTasksPage() {
                           <div className="mt-2">
                             <TaskSeatButtons taskId={t.task_id} seatId={s.seat_id} />
                           </div>
+                        ) : null}
+                        {s.review ? (
+                          <p className="mt-2 text-sm">
+                            <span className="font-bold text-amber-600">{"★".repeat(s.review.rating)}</span>
+                            {s.review.comment ? <span className="ml-2">{s.review.comment}</span> : null}
+                          </p>
+                        ) : s.state === "RELEASED" ? (
+                          <SeatRatingForm taskId={t.task_id} seatId={s.seat_id} />
                         ) : null}
                         <div className="mt-2">
                           <WorkerMarkButtons

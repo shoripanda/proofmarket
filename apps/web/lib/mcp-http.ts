@@ -119,7 +119,7 @@ const TABLE: [string, RegExp, H, Jobs][] = [
   ],
   [
     "POST",
-    /^\/v1\/tasks\/([^/]+)\/seats\/[^/]+\/(?:release|request-changes|reject)$/,
+    /^\/v1\/tasks\/([^/]+)\/seats\/[^/]+\/(?:release|request-changes|reject|review)$/,
     (a, r, id) => {
       const [, , , , , seatId, action] = new URL(r.url).pathname.split("/");
       return handleDecideSeat(a, r, id, decodeURIComponent(seatId ?? ""), action ?? "");

@@ -19,6 +19,7 @@ import {
   LIST_TASKS_TOOL,
   LIST_TOOL,
   LIST_WATCHES_TOOL,
+  RATE_TASK_SEAT_TOOL,
   REQUEST_TOOL,
   SET_WORKER_PREFERENCE_TOOL,
   STOP_WATCH_TOOL,
@@ -369,6 +370,25 @@ export function createServer(
     async (args) => {
       try {
         return ok(await client.cancelTask(String((args as { task_id: string }).task_id)));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    RATE_TASK_SEAT_TOOL.name,
+    {
+      title: RATE_TASK_SEAT_TOOL.title,
+      description: RATE_TASK_SEAT_TOOL.description,
+      inputSchema: RATE_TASK_SEAT_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        const a = args as { task_id: string; seat_id: string; rating: number; comment?: string };
+        return ok(
+          await client.rateTaskSeat(a.task_id, a.seat_id, { rating: a.rating, comment: a.comment ?? "" }),
+        );
       } catch (e) {
         return err(e);
       }
