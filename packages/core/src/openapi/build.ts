@@ -397,6 +397,23 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "get",
+    path: "/v1/public/workers",
+    auth: "none",
+    priority: "Stretch",
+    summary: "Public worker profiles (opt-in), 20 per page; 404 TASKS_NOT_ENABLED until tasks open (14 §3.4)",
+    query: S.PublicWorkersQuerySchema,
+    ok: { status: 200, schema: S.PublicWorkersListSchema },
+  },
+  {
+    method: "get",
+    path: "/v1/public/workers/{public_id}",
+    auth: "none",
+    priority: "Stretch",
+    summary: "One public worker profile (14 §3)",
+    ok: { status: 200, schema: S.PublicWorkerProfileSchema },
+  },
+  {
+    method: "get",
     path: "/v1/public/map",
     auth: "none",
     priority: "Stretch",

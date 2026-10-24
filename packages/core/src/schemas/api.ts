@@ -16,6 +16,7 @@ import {
   OUTCOME_REASONS,
   OUTCOMES,
   PLATFORM_FLAGS,
+  PROFILE_LANGUAGES,
   RELEASE_MODES,
   SEAT_STATES,
   SELECTION_MODES,
@@ -1280,3 +1281,57 @@ export const DeliverSeatRequestSchema = z
     links: z.array(z.url().max(500)).max(10).default([]),
   })
   .strict();
+
+// ---------- public worker profiles (docs/architecture 14 §3) ----------
+
+const ProfileText = (min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\s+/g, " "))
+    .pipe(z.string().min(min).max(max));
+
+/** PUT /v1/worker/profile. A worker session only; requester keys cannot edit profiles. */
+export const WorkerProfileUpdateSchema = z
+  .object({
+    public: z.boolean(),
+    indexable: z.boolean().default(false),
+    display_name: ProfileText(2, 40),
+    /** A city or ward, never a street, station or coordinates: no digits. */
+    city: ProfileText(1, 40)
+      .refine((v) => !/[0-9０-９]/.test(v), "no digits: a city or ward only")
+      .nullable()
+      .default(null),
+    skills: z.array(ProfileText(1, 30)).max(10).default([]),
+    languages: z.array(z.enum(PROFILE_LANGUAGES)).max(5).default([]),
+  })
+  .strict();
+
+export const PublicWorkerProfileSchema = z.object({
+  public_id: z.string().regex(/^pw_[a-z0-9]{20}$/),
+  display_name: z.string(),
+  city: z.string().nullable(),
+  skills: z.array(z.string()),
+  languages: z.array(z.enum(PROFILE_LANGUAGES)),
+  /** Released task seats plus valid verification submissions. */
+  completed: z.number().int(),
+  /** Shown from 3 ratings; null below that. */
+  rating: z.object({ average: z.number(), count: z.number().int() }).nullable(),
+  /** YYYY-MM */
+  member_since: z.string().regex(/^\d{4}-\d{2}$/),
+  note: z.string(),
+});
+
+export const PublicWorkersQuerySchema = z.object({
+  skill: z.string().trim().max(30).optional(),
+  city: z.string().trim().max(40).optional(),
+  lang: z.enum(PROFILE_LANGUAGES).optional(),
+  cursor: z.string().max(200).optional(),
+});
+
+export const PublicWorkersListSchema = z.object({
+  workers: z.array(PublicWorkerProfileSchema.omit({ note: true })),
+  next_cursor: z.string().nullable(),
+  note: z.string(),
+});
+export type PublicWorkerProfile = z.infer<typeof PublicWorkerProfileSchema>;

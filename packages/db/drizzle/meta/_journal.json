@@ -246,6 +246,13 @@
       "when": 1791920000000,
       "tag": "0034_task_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791930000000,
+      "tag": "0035_worker_profiles",
+      "breakpoints": true
     }
   ]
 }
