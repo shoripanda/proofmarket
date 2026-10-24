@@ -261,6 +261,17 @@ export class ProofMarketClient {
     ).json;
   }
 
+  /** Rate a released seat once, 1-5 (docs/architecture 14 §5). */
+  async rateTaskSeat(id: string, seatId: string, body: { rating: number; comment?: string }) {
+    return (
+      await this.request<Record<string, unknown>>(
+        "POST",
+        `/v1/tasks/${encodeURIComponent(id)}/seats/${encodeURIComponent(seatId)}/review`,
+        { body },
+      )
+    ).json;
+  }
+
   /** Mark a worker as preferred or blocked, or clear it (docs/architecture 14 §4). */
   async setWorkerPreference(body: {
     worker: { public_id: string } | { task_id: string; worker_ref: string } | { pref_ref: string };

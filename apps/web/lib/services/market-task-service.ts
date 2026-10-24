@@ -256,7 +256,13 @@ async function seatView(db: Db, app: AppContext, s: SeatRow) {
     released_by: (s.releasedBy as "requester" | "timeout" | "auto" | null) ?? null,
     decision_reason: s.decisionReason,
     delivery: await latestDelivery(db, s.id),
+    review: await seatReview(db, s.id),
   };
+}
+
+async function seatReview(db: Db, seatId: string) {
+  const [r] = await db.select().from(schema.seatReviews).where(eq(schema.seatReviews.seatId, seatId));
+  return r ? { rating: r.rating, comment: r.comment, created_at: r.createdAt.toISOString() } : null;
 }
 
 export async function taskView(db: Db, app: AppContext, t: TaskRow): Promise<TaskView> {
@@ -457,6 +463,48 @@ async function loadOwnSeat(tx: Db, t: TaskRow, rawSeatId: string): Promise<SeatR
     .where(and(eq(schema.taskSeats.id, id), eq(schema.taskSeats.taskId, t.id)));
   if (!s) throw new ApiError("SEAT_NOT_FOUND");
   return s;
+}
+
+// ---------- ratings (docs/architecture 14 §5) ----------
+
+/** How long after release the requester may rate a seat. */
+export const RATING_WINDOW_MS = 14 * 24 * 3600_000;
+
+/** Rate a released seat once, 1-5. The comment is shown to the worker only and flagged like messages. */
+export async function rateSeat(
+  app: AppContext,
+  auth: RequesterAuth,
+  rawTaskId: string,
+  rawSeatId: string,
+  body: { rating: number; comment: string },
+) {
+  await requireTasksEnabled(app.db);
+  const t = await loadOwnTask(app.db, auth, rawTaskId);
+  return app.db.transaction(async (tx) => {
+    const s = await loadOwnSeat(tx, t, rawSeatId);
+    const now = app.now();
+    if (s.state !== "RELEASED" || !s.decidedAt) {
+      throw new ApiError("TASK_STATE_CONFLICT", { seat_state: s.state, reason: "only_released_seats" });
+    }
+    if (now.getTime() - s.decidedAt.getTime() > RATING_WINDOW_MS) {
+      throw new ApiError("TASK_STATE_CONFLICT", { reason: "review_window_closed", days: 14 });
+    }
+    const inserted = await tx
+      .insert(schema.seatReviews)
+      .values({
+        seatId: s.id,
+        principalId: auth.principalId,
+        workerId: s.workerId,
+        rating: body.rating,
+        comment: body.comment,
+        flags: messageFlags(body.comment),
+        createdAt: now,
+      })
+      .onConflictDoNothing()
+      .returning({ seatId: schema.seatReviews.seatId });
+    if (!inserted.length) throw new ApiError("TASK_STATE_CONFLICT", { reason: "already_reviewed" });
+    return seatView(tx, app, s);
+  });
 }
 
 /** A task.* webhook for a seat, to the key that owns the task. */

@@ -229,6 +229,16 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "post",
+    path: "/v1/tasks/{id}/seats/{seat_id}/review",
+    auth: "requester",
+    priority: "Stretch",
+    summary:
+      "Rate a released seat once, 1-5, within 14 days. The comment is shown to the worker only (14 §5)",
+    body: S.RateSeatRequestSchema,
+    ok: { status: 200, schema: S.SeatViewSchema },
+  },
+  {
+    method: "post",
     path: "/v1/webhooks",
     auth: "requester",
     priority: "Stretch",
