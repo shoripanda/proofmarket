@@ -1313,7 +1313,7 @@ export const PublicWorkerProfileSchema = z.object({
   city: z.string().nullable(),
   skills: z.array(z.string()),
   languages: z.array(z.enum(PROFILE_LANGUAGES)),
-  /** Released task seats plus accepted verification submissions. */
+  /** Released task seats plus valid verification submissions. */
   completed: z.number().int(),
   /** Shown from 3 ratings; null below that. */
   rating: z.object({ average: z.number(), count: z.number().int() }).nullable(),

@@ -31,7 +31,7 @@ function newPublicId(): string {
 /** Tags compare case-insensitively; keep the worker's spelling but drop duplicates. */
 export const normalizeTag = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
 
-/** Released task seats plus accepted verification submissions, and ratings, for each worker. */
+/** Released task seats plus valid verification submissions (as in the applicant list), and ratings. */
 async function workerRecords(db: Db, workerIds: string[]) {
   const out = new Map<string, WorkerRecord>();
   if (!workerIds.length) return out;
@@ -47,7 +47,7 @@ async function workerRecords(db: Db, workerIds: string[]) {
       .where(
         and(
           inArray(schema.witnessSubmissions.workerId, workerIds),
-          eq(schema.witnessSubmissions.acceptedForConsensus, true),
+          eq(schema.witnessSubmissions.state, "VALID"),
         ),
       )
       .groupBy(schema.witnessSubmissions.workerId),
