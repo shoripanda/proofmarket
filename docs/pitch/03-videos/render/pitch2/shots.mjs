@@ -5,7 +5,10 @@ import { chromium } from "playwright";
 const D = import.meta.dirname;
 const BASE = process.argv[2] ?? "https://proofmarket.fun";
 const b = await chromium.launch();
-const ctx = await b.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 2 });
+const ctx = await b.newContext({
+  viewport: { width: 1600, height: 1000 },
+  deviceScaleFactor: Number(process.env.SHOT_SCALE ?? 2),
+});
 const p = await ctx.newPage();
 
 await p.goto(`${BASE}/en`, { waitUntil: "networkidle" });

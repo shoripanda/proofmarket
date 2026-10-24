@@ -106,7 +106,7 @@ Having the operator add TOPUPs by hand cannot handle real money. Deposits go int
 
 ### 4.4 Deploying the program
 
-- Cost: with the current .so (291,720 B), about 2.03 SOL for the program account. Deployment needs about as much again for the buffer, returned afterwards. Have about 4.5 SOL on hand.
+- Cost: with the v1.3 .so (348,808 B), about 2.43 SOL for the program account (v1.2 was 318,120 B and about 2.21 SOL; see 12 §10). Deployment needs about as much again for the buffer, returned afterwards. Have about 4.5 SOL on hand.
 - Steps as on Devnet (`cargo build-sbf --tools-version v1.57` → `cargo test -p proofmarket` → `solana program deploy`). Mainnet gets a new program ID.
 - After deploying, run `initialize_config` and `add_mint` (USDC and wSOL) with admin.
 - No third-party audit. On 2026-10-13 the operator re-read v1.2 and recorded the result in `docs/security/program-review-2026-10-13.md`. Get an external audit before the funds grow.
