@@ -30,6 +30,7 @@ import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
 import { sha256, witnessRef } from "./crypto";
 import { flagEnabled } from "./flags";
+import { hasPreferredWorkers, marksOnWorker, mayApply, preferredAmong } from "./prefs-service";
 import { balanceMicro, checkBountyAsset, checkSpendPolicy } from "./requester-service";
 import { enqueueJob, lockCredential, microToDecimal } from "./task-engine";
 import { enqueueTaskWebhook } from "./webhook-service";
@@ -108,6 +109,9 @@ export async function createTask(
     const policy = evaluateQuestion(text);
     if (!policy.ok) throw new ApiError("TASK_POLICY_VIOLATION", { rule_id: policy.ruleId });
   }
+  if (body.audience === "preferred" && !(await hasPreferredWorkers(tx, auth.principalId))) {
+    throw new ApiError("VALIDATION_FAILED", { field: "audience", reason: "no_preferred_workers" });
+  }
   const ids = body.application_questions.map((q) => q.id);
   if (new Set(ids).size !== ids.length) {
     throw new ApiError("VALIDATION_FAILED", { field: "application_questions", reason: "duplicate id" });
@@ -167,6 +171,7 @@ export async function createTask(
       releaseMode: body.release_mode,
       completionWindowH: body.completion_window_hours,
       deadline,
+      audience: body.audience,
       status: "OPEN",
       idempotencyKeyHash: idemHash,
       createdAt: now,
@@ -275,6 +280,7 @@ export async function taskView(db: Db, app: AppContext, t: TaskRow): Promise<Tas
     completion_window_hours: t.completionWindowH,
     deadline: t.deadline.toISOString(),
     application_questions: t.applicationQuestions as TaskView["application_questions"],
+    audience: t.audience as TaskView["audience"],
     cost: costOf(t),
     applications_pending: Number(pending?.n ?? 0),
     seats: await Promise.all(seats.map((s) => seatView(db, app, s))),
@@ -320,11 +326,25 @@ export async function listApplications(app: AppContext, auth: RequesterAuth, raw
     .from(schema.taskApplications)
     .where(eq(schema.taskApplications.taskId, t.id))
     .orderBy(asc(schema.taskApplications.createdAt));
+  const ids = rows.map((a) => a.workerId);
+  const preferred = await preferredAmong(app.db, auth.principalId, ids);
+  const profiles = ids.length
+    ? await app.db
+        .select({ w: schema.workerProfiles.workerId, publicId: schema.workerProfiles.publicId })
+        .from(schema.workerProfiles)
+        .where(and(inArray(schema.workerProfiles.workerId, ids), eq(schema.workerProfiles.public, true)))
+    : [];
+  // Preferred workers first (14 §4); otherwise in the order they applied.
+  const ordered = [...rows].sort(
+    (a, b) => Number(preferred.has(b.workerId)) - Number(preferred.has(a.workerId)),
+  );
   return {
     applications: await Promise.all(
-      rows.map(async (a) => ({
+      ordered.map(async (a) => ({
         application_id: a.id,
         worker_ref: witnessRef(app.config.workerRefSalt, a.workerId, t.id),
+        preferred: preferred.has(a.workerId),
+        public_id: profiles.find((p) => p.w === a.workerId)?.publicId ?? null,
         state: a.state as "pending" | "accepted" | "rejected" | "withdrawn",
         answers: a.answers as Record<string, string>,
         note: a.note,
@@ -596,7 +616,7 @@ async function finishIfOver(tx: Db, app: AppContext, t: TaskRow): Promise<void> 
 
 // ---------- workers ----------
 
-export type PublicTaskView = Omit<TaskView, "seats" | "applications_pending" | "cost"> & {
+export type PublicTaskView = Omit<TaskView, "seats" | "applications_pending" | "cost" | "audience"> & {
   price: { asset: string; amount: string };
   seats_open: number;
   /** Over the last 30 days: how often this requester rejected, and how fast it decided (13 §5.4). */
@@ -677,8 +697,14 @@ export async function listOpenTasksForWorker(app: AppContext, workerId: string) 
     )
     .orderBy(desc(schema.marketTasks.createdAt))
     .limit(100);
+  const marks = await marksOnWorker(app.db, workerId);
   const views = await Promise.all(rows.map((t) => publicTaskView(app.db, app, t, workerId)));
-  return { tasks: views.filter((v) => v.seats_open > 0 || v.mine.seat_id !== null) };
+  // A blocked worker, or one not preferred for a preferred-only task, sees it only while holding a seat in it.
+  return {
+    tasks: views.filter((v, i) =>
+      v.mine.seat_id !== null ? true : v.seats_open > 0 && mayApply(rows[i] as TaskRow, marks),
+    ),
+  };
 }
 
 async function loadOpenTask(db: Db, rawId: string): Promise<TaskRow> {
@@ -691,7 +717,12 @@ async function loadOpenTask(db: Db, rawId: string): Promise<TaskRow> {
 
 export async function getTaskForWorker(app: AppContext, workerId: string, rawId: string) {
   await requireTasksEnabled(app.db);
-  return publicTaskView(app.db, app, await loadOpenTask(app.db, rawId), workerId);
+  const t = await loadOpenTask(app.db, rawId);
+  const view = await publicTaskView(app.db, app, t, workerId);
+  if (view.mine.seat_id === null && !mayApply(t, await marksOnWorker(app.db, workerId))) {
+    throw new ApiError("TASK_NOT_FOUND");
+  }
+  return view;
 }
 
 /** application mode: leave an application. first_come mode: take a free seat now. */
@@ -703,6 +734,8 @@ export async function applyToTask(
 ) {
   await requireTasksEnabled(app.db);
   const found = await loadOpenTask(app.db, rawId);
+  // Same answer as a task that does not exist: the worker is never told about a block (14 §4).
+  if (!mayApply(found, await marksOnWorker(app.db, workerId))) throw new ApiError("TASK_NOT_FOUND");
   return app.db.transaction(async (tx) => {
     const t = await lockTaskRow(tx, found.id);
     const now = app.now();

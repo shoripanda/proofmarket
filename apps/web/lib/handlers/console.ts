@@ -1,5 +1,6 @@
 import "server-only";
 import { ApiError } from "@proofmarket/core";
+import { SetWorkerPreferenceRequestSchema } from "@proofmarket/core/schemas/api";
 // Requester console endpoints (01 §4.14). Cookie-authenticated POSTs require a same-site Origin.
 import type { AppContext } from "../context";
 import { readJson } from "../http";
@@ -15,6 +16,7 @@ import {
 import { ensureDepositReference } from "../services/deposit-service";
 import { decideApplication, decideSeat, requesterSend } from "../services/market-task-service";
 import { clientIp } from "../services/oauth-service";
+import { setWorkerPreference } from "../services/prefs-service";
 import { stopSchedule } from "../services/schedule-service";
 
 export function cookieToken(req: Request): string | undefined {
@@ -103,4 +105,14 @@ export async function handleConsoleSeatMessage(app: AppContext, req: Request, id
   const body =
     raw && typeof raw === "object" && "body" in raw && typeof raw.body === "string" ? raw.body : "";
   return Response.json(await requesterSend(app, auth, id, seatId, body));
+}
+
+/** POST /v1/console/worker-preferences — prefer, block or clear a worker (docs/architecture 14 §4). */
+export async function handleConsoleWorkerPreference(app: AppContext, req: Request) {
+  assertSameOrigin(req);
+  const auth = await consoleAuth(app, cookieToken(req));
+  if (!auth) throw new ApiError("UNAUTHENTICATED");
+  const r = SetWorkerPreferenceRequestSchema.safeParse(await readJson(req).catch(() => ({})));
+  if (!r.success) throw new ApiError("VALIDATION_FAILED");
+  return Response.json(await setWorkerPreference(app, auth, r.data));
 }

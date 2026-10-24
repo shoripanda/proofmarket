@@ -397,6 +397,23 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "get",
+    path: "/v1/worker-preferences",
+    auth: "requester",
+    priority: "Stretch",
+    summary: "Your preferred and blocked workers (14 §4); 404 TASKS_NOT_ENABLED until tasks open",
+    ok: { status: 200, schema: S.WorkerPreferenceListSchema },
+  },
+  {
+    method: "post",
+    path: "/v1/worker-preferences",
+    auth: "requester",
+    priority: "Stretch",
+    summary: "Mark a worker as preferred or blocked, or clear the mark. The worker is never told (14 §4)",
+    body: S.SetWorkerPreferenceRequestSchema,
+    ok: { status: 200, schema: S.WorkerPreferenceSchema },
+  },
+  {
+    method: "get",
     path: "/v1/public/workers",
     auth: "none",
     priority: "Stretch",
