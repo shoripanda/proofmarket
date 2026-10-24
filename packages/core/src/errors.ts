@@ -126,6 +126,11 @@ export const ERROR_CATALOG = {
   TASKS_NOT_ENABLED: { http: 404, retryable: false, message: "General tasks are not open yet." },
   TASK_NOT_FOUND: { http: 404, retryable: false, message: "Task not found." },
   PROFILE_NOT_FOUND: { http: 404, retryable: false, message: "No public profile with this id." },
+  WORKER_NOT_FOUND: {
+    http: 404,
+    retryable: false,
+    message: "No such worker among your applicants, seat holders, marks or public profiles.",
+  },
   SEAT_NOT_FOUND: { http: 404, retryable: false, message: "Seat not found for this task." },
   APPLICATION_NOT_FOUND: { http: 404, retryable: false, message: "Application not found for this task." },
   TASK_STATE_CONFLICT: {

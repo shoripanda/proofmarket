@@ -140,4 +140,31 @@ describe("MCP task tools", () => {
       released_by: "requester",
     });
   });
+
+  it("set_worker_preference blocks an applicant by task_id + worker_ref and lists the mark", async () => {
+    await setFlag(t.db, "tasks_enabled", true, "test");
+    const worker = (await onboardWorker(t, "wanda")).token;
+    const mcp = await connect();
+    const created: Any = await mcp.callTool({
+      name: "create_task",
+      arguments: { ...args, dry_run: false, confirm: true },
+    });
+    const taskId = created.structuredContent.task_id;
+    await call(
+      (r) => handleWorkerApply(t.app, r, taskId),
+      jsonReq("POST", `/v1/worker/market-tasks/${taskId}/apply`, { key: worker, body: { answers: {} } }),
+    );
+    const apps: Any = await mcp.callTool({ name: "list_task_applications", arguments: { task_id: taskId } });
+    const ref = apps.structuredContent.applications[0].worker_ref;
+    const set: Any = await mcp.callTool({
+      name: "set_worker_preference",
+      arguments: { kind: "block", task_id: taskId, worker_ref: ref },
+    });
+    expect(set.isError).toBeFalsy();
+    expect(set.structuredContent).toMatchObject({ kind: "block" });
+    const listed: Any = await mcp.callTool({ name: "set_worker_preference", arguments: {} });
+    expect(listed.structuredContent.workers).toEqual([
+      expect.objectContaining({ kind: "block", public_id: null }),
+    ]);
+  });
 });

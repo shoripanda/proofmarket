@@ -22,7 +22,7 @@ Four features, one migration (0035), no program change:
 | Profile list | `/people`, `/en/people` | `GET /v1/public/workers` |
 | One profile | `/people/{public_id}` | `GET /v1/public/workers/{public_id}` |
 | Edit own profile (worker) | `/profile` (worker app) | `GET`/`PUT /v1/worker/profile` |
-| Preferences (requester) | `/console/workers` | `GET /v1/worker-preferences`, `PUT`/`DELETE /v1/worker-preferences/{public_id or worker_ref}` |
+| Preferences (requester) | `/console/workers`, buttons in `/console/tasks` | `GET /v1/worker-preferences`, `POST /v1/worker-preferences` with `kind` `prefer` / `block` / `clear` |
 | Rating (requester) | On the seat in `/console/tasks` | `POST /v1/tasks/{id}/seats/{seat_id}/review` |
 | Public task list | `/market`, `/market/{id}` | `GET /v1/public/market-tasks`, `GET /v1/public/market-tasks/{id}` |
 
@@ -70,7 +70,9 @@ Per requester principal (not per API key), so all keys of one requester share th
 | `block` | The worker does not see the requester's tasks in lists, gets 404 for them, and cannot apply or take a first-come seat. Seats already held are not affected (blocking does not take pay away from work in progress) |
 
 - The worker is never told they are preferred or blocked.
-- A requester can mark any worker it has met (an applicant or a seat holder, by `worker_ref`) or any public profile (by `public_id`).
+- A requester can mark any worker it has met (an applicant or a seat holder, by `task_id` + `worker_ref`) or any public profile (by `public_id`). Each mark gets a `pref_ref` (an HMAC of principal and worker), which lists and clears it without exposing any worker id; a worker without a public profile is listed by `pref_ref` alone.
+- Applicants carry `preferred` and, when the worker keeps a public profile, `public_id`.
+- The worker's view of a task does not include `audience`, so a worker cannot tell they are preferred.
 - `market_tasks` gains `audience` (`everyone` default, or `preferred`). A preferred-only task with no preferred worker is refused at creation (`VALIDATION_FAILED`, `no_preferred_workers`), so a task is never posted to nobody.
 - Preferred-only tasks are not in the public task list.
 
@@ -104,7 +106,7 @@ Indexes: `worker_profiles (public) where public`, `seat_reviews (worker_id)`, `r
 Listed only while `tasks_enabled` is on:
 
 - `search_workers` (skill, city, language) and `get_worker_profile`
-- `set_worker_preference` (`prefer`, `block` or `clear`)
+- `set_worker_preference` (`prefer`, `block` or `clear`; with no arguments it lists the marks)
 - `rate_task_seat` (descriptions say: only when the person the agent works for gives the rating)
 
 `create_task` gains `audience`. No new webhook events. Profile text is passed to agents marked as data, never as instructions, like messages.
@@ -123,7 +125,7 @@ Each step is one PR, stacked on the previous one; the flag stays off.
 |---|---|
 | 8-0 | This chapter, the legal items below, links from 13 §9 |
 | 8-1 | Migration 0035 (all three tables and `audience`), `/v1/worker/profile`, `/profile`, `/v1/public/workers`, `/people`, sitemap — done 2026-10-24 |
-| 8-2 | Preferences, `audience`, block filter on worker lists and apply, `/console/workers` |
+| 8-2 | Preferences, `audience`, block filter on worker lists and apply, `/console/workers`, `set_worker_preference` — done 2026-10-24 |
 | 8-3 | Ratings: API, console form, worker screen, average on profiles |
 | 8-4 | Public task list: API, `/market`, sitemap, MCP tools |
 

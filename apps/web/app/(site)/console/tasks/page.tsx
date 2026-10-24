@@ -4,7 +4,12 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { TaskApplicationButtons, TaskMessageForm, TaskSeatButtons } from "@/components/console-actions";
+import {
+  TaskApplicationButtons,
+  TaskMessageForm,
+  TaskSeatButtons,
+  WorkerMarkButtons,
+} from "@/components/console-actions";
 import { Section } from "@/components/site";
 import { appContext } from "@/lib/context";
 import { dateLocale, type Lang, langHref, pick } from "@/lib/lang";
@@ -102,6 +107,11 @@ export default async function ConsoleTasksPage() {
           "If you decide nothing within 24 hours of a delivery, the worker is paid.",
         )}
       >
+        <p className="mb-4 text-sm">
+          <Link href={langHref(lang, "/console/workers")} className="font-semibold text-teal-700 underline">
+            {pick(lang, "推し・お断りにした worker", "Preferred and blocked workers")}
+          </Link>
+        </p>
         {tasks.length === 0 ? (
           <p className="text-slate-600">
             {pick(
@@ -135,7 +145,22 @@ export default async function ConsoleTasksPage() {
                       .filter((a) => a.state === "pending")
                       .map((a) => (
                         <li key={a.application_id} className="rounded-xl bg-slate-50 p-3 text-sm">
-                          <p className="font-mono text-xs text-slate-500">{a.worker_ref.slice(0, 18)}…</p>
+                          <p className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <span className="font-mono">{a.worker_ref.slice(0, 18)}…</span>
+                            {a.preferred ? (
+                              <span className="rounded bg-teal-100 px-1.5 font-semibold text-teal-900">
+                                {pick(lang, "推し", "Preferred")}
+                              </span>
+                            ) : null}
+                            {a.public_id ? (
+                              <Link
+                                href={langHref(lang, `/people/${a.public_id}`)}
+                                className="font-semibold text-teal-700 underline"
+                              >
+                                {pick(lang, "公開プロフィール", "Public profile")}
+                              </Link>
+                            ) : null}
+                          </p>
                           <p className="mt-1 text-slate-600">
                             {pick(
                               lang,
@@ -152,8 +177,12 @@ export default async function ConsoleTasksPage() {
                             </p>
                           ))}
                           {a.note ? <p className="mt-1">{a.note}</p> : null}
-                          <div className="mt-2">
+                          <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2">
                             <TaskApplicationButtons taskId={t.task_id} appId={a.application_id} />
+                            <WorkerMarkButtons
+                              worker={{ task_id: t.task_id, worker_ref: a.worker_ref }}
+                              kind={a.preferred ? "prefer" : null}
+                            />
                           </div>
                         </li>
                       ))}
@@ -191,6 +220,16 @@ export default async function ConsoleTasksPage() {
                             <TaskSeatButtons taskId={t.task_id} seatId={s.seat_id} />
                           </div>
                         ) : null}
+                        <div className="mt-2">
+                          <WorkerMarkButtons
+                            worker={{ task_id: t.task_id, worker_ref: s.worker_ref }}
+                            kind={
+                              apps[i]?.applications.find((a) => a.worker_ref === s.worker_ref)?.preferred
+                                ? "prefer"
+                                : null
+                            }
+                          />
+                        </div>
                         {(threads.get(s.seat_id) ?? []).length ? (
                           <ul className="mt-3 space-y-1">
                             {(threads.get(s.seat_id) ?? []).map((m) => (

@@ -261,6 +261,18 @@ export class ProofMarketClient {
     ).json;
   }
 
+  /** Mark a worker as preferred or blocked, or clear it (docs/architecture 14 §4). */
+  async setWorkerPreference(body: {
+    worker: { public_id: string } | { task_id: string; worker_ref: string } | { pref_ref: string };
+    kind: "prefer" | "block" | "clear";
+  }): Promise<Record<string, unknown>> {
+    return (await this.request<Record<string, unknown>>("POST", "/v1/worker-preferences", { body })).json;
+  }
+
+  async listWorkerPreferences(): Promise<Record<string, unknown>> {
+    return (await this.request<Record<string, unknown>>("GET", "/v1/worker-preferences")).json;
+  }
+
   async taskMessages(id: string, seatId: string): Promise<Record<string, unknown>> {
     return (
       await this.request<Record<string, unknown>>(

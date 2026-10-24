@@ -20,6 +20,7 @@ import {
   LIST_TOOL,
   LIST_WATCHES_TOOL,
   REQUEST_TOOL,
+  SET_WORKER_PREFERENCE_TOOL,
   STOP_WATCH_TOOL,
   TASK_MESSAGES_TOOL,
   WATCH_TOOL,
@@ -368,6 +369,35 @@ export function createServer(
     async (args) => {
       try {
         return ok(await client.cancelTask(String((args as { task_id: string }).task_id)));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    SET_WORKER_PREFERENCE_TOOL.name,
+    {
+      title: SET_WORKER_PREFERENCE_TOOL.title,
+      description: SET_WORKER_PREFERENCE_TOOL.description,
+      inputSchema: SET_WORKER_PREFERENCE_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        const a = args as {
+          kind?: "prefer" | "block" | "clear";
+          public_id?: string;
+          task_id?: string;
+          worker_ref?: string;
+          pref_ref?: string;
+        };
+        if (!a.kind) return ok(await client.listWorkerPreferences());
+        const worker = a.public_id
+          ? { public_id: a.public_id }
+          : a.pref_ref
+            ? { pref_ref: a.pref_ref }
+            : { task_id: a.task_id ?? "", worker_ref: a.worker_ref ?? "" };
+        return ok(await client.setWorkerPreference({ worker, kind: a.kind }));
       } catch (e) {
         return err(e);
       }
