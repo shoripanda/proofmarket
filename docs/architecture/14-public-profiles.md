@@ -122,7 +122,7 @@ Each step is one PR, stacked on the previous one; the flag stays off.
 | PR | Content |
 |---|---|
 | 8-0 | This chapter, the legal items below, links from 13 §9 |
-| 8-1 | Migration 0035, `/v1/worker/profile`, `/profile`, `/v1/public/workers`, `/people` |
+| 8-1 | Migration 0035 (all three tables and `audience`), `/v1/worker/profile`, `/profile`, `/v1/public/workers`, `/people`, sitemap — done 2026-10-24 |
 | 8-2 | Preferences, `audience`, block filter on worker lists and apply, `/console/workers` |
 | 8-3 | Ratings: API, console form, worker screen, average on profiles |
 | 8-4 | Public task list: API, `/market`, sitemap, MCP tools |

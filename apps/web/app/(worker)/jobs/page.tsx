@@ -29,6 +29,11 @@ export default function JobsPage() {
   return (
     <Shell title={pick(lang, "仕事", "Tasks")} back="/tasks">
       {err ? <Notice tone="error">{err}</Notice> : null}
+      <p className="text-right text-sm">
+        <LLink href="/profile" className="text-teal-700 underline">
+          {pick(lang, "公開プロフィール", "Public profile")}
+        </LLink>
+      </p>
       {live.length ? (
         <section className="space-y-2">
           <h2 className="text-sm font-bold text-slate-500">{pick(lang, "あなたの仕事", "Your tasks")}</h2>
