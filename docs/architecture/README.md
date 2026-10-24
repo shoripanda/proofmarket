@@ -19,6 +19,7 @@ The conclusion first. ProofMarket's foundation (Next.js and Supabase, the Anchor
 | 11 | [Implementation roadmap](11-implementation-roadmap.md) | Phases 1-5: work, dependencies, difficulty, done criteria |
 | 12 | [RentAHuman study](12-rentahuman-benchmark.md) | How rentahuman.ai is built, a design to move ProofMarket toward it, decisions D1-D6 |
 | 13 | [Moving to a marketplace](13-marketplace-migration.md) | Verifications and general tasks side by side, following the answers to D1-D6: tables, one on-chain Task per seat, the 15% fee, payment 24 hours after delivery, the order of the move |
+| 14 | [Public profiles](14-public-profiles.md) | Stage 8: opt-in public worker profiles, preferred and blocked workers, ratings, the public task list |
 
 On 2026-10-15 the owner approved implementation and decided the eight items in chapter 11 §10 (recorded there). The same day Phases 3, 1-2 and 4 and the widget went out as PRs #44-#47, and each change was added to the existing spec chapters (01 §4.29-4.30, 04 §3.28-3.29, 05 §1.2/§2.1b/§2.2a/§6.1, 06 §5.x, 08 §5-6, 12 §10.3, 15 §4.2).
 

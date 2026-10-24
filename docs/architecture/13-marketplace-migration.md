@@ -148,7 +148,7 @@ Separate routes under `/v1/tasks` (D6: the verification API is unchanged).
 | `GET /v1/worker/market-tasks`, `GET /v1/worker/market-tasks/{id}`, `POST .../apply` | Worker: open tasks, details, apply (or take, if first come) |
 | `GET /v1/worker/market-seats`, `POST .../{seat_id}/deliver`, `GET`/`POST .../{seat_id}/messages` | Worker: own seats, deliver, conversation |
 
-Public profiles (`GET /v1/public/workers`) and a public task list are not built yet (stage 8).
+Public profiles and a public task list are not built yet (stage 8, designed in [chapter 14](14-public-profiles.md)).
 
 ### 7.2 MCP tools
 
@@ -162,7 +162,7 @@ Listed only while `tasks_enabled` is on: `create_task` (dry run first; a real po
 
 - **Worker**: `/jobs` (your tasks and open tasks), `/jobs/{id}` (description, definition of done, pay, time to deliver, payment rule, the requester's rejection rate, application questions), `/jobs/seats/{seat_id}` (deliver report and links, deadline, change requests, time left until automatic payment, conversation). A link "N open tasks" appears above the verification list only when tasks are open.
 - **Requester console**: `/console/tasks` shows each task's applicants and seats, with accept/decline, approve and pay (with confirmation), ask for changes, reject (with a reason) and a reply box.
-- **Public**: public profiles, `/tasks`, `/workers` — not built yet.
+- **Public**: public profiles (`/people`) and the public task list (`/market`) — not built yet; see [chapter 14](14-public-profiles.md). `/tasks` and `/workers` were already taken.
 
 ## 9. Stages
 
@@ -177,12 +177,12 @@ With `tasks_enabled` off, verification behaviour is unchanged at every stage.
 | 5 | Conversation | Done (#58); screen check pending |
 | 6 | MCP tools and webhook events | Done (#58) |
 | 7 | Worker and console screens | Done (#58) |
-| 8 | Public profiles, `/tasks`, `/workers`, preferred/blocked, ratings | Not started |
+| 8 | Public profiles, public task list, preferred/blocked, ratings | Designed in [chapter 14](14-public-profiles.md) (2026-10-24) |
 | 9 | Turn on `tasks_enabled` in production | After §10 |
 
 ## 10. Legal items before turning on the flag
 
-In `legal-checklist.md` §10; the owner decides before stage 9.
+In `legal-checklist.md` §10; the owner decides before stage 9. Chapter 14 §11 adds two items for public profiles and blocking.
 
 1. **Act on Ensuring Proper Transactions Involving Specified Entrusted Business Operators** (the freelance protection act, in force November 2024): when the requester is a business and the worker an individual, terms (work, pay, payment date) must be stated. Paying within 24 hours helps with the payment-date rule, but the terms must be shown on the request screen and kept on record.
 2. **Employment Security Act**: matching requesters and workers must stay an intermediary for service contracts, not "employment placement" (per-task pay, no direction and supervision, no long hourly work).
