@@ -408,14 +408,13 @@ export function SeatRatingForm({ taskId, seatId }: { taskId: string; seatId: str
       <p className="text-sm font-semibold">
         {pick(lang, "評価する（1 回だけ・14 日以内）", "Rate (once, within 14 days)")}
       </p>
-      <div className="mt-1 flex gap-1" role="radiogroup" aria-label={pick(lang, "評価", "Rating")}>
+      <div className="mt-1 flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
             type="button"
-            role="radio"
-            aria-checked={rating === n}
-            aria-label={`${n}`}
+            aria-pressed={rating === n}
+            aria-label={pick(lang, `評価 ${n} / 5`, `Rating ${n} / 5`)}
             onClick={() => setRating(n)}
             className={`text-2xl ${n <= rating ? "text-amber-500" : "text-slate-300"}`}
           >

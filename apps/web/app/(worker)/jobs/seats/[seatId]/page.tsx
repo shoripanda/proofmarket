@@ -151,9 +151,12 @@ export default function SeatPage({ params }: { params: Promise<{ seatId: string 
               <p className="text-sm font-bold text-slate-500">
                 {pick(lang, "依頼者の評価", "The requester's rating")}
               </p>
-              <p className="mt-2 text-lg font-bold text-amber-600" aria-label={`${seat.review.rating} / 5`}>
-                {"★".repeat(seat.review.rating)}
-                <span className="text-slate-300">{"★".repeat(5 - seat.review.rating)}</span>
+              <p className="mt-2 text-lg font-bold text-amber-600">
+                <span aria-hidden="true">
+                  {"★".repeat(seat.review.rating)}
+                  <span className="text-slate-300">{"★".repeat(5 - seat.review.rating)}</span>
+                </span>
+                <span className="sr-only">{`${seat.review.rating} / 5`}</span>
               </p>
               {seat.review.comment ? (
                 <p className="mt-1 whitespace-pre-wrap text-sm">{seat.review.comment}</p>
