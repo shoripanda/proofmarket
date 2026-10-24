@@ -148,7 +148,7 @@ Separate routes under `/v1/tasks` (D6: the verification API is unchanged).
 | `GET /v1/worker/market-tasks`, `GET /v1/worker/market-tasks/{id}`, `POST .../apply` | Worker: open tasks, details, apply (or take, if first come) |
 | `GET /v1/worker/market-seats`, `POST .../{seat_id}/deliver`, `GET`/`POST .../{seat_id}/messages` | Worker: own seats, deliver, conversation |
 
-Public profiles and a public task list are not built yet (stage 8, designed in [chapter 14](14-public-profiles.md)).
+Stage 8 adds `/v1/worker/profile`, `/v1/public/workers`, `/v1/worker-preferences`, `.../seats/{seat_id}/review` and `/v1/public/market-tasks` ([chapter 14](14-public-profiles.md) §2).
 
 ### 7.2 MCP tools
 
@@ -162,7 +162,7 @@ Listed only while `tasks_enabled` is on: `create_task` (dry run first; a real po
 
 - **Worker**: `/jobs` (your tasks and open tasks), `/jobs/{id}` (description, definition of done, pay, time to deliver, payment rule, the requester's rejection rate, application questions), `/jobs/seats/{seat_id}` (deliver report and links, deadline, change requests, time left until automatic payment, conversation). A link "N open tasks" appears above the verification list only when tasks are open.
 - **Requester console**: `/console/tasks` shows each task's applicants and seats, with accept/decline, approve and pay (with confirmation), ask for changes, reject (with a reason) and a reply box.
-- **Public**: public profiles (`/people`) and the public task list (`/market`) — not built yet; see [chapter 14](14-public-profiles.md). `/tasks` and `/workers` were already taken.
+- **Public**: public profiles (`/people`) and the public task list (`/market`), see [chapter 14](14-public-profiles.md). `/tasks` and `/workers` were already taken.
 
 ## 9. Stages
 
@@ -177,7 +177,7 @@ With `tasks_enabled` off, verification behaviour is unchanged at every stage.
 | 5 | Conversation | Done (#58); screen check pending |
 | 6 | MCP tools and webhook events | Done (#58) |
 | 7 | Worker and console screens | Done (#58) |
-| 8 | Public profiles, public task list, preferred/blocked, ratings | Designed in [chapter 14](14-public-profiles.md) (2026-10-24) |
+| 8 | Public profiles, public task list, preferred/blocked, ratings | Built behind the flag (#61-#65, [chapter 14](14-public-profiles.md), migration 0035) |
 | 9 | Turn on `tasks_enabled` in production | After §10 |
 
 ## 10. Legal items before turning on the flag
