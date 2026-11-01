@@ -15,12 +15,14 @@ import {
   DISPUTE_TOOL,
   GET_TASK_TOOL,
   GET_TOOL,
+  GET_WORKER_PROFILE_TOOL,
   LIST_TASK_APPLICATIONS_TOOL,
   LIST_TASKS_TOOL,
   LIST_TOOL,
   LIST_WATCHES_TOOL,
   RATE_TASK_SEAT_TOOL,
   REQUEST_TOOL,
+  SEARCH_WORKERS_TOOL,
   SET_WORKER_PREFERENCE_TOOL,
   STOP_WATCH_TOOL,
   TASK_MESSAGES_TOOL,
@@ -370,6 +372,41 @@ export function createServer(
     async (args) => {
       try {
         return ok(await client.cancelTask(String((args as { task_id: string }).task_id)));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    SEARCH_WORKERS_TOOL.name,
+    {
+      title: SEARCH_WORKERS_TOOL.title,
+      description: SEARCH_WORKERS_TOOL.description,
+      inputSchema: SEARCH_WORKERS_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        return ok(
+          await client.searchWorkers(
+            args as { skill?: string; city?: string; lang?: string; cursor?: string },
+          ),
+        );
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+  server.registerTool(
+    GET_WORKER_PROFILE_TOOL.name,
+    {
+      title: GET_WORKER_PROFILE_TOOL.title,
+      description: GET_WORKER_PROFILE_TOOL.description,
+      inputSchema: GET_WORKER_PROFILE_TOOL.inputSchema,
+    },
+    async (args) => {
+      try {
+        return ok(await client.getWorkerProfile(String((args as { public_id: string }).public_id)));
       } catch (e) {
         return err(e);
       }

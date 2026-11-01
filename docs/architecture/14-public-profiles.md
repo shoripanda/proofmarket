@@ -90,7 +90,8 @@ Per requester principal (not per API key), so all keys of one requester share th
 - Shows `OPEN` tasks with `audience = everyone` before their deadline: title, description, definition of done, evidence wanted, area or "remote", pay per seat and asset, seats left, deadline, time to deliver, payment rule (`auto` / `manual`), and the requester's rejection rate and decided count (the same numbers the worker screen shows).
 - Never shows the requester's name, key or principal id, application questions' answers, seats or deliveries.
 - Applying still needs a worker login: the page links to `/jobs/{id}`.
-- `/market` and its entries are indexable (tasks are written to be public). Closed tasks return 410 so search engines drop them.
+- `/market` and its entries are indexable (tasks are written to be public) and listed in `sitemap.xml` while open. The API answers 410 `TASK_EXPIRED` for a closed task; the page answers 404, as for an unknown task.
+- A preferred-only task answers 404 in both.
 
 ## 7. Data (migration 0035)
 
@@ -121,7 +122,7 @@ Listed only while `tasks_enabled` is on:
 
 ## 10. Order of work
 
-Each step is one PR, stacked on the previous one; the flag stays off.
+Each step is one PR, stacked on the previous one; the flag stays off. Built as #61-#65. Header links to `/people` and `/market` are left for when the flag is turned on (stage 9), since the header is the same on every page.
 
 | PR | Content |
 |---|---|
@@ -129,7 +130,7 @@ Each step is one PR, stacked on the previous one; the flag stays off.
 | 8-1 | Migration 0035 (all three tables and `audience`), `/v1/worker/profile`, `/profile`, `/v1/public/workers`, `/people`, sitemap — done 2026-10-24 |
 | 8-2 | Preferences, `audience`, block filter on worker lists and apply, `/console/workers`, `set_worker_preference` — done 2026-10-24 |
 | 8-3 | Ratings: API, console form, worker screen, average on profiles, `rate_task_seat` — done 2026-10-24 |
-| 8-4 | Public task list: API, `/market`, sitemap, MCP tools |
+| 8-4 | Public task list: API, `/market`, sitemap, MCP `search_workers` and `get_worker_profile` — done 2026-10-24 |
 
 ## 11. Legal and privacy items (added to the list in 13 §10)
 

@@ -1386,3 +1386,35 @@ export const RateSeatRequestSchema = z
     comment: z.string().trim().max(500).default(""),
   })
   .strict();
+
+// ---------- public task list (14 §6) ----------
+
+export const PublicMarketTaskSchema = z.object({
+  task_id: TaskIdSchema,
+  title: z.string(),
+  description: z.string(),
+  completion_criteria: z.string(),
+  evidence_types: z.array(z.enum(TASK_EVIDENCE_TYPES)),
+  area: z.string().nullable(),
+  remote_ok: z.boolean(),
+  /** Per seat, paid to the worker in full. */
+  price: z.object({ asset: z.string(), amount: z.string() }),
+  seats_open: z.number().int(),
+  selection_mode: z.enum(SELECTION_MODES),
+  release_mode: z.enum(RELEASE_MODES),
+  completion_window_hours: z.number().int(),
+  deadline: IsoDateTime,
+  created_at: IsoDateTime,
+  /** The requester's last 30 days, with no identity: how often it rejected, out of how many decisions. */
+  requester: z.object({ rejected_ratio: z.number().nullable(), decided: z.number().int() }),
+  note: z.string(),
+});
+
+export const PublicMarketTasksQuerySchema = z.object({ cursor: z.string().max(200).optional() });
+
+export const PublicMarketTaskListSchema = z.object({
+  tasks: z.array(PublicMarketTaskSchema.omit({ note: true })),
+  next_cursor: z.string().nullable(),
+  note: z.string(),
+});
+export type PublicMarketTask = z.infer<typeof PublicMarketTaskSchema>;

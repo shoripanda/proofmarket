@@ -424,6 +424,23 @@ const ENDPOINTS: Endpoint[] = [
   },
   {
     method: "get",
+    path: "/v1/public/market-tasks",
+    auth: "none",
+    priority: "Stretch",
+    summary: "Open general tasks anyone can see (no requester identity), newest first, 20 per page (14 §6)",
+    query: S.PublicMarketTasksQuerySchema,
+    ok: { status: 200, schema: S.PublicMarketTaskListSchema },
+  },
+  {
+    method: "get",
+    path: "/v1/public/market-tasks/{id}",
+    auth: "none",
+    priority: "Stretch",
+    summary: "One open public task; 410 TASK_EXPIRED once closed (14 §6)",
+    ok: { status: 200, schema: S.PublicMarketTaskSchema },
+  },
+  {
+    method: "get",
     path: "/v1/public/workers",
     auth: "none",
     priority: "Stretch",

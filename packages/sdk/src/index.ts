@@ -261,6 +261,19 @@ export class ProofMarketClient {
     ).json;
   }
 
+  /** Public worker profiles (docs/architecture 14 §3.4). */
+  async searchWorkers(q: { skill?: string; city?: string; lang?: string; cursor?: string } = {}) {
+    const qs = new URLSearchParams(Object.entries(q).filter((e): e is [string, string] => Boolean(e[1])));
+    const path = `/v1/public/workers${qs.size ? `?${qs}` : ""}`;
+    return (await this.request<Record<string, unknown>>("GET", path)).json;
+  }
+
+  async getWorkerProfile(publicId: string) {
+    return (
+      await this.request<Record<string, unknown>>("GET", `/v1/public/workers/${encodeURIComponent(publicId)}`)
+    ).json;
+  }
+
   /** Rate a released seat once, 1-5 (docs/architecture 14 §5). */
   async rateTaskSeat(id: string, seatId: string, body: { rating: number; comment?: string }) {
     return (
