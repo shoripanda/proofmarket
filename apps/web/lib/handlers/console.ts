@@ -1,6 +1,6 @@
 import "server-only";
 import { ApiError } from "@proofmarket/core";
-import { SetWorkerPreferenceRequestSchema } from "@proofmarket/core/schemas/api";
+import { RateSeatRequestSchema, SetWorkerPreferenceRequestSchema } from "@proofmarket/core/schemas/api";
 // Requester console endpoints (01 §4.14). Cookie-authenticated POSTs require a same-site Origin.
 import type { AppContext } from "../context";
 import { readJson } from "../http";
@@ -14,7 +14,7 @@ import {
   sessionCookie,
 } from "../services/console-service";
 import { ensureDepositReference } from "../services/deposit-service";
-import { decideApplication, decideSeat, requesterSend } from "../services/market-task-service";
+import { decideApplication, decideSeat, rateSeat, requesterSend } from "../services/market-task-service";
 import { clientIp } from "../services/oauth-service";
 import { setWorkerPreference } from "../services/prefs-service";
 import { stopSchedule } from "../services/schedule-service";
@@ -87,6 +87,11 @@ export async function handleConsoleTaskSeat(
   if (!auth) throw new ApiError("UNAUTHENTICATED");
   const raw = await readJson(req).catch(() => ({}));
   if (action === "release") return Response.json(await decideSeat(app, auth, id, seatId, "release", null));
+  if (action === "review") {
+    const r = RateSeatRequestSchema.safeParse(raw);
+    if (!r.success) throw new ApiError("VALIDATION_FAILED", { field: "rating" });
+    return Response.json(await rateSeat(app, auth, id, seatId, r.data));
+  }
   if (action !== "request-changes" && action !== "reject")
     throw new ApiError("VALIDATION_FAILED", { action });
   const reason = reasonOf(raw);

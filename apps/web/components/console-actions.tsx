@@ -379,3 +379,70 @@ export function WorkerMarkButtons({ worker, kind }: { worker: MarkTarget; kind: 
     </span>
   );
 }
+
+/** Rate a released seat once, 1-5, with an optional comment the worker alone sees (docs/architecture 14 §5). */
+export function SeatRatingForm({ taskId, seatId }: { taskId: string; seatId: string }) {
+  const lang = useLang();
+  const router = useRouter();
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const send = async () => {
+    setBusy(true);
+    setErr(null);
+    const res = await fetch(`/v1/console/tasks/${taskId}/seats/${seatId}/review`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ rating, comment }),
+    }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) {
+      setErr(pick(lang, "送れませんでした。読み込み直してください。", "Could not send. Please reload."));
+      return;
+    }
+    router.refresh();
+  };
+  return (
+    <div className="mt-2 rounded-lg bg-slate-50 p-3">
+      <p className="text-sm font-semibold">
+        {pick(lang, "評価する（1 回だけ・14 日以内）", "Rate (once, within 14 days)")}
+      </p>
+      <div className="mt-1 flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            aria-pressed={rating === n}
+            aria-label={pick(lang, `評価 ${n} / 5`, `Rating ${n} / 5`)}
+            onClick={() => setRating(n)}
+            className={`text-2xl ${n <= rating ? "text-amber-500" : "text-slate-300"}`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+      <textarea
+        className="mt-2 w-full rounded-lg border border-slate-300 p-2 text-sm"
+        rows={2}
+        maxLength={500}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder={pick(
+          lang,
+          "コメント（任意・worker にだけ見えます）",
+          "Comment (optional, only the worker sees it)",
+        )}
+      />
+      {err ? <p className="text-sm text-rose-700">{err}</p> : null}
+      <button
+        type="button"
+        disabled={busy || rating === 0}
+        onClick={send}
+        className="mt-1 rounded-xl bg-teal-700 px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40"
+      >
+        {pick(lang, "評価を送る", "Send rating")}
+      </button>
+    </div>
+  );
+}

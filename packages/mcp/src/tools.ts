@@ -379,3 +379,18 @@ export const SET_WORKER_PREFERENCE_TOOL = {
     pref_ref: z.string().optional(),
   },
 } as const;
+
+export const RATE_TASK_SEAT_TOOL = {
+  name: "rate_task_seat",
+  title: "Rate a finished seat",
+  description:
+    "Rate a paid seat (state RELEASED) once, 1-5, within 14 days, with an optional comment of up to 500 characters. " +
+    "Give a rating only when the person you work for gives one; do not invent it. The comment is shown to the worker " +
+    "only; profiles show the average from 3 ratings.",
+  inputSchema: {
+    task_id: TaskId,
+    seat_id: SeatId,
+    rating: z.number().int().min(1).max(5),
+    comment: z.string().max(500).optional(),
+  },
+} as const;

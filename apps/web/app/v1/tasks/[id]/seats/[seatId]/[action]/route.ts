@@ -1,4 +1,4 @@
-// POST /v1/tasks/{id}/seats/{seat_id}/{release|request-changes|reject}. Auth: requester.
+// POST /v1/tasks/{id}/seats/{seat_id}/{release|request-changes|reject|review}. Auth: requester.
 import { appContext } from "@/lib/context";
 import { handleDecideSeat } from "@/lib/handlers/market-tasks";
 import { route } from "@/lib/http";

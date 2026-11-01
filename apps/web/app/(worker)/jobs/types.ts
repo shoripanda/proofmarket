@@ -37,4 +37,6 @@ export interface MySeat {
   released_by: "requester" | "timeout" | "auto" | null;
   decision_reason: string | null;
   delivery: { round: number; body: string; links: string[] } | null;
+  /** The requester's rating once paid (docs/architecture 14 §5). Only you see the comment. */
+  review: { rating: number; comment: string; created_at: string } | null;
 }

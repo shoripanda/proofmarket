@@ -95,7 +95,27 @@ export async function getMyProfile(app: AppContext, workerId: string) {
     .from(schema.workerProfiles)
     .where(eq(schema.workerProfiles.workerId, workerId));
   const rec = (await workerRecords(app.db, [workerId])).get(workerId) ?? NO_RECORD;
+  // The worker sees every rating with its comment; the public sees only the average (14 §5).
+  const reviews = await app.db
+    .select({
+      rating: schema.seatReviews.rating,
+      comment: schema.seatReviews.comment,
+      createdAt: schema.seatReviews.createdAt,
+      title: schema.marketTasks.title,
+    })
+    .from(schema.seatReviews)
+    .innerJoin(schema.taskSeats, eq(schema.taskSeats.id, schema.seatReviews.seatId))
+    .innerJoin(schema.marketTasks, eq(schema.marketTasks.id, schema.taskSeats.taskId))
+    .where(eq(schema.seatReviews.workerId, workerId))
+    .orderBy(desc(schema.seatReviews.createdAt))
+    .limit(20);
   return {
+    reviews: reviews.map((r) => ({
+      rating: r.rating,
+      comment: r.comment,
+      task_title: r.title,
+      created_at: r.createdAt.toISOString(),
+    })),
     profile: p
       ? {
           public: p.public,

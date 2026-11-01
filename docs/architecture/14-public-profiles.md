@@ -23,7 +23,7 @@ Four features, one migration (0035), no program change:
 | One profile | `/people/{public_id}` | `GET /v1/public/workers/{public_id}` |
 | Edit own profile (worker) | `/profile` (worker app) | `GET`/`PUT /v1/worker/profile` |
 | Preferences (requester) | `/console/workers`, buttons in `/console/tasks` | `GET /v1/worker-preferences`, `POST /v1/worker-preferences` with `kind` `prefer` / `block` / `clear` |
-| Rating (requester) | On the seat in `/console/tasks` | `POST /v1/tasks/{id}/seats/{seat_id}/review` |
+| Rating (requester) | On a released seat in `/console/tasks` | `POST /v1/tasks/{id}/seats/{seat_id}/review` (`{ rating, comment }`); the seat view carries `review` |
 | Public task list | `/market`, `/market/{id}` | `GET /v1/public/market-tasks`, `GET /v1/public/market-tasks/{id}` |
 
 ## 3. Public profile
@@ -82,6 +82,8 @@ Per requester principal (not per API key), so all keys of one requester share th
 - `rating` 1-5, `comment` 0-500 characters. The comment is shown to the worker on the seat screen and never publicly. Rejected seats are not rated; rejections already carry a reason and count in the rejection rate (13 §5.4).
 - The public profile shows only the average and the count (from 3 ratings).
 - The comment is passed through the same contact pattern check as messages and flagged, not refused.
+- The worker sees each rating and comment on the seat screen and the last 20 on `/profile`.
+- Errors: `TASK_STATE_CONFLICT` with `reason` `only_released_seats`, `review_window_closed` or `already_reviewed`.
 
 ## 6. Public task list
 
@@ -126,7 +128,7 @@ Each step is one PR, stacked on the previous one; the flag stays off.
 | 8-0 | This chapter, the legal items below, links from 13 §9 |
 | 8-1 | Migration 0035 (all three tables and `audience`), `/v1/worker/profile`, `/profile`, `/v1/public/workers`, `/people`, sitemap — done 2026-10-24 |
 | 8-2 | Preferences, `audience`, block filter on worker lists and apply, `/console/workers`, `set_worker_preference` — done 2026-10-24 |
-| 8-3 | Ratings: API, console form, worker screen, average on profiles |
+| 8-3 | Ratings: API, console form, worker screen, average on profiles, `rate_task_seat` — done 2026-10-24 |
 | 8-4 | Public task list: API, `/market`, sitemap, MCP tools |
 
 ## 11. Legal and privacy items (added to the list in 13 §10)

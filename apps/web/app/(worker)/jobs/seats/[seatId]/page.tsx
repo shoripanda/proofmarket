@@ -146,6 +146,30 @@ export default function SeatPage({ params }: { params: Promise<{ seatId: string 
               ))}
             </Card>
           ) : null}
+          {seat.review ? (
+            <Card>
+              <p className="text-sm font-bold text-slate-500">
+                {pick(lang, "依頼者の評価", "The requester's rating")}
+              </p>
+              <p className="mt-2 text-lg font-bold text-amber-600">
+                <span aria-hidden="true">
+                  {"★".repeat(seat.review.rating)}
+                  <span className="text-slate-300">{"★".repeat(5 - seat.review.rating)}</span>
+                </span>
+                <span className="sr-only">{`${seat.review.rating} / 5`}</span>
+              </p>
+              {seat.review.comment ? (
+                <p className="mt-1 whitespace-pre-wrap text-sm">{seat.review.comment}</p>
+              ) : null}
+              <p className="mt-2 text-xs text-slate-500">
+                {pick(
+                  lang,
+                  "コメントはあなたにだけ見えます。公開プロフィールには平均だけが出ます（3 件から）。",
+                  "Only you see the comment. Your public profile shows the average only (from 3 ratings).",
+                )}
+              </p>
+            </Card>
+          ) : null}
           <SeatMessages seatId={seat.seat_id} />
         </>
       ) : null}

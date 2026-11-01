@@ -1225,6 +1225,8 @@ export const SeatViewSchema = z.object({
   released_by: z.enum(["requester", "timeout", "auto"]).nullable(),
   decision_reason: z.string().nullable(),
   delivery: z.object({ round: z.number().int(), body: z.string(), links: z.array(z.string()) }).nullable(),
+  /** The requester's rating of a released seat (14 §5). The comment is for the worker only, never public. */
+  review: z.object({ rating: z.number().int(), comment: z.string(), created_at: IsoDateTime }).nullable(),
 });
 
 export const TaskViewSchema = z.object({
@@ -1376,3 +1378,11 @@ export const WorkerPreferenceListSchema = z.object({
     }),
   ),
 });
+
+/** POST /v1/tasks/{id}/seats/{seat_id}/review — once per released seat, within 14 days (14 §5). */
+export const RateSeatRequestSchema = z
+  .object({
+    rating: z.number().int().min(1).max(5),
+    comment: z.string().trim().max(500).default(""),
+  })
+  .strict();

@@ -21,6 +21,7 @@ type Mine = {
   } | null;
   completed: number;
   rating: { average: number; count: number } | null;
+  reviews: { rating: number; comment: string; task_title: string; created_at: string }[];
 };
 
 const field = "mt-1 w-full rounded-xl border border-slate-300 p-3 text-base";
@@ -229,6 +230,28 @@ export default function ProfilePage() {
           ) : null}
         </div>
       </Card>
+      {mine?.reviews.length ? (
+        <Card>
+          <p className="text-sm font-bold text-slate-500">
+            {pick(
+              lang,
+              "受けた評価（コメントはあなたにだけ見えます）",
+              "Ratings you received (only you see the comments)",
+            )}
+          </p>
+          <ul className="mt-2 space-y-3">
+            {mine.reviews.map((r) => (
+              <li key={r.created_at + r.task_title} className="text-sm">
+                <p>
+                  <span className="font-bold text-amber-600">{"★".repeat(r.rating)}</span>
+                  <span className="ml-2 text-slate-500">{r.task_title}</span>
+                </p>
+                {r.comment ? <p className="mt-1 whitespace-pre-wrap">{r.comment}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
     </Shell>
   );
 }

@@ -9,6 +9,7 @@ import {
   CreateTaskRequestSchema,
   DecisionReasonSchema,
   DeliverSeatRequestSchema,
+  RateSeatRequestSchema,
   ReleaseSeatRequestSchema,
 } from "@proofmarket/core/schemas/api";
 import type { z } from "zod";
@@ -30,6 +31,7 @@ import {
   listMySeats,
   listOpenTasksForWorker,
   listTasks,
+  rateSeat,
   requesterMessages,
   requesterSend,
   requireTasksEnabled,
@@ -128,6 +130,11 @@ export async function handleDecideSeat(
     return Response.json(
       await decideSeat(app, auth, id, seatId, action === "reject" ? "reject" : "request_changes", reason),
     );
+  }
+  if (action === "review") {
+    // Once per released seat, within 14 days; the comment is for the worker only (14 §5).
+    await consumeRateLimit(app, `cred:${auth.credentialId}`, auth.limits.rateLimitPerMin);
+    return Response.json(await rateSeat(app, auth, id, seatId, parse(RateSeatRequestSchema, raw)));
   }
   throw new ApiError("VALIDATION_FAILED", { action });
 }

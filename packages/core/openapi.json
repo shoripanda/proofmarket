@@ -8630,6 +8630,30 @@
                               "body",
                               "links"
                             ]
+                          },
+                          "review": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "rating": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comment": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "rating",
+                              "comment",
+                              "created_at"
+                            ]
                           }
                         },
                         "required": [
@@ -8646,7 +8670,8 @@
                           "revisions",
                           "released_by",
                           "decision_reason",
-                          "delivery"
+                          "delivery",
+                          "review"
                         ]
                       }
                     },
@@ -9073,6 +9098,30 @@
                                     "body",
                                     "links"
                                   ]
+                                },
+                                "review": {
+                                  "nullable": true,
+                                  "type": "object",
+                                  "properties": {
+                                    "rating": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "comment": {
+                                      "type": "string"
+                                    },
+                                    "created_at": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "rating",
+                                    "comment",
+                                    "created_at"
+                                  ]
                                 }
                               },
                               "required": [
@@ -9089,7 +9138,8 @@
                                 "revisions",
                                 "released_by",
                                 "decision_reason",
-                                "delivery"
+                                "delivery",
+                                "review"
                               ]
                             }
                           },
@@ -9528,6 +9578,30 @@
                               "body",
                               "links"
                             ]
+                          },
+                          "review": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "rating": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comment": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "rating",
+                              "comment",
+                              "created_at"
+                            ]
                           }
                         },
                         "required": [
@@ -9544,7 +9618,8 @@
                           "revisions",
                           "released_by",
                           "decision_reason",
-                          "delivery"
+                          "delivery",
+                          "review"
                         ]
                       }
                     },
@@ -9977,6 +10052,30 @@
                               "body",
                               "links"
                             ]
+                          },
+                          "review": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "rating": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comment": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "rating",
+                              "comment",
+                              "created_at"
+                            ]
                           }
                         },
                         "required": [
@@ -9993,7 +10092,8 @@
                           "revisions",
                           "released_by",
                           "decision_reason",
-                          "delivery"
+                          "delivery",
+                          "review"
                         ]
                       }
                     },
@@ -10645,6 +10745,30 @@
                               "body",
                               "links"
                             ]
+                          },
+                          "review": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "rating": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comment": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "rating",
+                              "comment",
+                              "created_at"
+                            ]
                           }
                         },
                         "required": [
@@ -10661,7 +10785,8 @@
                           "revisions",
                           "released_by",
                           "decision_reason",
-                          "delivery"
+                          "delivery",
+                          "review"
                         ]
                       }
                     },
@@ -11102,6 +11227,30 @@
                               "body",
                               "links"
                             ]
+                          },
+                          "review": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "rating": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comment": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "rating",
+                              "comment",
+                              "created_at"
+                            ]
                           }
                         },
                         "required": [
@@ -11118,7 +11267,8 @@
                           "revisions",
                           "released_by",
                           "decision_reason",
-                          "delivery"
+                          "delivery",
+                          "review"
                         ]
                       }
                     },
@@ -11581,6 +11731,30 @@
                               "body",
                               "links"
                             ]
+                          },
+                          "review": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "rating": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comment": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "rating",
+                              "comment",
+                              "created_at"
+                            ]
                           }
                         },
                         "required": [
@@ -11597,7 +11771,8 @@
                           "revisions",
                           "released_by",
                           "decision_reason",
-                          "delivery"
+                          "delivery",
+                          "review"
                         ]
                       }
                     },
@@ -12059,6 +12234,30 @@
                               "body",
                               "links"
                             ]
+                          },
+                          "review": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "rating": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comment": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "rating",
+                              "comment",
+                              "created_at"
+                            ]
                           }
                         },
                         "required": [
@@ -12075,7 +12274,8 @@
                           "revisions",
                           "released_by",
                           "decision_reason",
-                          "delivery"
+                          "delivery",
+                          "review"
                         ]
                       }
                     },
@@ -12537,6 +12737,30 @@
                               "body",
                               "links"
                             ]
+                          },
+                          "review": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "rating": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comment": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "rating",
+                              "comment",
+                              "created_at"
+                            ]
                           }
                         },
                         "required": [
@@ -12553,7 +12777,8 @@
                           "revisions",
                           "released_by",
                           "decision_reason",
-                          "delivery"
+                          "delivery",
+                          "review"
                         ]
                       }
                     },
@@ -12583,6 +12808,309 @@
                     "applications_pending",
                     "seats",
                     "created_at"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "TASKS_NOT_ENABLED",
+                            "TASK_NOT_FOUND",
+                            "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "SEAT_NOT_FOUND",
+                            "APPLICATION_NOT_FOUND",
+                            "TASK_STATE_CONFLICT",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{id}/seats/{seat_id}/review": {
+      "post": {
+        "summary": "Rate a released seat once, 1-5, within 14 days. The comment is shown to the worker only (14 §5)",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seat_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "comment": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "rating"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "seat_id": {
+                      "type": "string",
+                      "pattern": "^seat_[0-9A-HJKMNP-TV-Z]{26}$"
+                    },
+                    "seat_no": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "round": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "ASSIGNED",
+                        "IN_REVIEW",
+                        "RELEASED",
+                        "REJECTED",
+                        "EXPIRED",
+                        "CANCELLED"
+                      ]
+                    },
+                    "worker_ref": {
+                      "type": "string"
+                    },
+                    "funded": {
+                      "type": "boolean"
+                    },
+                    "assigned_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "due_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "submitted_at": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "review_due_at": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "revisions": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "released_by": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "requester",
+                        "timeout",
+                        "auto"
+                      ]
+                    },
+                    "decision_reason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "delivery": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "round": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "body": {
+                          "type": "string"
+                        },
+                        "links": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "round",
+                        "body",
+                        "links"
+                      ]
+                    },
+                    "review": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "rating": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "comment": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "rating",
+                        "comment",
+                        "created_at"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "seat_id",
+                    "seat_no",
+                    "round",
+                    "state",
+                    "worker_ref",
+                    "funded",
+                    "assigned_at",
+                    "due_at",
+                    "submitted_at",
+                    "review_due_at",
+                    "revisions",
+                    "released_by",
+                    "decision_reason",
+                    "delivery",
+                    "review"
                   ]
                 }
               }
