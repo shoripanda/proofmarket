@@ -11,7 +11,7 @@ import { runOptimistic } from "./challenge-service";
 import { runDeposits } from "./deposit-service";
 import { releaseStaleReviews } from "./evidence-service";
 import { runFundSeat, runRefundSeat, runSettleSeat, sweepMarketTasks } from "./market-task-service";
-import { runNotifyWorkers } from "./push-service";
+import { runNotifyMarketTask, runNotifySeat, runNotifyWorkers, type SeatPushEvent } from "./push-service";
 import { purgeExpiredEvidence } from "./retention";
 import { runDueSchedules } from "./schedule-service";
 import {
@@ -75,8 +75,11 @@ const HANDLERS: Record<OutboxJobKind, Handler> = {
     await purgeExpiredEvidence(app);
     return { kind: "done" };
   },
+  // One job kind for every worker push; the payload says which (docs/architecture 15 §4, no migration needed).
   NOTIFY_WORKERS: async (app, p) => {
-    await runNotifyWorkers(app, String(p.verification_id));
+    if (typeof p.market_task_id === "string") await runNotifyMarketTask(app, p.market_task_id);
+    else if (typeof p.seat_id === "string") await runNotifySeat(app, p.seat_id, p.event as SeatPushEvent);
+    else await runNotifyWorkers(app, String(p.verification_id));
     return { kind: "done" };
   },
   FUND_SEAT: (app, p) => runFundSeat(app, String(p.seat_id)),
