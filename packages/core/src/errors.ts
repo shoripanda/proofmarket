@@ -125,6 +125,7 @@ export const ERROR_CATALOG = {
   QUOTE_NOT_FOUND: { http: 404, retryable: false, message: "The quote was not found for this API key." },
   TASKS_NOT_ENABLED: { http: 404, retryable: false, message: "General tasks are not open yet." },
   TASK_NOT_FOUND: { http: 404, retryable: false, message: "Task not found." },
+  PROFILE_NOT_FOUND: { http: 404, retryable: false, message: "No public profile with this id." },
   SEAT_NOT_FOUND: { http: 404, retryable: false, message: "Seat not found for this task." },
   APPLICATION_NOT_FOUND: { http: 404, retryable: false, message: "Application not found for this task." },
   TASK_STATE_CONFLICT: {

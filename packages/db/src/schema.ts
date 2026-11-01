@@ -24,9 +24,11 @@ import {
   SETTLEMENT_STATUSES,
   STORE_REPORT_STATUSES,
   SUBMISSION_STATES,
+  TASK_AUDIENCES,
   TASK_STATUSES,
   TASK_TYPES,
   UPLOAD_STATES,
+  WORKER_PREF_KINDS,
 } from "@proofmarket/core";
 import { sql } from "drizzle-orm";
 import {
@@ -1024,6 +1026,8 @@ export const marketTasks = pgTable(
     completionWindowH: smallint("completion_window_h").notNull(),
     /** No new applications or claims after this. */
     deadline: tsz("deadline").notNull(),
+    /** everyone, or only the requester's preferred workers (docs/architecture 14 §4). */
+    audience: text("audience").notNull().default("everyone"),
     status: text("status").notNull(),
     idempotencyKeyHash: bytea("idempotency_key_hash").notNull(),
     createdAt: tsz("created_at").notNull(),
@@ -1041,6 +1045,7 @@ export const marketTasks = pgTable(
     check("mt_description_chk", sql`char_length(description) between 20 and 5000`),
     check("mt_criteria_chk", sql`char_length(completion_criteria) between 5 and 2000`),
     check("mt_place_chk", sql`area is not null or remote_ok`),
+    check("mt_audience_chk", oneOf("audience", TASK_AUDIENCES)),
     unique("mt_idempotency_uq").on(t.credentialId, t.idempotencyKeyHash),
     index("mt_status_deadline_idx").on(t.status, t.deadline),
     index("mt_credential_created_idx").on(t.credentialId, t.createdAt.desc()),
@@ -1179,5 +1184,78 @@ export const taskMessages = pgTable(
     check("tm_sender_chk", sql`sender in ('requester','worker')`),
     check("tm_body_chk", sql`char_length(body) between 1 and 2000`),
     index("tm_seat_created_idx").on(t.seatId, t.createdAt),
+  ],
+);
+
+/**
+ * A worker's public profile (docs/architecture 14 §3). Shown only while `public` is on; `public_id` is separate from
+ * the worker id and from worker_ref so a profile cannot be joined with past results.
+ */
+export const workerProfiles = pgTable(
+  "worker_profiles",
+  {
+    workerId: text("worker_id")
+      .primaryKey()
+      .references(() => workers.id),
+    publicId: text("public_id").notNull().unique(),
+    public: boolean("public").notNull().default(false),
+    indexable: boolean("indexable").notNull().default(false),
+    displayName: text("display_name").notNull(),
+    city: text("city"),
+    skills: text("skills").array().notNull().default(sql`'{}'`),
+    languages: text("languages").array().notNull().default(sql`'{}'`),
+    updatedAt: tsz("updated_at").notNull(),
+  },
+  (t) => [
+    check("wp_name_chk", sql`char_length(display_name) between 2 and 40`),
+    check("wp_city_chk", sql`city is null or (char_length(city) between 1 and 40 and city !~ '[0-9０-９]')`),
+    check("wp_skills_chk", sql`cardinality(skills) <= 10`),
+    check("wp_languages_chk", sql`cardinality(languages) <= 5`),
+    index("wp_public_idx").on(t.updatedAt.desc()).where(sql`public`),
+  ],
+);
+
+/** A requester's preferred or blocked worker (14 §4). Per principal, so every key of a requester shares it. */
+export const requesterWorkerPrefs = pgTable(
+  "requester_worker_prefs",
+  {
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    workerId: text("worker_id")
+      .notNull()
+      .references(() => workers.id),
+    kind: text("kind").notNull(),
+    createdAt: tsz("created_at").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.principalId, t.workerId] }),
+    check("rwp_kind_chk", oneOf("kind", WORKER_PREF_KINDS)),
+    index("rwp_worker_kind_idx").on(t.workerId, t.kind),
+  ],
+);
+
+/** The requester's rating of a released seat, once (14 §5). The comment is shown to the worker only. */
+export const seatReviews = pgTable(
+  "seat_reviews",
+  {
+    seatId: text("seat_id")
+      .primaryKey()
+      .references(() => taskSeats.id),
+    principalId: text("principal_id")
+      .notNull()
+      .references(() => principals.id),
+    workerId: text("worker_id")
+      .notNull()
+      .references(() => workers.id),
+    rating: smallint("rating").notNull(),
+    comment: text("comment").notNull().default(""),
+    flags: text("flags").array().notNull().default(sql`'{}'`),
+    createdAt: tsz("created_at").notNull(),
+  },
+  (t) => [
+    check("sr_rating_chk", sql`rating between 1 and 5`),
+    check("sr_comment_chk", sql`char_length(comment) <= 500`),
+    index("sr_worker_idx").on(t.workerId),
   ],
 );

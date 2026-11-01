@@ -344,3 +344,34 @@ export type SeatState = (typeof SEAT_STATES)[number];
 
 export const SEAT_PAYMENT_KINDS = ["FUND", "SETTLE", "REFUND"] as const;
 export type SeatPaymentKind = (typeof SEAT_PAYMENT_KINDS)[number];
+
+/** Who sees a general task (docs/architecture 14 §4). */
+export const TASK_AUDIENCES = ["everyone", "preferred"] as const;
+export type TaskAudience = (typeof TASK_AUDIENCES)[number];
+/** A requester's mark on a worker (14 §4). */
+export const WORKER_PREF_KINDS = ["prefer", "block"] as const;
+export type WorkerPrefKind = (typeof WORKER_PREF_KINDS)[number];
+/** Languages a public profile can list (14 §3.1). */
+export const PROFILE_LANGUAGES = [
+  "ja",
+  "en",
+  "zh",
+  "ko",
+  "es",
+  "fr",
+  "de",
+  "pt",
+  "it",
+  "ru",
+  "vi",
+  "th",
+  "id",
+  "tl",
+  "hi",
+  "ne",
+  "ar",
+  "tr",
+  "uk",
+  "pl",
+] as const;
+export type ProfileLanguage = (typeof PROFILE_LANGUAGES)[number];
