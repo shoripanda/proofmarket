@@ -148,4 +148,4 @@ Each step is one PR, stacked on the previous one; the flag stays off. Built as #
 
 - Photos on profiles.
 - Whether workers should rate requesters too (today the rejection rate plays that part).
-- Whether `prefer` should also send a push to preferred workers when a preferred-only task is posted.
+- ~~Whether `prefer` should also send a push to preferred workers when a preferred-only task is posted.~~ Yes: chapter 15 §2 (2026-11-01).

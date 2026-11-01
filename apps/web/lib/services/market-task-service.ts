@@ -31,6 +31,7 @@ import { appendAudit } from "./audit";
 import { sha256, witnessRef } from "./crypto";
 import { flagEnabled } from "./flags";
 import { hasPreferredWorkers, marksOnWorker, mayApply, preferredAmong } from "./prefs-service";
+import { enqueueMarketTaskPush, enqueueSeatPush } from "./push-service";
 import { balanceMicro, checkBountyAsset, checkSpendPolicy } from "./requester-service";
 import { enqueueJob, lockCredential, microToDecimal } from "./task-engine";
 import { enqueueTaskWebhook } from "./webhook-service";
@@ -199,6 +200,7 @@ export async function createTask(
     correlationId: id,
     metadata: { kind: "task", total: fromMicro(total), seats: body.seats },
   });
+  await enqueueMarketTaskPush(tx, id, now);
   return { status: 201, body: await taskView(tx, app, task) };
 }
 
@@ -402,6 +404,8 @@ async function assignSeat(
     .returning();
   if (!seat) throw new Error("insert returned no row");
   await enqueueJob(tx, "FUND_SEAT", `FUND_SEAT:${id}`, { seat_id: id }, now);
+  // Only when the requester chose the worker; a first-come claim is the worker's own action.
+  if (applicationId) await enqueueSeatPush(tx, id, "assigned", now);
   await enqueueTaskWebhook(tx, now, t.credentialId, "task.seat_assigned", {
     task_id: t.id,
     seat_id: id,
@@ -525,6 +529,7 @@ async function releaseSeat(tx: Db, app: AppContext, s: SeatRow, by: "requester" 
     .set({ state: "RELEASED", releasedBy: by, decidedAt: now, reviewDueAt: null })
     .where(eq(schema.taskSeats.id, s.id));
   await enqueueJob(tx, "SETTLE_SEAT", `SETTLE_SEAT:${s.id}`, { seat_id: s.id }, now);
+  await enqueueSeatPush(tx, s.id, "released", now);
   await notify(tx, now, s, "task.released", "RELEASED");
   await appendAudit(tx, {
     verificationId: null,
@@ -555,6 +560,7 @@ async function closeSeat(
   if (state !== "CANCELLED") {
     await notify(tx, now, s, state === "REJECTED" ? "task.rejected" : "task.seat_expired", state);
   }
+  if (state === "REJECTED") await enqueueSeatPush(tx, s.id, "rejected", now);
   await appendAudit(tx, {
     verificationId: null,
     actorType: state === "REJECTED" ? "requester" : "system",
@@ -601,6 +607,7 @@ export async function decideSeat(
         })
         .where(eq(schema.taskSeats.id, s.id));
       await notify(tx, now, s, "task.changes_requested", "ASSIGNED");
+      await enqueueSeatPush(tx, s.id, "changes_requested", now);
     }
     await finishIfOver(tx, app, t);
     return taskView(tx, app, t);
@@ -1305,6 +1312,8 @@ async function postMessage(
         seat_id: s.id,
         state: `message:${now.getTime()}`,
       });
+    } else {
+      await enqueueSeatPush(tx, s.id, "message", now);
     }
     if (flags.length) {
       await appendAudit(tx, {
