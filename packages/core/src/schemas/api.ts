@@ -23,10 +23,12 @@ import {
   SETTLEMENT_STATUSES,
   STORE_REPORT_STATUSES,
   SUBMISSION_STATES,
+  TASK_AUDIENCES,
   TASK_EVIDENCE_TYPES,
   TASK_STATUSES,
   TASK_TYPES,
   WEBHOOK_EVENTS,
+  WORKER_PREF_KINDS,
 } from "../domain/enums.ts";
 import { LIMITS } from "../domain/limits.ts";
 import { LOCATION_PRIVACY } from "../domain/location-privacy.ts";
@@ -1190,6 +1192,8 @@ export const CreateTaskRequestSchema = z
     /** No new applicants after this. */
     deadline: IsoDateTime,
     application_questions: z.array(TaskQuestionSchema).max(5).default([]),
+    /** everyone, or only the workers this requester marked as preferred (14 §4). */
+    audience: z.enum(TASK_AUDIENCES).default("everyone"),
     /** true: run every check and return the cost; nothing is created or reserved. */
     dry_run: z.boolean().optional(),
   })
@@ -1238,6 +1242,7 @@ export const TaskViewSchema = z.object({
   completion_window_hours: z.number().int(),
   deadline: IsoDateTime,
   application_questions: z.array(TaskQuestionSchema),
+  audience: z.enum(TASK_AUDIENCES),
   cost: TaskCostSchema,
   applications_pending: z.number().int(),
   seats: z.array(SeatViewSchema),
@@ -1256,10 +1261,13 @@ export const TaskListResponseSchema = z.object({ tasks: z.array(TaskViewSchema) 
 export const ApplicationViewSchema = z.object({
   application_id: ApplicationIdSchema,
   worker_ref: z.string(),
+  /** You marked this worker as preferred (14 §4); listed first. */
+  preferred: z.boolean(),
+  /** The worker's public profile, only when they chose to publish one (D5). */
+  public_id: z.string().nullable(),
   state: z.enum(APPLICATION_STATES),
   answers: z.record(z.string(), z.string()),
   note: z.string().nullable(),
-  /** The worker's public profile when they chose to publish one (D5); otherwise only completed counts. */
   worker: z.object({ completed_tasks: z.number().int(), completed_verifications: z.number().int() }),
   created_at: IsoDateTime,
 });
@@ -1335,3 +1343,36 @@ export const PublicWorkersListSchema = z.object({
   note: z.string(),
 });
 export type PublicWorkerProfile = z.infer<typeof PublicWorkerProfileSchema>;
+
+// ---------- preferred and blocked workers (14 §4) ----------
+
+export const SetWorkerPreferenceRequestSchema = z
+  .object({
+    /** A public profile, a worker you met on one of your tasks, or an existing mark. */
+    worker: z.union([
+      z.object({ public_id: z.string().regex(/^pw_[a-z0-9]{20}$/) }).strict(),
+      z.object({ task_id: z.string().max(40), worker_ref: z.string().regex(/^hmac:[0-9a-f]{64}$/) }).strict(),
+      z.object({ pref_ref: z.string().regex(/^pref_[0-9a-f]{32}$/) }).strict(),
+    ]),
+    kind: z.enum([...WORKER_PREF_KINDS, "clear"]),
+  })
+  .strict();
+export type SetWorkerPreferenceRequest = z.infer<typeof SetWorkerPreferenceRequestSchema>;
+
+export const WorkerPreferenceSchema = z.object({
+  pref_ref: z.string(),
+  kind: z.enum(WORKER_PREF_KINDS).nullable(),
+});
+
+export const WorkerPreferenceListSchema = z.object({
+  workers: z.array(
+    z.object({
+      pref_ref: z.string(),
+      kind: z.enum(WORKER_PREF_KINDS),
+      /** Only while the worker keeps a public profile. */
+      public_id: z.string().nullable(),
+      display_name: z.string().nullable(),
+      created_at: IsoDateTime,
+    }),
+  ),
+});

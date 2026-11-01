@@ -315,3 +315,67 @@ export function TaskMessageForm({ taskId, seatId }: { taskId: string; seatId: st
     </form>
   );
 }
+
+type MarkTarget = { task_id: string; worker_ref: string } | { pref_ref: string };
+
+/** Prefer, block or clear a worker (docs/architecture 14 §4). The worker is never told. */
+export function WorkerMarkButtons({ worker, kind }: { worker: MarkTarget; kind: "prefer" | "block" | null }) {
+  const lang = useLang();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const act = async (next: "prefer" | "block" | "clear") => {
+    if (
+      next === "block" &&
+      !window.confirm(
+        pick(
+          lang,
+          "この人をお断りにしますか？今後あなたの仕事はこの人に表示されません。本人には知らされません。",
+          "Block this worker? Your tasks will no longer be shown to them. They are not told.",
+        ),
+      )
+    )
+      return;
+    setBusy(true);
+    await fetch("/v1/console/worker-preferences", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ worker, kind: next }),
+    }).catch(() => null);
+    setBusy(false);
+    router.refresh();
+  };
+  const link = "text-sm font-semibold underline disabled:opacity-40";
+  return (
+    <span className="flex flex-wrap gap-3">
+      {kind ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => act("clear")}
+          className={`${link} text-slate-600`}
+        >
+          {kind === "prefer" ? pick(lang, "推しを外す", "Unprefer") : pick(lang, "お断りを外す", "Unblock")}
+        </button>
+      ) : (
+        <>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => act("prefer")}
+            className={`${link} text-teal-700`}
+          >
+            {pick(lang, "推しにする", "Prefer")}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => act("block")}
+            className={`${link} text-rose-700`}
+          >
+            {pick(lang, "お断りにする", "Block")}
+          </button>
+        </>
+      )}
+    </span>
+  );
+}

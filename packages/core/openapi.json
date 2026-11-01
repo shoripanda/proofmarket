@@ -751,6 +751,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -1076,6 +1077,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -1896,6 +1898,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -2670,6 +2673,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -3517,6 +3521,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -4750,6 +4755,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -5983,6 +5989,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -6142,6 +6149,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -6349,6 +6357,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -6556,6 +6565,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -7523,6 +7533,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -7815,6 +7826,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -8107,6 +8119,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -8313,6 +8326,14 @@
                       "additionalProperties": false
                     }
                   },
+                  "audience": {
+                    "default": "everyone",
+                    "type": "string",
+                    "enum": [
+                      "everyone",
+                      "preferred"
+                    ]
+                  },
                   "dry_run": {
                     "type": "boolean"
                   }
@@ -8434,6 +8455,13 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "audience": {
+                      "type": "string",
+                      "enum": [
+                        "everyone",
+                        "preferred"
+                      ]
                     },
                     "cost": {
                       "type": "object",
@@ -8643,6 +8671,7 @@
                     "completion_window_hours",
                     "deadline",
                     "application_questions",
+                    "audience",
                     "cost",
                     "applications_pending",
                     "seats",
@@ -8710,6 +8739,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -8868,6 +8898,13 @@
                               ],
                               "additionalProperties": false
                             }
+                          },
+                          "audience": {
+                            "type": "string",
+                            "enum": [
+                              "everyone",
+                              "preferred"
+                            ]
                           },
                           "cost": {
                             "type": "object",
@@ -9077,6 +9114,7 @@
                           "completion_window_hours",
                           "deadline",
                           "application_questions",
+                          "audience",
                           "cost",
                           "applications_pending",
                           "seats",
@@ -9150,6 +9188,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -9315,6 +9354,13 @@
                         "additionalProperties": false
                       }
                     },
+                    "audience": {
+                      "type": "string",
+                      "enum": [
+                        "everyone",
+                        "preferred"
+                      ]
+                    },
                     "cost": {
                       "type": "object",
                       "properties": {
@@ -9523,6 +9569,7 @@
                     "completion_window_hours",
                     "deadline",
                     "application_questions",
+                    "audience",
                     "cost",
                     "applications_pending",
                     "seats",
@@ -9590,6 +9637,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -9755,6 +9803,13 @@
                         "additionalProperties": false
                       }
                     },
+                    "audience": {
+                      "type": "string",
+                      "enum": [
+                        "everyone",
+                        "preferred"
+                      ]
+                    },
                     "cost": {
                       "type": "object",
                       "properties": {
@@ -9963,6 +10018,7 @@
                     "completion_window_hours",
                     "deadline",
                     "application_questions",
+                    "audience",
                     "cost",
                     "applications_pending",
                     "seats",
@@ -10030,6 +10086,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -10110,6 +10167,13 @@
                           "worker_ref": {
                             "type": "string"
                           },
+                          "preferred": {
+                            "type": "boolean"
+                          },
+                          "public_id": {
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "state": {
                             "type": "string",
                             "enum": [
@@ -10157,6 +10221,8 @@
                         "required": [
                           "application_id",
                           "worker_ref",
+                          "preferred",
+                          "public_id",
                           "state",
                           "answers",
                           "note",
@@ -10231,6 +10297,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -10404,6 +10471,13 @@
                         "additionalProperties": false
                       }
                     },
+                    "audience": {
+                      "type": "string",
+                      "enum": [
+                        "everyone",
+                        "preferred"
+                      ]
+                    },
                     "cost": {
                       "type": "object",
                       "properties": {
@@ -10612,6 +10686,7 @@
                     "completion_window_hours",
                     "deadline",
                     "application_questions",
+                    "audience",
                     "cost",
                     "applications_pending",
                     "seats",
@@ -10679,6 +10754,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -10852,6 +10928,13 @@
                         "additionalProperties": false
                       }
                     },
+                    "audience": {
+                      "type": "string",
+                      "enum": [
+                        "everyone",
+                        "preferred"
+                      ]
+                    },
                     "cost": {
                       "type": "object",
                       "properties": {
@@ -11060,6 +11143,7 @@
                     "completion_window_hours",
                     "deadline",
                     "application_questions",
+                    "audience",
                     "cost",
                     "applications_pending",
                     "seats",
@@ -11127,6 +11211,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -11322,6 +11407,13 @@
                         "additionalProperties": false
                       }
                     },
+                    "audience": {
+                      "type": "string",
+                      "enum": [
+                        "everyone",
+                        "preferred"
+                      ]
+                    },
                     "cost": {
                       "type": "object",
                       "properties": {
@@ -11530,6 +11622,7 @@
                     "completion_window_hours",
                     "deadline",
                     "application_questions",
+                    "audience",
                     "cost",
                     "applications_pending",
                     "seats",
@@ -11597,6 +11690,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -11791,6 +11885,13 @@
                         "additionalProperties": false
                       }
                     },
+                    "audience": {
+                      "type": "string",
+                      "enum": [
+                        "everyone",
+                        "preferred"
+                      ]
+                    },
                     "cost": {
                       "type": "object",
                       "properties": {
@@ -11999,6 +12100,7 @@
                     "completion_window_hours",
                     "deadline",
                     "application_questions",
+                    "audience",
                     "cost",
                     "applications_pending",
                     "seats",
@@ -12066,6 +12168,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -12260,6 +12363,13 @@
                         "additionalProperties": false
                       }
                     },
+                    "audience": {
+                      "type": "string",
+                      "enum": [
+                        "everyone",
+                        "preferred"
+                      ]
+                    },
                     "cost": {
                       "type": "object",
                       "properties": {
@@ -12468,6 +12578,7 @@
                     "completion_window_hours",
                     "deadline",
                     "application_questions",
+                    "audience",
                     "cost",
                     "applications_pending",
                     "seats",
@@ -12535,6 +12646,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -12766,6 +12878,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -12943,6 +13056,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -13128,6 +13242,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -13317,6 +13432,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -13516,6 +13632,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -13723,6 +13840,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -13971,6 +14089,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -14614,6 +14733,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -15214,6 +15334,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -15389,6 +15510,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -15538,6 +15660,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -15726,6 +15849,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -16032,6 +16156,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -16636,6 +16761,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -17240,6 +17366,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -17426,6 +17553,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -17933,6 +18061,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -18136,6 +18265,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -18333,6 +18463,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -18710,6 +18841,380 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "SEAT_NOT_FOUND",
+                            "APPLICATION_NOT_FOUND",
+                            "TASK_STATE_CONFLICT",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/worker-preferences": {
+      "get": {
+        "summary": "Your preferred and blocked workers (14 §4); 404 TASKS_NOT_ENABLED until tasks open",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "pref_ref": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "prefer",
+                              "block"
+                            ]
+                          },
+                          "public_id": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "display_name": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "pref_ref",
+                          "kind",
+                          "public_id",
+                          "display_name",
+                          "created_at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "workers"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "TASKS_NOT_ENABLED",
+                            "TASK_NOT_FOUND",
+                            "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "SEAT_NOT_FOUND",
+                            "APPLICATION_NOT_FOUND",
+                            "TASK_STATE_CONFLICT",
+                            "WEBHOOK_NOT_FOUND",
+                            "WEBHOOK_LIMIT_REACHED",
+                            "QUOTE_MISMATCH",
+                            "QUOTE_EXPIRED",
+                            "FEATURE_DISABLED",
+                            "NOT_IMPLEMENTED",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "retryable",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Mark a worker as preferred or blocked, or clear the mark. The worker is never told (14 §4)",
+        "x-priority": "Stretch",
+        "security": [
+          {
+            "requesterApiKey": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "worker": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "public_id": {
+                            "type": "string",
+                            "pattern": "^pw_[a-z0-9]{20}$"
+                          }
+                        },
+                        "required": [
+                          "public_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "task_id": {
+                            "type": "string",
+                            "maxLength": 40
+                          },
+                          "worker_ref": {
+                            "type": "string",
+                            "pattern": "^hmac:[0-9a-f]{64}$"
+                          }
+                        },
+                        "required": [
+                          "task_id",
+                          "worker_ref"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "pref_ref": {
+                            "type": "string",
+                            "pattern": "^pref_[0-9a-f]{32}$"
+                          }
+                        },
+                        "required": [
+                          "pref_ref"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "prefer",
+                      "block",
+                      "clear"
+                    ]
+                  }
+                },
+                "required": [
+                  "worker",
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pref_ref": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "prefer",
+                        "block"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "pref_ref",
+                    "kind"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHENTICATED",
+                            "FORBIDDEN",
+                            "CREDENTIAL_SUSPENDED",
+                            "PRINCIPAL_MISMATCH",
+                            "WORKER_NOT_ONBOARDED",
+                            "INVITE_INVALID",
+                            "VALIDATION_FAILED",
+                            "UNSUPPORTED_ASSET",
+                            "UNSUPPORTED_TASK_TYPE",
+                            "DEADLINE_OUT_OF_RANGE",
+                            "LOCATION_OUT_OF_PILOT_AREA",
+                            "LOCATION_NOT_ALLOWLISTED",
+                            "TASK_POLICY_VIOLATION",
+                            "TASK_AMOUNT_LIMIT_EXCEEDED",
+                            "DAILY_SPEND_LIMIT_EXCEEDED",
+                            "INSUFFICIENT_BALANCE",
+                            "RATE_LIMITED",
+                            "IDEMPOTENCY_KEY_CONFLICT",
+                            "IDEMPOTENCY_IN_PROGRESS",
+                            "PAYMENT_IN_PROGRESS",
+                            "PAYMENT_ALREADY_USED",
+                            "VERIFICATION_NOT_FOUND",
+                            "TASK_NOT_CANCELLABLE",
+                            "EVIDENCE_ACCESS_REVOKED",
+                            "TASK_NOT_CLAIMABLE",
+                            "NO_OPEN_SLOT",
+                            "ALREADY_CLAIMED",
+                            "DISPUTE_NOT_ALLOWED",
+                            "CHALLENGE_NOT_ALLOWED",
+                            "WORKER_NOT_ELIGIBLE",
+                            "TASK_EXPIRED",
+                            "CLAIM_NOT_ACTIVE",
+                            "REVIEW_PENDING",
+                            "SUBMISSION_NOT_PENDING",
+                            "NONCE_INVALID",
+                            "NONCE_USED",
+                            "NONCE_EXPIRED",
+                            "UPLOAD_NOT_FOUND",
+                            "ANSWER_INVALID",
+                            "MEDIA_TYPE_UNSUPPORTED",
+                            "MEDIA_TOO_LARGE",
+                            "QUOTE_NOT_FOUND",
+                            "TASKS_NOT_ENABLED",
+                            "TASK_NOT_FOUND",
+                            "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -18988,6 +19493,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -19201,6 +19707,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -19439,6 +19946,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -19726,6 +20234,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -19871,6 +20380,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -19993,6 +20503,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -20115,6 +20626,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -20237,6 +20749,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -20359,6 +20872,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
@@ -20481,6 +20995,7 @@
                             "TASKS_NOT_ENABLED",
                             "TASK_NOT_FOUND",
                             "PROFILE_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
                             "SEAT_NOT_FOUND",
                             "APPLICATION_NOT_FOUND",
                             "TASK_STATE_CONFLICT",
