@@ -294,7 +294,6 @@ export default async function EnHome() {
               Requesters who set <code className="font-mono">publish: true</code> put their verified facts on
               the public map for 72 hours and into an open dataset for good: question, place, answer, time,
               witness count, the evidence root and result hash, and the Solana transaction that carries them.
-              Photos and workers never leave the platform.
             </p>
             <p>
               Agents use it to check before they ask. Teams building Physical AI use it as ground truth with a

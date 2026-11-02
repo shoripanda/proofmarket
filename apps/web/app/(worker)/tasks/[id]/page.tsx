@@ -166,13 +166,6 @@ export default function TaskDetailPage() {
               ? pick(lang, "引き受けています…", "Claiming…")
               : pick(lang, "引き受ける", "Claim this task")}
           </Button>
-          <p className="text-center text-xs text-slate-500">
-            {pick(
-              lang,
-              "引き受けた後でも、いつでもやめられます。",
-              "You can quit at any time, even after claiming.",
-            )}
-          </p>
         </>
       ) : !err ? (
         <p className="text-center text-slate-400">{pick(lang, "読み込み中…", "Loading…")}</p>

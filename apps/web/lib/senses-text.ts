@@ -149,8 +149,8 @@ export const senseText = (lang: Lang, p: Pair | undefined, fallback: string) =>
 
 /** 16 §10: shown before taste or touch. Our words, never the requester's. */
 export const BODY_NOTE: Pair = [
-  "味わう・触るのは、あなたが大丈夫だと思うときだけにしてください。アレルギーに気をつけてください。いつでも「やめておく」を選べます。選んでも評価は下がりません。",
-  'Taste or touch only if you are comfortable. Mind allergies. You can choose "Skip" at any time; it never lowers your standing.',
+  "味わう・触るのは、あなたが大丈夫だと思うときだけにしてください。アレルギーに気をつけてください。いつでも「やめておく」を選べます。",
+  'Taste or touch only if you are comfortable. Mind allergies. You can choose "Skip" at any time.',
 ];
 
 /** 16 §8: how to hold the phone while measuring. */

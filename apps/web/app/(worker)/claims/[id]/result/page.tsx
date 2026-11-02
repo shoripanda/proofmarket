@@ -47,11 +47,7 @@ export default function ResultPage() {
               {pick(lang, "内容を確認しています", "Checking the submission")}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              {pick(
-                lang,
-                "写真と答えが依頼どおりかを AI が確かめています。ふつうは数分で終わります。この画面は自動で更新されます。",
-                "AI is checking that the photo and the answer match the request. This usually takes a few minutes. The screen updates by itself.",
-              )}
+              {pick(lang, "この画面は自動で更新されます。", "The screen updates by itself.")}
             </p>
           </Card>
         ) : last.state === "VALID" ? (
@@ -60,13 +56,6 @@ export default function ResultPage() {
               <p className="text-5xl">✓</p>
               <p className="mt-2 text-xl font-bold text-emerald-700">
                 {pick(lang, "確認できました", "Accepted")}
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                {pick(
-                  lang,
-                  "報酬は確定の処理が終わると届きます。「報酬」から状況を確認できます。",
-                  "The bounty arrives once the request is finalised. Check the status under Earnings.",
-                )}
               </p>
             </Card>
             <Button onClick={() => go("/payouts")}>{pick(lang, "報酬を見る", "See earnings")}</Button>

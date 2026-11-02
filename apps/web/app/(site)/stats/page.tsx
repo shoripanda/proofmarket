@@ -131,8 +131,8 @@ export default async function StatsPage() {
             title={pick(lang, "最近支払いが確定した結果", "Recently settled results")}
             lead={pick(
               lang,
-              "質問文、答え、場所、写真、確かめた人の情報は載せません。結果ページは、運営者が掲載を決めたものだけにつなぎます。",
-              "The question, answer, place, photos and the people who checked are not shown. Result pages are linked only where the operator chose to feature them.",
+              "結果ページは、運営者が掲載を決めたものだけにつなぎます。",
+              "Result pages are linked only where the operator chose to feature them.",
             )}
           >
             {s.recent_results.length === 0 ? (

@@ -372,8 +372,8 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
             <p className="text-xs leading-relaxed text-slate-500">
               {pick(
                 lang,
-                "判定はプラットフォームが運用する単一の検証鍵で行っています（分散した検証ではありません）。写真・確かめた人の情報・文章の答えは、このページに含みません。質問文と場所は、依頼者が公開を選んだときだけ出します。",
-                "Results are finalised with a single verification key run by the platform (not decentralised verification). Photos, the people who checked and text answers are not on this page. The question and the place appear only when the requester chose to publish them.",
+                "判定はプラットフォームが運用する単一の検証鍵で行っています（分散した検証ではありません）。",
+                "Results are finalised with a single verification key run by the platform (not decentralised verification).",
               )}{" "}
               <Link href={h("/how-it-works")} className="text-teal-700 underline">
                 {pick(lang, "ProofMarket のしくみ", "How ProofMarket works")}

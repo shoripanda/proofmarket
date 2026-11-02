@@ -48,8 +48,8 @@ export function OnchainCheck(p: {
       <p className="text-xs leading-relaxed text-slate-500">
         {pick(
           lang,
-          `このブラウザから ${p.chain} の公開 RPC（${p.rpc}）に直接問い合わせます。ProofMarket のサーバーは通りません。`,
-          `Your browser queries a public ${p.chain} RPC (${p.rpc}) directly. ProofMarket's server is not involved.`,
+          `このブラウザから ${p.chain} の公開 RPC（${p.rpc}）に直接問い合わせます。`,
+          `Your browser queries a public ${p.chain} RPC (${p.rpc}) directly.`,
         )}
       </p>
       {state === "error" ? (

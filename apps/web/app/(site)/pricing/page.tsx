@@ -50,7 +50,7 @@ const COPY = {
           when: "1人が違う答えでも確定できる。迷いやすい場所に向く",
         },
       ] as Level[],
-      note: "結果が出るまでの時間は、近くに worker がいるかどうかで大きく変わります。目安の数字は、実績がたまりしだい載せます。",
+      note: "結果が出るまでの時間は、近くに worker がいるかどうかで大きく変わります。",
     },
     money: {
       title: "お金の流れ",
@@ -67,7 +67,7 @@ const COPY = {
         ],
         ["誰も向かう前に取り消した", "全額が残高に戻る。worker が向かっている間は取り消せない"],
       ] as [string, string][],
-      note: "少数派の答えや「わからない（UNCLEAR）」にも報酬を払うのは、多数派に合わせようとする動機をなくすためです。確認に落ちた写真には払いません。",
+      note: "少数派の答えや「わからない（UNCLEAR）」にも報酬を払います。確認に落ちた写真には払いません。",
     },
     pilot: {
       title: "支払いについて",
@@ -109,7 +109,7 @@ const COPY = {
           when: "Final even if one person disagrees. Suits places that are easy to misjudge",
         },
       ] as Level[],
-      note: "Time to result depends mostly on whether a worker is nearby. Typical figures will be published as results accumulate.",
+      note: "Time to result depends mostly on whether a worker is nearby.",
     },
     money: {
       title: "Where the money goes",
@@ -132,7 +132,7 @@ const COPY = {
           "Everything goes back to the balance. A request cannot be cancelled while a worker is on the way",
         ],
       ] as [string, string][],
-      note: "Minority answers and “can't tell” (UNCLEAR) are paid too, so nobody has a reason to guess what the majority will say. Photos that fail the checks are not paid.",
+      note: "Minority answers and “can't tell” (UNCLEAR) are paid too. Photos that fail the checks are not paid.",
     },
     pilot: {
       title: "About payments",

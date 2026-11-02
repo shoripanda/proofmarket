@@ -48,8 +48,8 @@ export default async function PeoplePage({ searchParams }: { searchParams: SP })
         <p>
           {pick(
             lang,
-            "プロフィールの公開を自分で選んだ worker だけを載せています。地域は市区町村までで、住所や駅、位置は載せません。公開していない worker も、これまでどおり仕事を受けられます。",
-            "Only workers who chose to publish a profile are listed. The area is a city or ward at most; no address, station or location. Workers without a public profile can take work as before.",
+            "プロフィールの公開を自分で選んだ worker だけを載せています。",
+            "Only workers who chose to publish a profile are listed.",
           )}
         </p>
       </PageHero>

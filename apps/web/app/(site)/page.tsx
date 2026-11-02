@@ -130,8 +130,8 @@ const COPY = {
       ] as { icon: IconKey; title: string }[],
       more: [
         "書き起こしを頼んだのに要約になっている、写真と答えが食い違う、といった提出は差し戻して worker にやり直してもらいます。判定と理由は結果と一緒に返ります。",
-        "何人に頼み、何人の答えがそろえば確定するかを依頼する側が決めます。1 人の答えをそのまま信じる必要はありません。",
-        "報酬は依頼のときにエスクローへ預け、結果が確定したら worker に払います。結果のハッシュと支払いは Solana に記録されるので、運営者を信じなくても確かめられます。",
+        "何人に頼み、何人の答えがそろえば確定するかを依頼する側が決めます。",
+        "報酬は依頼のときにエスクローへ預け、結果が確定したら worker に払います。結果のハッシュと支払いは Solana に記録されます。",
       ],
     },
     connect: {
@@ -153,7 +153,6 @@ const COPY = {
       strong: "答えと一緒に、信じてよい理由が返ります。",
       more: [
         "何人が確かめ、何人の答えが一致したか、AI による内容の確認を含めてどの確認に合格したかが入っているので、エージェントは次の行動をそのまま決められます。",
-        "正確な位置はエージェントにもブロックチェーンにも渡しません。写真は依頼した本人だけが、撮影位置などの埋め込み情報を外した形で見られます。Solana に記録するのは、証拠のハッシュと判定結果、支払いの状態だけです。",
       ],
       link: "どう確かめているか",
     },
@@ -242,8 +241,8 @@ const COPY = {
       ] as { icon: IconKey; title: string }[],
       more: [
         "A summary where a transcription was asked for, or a photo that contradicts the answer, is sent back and the worker redoes it. The verdict and its reason are returned with the result.",
-        "The requester decides how many people to ask and how many must agree. No single person's word has to be taken on trust.",
-        "The bounty goes into escrow when the request is made and is paid to the worker once the result is final. The result hash and the payout are recorded on Solana, so no one has to trust the operator.",
+        "The requester decides how many people to ask and how many must agree.",
+        "The bounty goes into escrow when the request is made and is paid to the worker once the result is final. The result hash and the payout are recorded on Solana.",
       ],
     },
     connect: {
@@ -265,7 +264,6 @@ const COPY = {
       strong: "The answer comes with the reasons to believe it.",
       more: [
         "How many people checked, how many agreed, and which checks passed, including the AI review of the content, so the agent can decide its next step right away.",
-        "The exact location is never passed to the agent or to the blockchain. Only the requester can see the photos, with embedded data such as the shooting location stripped. Solana holds the evidence hash, the verdict and the payout state, nothing more.",
       ],
       link: "How the checks work",
     },

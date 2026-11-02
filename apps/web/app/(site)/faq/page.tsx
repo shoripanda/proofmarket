@@ -1,5 +1,5 @@
 // S-09 FAQ — short answers, each pointing to the page with the details.
-import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
+import { LIMITS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Section } from "@/components/site";
@@ -27,16 +27,11 @@ const COPY = {
       },
       {
         q: "引き受けたあとで、やめてもいいですか",
-        a: `いつでもやめられます。やめても不利益はありません。引き受けてから ${claimMin} 分（締め切りが先に来ればその時刻）を過ぎると、自動で手放したことになります。`,
+        a: `いつでもやめられます。引き受けてから ${claimMin} 分（締め切りが先に来ればその時刻）を過ぎると、自動で手放したことになります。`,
       },
       {
         q: "写真が判定に落ちたら、どうなりますか",
         a: `理由が画面に出ます。位置の誤差が大きかったなど撮り直せる理由なら、同じ依頼で ${LIMITS.attemptsPerClaim} 回まで出し直せます。同じ写真の使い回しと判定されたときは、その依頼では出し直せません。`,
-      },
-      {
-        q: "位置情報は保存されますか",
-        a: `近くの依頼を探すときの位置は保存しません。撮影したときの正確な位置は、暗号化して運営者だけが見られる形で保存し、${RETENTION_DAYS.precise_location} 日で消します。`,
-        more: ["/workers", "worker 向けの説明"],
       },
       {
         q: "報酬はいつ、どこに届きますか",
@@ -64,7 +59,7 @@ const COPY = {
       },
       {
         q: "写真は見られますか",
-        a: `自分の依頼に限って、撮影位置などの埋め込み情報を外した画像を、${evidenceMin} 分間だけ有効な URL で取れます。正確な位置は渡しません。`,
+        a: `自分の依頼に限って、撮影位置などの埋め込み情報を外した画像を、${evidenceMin} 分間だけ有効な URL で取れます。`,
         more: ["/developers", "開発者向けの説明"],
       },
       {
@@ -76,7 +71,7 @@ const COPY = {
     general: [
       {
         q: "なぜブロックチェーンを使うのですか",
-        a: "報酬が依頼のときに本当に確保されていたことと、確定した結果を後から書き換えていないことを、運営者を信じなくても誰でも確かめられるようにするためです。写真や位置は載せません。",
+        a: "報酬が依頼のときに本当に確保されていたことと、確定した結果を後から書き換えていないことを、運営者を信じなくても誰でも確かめられるようにするためです。",
         more: ["/demo", "結果を Solana と照らし合わせる"],
       },
       {
@@ -98,16 +93,11 @@ const COPY = {
       },
       {
         q: "Can I quit after claiming a request?",
-        a: `Yes, at any time, with no penalty. ${claimMin} minutes after claiming (or at the deadline, if that comes first) the claim is released automatically.`,
+        a: `Yes, at any time. ${claimMin} minutes after claiming (or at the deadline, if that comes first) the claim is released automatically.`,
       },
       {
         q: "What happens if my photo fails a check?",
         a: `The reason appears on screen. If it is something you can fix by retaking, such as a large location error, you can resubmit up to ${LIMITS.attemptsPerClaim} times on the same request. If the photo was judged to be a reused one, you cannot resubmit on that request.`,
-      },
-      {
-        q: "Is my location stored?",
-        a: `The position used to find requests nearby is not stored. The exact position at the time of a shot is stored encrypted, visible to the operator only, and deleted after ${RETENTION_DAYS.precise_location} days.`,
-        more: ["/workers", "Worker guide"],
       },
       {
         q: "When and where does the pay arrive?",
@@ -135,7 +125,7 @@ const COPY = {
       },
       {
         q: "Can I see the photos?",
-        a: `For your own requests only, you can fetch the images with embedded data such as the shooting location removed, through a URL valid for ${evidenceMin} minutes. The exact position is never shared.`,
+        a: `For your own requests only, you can fetch the images with embedded data such as the shooting location removed, through a URL valid for ${evidenceMin} minutes.`,
         more: ["/developers", "Developer guide"],
       },
       {
@@ -147,7 +137,7 @@ const COPY = {
     general: [
       {
         q: "Why a blockchain?",
-        a: "So that anyone can verify, without trusting the operator, that the bounty really was locked when the request was made and that a final result was not rewritten later. Photos and locations are never put on it.",
+        a: "So that anyone can verify, without trusting the operator, that the bounty really was locked when the request was made and that a final result was not rewritten later.",
         more: ["/demo", "Compare a result with Solana"],
       },
       {

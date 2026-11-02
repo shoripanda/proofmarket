@@ -24,8 +24,8 @@ export default function LoginPage() {
         <p className="text-slate-600">
           {pick(
             lang,
-            "AI からの確認依頼に、現地の写真と回答で応えます。1件あたり数分で終わります。",
-            "Answer verification requests from AI with a photo and an answer from the spot. Each one takes a few minutes.",
+            "AI からの確認依頼に、現地の写真と回答で応えます。",
+            "Answer verification requests from AI with a photo and an answer from the spot.",
           )}
         </p>
       </div>

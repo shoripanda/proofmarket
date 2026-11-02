@@ -58,11 +58,7 @@ export function ConsoleLoginForm() {
         className="w-full rounded-xl border border-slate-300 px-4 py-3 font-mono"
       />
       <p className="text-xs leading-relaxed text-slate-500">
-        {pick(
-          lang,
-          "キーはこの画面にもブラウザにも残しません。確かめたあとは12時間有効なログイン状態だけを持ちます。",
-          "The key is kept neither on this page nor in the browser. After it is checked, only a 12-hour session remains.",
-        )}
+        {pick(lang, "ログインは12時間有効です。", "The session lasts 12 hours.")}
       </p>
       {err ? <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800">{err}</p> : null}
       <button
@@ -329,8 +325,8 @@ export function WorkerMarkButtons({ worker, kind }: { worker: MarkTarget; kind: 
       !window.confirm(
         pick(
           lang,
-          "この人をお断りにしますか？今後あなたの仕事はこの人に表示されません。本人には知らされません。",
-          "Block this worker? Your tasks will no longer be shown to them. They are not told.",
+          "この人をお断りにしますか？今後あなたの仕事はこの人に表示されません。",
+          "Block this worker? Your tasks will no longer be shown to them.",
         ),
       )
     )

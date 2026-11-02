@@ -60,8 +60,8 @@ export function ConnectFlow({ base, cluster }: { base: string; cluster: "devnet"
             <Plain>
               {pick(
                 lang,
-                "ここに貼ると、下の手順にそのキーが入ります。キーはこの画面の中でだけ使い、ブラウザには残しません。",
-                "Paste it here and the steps below will carry it. The key is used on this page only and is never stored in the browser.",
+                "ここに貼ると、下の手順にそのキーが入ります。",
+                "Paste it here and the steps below will carry it.",
               )}
             </Plain>
           </p>
@@ -504,11 +504,6 @@ function stepsFor(lang: Lang, client: ClientId, base: string, key: string, princ
             "新しい会話で ProofMarket をオンにする",
             "Turn ProofMarket on in a new conversation",
           ),
-          note: pick(
-            lang,
-            "キーは ProofMarket にだけ渡り、claude.ai には保存されません。",
-            "The key goes to ProofMarket only; claude.ai never stores it.",
-          ),
         },
       ];
     case "chatgpt":
@@ -564,8 +559,8 @@ function stepsFor(lang: Lang, client: ClientId, base: string, key: string, princ
           text: pick(lang, "claude を起動し直す（新しいセッション）", "Start claude again (a new session)"),
           note: pick(
             lang,
-            "キーはこの端末の設定にだけ残ります。チャットに貼った文は、送ったあとで消しておくと安心です。",
-            "The key stays in this machine's settings only. It is a good habit to delete the pasted message once it has been sent.",
+            "チャットに貼った文は、送ったあとで消してください。",
+            "Delete the pasted message once it has been sent.",
           ),
         },
       ];

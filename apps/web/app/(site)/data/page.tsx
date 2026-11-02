@@ -44,8 +44,8 @@ export default async function DataPage() {
         <p>
           {pick(
             lang,
-            "依頼者が公開を許した結果は、地図に載るだけでなく、ここから機械で読める形で取り出せます。1件ごとに、何を・どこで・いつ・何人が確かめたかと、証拠と結果のハッシュ、Solana の取引が付いています。写真と確かめた人の情報は入っていません。",
-            "Results their requesters chose to publish go on the map and can also be fetched here in a machine-readable form. Each row says what was checked, where, when and by how many people, with the evidence and result hashes and the Solana transaction. Photos and the people who checked are not included.",
+            "依頼者が公開を許した結果は、地図に載るだけでなく、ここから機械で読める形で取り出せます。1件ごとに、何を・どこで・いつ・何人が確かめたかと、証拠と結果のハッシュ、Solana の取引が付いています。",
+            "Results their requesters chose to publish go on the map and can also be fetched here in a machine-readable form. Each row says what was checked, where, when and by how many people, with the evidence and result hashes and the Solana transaction.",
           )}
         </p>
       </PageHero>
@@ -58,8 +58,8 @@ export default async function DataPage() {
         }
         lead={pick(
           lang,
-          "確定してから時間がたった観測も残します。地図の72時間は案内のための区切りで、観測としての価値は消えないからです。",
-          "Older observations stay in the dataset. The map's 72-hour window is for people on the move; an observation keeps its value as data.",
+          "確定してから時間がたった観測も残します。",
+          "Older observations stay in the dataset.",
         )}
       >
         <div className="grid gap-4 lg:grid-cols-2">

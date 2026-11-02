@@ -92,7 +92,6 @@ const TEXT = {
     captureWindowValue: "「撮影を始める」から 5 分",
     safetyTitle: "撮影の注意",
     claim: "引き受ける",
-    quitAnytime: "引き受けた後でも、いつでもやめられます。",
     heading: "現地へ向かう",
     claimLeft: "引き受けの残り時間",
     arriveHint: "お店の前に着いたら「現地に着いた」を押してください。そこから撮影の受付時間が始まります。",
@@ -207,7 +206,6 @@ const TEXT = {
     captureWindowValue: "5 min from “Start capture”",
     safetyTitle: "Before you shoot",
     claim: "Claim this task",
-    quitAnytime: "You can quit at any time, even after claiming.",
     heading: "Heading there",
     claimLeft: "Time left on your claim",
     arriveHint: "When you reach the shop, tap “I'm here”. The capture window starts from that moment.",
@@ -779,7 +777,6 @@ export function TryExperience() {
               <Button onClick={() => press("claim")} pressed={pressedId === "claim"}>
                 {t.claim}
               </Button>
-              <p className="text-center text-xs text-slate-500">{t.quitAnytime}</p>
             </Phone>
           ) : null}
 

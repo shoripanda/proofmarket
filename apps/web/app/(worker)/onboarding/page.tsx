@@ -87,29 +87,14 @@ export default function OnboardingPage() {
         </ul>
       </Card>
       <Card>
-        <h2 className="mb-1 font-bold">
-          {pick(lang, "使う機能と記録されること", "What the app uses and what is recorded")}
-        </h2>
-        <p className="text-sm leading-relaxed text-slate-700">
-          {pick(
-            lang,
-            "撮影にカメラを、現地にいることの確認に位置情報を使います。写真と正確な位置は運営だけが見られ、30日で消します。報酬の受取先アドレスと、どの依頼で受け取ったかは、公開のブロックチェーン上で誰でも見られます。",
-            "The camera is used for photos and location to confirm you are on the spot. Photos and exact positions are visible to the operator only and deleted after 30 days. Your payout address and which requests paid it are visible to anyone on the public blockchain.",
-          )}
-        </p>
-      </Card>
-      <Card>
         {box(
           "terms",
           lang === "en" ? (
-            <>
-              I agree to the {link("/legal/worker-terms", "worker terms")} (taking or declining a request is
-              always my choice, and declining carries no penalty)
-            </>
+            <>I agree to the {link("/legal/worker-terms", "worker terms")}</>
           ) : (
             <>
               {link("/legal/worker-terms", "参加規約")}
-              に同意します（引き受けも辞退も自由で、断っても不利益はありません）
+              に同意します
             </>
           ),
         )}
