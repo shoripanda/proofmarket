@@ -113,13 +113,6 @@ export function RemovalForm() {
           onChange={(e) => setWebsite(e.target.value)}
         />
       </div>
-      <p className="text-xs leading-relaxed text-slate-500">
-        {pick(
-          lang,
-          "メールアドレスはこの依頼への連絡にだけ使い、暗号化して保存します。対応の記録として1年間残し、その後に消します。",
-          "Your email address is used only to reply to this request and is stored encrypted. It is kept for one year as a record of the action taken, then deleted.",
-        )}
-      </p>
       {state === "error" ? (
         <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800 ring-1 ring-rose-200">
           {pick(

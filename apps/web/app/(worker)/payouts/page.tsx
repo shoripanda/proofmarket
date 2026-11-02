@@ -209,15 +209,11 @@ export default function PayoutsPage() {
           <p className="text-sm font-semibold">{pick(lang, "円での受け取り", "Payment in yen")}</p>
           <p className="mt-1 text-sm leading-relaxed text-slate-600">
             {yenInterest
-              ? pick(
-                  lang,
-                  "希望を受け付けています。始められるようになったら、先にお知らせします。",
-                  "Your interest is registered. You will be among the first to hear when it becomes available.",
-                )
+              ? pick(lang, "希望を受け付けています。", "Your interest is registered.")
               : pick(
                   lang,
-                  "いまは依頼者が決めた暗号資産（USDC など）で払っています。円で受け取りたい方は登録してください。始められるようになったら、先にご案内します。口座番号などはまだ聞きません。",
-                  "Right now we pay in the crypto asset the requester chose (USDC and others). Register your interest if you would like to be paid in yen; you will hear first when it becomes available. No bank details are asked for yet.",
+                  "円で受け取りたい方は登録してください。",
+                  "Register your interest if you would like to be paid in yen.",
                 )}
           </p>
           <div className="mt-3">

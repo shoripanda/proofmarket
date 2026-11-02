@@ -161,13 +161,6 @@ export default function SeatPage({ params }: { params: Promise<{ seatId: string 
               {seat.review.comment ? (
                 <p className="mt-1 whitespace-pre-wrap text-sm">{seat.review.comment}</p>
               ) : null}
-              <p className="mt-2 text-xs text-slate-500">
-                {pick(
-                  lang,
-                  "コメントはあなたにだけ見えます。公開プロフィールには平均だけが出ます（3 件から）。",
-                  "Only you see the comment. Your public profile shows the average only (from 3 ratings).",
-                )}
-              </p>
             </Card>
           ) : null}
           <SeatMessages seatId={seat.seat_id} />

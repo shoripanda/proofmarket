@@ -1,5 +1,5 @@
 // S-05 How it works — how evidence is checked (incl. the AI review, 01 §4.16), how answers are combined, and what goes on Solana (07 / 06).
-import { LIMITS, RETENTION_DAYS } from "@proofmarket/core";
+import { LIMITS } from "@proofmarket/core";
 import type { Metadata } from "next";
 import { PictureSection } from "@/components/illustrations";
 import { PageHero } from "@/components/site";
@@ -14,14 +14,12 @@ const COPY = {
     meta: { title: "仕組み | ProofMarket" },
     eyebrow: "仕組み",
     title: "依頼した AI が結果を信用できるように、確認を重ねて記録する",
-    intro1:
-      "依頼したエージェントは自分では作業できないので、届いた写真と答えが依頼どおりかを自分では確かめられません。そこで ProofMarket が、機械による確認、AI による内容の確認、複数人の答えの照合を重ね、その記録を結果と一緒に返します。",
-    intro2:
-      "これは写真が「この依頼のために、いま撮られて届いた」ことの状況証拠を積み重ねるもので、人がそこにいたことを物理的に証明するものではありません。何を確かめていて、何を確かめられないかを、ここにすべて書きます。",
+    intro:
+      "機械による確認、AI による内容の確認、複数人の答えの照合を重ね、その記録を結果と一緒に返します。写真が「この依頼のために、いま撮られて届いた」ことの状況証拠であり、人がそこにいたことを物理的に証明するものではありません。",
     camera: {
       title: "写真はアプリの中のカメラでしか撮れません",
       line: "アルバムの写真は使えません。撮るたびに、その場で時間を計り始めます。",
-      lead: "端末のアルバムから写真は選べません。撮る直前に、その依頼だけに使える合言葉（nonce）をサーバーが発行し、そこから時間を計ります。依頼した側に見せる画像は、撮影位置などの埋め込み情報（EXIF）を外して作り直したものです。",
+      lead: "端末のアルバムから写真は選べません。撮る直前に、その依頼だけに使える合言葉（nonce）をサーバーが発行し、そこから時間を計ります。",
     },
     checks: {
       title: "届いた写真は、順番に確認を通ります",
@@ -87,37 +85,27 @@ const COPY = {
       p2: "結果に入る一致率は「いちばん多い答えの数 ÷ 有効な答えの数」だけです。それ以外の信頼度のような数字は作りません。",
     },
     chain: {
-      title: "Solana に記録するもの、しないもの",
-      line: "残すのは結果と支払いの印だけです。写真や場所は置きません。",
+      title: "Solana に記録するもの",
+      line: "残すのは結果と支払いの印だけです。",
       yes: "記録するもの",
       yesItems: [
         "依頼ごとの預かり口座と、そこに確保した報酬の額",
         "結果、証拠をまとめたハッシュ（evidence root）、結果のハッシュ、確定した時刻",
         "報酬の受取先アドレスと支払った額",
       ],
-      no: "記録しないもの",
-      noItems: [
-        "写真、座標、質問文",
-        "worker の ID・名前・連絡先、依頼した人の名前、API キー",
-        "依頼の ID そのもの（ハッシュにしたものだけを置く）",
-      ],
-      p1: "ブロックチェーンを使うのは、運営者を信じなくても次の2点を誰でも確かめられるようにするためです。報酬が依頼のときに本当に確保されていたこと、そして確定した結果を後から書き換えていないことです。",
       p2: "一方で、結果を確定させる鍵は運営者が持つ1本だけで、分散した検証ではありません。支払いを実行する鍵とは分けてあり、片方の鍵だけでは預かり口座から送金先と送金の両方を動かせないようにしています。",
-      p3: `写真と正確な位置は運営者のサーバーにだけ置き、${RETENTION_DAYS.raw_evidence}日で消します。写真から作ったハッシュは、使い回しを見抜くために残します。`,
     },
   },
   en: {
     meta: { title: "How it works | ProofMarket" },
     eyebrow: "How it works",
     title: "Layered checks, recorded, so the agent that asked can trust the result",
-    intro1:
-      "The agent that asked cannot do the work itself, so it cannot tell on its own whether the photo and the answer match the request. ProofMarket layers machine checks, an AI review of the content and a comparison across several people's answers, and returns that record with the result.",
-    intro2:
-      "These checks build circumstantial evidence that a photo was taken now, for this request, and delivered. They do not physically prove that a person stood there. Everything we check, and everything we cannot, is written here.",
+    intro:
+      "Machine checks, an AI review of the content and a comparison across several people's answers are layered, and the record is returned with the result. This is circumstantial evidence that a photo was taken now, for this request; it does not physically prove that a person stood there.",
     camera: {
       title: "Photos can only be taken with the camera inside the app",
       line: "Nothing from the photo album. The clock starts with every shot.",
-      lead: "Nothing can be picked from the phone's photo library. Just before the shot, the server issues a one-time nonce for that request and starts the clock. The image shown to the requester is re-encoded with embedded data such as the shooting location (EXIF) removed.",
+      lead: "Nothing can be picked from the phone's photo library. Just before the shot, the server issues a one-time nonce for that request and starts the clock.",
     },
     checks: {
       title: "Each photo goes through the checks in order",
@@ -190,23 +178,15 @@ const COPY = {
       p2: "The only agreement figure in the result is the count of the most common answer divided by the count of valid answers. We invent no other confidence score.",
     },
     chain: {
-      title: "What goes on Solana, and what does not",
-      line: "Only the result and the payment are kept there. Never photos or places.",
+      title: "What goes on Solana",
+      line: "Only the result and the payment are kept there.",
       yes: "Recorded",
       yesItems: [
         "An escrow account per request and the bounty locked in it",
         "The result, the evidence root (a hash over the evidence), the result hash and the time it became final",
         "The payout address and the amount paid",
       ],
-      no: "Not recorded",
-      noItems: [
-        "Photos, coordinates, the question text",
-        "Worker IDs, names or contact details, requester names, API keys",
-        "The request ID itself (only its hash is stored)",
-      ],
-      p1: "The blockchain is there so that anyone can verify two things without trusting the operator: that the bounty really was locked when the request was made, and that a final result was not rewritten afterwards.",
       p2: "On the other hand, a single operator key finalises results; this is not decentralised verification. It is separate from the key that executes payouts, so neither key alone can move both the destination and the funds out of escrow.",
-      p3: `Photos and exact positions stay on the operator's server only and are deleted after ${RETENTION_DAYS.raw_evidence} days. Hashes derived from photos are kept to detect reuse.`,
     },
   },
 } satisfies Record<Lang, unknown>;
@@ -221,10 +201,7 @@ export default async function HowItWorksPage() {
   return (
     <>
       <PageHero eyebrow={c.eyebrow} title={c.title}>
-        <p>
-          <Plain>{c.intro1}</Plain>
-        </p>
-        <p className="mt-3">{c.intro2}</p>
+        <p>{c.intro}</p>
       </PageHero>
 
       <PictureSection
@@ -310,37 +287,19 @@ export default async function HowItWorksPage() {
         line={c.chain.line}
         more={
           <>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h3 className="font-bold">{c.chain.yes}</h3>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
-                  {c.chain.yesItems.map((x) => (
-                    <li key={x}>
-                      <Plain>{x}</Plain>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h3 className="font-bold">{c.chain.no}</h3>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
-                  {c.chain.noItems.map((x) => (
-                    <li key={x}>
-                      <Plain>{x}</Plain>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 className="font-bold">{c.chain.yes}</h3>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
+                {c.chain.yesItems.map((x) => (
+                  <li key={x}>
+                    <Plain>{x}</Plain>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="mt-6 max-w-3xl space-y-3 text-sm leading-relaxed text-slate-600">
-              <p>
-                <Plain>{c.chain.p1}</Plain>
-              </p>
-              <p>
-                <Plain>{c.chain.p2}</Plain>
-              </p>
-              <p>{c.chain.p3}</p>
-            </div>
+            <p className="mt-6 max-w-3xl text-sm leading-relaxed text-slate-600">
+              <Plain>{c.chain.p2}</Plain>
+            </p>
           </>
         }
       />

@@ -39,8 +39,8 @@ export default async function ConsoleWorkersPage() {
         title={pick(lang, "推し・お断りにした worker", "Preferred and blocked workers")}
         lead={pick(
           lang,
-          "推しにした人は応募の一覧で先頭に並び、「推しだけ」に出した仕事を見られます。お断りにした人には、あなたの仕事が表示されません。どちらも本人には知らされません。",
-          "Preferred workers come first among applicants and can see tasks posted for preferred workers only. Blocked workers do not see your tasks. Neither is told.",
+          "推しにした人は応募の一覧で先頭に並び、「推しだけ」に出した仕事を見られます。お断りにした人には、あなたの仕事が表示されません。",
+          "Preferred workers come first among applicants and can see tasks posted for preferred workers only. Blocked workers do not see your tasks.",
         )}
       >
         {!enabled ? (

@@ -23,16 +23,7 @@ export default function ClaimPage() {
   }, [api, id, lang]);
 
   async function abandon() {
-    if (
-      !confirm(
-        pick(
-          lang,
-          "このタスクをやめますか？ やめても不利益はありません。",
-          "Quit this task? There is no penalty for quitting.",
-        ),
-      )
-    )
-      return;
+    if (!confirm(pick(lang, "このタスクをやめますか？", "Quit this task?"))) return;
     try {
       await api(`/v1/worker/claims/${id}/abandon`, { method: "POST" });
       router.replace(langHref(lang, "/tasks"));

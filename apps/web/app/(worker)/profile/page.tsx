@@ -7,7 +7,7 @@ import { Button, Card, Notice, Shell } from "@/components/ui";
 import { ApiErr, errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
 import { pick } from "@/lib/lang";
-import { completedText, languageName, ratingText } from "@/lib/profile-text";
+import { languageName } from "@/lib/profile-text";
 
 type Mine = {
   profile: {
@@ -79,7 +79,7 @@ export default function ProfilePage() {
         tone: "info",
         text: publish
           ? pick(lang, "公開しました。", "Your profile is public.")
-          : pick(lang, "非公開にしました。一覧とページからすぐに消えます。", "Your profile is hidden now."),
+          : pick(lang, "非公開にしました。", "Your profile is hidden now."),
       });
     } catch (e) {
       const reason = e instanceof ApiErr ? (e.details as { reason?: string }).reason : undefined;
@@ -113,14 +113,7 @@ export default function ProfilePage() {
     <Shell title={pick(lang, "公開プロフィール", "Public profile")} back="/jobs">
       {msg ? <Notice tone={msg.tone}>{msg.text}</Notice> : null}
       <Card>
-        <p className="text-sm leading-relaxed text-slate-600">
-          {pick(
-            lang,
-            "公開すると、依頼者や AI エージェントがあなたを見つけて、仕事を頼みやすくなります。公開しなくても仕事は受けられます。いつでも非公開に戻せます。",
-            "A public profile helps requesters and AI agents find you. You can take work without one, and you can hide it at any time.",
-          )}
-        </p>
-        <p className="mt-2 text-sm font-bold">
+        <p className="text-sm font-bold">
           {isPublic
             ? pick(lang, "いまは公開中です", "Public now")
             : pick(lang, "いまは非公開です", "Hidden now")}
@@ -136,9 +129,7 @@ export default function ProfilePage() {
       </Card>
       <Card>
         <label className="mb-3 block text-sm">
-          <span className="font-medium">
-            {pick(lang, "表示名（本名でなくてよい）", "Display name (need not be your real name)")}
-          </span>
+          <span className="font-medium">{pick(lang, "表示名", "Display name")}</span>
           <input className={field} value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
         </label>
         <label className="mb-3 block text-sm">
@@ -207,18 +198,11 @@ export default function ProfilePage() {
           <span>
             {pick(
               lang,
-              "検索エンジン（Google など）に載せてもよい。外しておくと、ProofMarket の中でだけ見つかります。",
-              "Search engines (Google and others) may list my page. Leave it off to be found only on ProofMarket.",
+              "検索エンジン（Google など）に載せてもよい",
+              "Search engines (Google and others) may list my page",
             )}
           </span>
         </label>
-        <p className="mb-3 text-xs leading-relaxed text-slate-500">
-          {pick(
-            lang,
-            `公開されるのは、表示名・地域・できること・言語と、ProofMarket が数える完了件数（${completedText(mine?.completed ?? 0, lang)}）と評価（${ratingText(mine?.rating ?? null, lang)}）だけです。写真・位置・財布のアドレスは出ません。`,
-            `Only the name, area, skills and languages are shown, with the completed count (${completedText(mine?.completed ?? 0, lang)}) and rating (${ratingText(mine?.rating ?? null, lang)}) that ProofMarket keeps. No photo, location or wallet address.`,
-          )}
-        </p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => save(true)} disabled={busy || name.trim().length < 2}>
             {isPublic ? pick(lang, "保存する", "Save") : pick(lang, "公開する", "Publish")}
@@ -233,11 +217,7 @@ export default function ProfilePage() {
       {mine?.reviews.length ? (
         <Card>
           <p className="text-sm font-bold text-slate-500">
-            {pick(
-              lang,
-              "受けた評価（コメントはあなたにだけ見えます）",
-              "Ratings you received (only you see the comments)",
-            )}
+            {pick(lang, "受けた評価", "Ratings you received")}
           </p>
           <ul className="mt-2 space-y-3">
             {mine.reviews.map((r) => (

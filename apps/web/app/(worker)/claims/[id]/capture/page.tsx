@@ -117,15 +117,7 @@ export default function CapturePage() {
         stream = s;
         if (video.current) video.current.srcObject = s;
       })
-      .catch(() =>
-        setErr(
-          pick(
-            lang,
-            "カメラの利用を許可してください。撮影はアプリ内のカメラでのみ行えます。",
-            "Please allow camera access. Photos can only be taken with the in-app camera.",
-          ),
-        ),
-      );
+      .catch(() => setErr(pick(lang, "カメラの利用を許可してください。", "Please allow camera access.")));
     return () => {
       for (const t of stream?.getTracks() ?? []) t.stop();
     };
@@ -143,13 +135,7 @@ export default function CapturePage() {
         setFix({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: Math.round(p.coords.accuracy) }),
       () => {
         if (needsLocation)
-          setErr(
-            pick(
-              lang,
-              "位置情報の利用を許可してください。指定の場所の近くにいることの確認に使います。",
-              "Please allow location access. It is used to confirm you are near the requested place.",
-            ),
-          );
+          setErr(pick(lang, "位置情報の利用を許可してください。", "Please allow location access."));
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
     );

@@ -53,7 +53,7 @@ const COPY = {
       console: "依頼者の画面（履歴・残高）",
       remote: "claude.ai などのリモート MCP",
       remoteBody:
-        "コネクタの追加画面にこの URL を入れます。接続のときに ProofMarket の画面が開くので、そこで API キーを入れます。キーがアプリ側に保存されることはありません。",
+        "コネクタの追加画面にこの URL を入れます。接続のときに ProofMarket の画面が開くので、そこで API キーを入れます。",
       local: "Claude Code などのローカルのエージェント",
       localBody: "同じ URL に、API キーをヘッダーで渡して登録します。",
       rest: "REST API",
@@ -218,7 +218,7 @@ const COPY = {
         ["REJECTED", "答えが割れた（NO_CONSENSUS）か、有効な証言が足りなかった"],
         ["EXPIRED", "締め切りまでに確定しなかった。拘束した額は返金される"],
       ] as [string, string][],
-      p1: "result には答えのほかに、有効な証言の数、一致率、場所・鮮度・写真の使い回しなどの確認結果、Solana に記録した証拠のハッシュと取引の URL が入ります。写真と正確な位置は入りません。写真を見たいときは、自分の依頼に限って",
+      p1: "result には答えのほかに、有効な証言の数、一致率、場所・鮮度・写真の使い回しなどの確認結果、Solana に記録した証拠のハッシュと取引の URL が入ります。写真を見たいときは、自分の依頼に限って",
       p2: "で5分間だけ有効な URL を取れます。店舗が自分で「本日臨時休業」などと申告していれば、GET の store_report に参考として入ります。判定には使っていません。",
     },
     webhook: {
@@ -325,7 +325,7 @@ const COPY = {
       console: "Requester console (history, balance)",
       remote: "Remote MCP from claude.ai and similar",
       remoteBody:
-        "Enter this URL where the app adds a connector. On connecting, a ProofMarket page opens where you paste the API key. The key is never stored on the app's side.",
+        "Enter this URL where the app adds a connector. On connecting, a ProofMarket page opens where you paste the API key.",
       local: "Local agents such as Claude Code",
       localBody: "Register the same URL, passing the API key in a header.",
       rest: "REST API",
@@ -491,7 +491,7 @@ const COPY = {
         ["REJECTED", "Answers were split (NO_CONSENSUS) or there were too few valid witnesses"],
         ["EXPIRED", "Not final by the deadline. The reserved amount is refunded"],
       ] as [string, string][],
-      p1: "Besides the answer, result carries the number of valid witnesses, the agreement ratio, the outcome of each check (place, freshness, photo reuse and so on), the evidence hash recorded on Solana and the transaction URL. Photos and exact positions are not included. To see the photos of your own requests, call",
+      p1: "Besides the answer, result carries the number of valid witnesses, the agreement ratio, the outcome of each check (place, freshness, photo reuse and so on), the evidence hash recorded on Solana and the transaction URL. To see the photos of your own requests, call",
       p2: "for a URL valid for 5 minutes. If the shop itself has reported “closed today” or similar, it appears in store_report on the GET for reference; it plays no part in the verdict.",
     },
     webhook: {

@@ -51,12 +51,7 @@ export const proofTypeName = (type: TaskType, lang: Lang = "ja") => taskTypeText
 /** The answer as a reader sees it. Text answers stay with the requester, so only their existence is shown. */
 export function proofAnswer(f: Pick<ProofFacts, "answer" | "answer_kind">, lang: Lang = "ja"): string | null {
   if (f.answer === null) return null;
-  if (f.answer_kind === "text")
-    return pick(
-      lang,
-      "文章の答え（内容は依頼者だけが見られます）",
-      "Text answer (visible to the requester only)",
-    );
+  if (f.answer_kind === "text") return pick(lang, "文章の答え", "Text answer");
   return answerLabel(lang, f.answer);
 }
 

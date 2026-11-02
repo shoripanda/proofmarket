@@ -157,22 +157,13 @@ export default function TasksPage() {
           </button>
         ))}
       </div>
-      {scope === "anywhere" ? (
-        <p className="text-sm leading-relaxed text-slate-500">
-          {pick(
-            lang,
-            "書き写し・電話・採寸など、外に出なくてもできる依頼です。位置情報は使いません。",
-            "Transcribing, phone calls, measuring and other requests you can do without going out. Location is not used.",
-          )}
-        </p>
-      ) : null}
       {noLocation && scope === "nearby" ? (
         <Card>
           <p className="text-sm leading-relaxed text-slate-700">
             {pick(
               lang,
-              "位置情報が使えないため、近くの依頼を探せません。近くの依頼を見るときは、位置情報の利用を許可してください（保存はしません）。",
-              "Location is unavailable, so nearby requests cannot be found. Allow location access to see requests nearby (it is not stored).",
+              "近くの依頼を見るには、位置情報を許可してください。",
+              "Allow location access to see requests nearby.",
             )}
           </p>
           <div className="mt-3">
@@ -199,16 +190,8 @@ export default function TasksPage() {
       {tasks?.length === 0 ? (
         <Notice>
           {scope === "anywhere"
-            ? pick(
-                lang,
-                "いまは家でできるタスクがありません。通知を受け取るようにしておくと、出たときに分かります。",
-                "No tasks from home right now. Turn on notifications to hear when one appears.",
-              )
-            : pick(
-                lang,
-                "いまは近くにタスクがありません。少し時間をおいて更新してください。",
-                "No tasks nearby right now. Check back in a little while.",
-              )}
+            ? pick(lang, "いまは家でできるタスクがありません。", "No tasks from home right now.")
+            : pick(lang, "いまは近くにタスクがありません。", "No tasks nearby right now.")}
         </Notice>
       ) : null}
       {tasks?.map((t) => (

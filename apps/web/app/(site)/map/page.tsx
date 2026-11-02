@@ -119,8 +119,8 @@ export default async function MapPage() {
             <p className="mt-2 text-xs text-slate-500">
               {pick(
                 lang,
-                "印の位置は、依頼者が指定した確認先の場所です。確かめた人のいた位置や写真は載せていません。薄い円は、依頼者が場所をぼかすよう選んだ結果で、円のどこか（約 1 km）を表します。確かめた時点の結果なので、時間がたつと状況が変わることがあります。",
-                "Each marker is the place the requester asked about, never where the worker stood, and photos are not shown. A faint circle means the requester chose to blur the place: it is somewhere in that circle (about 1 km). A result reflects the moment it was checked; things change.",
+                "印の位置は、依頼者が指定した確認先の場所です。薄い円は、依頼者が場所をぼかすよう選んだ結果で、円のどこか（約 1 km）を表します。確かめた時点の結果なので、時間がたつと状況が変わることがあります。",
+                "Each marker is the place the requester asked about. A faint circle means the requester chose to blur the place: it is somewhere in that circle (about 1 km). A result reflects the moment it was checked; things change.",
               )}
             </p>
             {m.items.length === 0 ? (
@@ -178,8 +178,8 @@ export default async function MapPage() {
               <p>
                 {pick(
                   lang,
-                  "公開されるのは、質問文、依頼で指定した場所、答え、確かめた時刻と人数です。場所のある依頼で、答えが選択か数値のものだけが対象です。文章の答えは公開しません。",
-                  "What is published: the question, the place named in the request, the answer, the time and the number of people. Only requests with a place and a multiple-choice or numeric answer qualify. Text answers are never published.",
+                  "公開されるのは、質問文、依頼で指定した場所、答え、確かめた時刻と人数です。場所のある依頼で、答えが選択か数値のものだけが対象です。",
+                  "What is published: the question, the place named in the request, the answer, the time and the number of people. Only requests with a place and a multiple-choice or numeric answer qualify.",
                 )}
               </p>
               <p>

@@ -147,13 +147,6 @@ export function AudioClip({
           {pick(lang, "録音を始める", "Start recording")}
         </Button>
       )}
-      <p className="text-xs text-slate-500">
-        {pick(
-          lang,
-          "録音を聞けるのは依頼者だけで、30日後に消えます。AI の確認には使いません。",
-          "Only the requester can play it, and it is deleted after 30 days. AI review does not listen to it.",
-        )}
-      </p>
     </section>
   );
 }

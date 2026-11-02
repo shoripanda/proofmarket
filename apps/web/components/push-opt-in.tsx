@@ -160,8 +160,8 @@ export function PushOptIn() {
       <p className="mt-1 text-sm leading-relaxed text-slate-600">
         {pick(
           lang,
-          "選んだ地域で依頼が出たら、画面を閉じていても通知します。今いる場所は送りません。家でできる依頼は、地域に関係なく届きます。地域を1つも選ばなければ、家でできる依頼だけを通知します。",
-          "When a request appears in an area you chose, you are notified even with the app closed. Your location is never sent. Work-from-home requests arrive regardless of area. Choose no area to be notified of work-from-home requests only.",
+          "選んだ地域で依頼が出たら通知します。家でできる依頼は、地域に関係なく届きます。",
+          "You are notified of requests in the areas you chose. Work-from-home requests arrive regardless of area.",
         )}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">

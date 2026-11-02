@@ -76,8 +76,8 @@ export default async function RulesPage() {
         title={pick(lang, "受けられる依頼", "What can be asked")}
         lead={pick(
           lang,
-          "現地で見て確かめる依頼と、本や紙の資料・実物・電話など、人の手が要る作業の依頼があります。選んで答える依頼には「分からない」という答えがあり、無理に決めなくて構いません。",
-          "Some requests are checked on the spot; others need a person's hands: books and paper documents, physical items, phone calls. Multiple-choice requests always include “can't tell”, so nobody has to force an answer.",
+          "現地で見て確かめる依頼と、本や紙の資料・実物・電話など、人の手が要る作業の依頼があります。選んで答える依頼には「分からない」という答えがあります。",
+          "Some requests are checked on the spot; others need a person's hands: books and paper documents, physical items, phone calls. Multiple-choice requests always include “can't tell”.",
         )}
       >
         <dl className="divide-y divide-slate-200 rounded-2xl border border-slate-200 text-sm">
@@ -102,8 +102,8 @@ export default async function RulesPage() {
         title={pick(lang, "受けない依頼", "What is refused")}
         lead={pick(
           lang,
-          "依頼の文に次のような内容が含まれていると、作成の時点で断ります。言葉による自動の判定なので、すり抜けたものは運営者が見つけしだい止めます。",
-          "A request whose text contains any of the following is refused when it is created. The check is automatic and text-based; anything that slips through is stopped by the operator as soon as it is found.",
+          "依頼の文に次のような内容が含まれていると、作成の時点で断ります。",
+          "A request whose text contains any of the following is refused when it is created.",
         )}
       >
         <ul className="grid gap-2 sm:grid-cols-2">
@@ -115,14 +115,7 @@ export default async function RulesPage() {
         </ul>
       </Section>
 
-      <Section
-        title={pick(lang, "撮影の決まり", "Photo rules")}
-        lead={pick(
-          lang,
-          "worker は登録のときと、依頼を引き受ける前の画面でこの決まりを読みます。撮影画面にも要点を出しています。",
-          "Workers read these rules when they register and again before claiming a request. The capture screen repeats the essentials.",
-        )}
-      >
+      <Section title={pick(lang, "撮影の決まり", "Photo rules")}>
         <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
           {safetyNotes(lang).map((n) => (
             <li key={n}>{n}</li>
@@ -135,8 +128,8 @@ export default async function RulesPage() {
         title={pick(lang, "写真の削除を求める", "Ask for a photo to be removed")}
         lead={pick(
           lang,
-          "店舗の方や、写真に写り込んだ方からの削除・公開停止の依頼を受け付けます。依頼した側から写真を見られないようにしたうえで、必要なら写真そのものを消します。",
-          "Shop owners and people who appear in a photo can ask for it to be removed or taken out of circulation. Access by the requester is cut first; the photo itself is deleted where needed.",
+          "店舗の方や、写真に写り込んだ方からの削除・公開停止の依頼を受け付けます。",
+          "Shop owners and people who appear in a photo can ask for it to be removed or taken out of circulation.",
         )}
       >
         <RemovalForm />
