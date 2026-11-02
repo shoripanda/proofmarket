@@ -1,7 +1,7 @@
 import "server-only";
 // Worker endpoint handlers (05 §3). Every handler authenticates via Privy (IdentityProvider).
 
-import { ApiError, parseId } from "@proofmarket/core";
+import { ApiError, LIMITS, parseId } from "@proofmarket/core";
 import {
   CreateUploadRequestSchema,
   OnboardingRequestSchema,
@@ -85,9 +85,14 @@ export async function handleChallenge(app: AppContext, req: Request, id: string)
 export async function handleUpload(app: AppContext, req: Request, id: string) {
   const w = await requireWorker(app, req);
   const raw = (await readJson(req)) as { content_type?: unknown; byte_size?: unknown };
-  if (raw.content_type !== undefined && raw.content_type !== "image/jpeg")
+  // A photo, or an audio clip on a sensory report that asks for one (docs/architecture 16 §9).
+  const audio = (LIMITS.audio.contentTypes as readonly unknown[]).includes(raw.content_type);
+  if (raw.content_type !== undefined && raw.content_type !== LIMITS.media.contentType && !audio)
     throw new ApiError("MEDIA_TYPE_UNSUPPORTED");
-  if (typeof raw.byte_size === "number" && raw.byte_size > 8 * 1024 * 1024)
+  if (
+    typeof raw.byte_size === "number" &&
+    raw.byte_size > (audio ? LIMITS.audio.maxBytes : LIMITS.media.maxBytes)
+  )
     throw new ApiError("MEDIA_TOO_LARGE");
   const body = parse(CreateUploadRequestSchema, raw);
   return Response.json(await createUpload(app, w.workerId, claimId(id), body), { status: 201 });

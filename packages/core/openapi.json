@@ -518,10 +518,7 @@
                     "type": "object",
                     "properties": {
                       "photo": {
-                        "type": "boolean",
-                        "enum": [
-                          true
-                        ]
+                        "type": "boolean"
                       },
                       "task_nonce": {
                         "type": "boolean",
@@ -534,6 +531,29 @@
                       "photo",
                       "task_nonce"
                     ]
+                  },
+                  "audio": {
+                    "type": "object",
+                    "properties": {
+                      "clip": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "optional",
+                          "required"
+                        ]
+                      },
+                      "max_seconds": {
+                        "default": 15,
+                        "type": "integer",
+                        "minimum": 5,
+                        "maximum": 15
+                      }
+                    },
+                    "required": [
+                      "clip"
+                    ],
+                    "additionalProperties": false
                   },
                   "assurance": {
                     "anyOf": [
@@ -1691,10 +1711,7 @@
                         "type": "object",
                         "properties": {
                           "photo": {
-                            "type": "boolean",
-                            "enum": [
-                              true
-                            ]
+                            "type": "boolean"
                           },
                           "task_nonce": {
                             "type": "boolean",
@@ -1707,6 +1724,29 @@
                           "photo",
                           "task_nonce"
                         ]
+                      },
+                      "audio": {
+                        "type": "object",
+                        "properties": {
+                          "clip": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "optional",
+                              "required"
+                            ]
+                          },
+                          "max_seconds": {
+                            "default": 15,
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 15
+                          }
+                        },
+                        "required": [
+                          "clip"
+                        ],
+                        "additionalProperties": false
                       },
                       "assurance": {
                         "anyOf": [
@@ -2573,10 +2613,7 @@
                     "type": "object",
                     "properties": {
                       "photo": {
-                        "type": "boolean",
-                        "enum": [
-                          true
-                        ]
+                        "type": "boolean"
                       },
                       "task_nonce": {
                         "type": "boolean",
@@ -2589,6 +2626,29 @@
                       "photo",
                       "task_nonce"
                     ]
+                  },
+                  "audio": {
+                    "type": "object",
+                    "properties": {
+                      "clip": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "optional",
+                          "required"
+                        ]
+                      },
+                      "max_seconds": {
+                        "default": 15,
+                        "type": "integer",
+                        "minimum": 5,
+                        "maximum": 15
+                      }
+                    },
+                    "required": [
+                      "clip"
+                    ],
+                    "additionalProperties": false
                   },
                   "assurance": {
                     "anyOf": [
@@ -3431,10 +3491,7 @@
                     "type": "object",
                     "properties": {
                       "photo": {
-                        "type": "boolean",
-                        "enum": [
-                          true
-                        ]
+                        "type": "boolean"
                       },
                       "task_nonce": {
                         "type": "boolean",
@@ -3447,6 +3504,29 @@
                       "photo",
                       "task_nonce"
                     ]
+                  },
+                  "audio": {
+                    "type": "object",
+                    "properties": {
+                      "clip": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "optional",
+                          "required"
+                        ]
+                      },
+                      "max_seconds": {
+                        "default": 15,
+                        "type": "integer",
+                        "minimum": 5,
+                        "maximum": 15
+                      }
+                    },
+                    "required": [
+                      "clip"
+                    ],
+                    "additionalProperties": false
                   },
                   "assurance": {
                     "anyOf": [
@@ -4376,6 +4456,46 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "evidence_requirements": {
+                      "type": "object",
+                      "properties": {
+                        "photo": {
+                          "type": "boolean"
+                        },
+                        "task_nonce": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      },
+                      "required": [
+                        "photo",
+                        "task_nonce"
+                      ]
+                    },
+                    "audio": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "clip": {
+                          "type": "string",
+                          "enum": [
+                            "optional",
+                            "required"
+                          ]
+                        },
+                        "max_seconds": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "clip",
+                        "max_seconds"
+                      ]
+                    },
                     "deadline": {
                       "type": "string",
                       "format": "date-time",
@@ -5123,6 +5243,8 @@
                     "location",
                     "location_privacy",
                     "location_salt",
+                    "evidence_requirements",
+                    "audio",
                     "deadline",
                     "recheck_of",
                     "recheck",
@@ -5737,6 +5859,46 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "evidence_requirements": {
+                      "type": "object",
+                      "properties": {
+                        "photo": {
+                          "type": "boolean"
+                        },
+                        "task_nonce": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      },
+                      "required": [
+                        "photo",
+                        "task_nonce"
+                      ]
+                    },
+                    "audio": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "clip": {
+                          "type": "string",
+                          "enum": [
+                            "optional",
+                            "required"
+                          ]
+                        },
+                        "max_seconds": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "clip",
+                        "max_seconds"
+                      ]
+                    },
                     "deadline": {
                       "type": "string",
                       "format": "date-time",
@@ -6484,6 +6646,8 @@
                     "location",
                     "location_privacy",
                     "location_salt",
+                    "evidence_requirements",
+                    "audio",
                     "deadline",
                     "recheck_of",
                     "recheck",
@@ -6645,12 +6809,21 @@
                             "type": "integer",
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
+                          },
+                          "media_type": {
+                            "type": "string"
+                          },
+                          "duration_ms": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
                           }
                         },
                         "required": [
                           "witness_ref",
                           "url",
-                          "expires_in_seconds"
+                          "expires_in_seconds",
+                          "media_type"
                         ]
                       }
                     }
@@ -7654,10 +7827,7 @@
                         "type": "object",
                         "properties": {
                           "photo": {
-                            "type": "boolean",
-                            "enum": [
-                              true
-                            ]
+                            "type": "boolean"
                           },
                           "task_nonce": {
                             "type": "boolean",
@@ -7670,6 +7840,29 @@
                           "photo",
                           "task_nonce"
                         ]
+                      },
+                      "audio": {
+                        "type": "object",
+                        "properties": {
+                          "clip": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "optional",
+                              "required"
+                            ]
+                          },
+                          "max_seconds": {
+                            "default": 15,
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 15
+                          }
+                        },
+                        "required": [
+                          "clip"
+                        ],
+                        "additionalProperties": false
                       },
                       "assurance": {
                         "anyOf": [
@@ -15897,7 +16090,8 @@
                               "enum": [
                                 "photo",
                                 "location",
-                                "task_nonce"
+                                "task_nonce",
+                                "audio"
                               ]
                             }
                           },
@@ -16583,7 +16777,8 @@
                         "enum": [
                           "photo",
                           "location",
-                          "task_nonce"
+                          "task_nonce",
+                          "audio"
                         ]
                       }
                     },
@@ -17071,7 +17266,9 @@
                   "content_type": {
                     "type": "string",
                     "enum": [
-                      "image/jpeg"
+                      "image/jpeg",
+                      "audio/mp4",
+                      "audio/webm"
                     ]
                   },
                   "byte_size": {
@@ -17342,8 +17539,26 @@
                     ],
                     "additionalProperties": false
                   },
+                  "audio": {
+                    "type": "object",
+                    "properties": {
+                      "object_ref": {
+                        "type": "string",
+                        "pattern": "^upl_[0-9A-HJKMNP-TV-Z]{26}$"
+                      },
+                      "duration_ms": {
+                        "type": "integer",
+                        "minimum": 1000,
+                        "maximum": 15000
+                      }
+                    },
+                    "required": [
+                      "object_ref",
+                      "duration_ms"
+                    ],
+                    "additionalProperties": false
+                  },
                   "evidence": {
-                    "minItems": 1,
                     "maxItems": 4,
                     "type": "array",
                     "items": {
@@ -18125,6 +18340,31 @@
                     },
                     "location_required": {
                       "type": "boolean"
+                    },
+                    "photo_required": {
+                      "type": "boolean"
+                    },
+                    "audio": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "clip": {
+                          "type": "string",
+                          "enum": [
+                            "optional",
+                            "required"
+                          ]
+                        },
+                        "max_seconds": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "clip",
+                        "max_seconds"
+                      ]
                     }
                   },
                   "required": [
@@ -18141,7 +18381,9 @@
                     "attestation",
                     "answer_values",
                     "answer_schema",
-                    "location_required"
+                    "location_required",
+                    "photo_required",
+                    "audio"
                   ]
                 }
               }
@@ -18809,6 +19051,31 @@
                     },
                     "location_required": {
                       "type": "boolean"
+                    },
+                    "photo_required": {
+                      "type": "boolean"
+                    },
+                    "audio": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "clip": {
+                          "type": "string",
+                          "enum": [
+                            "optional",
+                            "required"
+                          ]
+                        },
+                        "max_seconds": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "clip",
+                        "max_seconds"
+                      ]
                     }
                   },
                   "required": [
@@ -18825,7 +19092,9 @@
                     "attestation",
                     "answer_values",
                     "answer_schema",
-                    "location_required"
+                    "location_required",
+                    "photo_required",
+                    "audio"
                   ]
                 }
               }

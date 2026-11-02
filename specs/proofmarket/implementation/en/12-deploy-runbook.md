@@ -62,7 +62,7 @@ pnpm --filter @proofmarket/scripts run run gen-vapid.ts --subject https://<conta
    - For the app: Transaction pooler (port 6543), put in `DATABASE_URL`
    - For migrations: Direct connection (port 5432)
 3. Apply migrations: `DATABASE_URL=<Direct connection> pnpm db:migrate`
-4. Create the buckets: `SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... pnpm --filter @proofmarket/scripts run run supabase-setup.ts`
+4. Create the buckets: `SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... pnpm --filter @proofmarket/scripts run run supabase-setup.ts` (evidence-raw, evidence-derived, and evidence-audio for sensory clips; safe to run again)
 5. Register the per-minute tick (once the Vercel URL is known)
    ```bash
    SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... INTERNAL_CRON_SECRET=... \

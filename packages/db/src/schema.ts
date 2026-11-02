@@ -256,6 +256,11 @@ export const verificationRequests = pgTable(
     attestation: jsonb("attestation"),
     /** Public surfaces round the place to ~1 km when "coarse" (13 §9 PR 7). The requester always sees it exact. */
     locationPrivacy: text("location_privacy").notNull().default("exact"),
+    /** False only on a hearing-only sensory report at a place (docs/architecture 16 §4). */
+    photoRequired: boolean("photo_required").notNull().default(true),
+    /** Audio clip asked for (16 §9): none / optional / required, and its longest length. */
+    audioClip: text("audio_clip").notNull().default("none"),
+    audioMaxS: integer("audio_max_s"),
     status: text("status").notNull(),
     fundingStatus: text("funding_status").notNull().default("NONE"),
     settlementStatus: text("settlement_status").notNull().default("NONE"),
@@ -283,6 +288,10 @@ export const verificationRequests = pgTable(
   (t) => [
     check("vr_min_tier_chk", sql`min_worker_tier is null or min_worker_tier in ('standard','trusted')`),
     check("vr_type_chk", oneOf("type", TASK_TYPES)),
+    check(
+      "vr_audio_chk",
+      sql`audio_clip in ('none','optional','required') and (audio_clip = 'none') = (audio_max_s is null) and (audio_max_s is null or audio_max_s between 5 and 15)`,
+    ),
     check("vr_question_len_chk", sql`char_length(question) <= 1000`),
     check(
       "vr_acceptance_len_chk",
@@ -480,6 +489,8 @@ export const evidenceObjects = pgTable(
     byteSize: integer("byte_size").notNull(),
     width: integer("width"),
     height: integer("height"),
+    /** Audio clips only (16 §9): the length as recorded. */
+    durationMs: integer("duration_ms"),
     sha256: bytea("sha256").notNull(),
     dhash: bigint("dhash", { mode: "bigint" }),
     serverReceivedAt: tsz("server_received_at").notNull(),

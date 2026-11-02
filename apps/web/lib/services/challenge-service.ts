@@ -88,7 +88,10 @@ export async function challengeVerification(
       : {}),
     deadline: new Date(now.getTime() + 60 * 60_000).toISOString(),
     freshness: { max_age_seconds: orig.freshnessMaxAgeS },
-    evidence_requirements: { photo: true, task_nonce: true },
+    evidence_requirements: { photo: orig.photoRequired, task_nonce: true },
+    ...(orig.audioClip !== "none" && orig.audioMaxS !== null
+      ? { audio: { clip: orig.audioClip as "optional" | "required", max_seconds: orig.audioMaxS } }
+      : {}),
     assurance: { level: "standard" },
     bounty: {
       asset: orig.bountyAsset,

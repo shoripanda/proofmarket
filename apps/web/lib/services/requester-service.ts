@@ -30,6 +30,7 @@ import {
   taskIdHash,
   toMicro,
   validateAnswerSchema,
+  validateSensoryRequest,
 } from "@proofmarket/core";
 import {
   type Asset,
@@ -217,6 +218,7 @@ export async function createVerification(
     });
   }
   validateAnswerSchema(body.type, body.answer_schema);
+  validateSensoryRequest(body);
   const loc = body.location ?? null;
   if (!loc && locationRequired(body.type)) {
     throw new ApiError("VALIDATION_FAILED", { field: "location", reason: "required_for_type" });
@@ -308,6 +310,9 @@ export async function createVerification(
       answerValues: body.answer_schema.type === "enum" ? body.answer_schema.values : [],
       answerKind: storedAnswerKind(body.answer_schema),
       answerSpec: storedAnswerSpec(body.answer_schema),
+      photoRequired: body.evidence_requirements.photo,
+      audioClip: body.audio?.clip ?? "none",
+      audioMaxS: body.audio && body.audio.clip !== "none" ? body.audio.max_seconds : null,
       targetLat: loc?.lat ?? null,
       targetLng: loc?.lng ?? null,
       placeId,
@@ -714,7 +719,10 @@ export async function disputeVerification(app: AppContext, auth: RequesterAuth, 
       : {}),
     deadline: new Date(now.getTime() + (r.data.deadline_minutes ?? 60) * 60_000).toISOString(),
     freshness: { max_age_seconds: orig.freshnessMaxAgeS },
-    evidence_requirements: { photo: true, task_nonce: true },
+    evidence_requirements: { photo: orig.photoRequired, task_nonce: true },
+    ...(orig.audioClip !== "none" && orig.audioMaxS !== null
+      ? { audio: { clip: orig.audioClip as "optional" | "required", max_seconds: orig.audioMaxS } }
+      : {}),
     assurance: r.data.assurance ?? { level: "standard" },
     bounty: {
       asset: orig.bountyAsset,

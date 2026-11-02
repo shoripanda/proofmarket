@@ -45,6 +45,14 @@ export const LIMITS = {
     /** Photos per submission, each its own upload under the same challenge (01 §4.18). */
     maxPhotos: 4,
   },
+  /** Audio clips on sensory reports (docs/architecture 16 §9): one per submission, never reviewed by AI. */
+  audio: {
+    contentTypes: ["audio/mp4", "audio/webm"],
+    maxBytes: 2 * 1024 * 1024,
+    maxSeconds: { min: 5, max: 15, default: 15 },
+    /** Shortest clip accepted, in ms. */
+    minMs: 1000,
+  },
   duplicate: { maxHammingForMatch: 6, lookbackDays: 90 },
   uploadUrlTtlS: 120,
   evidenceUrlTtlS: 300,

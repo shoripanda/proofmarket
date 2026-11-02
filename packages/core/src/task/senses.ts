@@ -224,3 +224,31 @@ export function sensoryAnswerProblem(
 /** True when the answer carries a measured sound level, which needs `measurements.sound` (16 §8). */
 export const answerHasSoundLevel = (answer: Record<string, unknown>): boolean =>
   typeof answer.hearing_level_db === "number";
+
+/** 16 §9: whether a hearing report asks for a short clip. `none` keeps every sound on the phone. */
+export const AUDIO_CLIP_MODES = ["none", "optional", "required"] as const;
+export type AudioClipMode = (typeof AUDIO_CLIP_MODES)[number];
+
+/**
+ * 16 §4: the request-level rules a sensory report adds. A clip needs hearing; going without a photo needs a
+ * hearing-only request at a place, where the sound measurement is what ties the answer to the spot.
+ * Returns the field and reason of the first problem, or null.
+ */
+export function sensoryRequestProblem(r: {
+  type: string;
+  /** The senses of the built form, or null when the form is not a sensory one. */
+  senses: readonly Sense[] | null;
+  hasLocation: boolean;
+  photo: boolean;
+  clip: AudioClipMode;
+}): { field: string; reason: string } | null {
+  const sensory = r.type === "SENSORY_REPORT" && r.senses !== null;
+  if (r.clip !== "none" && !(sensory && r.senses?.includes("hearing")))
+    return { field: "audio", reason: "needs_hearing" };
+  if (!r.photo) {
+    const hearingOnly = sensory && r.senses?.length === 1 && r.senses[0] === "hearing";
+    if (!hearingOnly) return { field: "evidence_requirements.photo", reason: "photo_needs_hearing_only" };
+    if (!r.hasLocation) return { field: "evidence_requirements.photo", reason: "photo_needs_location" };
+  }
+  return null;
+}

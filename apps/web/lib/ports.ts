@@ -9,14 +9,27 @@ export interface IdentityProvider {
   payoutAddress(userId: string): Promise<string | null>;
 }
 
-/** Evidence object storage (Supabase Storage). Buckets: evidence-raw (private), evidence-derived (private). */
+/**
+ * Evidence object storage (Supabase Storage). Buckets: evidence-raw (private), evidence-derived (private), and
+ * evidence-audio (private) for sensory clips (docs/architecture 16 §9). "evidence-raw" below means the file as
+ * uploaded: an audio key (see isAudioKey) lives in evidence-audio, and adapters route it there.
+ */
 export interface EvidenceStorage {
   createSignedUploadUrl(key: string): Promise<{ url: string; expiresInS: number }>;
   read(key: string): Promise<{ bytes: Buffer; createdAt: Date } | null>;
   putDerived(key: string, bytes: Buffer): Promise<void>;
-  createSignedDownloadUrl(bucket: "evidence-derived", key: string, ttlS: number): Promise<string>;
+  /** "evidence-raw" is allowed only for audio keys: photos are always served without EXIF, from derived. */
+  createSignedDownloadUrl(
+    bucket: "evidence-derived" | "evidence-raw",
+    key: string,
+    ttlS: number,
+  ): Promise<string>;
   remove(bucket: "evidence-raw" | "evidence-derived", keys: string[]): Promise<void>;
 }
+
+/** Audio clips are stored under `.m4a` (audio/mp4) or `.webm` (audio/webm) keys; photos under `.jpg`. */
+export const isAudioKey = (key: string) => /\.(m4a|webm)$/.test(key);
+export const audioKeyExt = (contentType: string) => (contentType === "audio/webm" ? "webm" : "m4a");
 
 /** Web Push (04 §3.22). `gone` = the endpoint no longer exists (404/410) and should be deleted. */
 export interface PushSender {

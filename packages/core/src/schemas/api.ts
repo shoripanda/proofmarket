@@ -34,7 +34,7 @@ import { LIMITS } from "../domain/limits.ts";
 import { LOCATION_PRIVACY } from "../domain/location-privacy.ts";
 import { REQUIRABLE_TIERS, WORKER_TIERS } from "../domain/trust.ts";
 import { ERROR_CATALOG, type ErrorCode } from "../errors.ts";
-import { isSensoryFieldList, SENSES, sensoryAnswerSchema } from "../task/senses.ts";
+import { AUDIO_CLIP_MODES, isSensoryFieldList, SENSES, sensoryAnswerSchema } from "../task/senses.ts";
 
 // ---------- primitives ----------
 
@@ -282,6 +282,18 @@ export const AgentAttestationSchema = z
   .strict();
 export type AgentAttestation = z.infer<typeof AgentAttestationSchema>;
 
+export const AudioRequestSchema = z
+  .object({
+    clip: z.enum(AUDIO_CLIP_MODES),
+    max_seconds: z
+      .number()
+      .int()
+      .min(LIMITS.audio.maxSeconds.min)
+      .max(LIMITS.audio.maxSeconds.max)
+      .default(LIMITS.audio.maxSeconds.default),
+  })
+  .strict();
+
 export const CreateVerificationRequestSchema = z
   .object({
     type: z.enum(TASK_TYPES),
@@ -310,9 +322,19 @@ export const CreateVerificationRequestSchema = z
       })
       .default({ max_age_seconds: LIMITS.freshnessMaxAgeS.default }),
     evidence_requirements: z.object({
-      photo: z.literal(true),
+      /**
+       * `false` makes the photo optional. Only for a SENSORY_REPORT that asks for hearing alone and has a
+       * `location` (docs/architecture 16 §4): there the sound measurement at the place is the evidence.
+       */
+      photo: z.boolean(),
       task_nonce: z.literal(true),
     }),
+    /**
+     * Sensory reports with hearing (docs/architecture 16 §9): ask for a short audio clip. `none` (default) keeps
+     * every sound on the phone. A clip is checked for format, length, size and replay only: AI review cannot
+     * listen to it.
+     */
+    audio: AudioRequestSchema.optional(),
     assurance: AssuranceInputSchema,
     bounty: z
       .object({
@@ -561,6 +583,10 @@ export const GetVerificationResponseSchema = z.object({
    * together with the place only to someone who should be able to check that the work happened there.
    */
   location_salt: z.string().nullable(),
+  /** What a submission must carry. `photo: false` only on a hearing-only sensory report (docs/architecture 16 §4). */
+  evidence_requirements: z.object({ photo: z.boolean(), task_nonce: z.literal(true) }),
+  /** The audio clip asked for (docs/architecture 16 §9); null when none. */
+  audio: z.object({ clip: z.enum(["optional", "required"]), max_seconds: z.number().int() }).nullable(),
   deadline: IsoDateTime,
   /** Set on a task created by a dispute: the original task (01 §4.12). */
   recheck_of: VerificationIdSchema.nullable(),
@@ -793,7 +819,15 @@ export type PublicStats = z.infer<typeof PublicStatsSchema>;
 
 export const EvidenceUrlsResponseSchema = z.object({
   evidence: z.array(
-    z.object({ witness_ref: z.string(), url: z.url(), expires_in_seconds: z.number().int() }),
+    z.object({
+      witness_ref: z.string(),
+      url: z.url(),
+      expires_in_seconds: z.number().int(),
+      /** `image/jpeg`, or `audio/mp4` / `audio/webm` for a clip (docs/architecture 16 §9). */
+      media_type: z.string(),
+      /** Clips only: the length as recorded. */
+      duration_ms: z.number().int().optional(),
+    }),
   ),
 });
 
@@ -879,7 +913,7 @@ export const WorkerTaskSchema = z.object({
   deadline: IsoDateTime,
   freshness_max_age_seconds: z.number().int(),
   open_slots: z.number().int(),
-  requirements: z.array(z.enum(["photo", "location", "task_nonce"])),
+  requirements: z.array(z.enum(["photo", "location", "task_nonce", "audio"])),
   safety_notes_version: z.string(),
 });
 export const WorkerTaskListResponseSchema = z.object({ tasks: z.array(WorkerTaskSchema) });
@@ -902,10 +936,15 @@ export const ChallengeResponseSchema = ChallengeSchema;
 export const CreateUploadRequestSchema = z
   .object({
     challenge_id: ChallengeIdSchema,
-    content_type: z.literal(LIMITS.media.contentType),
+    /** A photo, or (docs/architecture 16 §9) one audio clip when the request asks for one. */
+    content_type: z.enum([LIMITS.media.contentType, ...LIMITS.audio.contentTypes]),
     byte_size: z.number().int().min(1).max(LIMITS.media.maxBytes),
   })
-  .strict();
+  .strict()
+  .refine((u) => u.content_type === LIMITS.media.contentType || u.byte_size <= LIMITS.audio.maxBytes, {
+    path: ["byte_size"],
+    message: `an audio clip is at most ${LIMITS.audio.maxBytes} bytes`,
+  });
 
 export const CreateUploadResponseSchema = z.object({
   upload_id: UploadIdSchema,
@@ -934,9 +973,21 @@ export const SubmitEvidenceRequestSchema = z
       .object({ sound: z.object({ started_at: IsoDateTime, ended_at: IsoDateTime }).strict() })
       .strict()
       .optional(),
+    /** Docs/architecture 16 §9: the audio clip, uploaded under the same challenge. Its length is as recorded. */
+    audio: z
+      .object({
+        object_ref: UploadIdSchema,
+        duration_ms: z
+          .number()
+          .int()
+          .min(LIMITS.audio.minMs)
+          .max(LIMITS.audio.maxSeconds.max * 1000),
+      })
+      .strict()
+      .optional(),
+    /** At least one photo, except on a request that made the photo optional (docs/architecture 16 §4). */
     evidence: z
       .array(z.object({ type: z.literal("photo"), object_ref: UploadIdSchema }))
-      .min(1)
       .max(LIMITS.media.maxPhotos) // 01 §4.18: up to 4 photos, all under the same challenge
       .refine((e) => new Set(e.map((x) => x.object_ref)).size === e.length, "each photo once"),
   })
@@ -972,6 +1023,10 @@ export const ClaimDetailResponseSchema = z.object({
   answer_values: z.array(AnswerValueSchema),
   answer_schema: AnswerSchemaSpec,
   location_required: z.boolean(),
+  /** False only on a hearing-only sensory report at a place (docs/architecture 16 §4). */
+  photo_required: z.boolean(),
+  /** The clip the request asks for (docs/architecture 16 §9); null when it asks for none. */
+  audio: z.object({ clip: z.enum(["optional", "required"]), max_seconds: z.number().int() }).nullable(),
 });
 
 export const PayoutsResponseSchema = z.object({

@@ -4,7 +4,7 @@ import { type AnswerKind, TASK_TYPE_SPECS, type TaskType, type TaskTypeSpec } fr
 import { LIMITS } from "../domain/limits.ts";
 import { ApiError } from "../errors.ts";
 import type { AnswerSchemaSpec, FormField } from "../schemas/api.ts";
-import { sensesOfFields, sensoryAnswerProblem } from "./senses.ts";
+import { type AudioClipMode, sensesOfFields, sensoryAnswerProblem, sensoryRequestProblem } from "./senses.ts";
 
 export const answerKindOf = (type: TaskType): AnswerKind => TASK_TYPE_SPECS[type].answer;
 export const locationRequired = (type: TaskType): boolean => TASK_TYPE_SPECS[type].location === "required";
@@ -21,6 +21,24 @@ export function storedAnswerSpec(spec: AnswerSchemaSpec): Record<string, unknown
 }
 
 /** Throws VALIDATION_FAILED unless the schema fits the type (kind, and fixed values where the type has them). */
+/** docs/architecture 16 §4, §9: a clip needs hearing; no photo needs a hearing-only request at a place. */
+export function validateSensoryRequest(b: {
+  type: TaskType;
+  answer_schema: AnswerSchemaSpec;
+  location?: unknown;
+  evidence_requirements: { photo: boolean };
+  audio?: { clip: AudioClipMode } | undefined;
+}): void {
+  const p = sensoryRequestProblem({
+    type: b.type,
+    senses: b.answer_schema.type === "form" ? sensesOfFields(b.answer_schema.fields) : null,
+    hasLocation: b.location !== undefined && b.location !== null,
+    photo: b.evidence_requirements.photo,
+    clip: b.audio?.clip ?? "none",
+  });
+  if (p) throw new ApiError("VALIDATION_FAILED", p);
+}
+
 export function validateAnswerSchema(type: TaskType, spec: AnswerSchemaSpec): void {
   // docs/architecture 16 §4: a sensory report is answered with the catalogue form and nothing else, and the
   // catalogue form belongs to sensory reports only.

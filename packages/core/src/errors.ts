@@ -120,7 +120,11 @@ export const ERROR_CATALOG = {
   },
   UPLOAD_NOT_FOUND: { http: 404, retryable: false, message: "The upload was not found for this claim." },
   ANSWER_INVALID: { http: 400, retryable: false, message: "The answer is not one of the allowed values." },
-  MEDIA_TYPE_UNSUPPORTED: { http: 415, retryable: false, message: "Only image/jpeg is accepted." },
+  MEDIA_TYPE_UNSUPPORTED: {
+    http: 415,
+    retryable: false,
+    message: "Only image/jpeg is accepted (and audio/mp4 or audio/webm for a requested sensory clip).",
+  },
   MEDIA_TOO_LARGE: { http: 413, retryable: false, message: "The file exceeds the maximum size." },
   QUOTE_NOT_FOUND: { http: 404, retryable: false, message: "The quote was not found for this API key." },
   TASKS_NOT_ENABLED: { http: 404, retryable: false, message: "General tasks are not open yet." },

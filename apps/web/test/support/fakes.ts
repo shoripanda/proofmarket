@@ -37,7 +37,7 @@ export class FakeStorage implements EvidenceStorage {
   async putDerived(key: string, bytes: Buffer) {
     this.derived.set(key, bytes);
   }
-  async createSignedDownloadUrl(_b: "evidence-derived", key: string, ttl: number) {
+  async createSignedDownloadUrl(_b: "evidence-derived" | "evidence-raw", key: string, ttl: number) {
     return `https://storage.test/download/${key}?ttl=${ttl}`;
   }
   async remove(bucket: "evidence-raw" | "evidence-derived", keys: string[]) {
