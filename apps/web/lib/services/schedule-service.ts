@@ -10,6 +10,7 @@ import {
   normalizeAnswer,
   parseId,
   validateAnswerSchema,
+  validateSensoryRequest,
 } from "@proofmarket/core";
 import {
   type CreateScheduleRequest,
@@ -97,6 +98,7 @@ export async function createSchedule(app: AppContext, auth: RequesterAuth, raw: 
   if (!auth.allowedTaskTypes.includes(b.request.type)) throw new ApiError("UNSUPPORTED_TASK_TYPE");
   if (b.request.principal_ref !== auth.principalId) throw new ApiError("PRINCIPAL_MISMATCH");
   validateAnswerSchema(b.request.type, b.request.answer_schema);
+  validateSensoryRequest(b.request);
   const policy = evaluateQuestion(b.request.question);
   if (!policy.ok) throw new ApiError("TASK_POLICY_VIOLATION", { rule_id: policy.ruleId });
   if (b.stop_when) checkStopWhen(b.request, b.stop_when);

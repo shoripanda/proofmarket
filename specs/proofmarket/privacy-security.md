@@ -127,6 +127,9 @@ A public profile has its own random id, separate from the worker id and from `wo
 ### Conversations (2026-10-16)
 Tasks of `kind = task` open a conversation between the requester and the accepted worker. Messages are stored for the same period as evidence and deleted with it. Messages that look like contact details or off-platform payment are delivered but flagged and recorded. Worker messages and files are passed to agents marked as data, never as instructions.
 
+### Sound on sensory reports (2026-11-02)
+By default no audio leaves the phone: a hearing report sends two numbers (an approximate level and peak) and when they were measured. A requester may ask for a clip of at most 15 s (`audio`). A clip is voices of whoever was nearby, so: the worker is told before recording to record the surroundings and not a conversation or anyone who has not agreed; they can play it back, record again or delete it before sending; it is kept in a private bucket for 30 days like a raw photo and purged by the same job; only the requester can fetch it, through a 300 s signed URL. AI review never receives a clip, and the API docs say so. Reason: a clip is the only way to let an agent judge what kind of noise it is, and the requester has to opt in. Design: `docs/architecture/16-sensory-reports.md` §8-§9.
+
 ### Bystanders
 Workers should avoid intentionally capturing identifiable bystanders where not needed.
 

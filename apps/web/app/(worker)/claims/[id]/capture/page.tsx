@@ -14,6 +14,7 @@ import { cue } from "@/lib/client/sound";
 import { langHref, pick } from "@/lib/lang";
 import { AttestationBand } from "../../../attestation-band";
 import type { ClaimDetail } from "../../../lib-claim";
+import { AudioClip, type Clip } from "./audio-clip";
 import { SensoryForm, type SensoryValue } from "./sensory-form";
 
 interface Challenge {
@@ -51,6 +52,8 @@ export default function CapturePage() {
   const [fields, setFields] = useState<Record<string, string>>({});
   // docs/architecture 16: a sensory report has its own blocks and may carry a measured sound level.
   const [sensory, setSensory] = useState<SensoryValue>({ answer: null, sound: null });
+  // 16 §9: a clip only when the request asks for one.
+  const [clip, setClip] = useState<Clip | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const schema = claim?.answer_schema;
@@ -79,6 +82,10 @@ export default function CapturePage() {
           )
         : answer;
   const needsLocation = claim?.location_required ?? true;
+  // 16 §4: a hearing-only request at a place may go without a photo, but then the level must be measured.
+  const photoRequired = claim?.photo_required ?? true;
+  const clipMissing = claim?.audio?.clip === "required" && !clip;
+  const evidenceReady = photos.length > 0 || (!photoRequired && sensory.sound !== null);
   const answers = (schema?.type === "enum" ? schema.values : (claim?.answer_values ?? [])).map((v) =>
     v in ANSWER_JA
       ? { value: v, ...answerText(lang, v as AnswerValue) }
@@ -123,6 +130,12 @@ export default function CapturePage() {
       for (const t of stream?.getTracks() ?? []) t.stop();
     };
   }, [lang]);
+
+  // Without a photo there is no shutter to trigger the location fix, so take it as soon as the task is known.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: locate reads the latest state each call
+  useEffect(() => {
+    if (claim && !claim.photo_required) locate();
+  }, [claim]);
 
   function locate() {
     navigator.geolocation.getCurrentPosition(
@@ -172,7 +185,7 @@ export default function CapturePage() {
 
   async function submit() {
     const [first] = photos;
-    if (!ch || !first || (needsLocation && !fix) || !answerReady || !claim) return;
+    if (!ch || !evidenceReady || clipMissing || (needsLocation && !fix) || !answerReady || !claim) return;
     setBusy(true);
     setErr(null);
     try {
@@ -191,18 +204,33 @@ export default function CapturePage() {
         if (!put.ok) throw new Error(`upload ${put.status}`);
         refs.push(up.upload_id);
       }
+      let audio: { object_ref: string; duration_ms: number } | null = null;
+      if (clip) {
+        const up = await api<{ upload_id: string; upload_url: string }>(`/v1/worker/claims/${id}/uploads`, {
+          method: "POST",
+          body: { challenge_id: ch.challenge_id, content_type: clip.type, byte_size: clip.blob.size },
+        });
+        const put = await fetch(up.upload_url, {
+          method: "PUT",
+          body: clip.blob,
+          headers: { "content-type": clip.type },
+        });
+        if (!put.ok) throw new Error(`upload ${put.status}`);
+        audio = { object_ref: up.upload_id, duration_ms: clip.durationMs };
+      }
       const sent = await api<{ state: string }>(`/v1/worker/tasks/${claim.verification_id}/evidence`, {
         method: "POST",
-        idem: `ev-${refs[0]}`,
+        idem: `ev-${refs[0] ?? audio?.object_ref ?? ch.challenge_id}`,
         body: {
           claim_id: id,
           answer: payload(),
           capture: {
-            client_timestamp: first.takenAt,
+            client_timestamp: first?.takenAt ?? sensory.sound?.ended_at ?? new Date().toISOString(),
             ...(fix ? { lat: fix.lat, lng: fix.lng, accuracy_m: fix.accuracy } : {}),
           },
           challenge: { nonce: ch.nonce },
           ...(isSensory && sensory.sound ? { measurements: { sound: sensory.sound } } : {}),
+          ...(audio ? { audio } : {}),
           evidence: refs.map((object_ref) => ({ type: "photo", object_ref })),
         },
       });
@@ -277,6 +305,13 @@ export default function CapturePage() {
           `人の顔が大きく写らないようにしてください。写真は${MAX_PHOTOS}枚まで送れます。`,
           ` Keep people's faces out of the frame. You can send up to ${MAX_PHOTOS} photos.`,
         )}
+        {photoRequired
+          ? ""
+          : pick(
+              lang,
+              "この依頼では写真は任意です。写真を送らない場合は、下で音の大きさを測ってください。",
+              " A photo is optional here. Without one, measure the sound level below.",
+            )}
       </p>
 
       {photos.length ? (
@@ -327,7 +362,7 @@ export default function CapturePage() {
         </Button>
       )}
 
-      {photos.length ? (
+      {photos.length || !photoRequired ? (
         <>
           {needsLocation ? (
             <p className="text-sm text-slate-600">
@@ -348,7 +383,27 @@ export default function CapturePage() {
             </p>
           ) : null}
           {isSensory && schema?.type === "form" ? (
-            <SensoryForm lang={lang} fields={schema.fields} onChange={setSensory} />
+            <>
+              <SensoryForm lang={lang} fields={schema.fields} onChange={setSensory} />
+              {claim?.audio ? (
+                <AudioClip
+                  lang={lang}
+                  maxSeconds={claim.audio.max_seconds}
+                  required={claim.audio.clip === "required"}
+                  disabled={busy}
+                  onChange={setClip}
+                />
+              ) : null}
+              {!evidenceReady ? (
+                <p className="text-sm text-amber-800">
+                  {pick(
+                    lang,
+                    "写真を撮るか、音の大きさを測ると送信できます。",
+                    "Take a photo or measure the sound level to submit.",
+                  )}
+                </p>
+              ) : null}
+            </>
           ) : schema?.type === "form" ? (
             <div className="grid gap-4">
               <p className="text-sm font-medium text-slate-700">
@@ -515,7 +570,12 @@ export default function CapturePage() {
               ))}
             </div>
           )}
-          <Button onClick={submit} disabled={!answerReady || (needsLocation && !fix) || busy || expired}>
+          <Button
+            onClick={submit}
+            disabled={
+              !answerReady || !evidenceReady || clipMissing || (needsLocation && !fix) || busy || expired
+            }
+          >
             {busy ? pick(lang, "送信中…", "Sending…") : pick(lang, "この内容で送信する", "Submit")}
           </Button>
         </>

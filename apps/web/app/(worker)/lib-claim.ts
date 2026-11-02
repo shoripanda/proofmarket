@@ -23,6 +23,9 @@ export interface ClaimDetail {
   answer_values: string[];
   answer_schema: AnswerSchemaView;
   location_required: boolean;
+  /** False only on a hearing-only sensory report at a place (docs/architecture 16 §4). */
+  photo_required: boolean;
+  audio: { clip: "optional" | "required"; max_seconds: number } | null;
 }
 
 /**

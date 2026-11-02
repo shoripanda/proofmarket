@@ -76,6 +76,38 @@ export function checkMediaSchema(f: MediaFacts): CheckOutcome {
   return pass(t, { width: f.decoded.width, height: f.decoded.height, byte_size: f.byteSize });
 }
 
+export interface AudioFacts {
+  declaredContentType: string;
+  byteSize: number;
+  magicBytes: Uint8Array; // first 12 bytes
+  /** As recorded by the phone; the server does not decode audio. */
+  durationMs: number;
+  maxSeconds: number;
+}
+
+const WEBM_MAGIC = [0x1a, 0x45, 0xdf, 0xa3];
+const FTYP = [0x66, 0x74, 0x79, 0x70]; // "ftyp" at offset 4 of an MP4
+
+/**
+ * Check 1 for an audio clip (docs/architecture 16 §9): the declared type matches the file's first bytes, at most
+ * 2 MiB, and no longer than the request allows. Nothing listens to it.
+ */
+export function checkAudioMedia(f: AudioFacts): CheckOutcome {
+  const t = "media_schema";
+  const looksLike =
+    f.declaredContentType === "audio/webm"
+      ? WEBM_MAGIC.every((b, i) => f.magicBytes[i] === b)
+      : f.declaredContentType === "audio/mp4"
+        ? FTYP.every((b, i) => f.magicBytes[i + 4] === b)
+        : false;
+  if (!looksLike) return fail(t, "MEDIA_TYPE_UNSUPPORTED", { audio: true });
+  if (f.byteSize > LIMITS.audio.maxBytes)
+    return fail(t, "MEDIA_TOO_LARGE", { audio: true, byte_size: f.byteSize });
+  if (f.durationMs > f.maxSeconds * 1000 || f.durationMs < LIMITS.audio.minMs)
+    return fail(t, "MEDIA_TOO_LARGE", { audio: true, duration_ms: f.durationMs, max_s: f.maxSeconds });
+  return pass(t, { audio: true, byte_size: f.byteSize, duration_ms: f.durationMs });
+}
+
 /**
  * Check 2 — exact replay. Decided by the unique index on evidence_objects.sha256 (04 §3.10);
  * the caller passes whether the insert hit a unique violation.

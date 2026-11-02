@@ -69,8 +69,9 @@ export function localStorage(root: string, publicBaseUrl: string): EvidenceStora
       mkdirSync(dirname(p), { recursive: true });
       writeFileSync(p, bytes);
     },
-    async createSignedDownloadUrl(_b, key) {
-      return `${publicBaseUrl}/api/dev/file/evidence-derived/${key}`;
+    async createSignedDownloadUrl(b, key) {
+      // Dev keeps audio clips with the raw photos; only clips are ever served from there.
+      return `${publicBaseUrl}/api/dev/file/${b === "evidence-raw" ? "evidence-raw" : "evidence-derived"}/${key}`;
     },
     async remove(bucket, keys) {
       for (const k of keys) rmSync(path(bucket, k), { force: true });

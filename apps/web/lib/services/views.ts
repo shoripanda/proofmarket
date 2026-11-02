@@ -340,6 +340,11 @@ export async function buildVerificationView(
     location: taskLocation(task),
     location_privacy: task.locationPrivacy as GetVerificationResponse["location_privacy"],
     location_salt: task.targetLat !== null ? locationSalt(refSalt, task.id) : null,
+    evidence_requirements: { photo: task.photoRequired, task_nonce: true },
+    audio:
+      task.audioClip !== "none" && task.audioMaxS !== null
+        ? { clip: task.audioClip as "optional" | "required", max_seconds: task.audioMaxS }
+        : null,
     deadline: task.deadline.toISOString(),
     recheck_of: (task.recheckOf as GetVerificationResponse["recheck_of"]) ?? null,
     recheck: await recheckView(db, task),

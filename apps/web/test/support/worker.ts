@@ -16,6 +16,13 @@ import { call, createBody, type createTestApp, jsonReq, SHOP } from "./app";
 
 type T = Awaited<ReturnType<typeof createTestApp>>;
 
+/** A unique MP4 audio file as far as the server can tell: "ftyp" at offset 4, then noise. */
+export function m4a(size = 40_000): Buffer {
+  const b = randomBytes(size);
+  b.write("ftypM4A ", 4, "latin1");
+  return b;
+}
+
 /** A unique, decodable JPEG (random noise => unique sha256 and dHash). */
 export async function photo(w = 1280, h = 720): Promise<Buffer> {
   return sharp(randomBytes(w * h * 3), { raw: { width: w, height: h, channels: 3 } })
@@ -114,6 +121,8 @@ export async function witness(
     claimId?: string;
     /** Extra fields for the evidence body, e.g. `measurements` (docs/architecture 16 §8). */
     extra?: Record<string, unknown>;
+    /** An audio clip uploaded under the same challenge (docs/architecture 16 §9). */
+    clip?: { bytes: Buffer; type?: "audio/mp4" | "audio/webm"; durationMs?: number };
   } = {},
 ) {
   const w = W(t, token);
@@ -132,6 +141,17 @@ export async function witness(
     t.storage.upload(up.upload_url.replace("https://storage.test/upload/", ""), bytes);
     refs.push(up.upload_id);
   }
+  let audio: { object_ref: string; duration_ms: number } | undefined;
+  if (o.clip) {
+    const up = (await (
+      await w.upload(claimId, ch.challenge_id, {
+        content_type: o.clip.type ?? "audio/mp4",
+        byte_size: o.clip.bytes.length,
+      })
+    ).json()) as { upload_id: string; upload_url: string };
+    t.storage.upload(up.upload_url.replace("https://storage.test/upload/", ""), o.clip.bytes);
+    audio = { object_ref: up.upload_id, duration_ms: o.clip.durationMs ?? 8000 };
+  }
   const at = o.at ?? SHOP;
   const res = await w.evidence(id, {
     claim_id: claimId,
@@ -144,6 +164,7 @@ export async function witness(
     },
     challenge: { nonce: ch.nonce },
     evidence: refs.map((object_ref) => ({ type: "photo", object_ref })),
+    ...(audio ? { audio } : {}),
     ...o.extra,
   });
   return { res, claimId, body: (await res.clone().json()) as Record<string, unknown> };

@@ -240,15 +240,33 @@ export async function evidenceUrls(app: AppContext, auth: RequesterAuth, rawId: 
     .orderBy(asc(schema.evidenceObjects.submissionId), asc(schema.evidenceObjects.id)); // a witness's photos together, in order
   const evidence = [];
   for (const r of rows) {
+    const witness_ref = witnessRef(app.config.workerRefSalt, r.workerId, id);
+    if (r.e.mediaType !== "image/jpeg") {
+      // An audio clip (docs/architecture 16 §9) is served as recorded; it has no metadata to strip.
+      if (!r.e.rawObjectKey) continue; // purged after retention
+      evidence.push({
+        witness_ref,
+        url: await app.storage.createSignedDownloadUrl(
+          "evidence-raw",
+          r.e.rawObjectKey,
+          LIMITS.evidenceUrlTtlS,
+        ),
+        expires_in_seconds: LIMITS.evidenceUrlTtlS,
+        media_type: r.e.mediaType,
+        ...(r.e.durationMs !== null ? { duration_ms: r.e.durationMs } : {}),
+      });
+      continue;
+    }
     if (!r.e.derivedObjectKey) continue; // purged after retention
     evidence.push({
-      witness_ref: witnessRef(app.config.workerRefSalt, r.workerId, id),
+      witness_ref,
       url: await app.storage.createSignedDownloadUrl(
         "evidence-derived",
         r.e.derivedObjectKey,
         LIMITS.evidenceUrlTtlS,
       ),
       expires_in_seconds: LIMITS.evidenceUrlTtlS,
+      media_type: r.e.mediaType,
     });
   }
   return { evidence };

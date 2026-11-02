@@ -8,6 +8,8 @@ import {
   CHECK_ORDER,
   type CheckOutcome,
   type CheckReasonCode,
+  type CheckType,
+  checkAudioMedia,
   checkDuplicate,
   checkFreshness,
   checkGeofence,
@@ -29,7 +31,7 @@ import { constraintName, type Db, pgErrorCode, schema } from "@proofmarket/db";
 import { and, asc, eq, gte, inArray, isNotNull, lte, ne } from "drizzle-orm";
 import sharp from "sharp";
 import type { AppContext } from "../context";
-import type { SubmissionReviewer } from "../ports";
+import { isAudioKey, type SubmissionReviewer } from "../ports";
 import { appendAudit } from "./audit";
 import { encryptBytes, encryptLocation, sha256 } from "./crypto";
 import { reasonMessage } from "./messages";
@@ -170,17 +172,36 @@ export async function submitEvidence(
   const found = await tx.select().from(schema.uploads).where(inArray(schema.uploads.id, uploadIds));
   const uploads = uploadIds.map((uid) => found.find((u) => u.id === uid));
   for (const upload of uploads) {
-    if (!upload || upload.claimId !== claim.id || upload.state !== "PENDING")
+    if (!upload || upload.claimId !== claim.id || upload.state !== "PENDING" || isAudioKey(upload.objectKey))
       throw new ApiError("UPLOAD_NOT_FOUND");
     if (upload.challengeId !== ch.id) throw new ApiError("NONCE_INVALID");
   }
   const photos = uploads.filter((u) => u !== undefined);
+  // docs/architecture 16 §4: only a hearing-only request at a place may go without a photo.
+  if (photos.length === 0 && task.photoRequired)
+    throw new ApiError("VALIDATION_FAILED", { field: "evidence", reason: "photo_required" });
+  // 16 §9: one audio clip under the same claim and challenge, only when the request asks for one.
+  let clip: typeof schema.uploads.$inferSelect | null = null;
+  if (body.audio) {
+    if (task.audioClip === "none")
+      throw new ApiError("VALIDATION_FAILED", { field: "audio", reason: "no_audio_requested" });
+    const [u] = await tx.select().from(schema.uploads).where(eq(schema.uploads.id, body.audio.object_ref));
+    if (!u || u.claimId !== claim.id || u.state !== "PENDING" || !isAudioKey(u.objectKey))
+      throw new ApiError("UPLOAD_NOT_FOUND");
+    if (u.challengeId !== ch.id) throw new ApiError("NONCE_INVALID");
+    clip = u;
+  } else if (task.audioClip === "required") {
+    throw new ApiError("VALIDATION_FAILED", { field: "audio", reason: "required" });
+  }
   const answer = normalizeAnswer(
     answerSchemaOf(task.answerKind, task.answerValues, task.answerSpec as Record<string, unknown> | null),
     body.answer,
   );
   if (answer === null) throw new ApiError("ANSWER_INVALID");
-  checkSoundMeasurement(answer, body.measurements?.sound, ch.issuedAt, now);
+  const measured = checkSoundMeasurement(answer, body.measurements?.sound, ch.issuedAt, now);
+  // Without a photo, the level measured at the place is what shows the worker was there (16 §4).
+  if (photos.length === 0 && !measured)
+    throw new ApiError("VALIDATION_FAILED", { field: "evidence", reason: "photo_or_sound_level_required" });
   // Location is checked only for tasks that have one; work that can be done anywhere skips the geofence (01 §4.15).
   const target = taskLocation(task);
   const { lat, lng, accuracy_m } = body.capture;
@@ -197,7 +218,10 @@ export async function submitEvidence(
     .update(schema.challenges)
     .set({ state: "USED", usedAt: now })
     .where(eq(schema.challenges.id, ch.id));
-  await tx.update(schema.uploads).set({ state: "FINALIZED" }).where(inArray(schema.uploads.id, uploadIds));
+  await tx
+    .update(schema.uploads)
+    .set({ state: "FINALIZED" })
+    .where(inArray(schema.uploads.id, clip ? [...uploadIds, clip.id] : uploadIds));
   const attempts = claim.attempts + 1;
   await tx.update(schema.claims).set({ attempts }).where(eq(schema.claims.id, claim.id));
   await tx.insert(schema.witnessSubmissions).values({
@@ -261,6 +285,10 @@ export async function submitEvidence(
     }
   }
 
+  // ---- the audio clip (16 §9): hashed for replay, kept 30 days like photos, never decoded or reviewed ----
+  const heard =
+    clip && body.audio ? await readClip(app, tx, clip, body.audio.duration_ms, submissionId, now) : null;
+
   // ---- duplicate candidates (P1): other claims' photos in the last 90 days ----
   const candidates = read.some((p) => p.img?.dhash != null)
     ? await tx
@@ -282,46 +310,70 @@ export async function submitEvidence(
         )
     : [];
 
-  // Each photo-level check runs on every photo; the first photo that fails fails the submission (01 §4.18).
-  const perPhoto = (f: (p: (typeof read)[number]) => CheckOutcome) => () => combinePhotoOutcomes(read.map(f));
+  // Each photo-level check runs on every photo, and the clip after them; the first that fails fails the
+  // submission (01 §4.18). With neither (a photo-less hearing report, 16 §4) the media checks do not run.
+  const freshness = (createdAt: Date | undefined) =>
+    checkFreshness({
+      now,
+      challengeIssuedAt: ch.issuedAt,
+      storageObjectCreatedAt: createdAt ?? new Date(0),
+      clientTimestamp: new Date(body.capture.client_timestamp),
+      freshnessMaxAgeS: task.freshnessMaxAgeS,
+    });
+  const clipOutcome: Partial<Record<CheckType, CheckOutcome>> = heard
+    ? {
+        media_schema: checkAudioMedia({
+          declaredContentType: heard.mediaType,
+          byteSize: heard.obj?.bytes.length ?? 0,
+          magicBytes: heard.obj?.bytes.subarray(0, 12) ?? new Uint8Array(),
+          durationMs: heard.durationMs,
+          maxSeconds: task.audioMaxS ?? 0,
+        }),
+        replay: checkReplay(heard.replayConflict),
+        freshness: freshness(heard.obj?.createdAt),
+      }
+    : {};
+  const perPhoto = (f: (p: (typeof read)[number]) => CheckOutcome, type: CheckType) => () => {
+    const outs = read.map(f);
+    const extra = clipOutcome[type];
+    if (extra) outs.push(extra);
+    return outs.length ? combinePhotoOutcomes(outs) : ({ type, status: "not_run" } as CheckOutcome);
+  };
   const geo: CheckOutcome =
     target && observed
       ? checkGeofence({ target: { lat: target.lat, lng: target.lng, radiusM: target.radius_m }, observed })
       : { type: "geofence", status: "not_run" };
   const results: CheckOutcome[] = runChecks(CHECK_ORDER, [
-    perPhoto(({ obj, img }) =>
-      checkMediaSchema({
-        declaredContentType: "image/jpeg",
-        byteSize: obj?.bytes.length ?? 0,
-        magicBytes: img?.magic ?? new Uint8Array(),
-        decoded: img?.decoded ?? null,
-      }),
+    perPhoto(
+      ({ obj, img }) =>
+        checkMediaSchema({
+          declaredContentType: "image/jpeg",
+          byteSize: obj?.bytes.length ?? 0,
+          magicBytes: img?.magic ?? new Uint8Array(),
+          decoded: img?.decoded ?? null,
+        }),
+      "media_schema",
     ),
-    perPhoto((p) => checkReplay(p.replayConflict)),
-    perPhoto(({ obj }) =>
-      checkFreshness({
-        now,
-        challengeIssuedAt: ch.issuedAt,
-        storageObjectCreatedAt: obj?.createdAt ?? new Date(0),
-        clientTimestamp: new Date(body.capture.client_timestamp),
-        freshnessMaxAgeS: task.freshnessMaxAgeS,
-      }),
-    ),
+    perPhoto((p) => checkReplay(p.replayConflict), "replay"),
+    perPhoto(({ obj }) => freshness(obj?.createdAt), "freshness"),
     () => geo,
-    perPhoto(({ img }) =>
-      img?.dhash != null
-        ? checkDuplicate({
-            dhash: img.dhash,
-            candidates: candidates.map((c) => ({ submissionId: c.submissionId, dhash: c.dhash ?? 0n })),
-          })
-        : { type: "duplicate", status: "not_run" },
+    perPhoto(
+      ({ img }) =>
+        img?.dhash != null
+          ? checkDuplicate({
+              dhash: img.dhash,
+              candidates: candidates.map((c) => ({ submissionId: c.submissionId, dhash: c.dhash ?? 0n })),
+            })
+          : { type: "duplicate", status: "not_run" },
+      "duplicate",
     ),
     () => ({ type: "vision_consistency", status: "not_run" }),
   ]);
   // AI review (01 §4.16): once every mechanical check has passed, Claude judges whether the photos and the answer
   // actually do what was asked. A clear miss fails the attempt (retryable); "uncertain" is recorded as a warning.
+  // It sees photos only: with none (16 §4) it does not run, and it never hears a clip (16 §9).
   const derived = read.flatMap((p) => (p.img?.derived ? [p.img.derived] : []));
-  const allDerived = derived.length === read.length;
+  const allDerived = read.length > 0 && derived.length === read.length;
   const reviewAt = results.findIndex((r) => r.type === "vision_consistency");
   if (app.reviewer && allDerived && !firstFailure(results) && reviewAt >= 0) {
     results[reviewAt] = await reviewSubmission(app.reviewer, task, answer, derived);
@@ -329,6 +381,7 @@ export async function submitEvidence(
 
   // A replayed file has no evidence row (unique sha256), so nothing would ever purge it: delete it now.
   const replayed = read.filter((p) => p.replayConflict).map((p) => p.upload.objectKey);
+  if (heard?.replayConflict && clip) replayed.push(clip.objectKey);
   if (replayed.length) await app.storage.remove("evidence-raw", replayed);
   // Derived image only for decodable, non-replayed photos.
   for (const p of read) {
@@ -390,6 +443,43 @@ export async function submitEvidence(
   return finishSubmission(tx, app, { task, claimId: claim.id, submissionId, results, attempts, now });
 }
 
+/** Read, hash and record the audio clip (16 §9). A clip sent before by anyone is a replay, as for photos. */
+async function readClip(
+  app: AppContext,
+  tx: Db,
+  clip: typeof schema.uploads.$inferSelect,
+  durationMs: number,
+  submissionId: string,
+  now: Date,
+) {
+  const obj = await app.storage.read(clip.objectKey);
+  const mediaType = clip.objectKey.endsWith(".webm") ? "audio/webm" : "audio/mp4";
+  let replayConflict = false;
+  if (obj) {
+    try {
+      await tx.transaction(async (sp) => {
+        await sp.insert(schema.evidenceObjects).values({
+          id: newId("evidence"),
+          submissionId,
+          uploadId: clip.id,
+          rawObjectKey: clip.objectKey,
+          derivedObjectKey: null,
+          mediaType,
+          byteSize: obj.bytes.length,
+          durationMs,
+          sha256: sha256(obj.bytes),
+          serverReceivedAt: now,
+          deleteAfter: new Date(now.getTime() + RETENTION_DAYS.raw_evidence * 86_400_000),
+        });
+      });
+    } catch (e) {
+      if (pgErrorCode(e) === "23505" && constraintName(e)?.includes("evidence_sha256")) replayConflict = true;
+      else throw e;
+    }
+  }
+  return { obj, mediaType, durationMs, replayConflict };
+}
+
 /**
  * docs/architecture 16 §8: a measured sound level must come with when the phone measured it, after the challenge
  * was issued and for 8-20 s. The phone's clock may be off a little (LIMITS.clientClockSkewWarnS).
@@ -399,14 +489,14 @@ function checkSoundMeasurement(
   sound: { started_at: string; ended_at: string } | undefined,
   issuedAt: Date,
   now: Date,
-): void {
+): boolean {
   let level: unknown;
   try {
     level = (JSON.parse(answer) as Record<string, unknown>)?.hearing_level_db;
   } catch {
-    return; // not a form answer
+    return false; // not a form answer
   }
-  if (typeof level !== "number") return;
+  if (typeof level !== "number") return false;
   const bad = (reason: string) => new ApiError("VALIDATION_FAILED", { field: "measurements.sound", reason });
   if (!sound) throw bad("required_with_sound_level");
   const start = new Date(sound.started_at).getTime();
@@ -415,6 +505,7 @@ function checkSoundMeasurement(
   const seconds = (end - start) / 1000;
   if (seconds < SOUND_MEASURE_S.min || seconds > SOUND_MEASURE_S.max) throw bad("duration_out_of_range");
   if (start < issuedAt.getTime() - skew || end > now.getTime() + skew) throw bad("outside_challenge");
+  return true;
 }
 
 const checksMap = (results: readonly CheckOutcome[]) =>
@@ -563,9 +654,12 @@ export async function listPendingReviews(app: AppContext, limit = 20) {
         })
         .from(schema.evidenceObjects)
         .where(
-          inArray(
-            schema.evidenceObjects.submissionId,
-            rows.map((r) => r.sub.id),
+          and(
+            inArray(
+              schema.evidenceObjects.submissionId,
+              rows.map((r) => r.sub.id),
+            ),
+            eq(schema.evidenceObjects.mediaType, "image/jpeg"), // the reviewer cannot listen (16 §9)
           ),
         )
         .orderBy(asc(schema.evidenceObjects.id)) // the order the worker sent them (monotonic IDs)

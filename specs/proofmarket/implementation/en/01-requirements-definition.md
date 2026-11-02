@@ -192,7 +192,7 @@ By the owner's decision, the scope that was limited to checks in front of shops 
 | On site, number | `PRICE_CHECK` | Number | Required |
 | On site, text | `SIGN_TRANSCRIPTION` (signs, notices, menus), `SITE_REPORT` (report on the scene) | Text | Required |
 | Anywhere | `DOCUMENT_TRANSCRIPTION` (books, paper documents), `DOCUMENT_QA` (read and answer), `PRODUCT_INSPECTION` (examine an object), `PHONE_INQUIRY` (ask by phone), `CUSTOM_TASK` (other work) | Text | Optional |
-| Senses (2026-11-02, docs/architecture 16) | `SENSORY_REPORT`: sight, hearing, smell, taste, touch, one or more. The requester sends `answer_schema: { type: "sensory", senses }` and the server builds the fixed form; hearing carries a sound level measured on the phone | Form | Optional |
+| Senses (2026-11-02, docs/architecture 16) | `SENSORY_REPORT`: sight, hearing, smell, taste, touch, one or more. The requester sends `answer_schema: { type: "sensory", senses }` and the server builds the fixed form; hearing carries a sound level measured on the phone, and on request a clip of up to 15 s. A hearing-only request at a place may go without a photo (`evidence_requirements.photo: false`) | Form | Optional |
 | Anywhere | `MEASUREMENT` | Number | Optional |
 | Anywhere | `CUSTOM_CHOICE` (the requester defines the choices) | Choice (2-6, up to 40 characters each) | Optional |
 

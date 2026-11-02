@@ -2,7 +2,7 @@
 
 The owner asked for a way to collect what people perceive with all five senses. An agent can read the web, but it cannot hear how loud a street is at 11 pm, smell whether a flat is damp, taste a new snack or feel whether a fabric is rough. This chapter designs a verification type for that.
 
-**Status (2026-11-02).** Part 1 is implemented: the type, the catalogue, the `tags` field, declining a sense, the summaries, the sound level measured on the phone, and migration 0036. Part 2 is not built yet: audio clips (§9) and hearing-only requests without a photo (§4). Until then every submission still needs a photo, and `audio` is not accepted.
+**Status (2026-11-02).** Both parts are implemented. Part 1: the type, the catalogue, the `tags` field, declining a sense, the summaries, the sound level measured on the phone, and migration 0036. Part 2: audio clips on request (§9), hearing-only requests at a place that need no photo (§4), migration 0037 and the `evidence-audio` bucket. Neither part has been tried on a real phone yet.
 
 ## 1. Decisions taken (owner, 2026-11-02)
 
@@ -48,13 +48,15 @@ POST /v1/verifications
 }
 ```
 
-(Other fields as for any verification. `audio` is part 2.)
+(Other fields as for any verification.)
 
 - `answer_schema: { type: "sensory", senses }`: any of `sight`, `hearing`, `smell`, `taste`, `touch`, **one is enough** (owner, 2026-11-02). A request for only `["hearing"]` or only `["taste"]` is normal; asking for all five is never required. The requester chooses senses, **not fields**: the server builds the form from the fixed catalogue in §5, for the chosen senses only. This is what makes answers comparable.
 - `question`: what to perceive. It is requester text, so it is never put in a push (15 §1).
 - `location`: optional, as for `PRODUCT_INSPECTION`. When given, the usual geofence, nonce and freshness apply to the photo and to the sound measurement.
-- `audio` (part 2): only with `hearing`. `clip` is `none` (default), `optional` or `required`; `max_seconds` is 5-15.
-- A photo is required, except (part 2) for a hearing-only request with a `location`. There the sound measurement itself is tied to the place (§8), and a photo is optional. For every other request the photo is the only thing that shows the worker was in front of the target.
+- `audio`: only with `hearing`. `clip` is `none` (default), `optional` or `required`; `max_seconds` is 5-15 (default 15). Anything else is 400 `VALIDATION_FAILED`, field `audio`, reason `needs_hearing`.
+- A photo is required unless the requester sends `evidence_requirements: { photo: false }`, which is allowed only for a hearing-only request with a `location` (reasons `photo_needs_hearing_only`, `photo_needs_location`). There the sound measurement itself is tied to the place (§8). For every other request the photo is the only thing that shows the worker was in front of the target. The requester opts in rather than the server deciding, so an existing request never changes meaning.
+- A submission without a photo must carry a measured `hearing_level_db` with its `measurements.sound` (400 `VALIDATION_FAILED`, field `evidence`, reason `photo_or_sound_level_required`). The geofence still applies. AI review does not run, because there is nothing to look at; the media checks are `not_run`.
+- `GET /v1/verifications/{id}` returns `evidence_requirements` and `audio` (null when none); the worker's claim view returns `photo_required` and `audio`.
 
 A hearing-only request is the smallest case: "measure how loud it is here".
 
@@ -62,11 +64,12 @@ A hearing-only request is the smallest case: "measure how loud it is here".
 POST /v1/verifications
 {
   "type": "SENSORY_REPORT",
-  "senses": ["hearing"],
-  "target": "The park entrance on the east side",
+  "question": "The park entrance on the east side",
+  "answer_schema": { "type": "sensory", "senses": ["hearing"] },
   "location": { "lat": 35.672, "lng": 139.694, "radius_m": 100 },
+  "evidence_requirements": { "photo": false, "task_nonce": true },
   "assurance": { "level": "high" },
-  "bounty": { "asset": "USDC", "amount": "0.3" }
+  "bounty": { "asset": "USDC", "amount": "0.3", "network": "solana-devnet" }
 }
 ```
 
@@ -136,9 +139,10 @@ Both are part of `result_hash`, as the existing aggregate is. As in implementati
 ## 9. Audio clips
 
 - Formats: `audio/mp4` (AAC, what Safari records) and `audio/webm` (Opus, what Chrome records). At most `max_seconds`, at most 2 MiB. A new private bucket `evidence-audio`.
-- The same upload flow as photos: a signed upload URL under the same challenge, sha256 for exact replay, rows in `evidence_objects` (`media_type` is already free text; `width` and `height` stay empty). A later migration adds `duration_ms`.
+- The same upload flow as photos: `POST /v1/worker/claims/{id}/uploads` with `content_type: "audio/mp4"` or `"audio/webm"`, one clip per challenge (photos keep their own four), refused unless the request asks for a clip. The submission names it as `audio: { object_ref, duration_ms }`. sha256 for exact replay, rows in `evidence_objects` (`width` and `height` empty, `duration_ms` from migration 0037). Keys end in `.m4a` or `.webm`, and the storage adapter puts them in `evidence-audio`.
+- Checks: `media_schema` (the declared type matches the first bytes: `ftyp` at offset 4 for MP4, the EBML header for WebM; at most 2 MiB; 1 s to `max_seconds`), `replay` and `freshness` run on the clip as on each photo. The server does not decode audio, so the length is the one the phone reports.
 - Retention: 30 days, the same `raw_evidence` class as photos, and the same purge job.
-- The requester gets a signed URL valid for 300 s, as for photos.
+- The requester gets a signed URL valid for 300 s, as for photos, from `GET /v1/verifications/{id}/evidence`. Each item now has `media_type`, and clips have `duration_ms`. A clip is served as recorded; a photo is still served only from the derived, EXIF-free copy.
 - Before recording, the screen says: "Record the surroundings, not a conversation. Do not record anyone who has not agreed." The worker can play the clip back, record again or delete it before sending.
 - **AI review cannot listen.** The Claude API takes text and images, not audio. AI review gets the numbers and the text, never the clip. A clip is checked only for format, length, size and replay. This is stated in the API docs so nobody believes the clip was screened.
 
@@ -157,7 +161,7 @@ Taste and touch involve the worker's body, and the owner chose not to restrict t
 |---|---|
 | `@proofmarket/core` | `SENSORY_REPORT` in `TASK_TYPES` (answer `form`, location optional); `SENSES` and the catalogue with ja/en labels; form field type `tags`; `senses` and `audio` on the request schema |
 | DB, migration 0036 (part 1) | `vr_type_chk` gains `SENSORY_REPORT`; API keys that allowed every earlier type are given it too |
-| DB, part 2 | `evidence_objects.duration_ms`; storage bucket `evidence-audio` (private, 2 MiB, the two audio types) |
+| DB, migration 0037 (part 2) | `verification_requests.photo_required`, `audio_clip`, `audio_max_s` (with `vr_audio_chk`); `evidence_objects.duration_ms`. Storage bucket `evidence-audio` (private, 2 MiB, the two audio types), created by `scripts/supabase-setup.ts` |
 | Evidence service | Audio uploads and their checks; sound measurement fields; `<sense>_status` handling |
 | Aggregation | Tag shares and status counts (§7) |
 | AI review | Prompt for this type: reported senses cannot be checked, only checked against the photo and for completeness |

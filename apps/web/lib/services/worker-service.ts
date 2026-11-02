@@ -21,9 +21,10 @@ import {
   type WorkerRecord,
 } from "@proofmarket/core";
 import { type Db, schema } from "@proofmarket/db";
-import { and, count, eq, gt, gte, inArray } from "drizzle-orm";
+import { and, eq, gt, gte, inArray } from "drizzle-orm";
 import type { AppContext } from "../context";
 import { LEGAL_VERSIONS } from "../legal";
+import { audioKeyExt } from "../ports";
 import { attestationOf } from "./attestation";
 import { appendAudit } from "./audit";
 import { bountyOf, feeMicro, reservedMicro } from "./bounty";
@@ -232,9 +233,12 @@ function workerTaskView(t: TaskRow, distanceM: number | null, slots: number, now
     deadline: t.deadline.toISOString(),
     freshness_max_age_seconds: t.freshnessMaxAgeS,
     open_slots: slots,
-    requirements: location
-      ? (["photo", "location", "task_nonce"] as const)
-      : (["photo", "task_nonce"] as const),
+    requirements: [
+      ...(t.photoRequired ? (["photo"] as const) : []),
+      ...(location ? (["location"] as const) : []),
+      "task_nonce" as const,
+      ...(t.audioClip === "required" ? (["audio"] as const) : []),
+    ],
     safety_notes_version: SAFETY_NOTES_VERSION,
   };
 }
@@ -466,15 +470,20 @@ export async function createUpload(
     const [ch] = await tx.select().from(schema.challenges).where(eq(schema.challenges.id, body.challenge_id));
     if (!ch || ch.claimId !== claimId || ch.state !== "ISSUED") throw new ApiError("NONCE_INVALID");
     if (ch.expiresAt <= now) throw new ApiError("NONCE_EXPIRED");
-    // 01 §4.18: one upload per photo, at most maxPhotos under one challenge.
-    const [{ n } = { n: 0 }] = await tx
-      .select({ n: count() })
+    // 01 §4.18: one upload per photo, at most maxPhotos under one challenge. 16 §9: plus one audio clip, only
+    // when the request asks for one.
+    const audio = body.content_type !== LIMITS.media.contentType;
+    if (audio && task.audioClip === "none")
+      throw new ApiError("VALIDATION_FAILED", { field: "content_type", reason: "no_audio_requested" });
+    const keys = await tx
+      .select({ key: schema.uploads.objectKey })
       .from(schema.uploads)
       .where(eq(schema.uploads.challengeId, ch.id));
-    if (n >= LIMITS.media.maxPhotos)
+    const same = keys.filter((k) => /\.jpg$/.test(k.key) !== audio).length;
+    if (same >= (audio ? 1 : LIMITS.media.maxPhotos))
       throw new ApiError("VALIDATION_FAILED", { field: "challenge_id", reason: "upload_limit" });
     const uploadId = newId("upload");
-    const key = `${task.id}/${claimId}/${uploadId}.jpg`;
+    const key = `${task.id}/${claimId}/${uploadId}.${audio ? audioKeyExt(body.content_type) : "jpg"}`;
     await tx
       .insert(schema.uploads)
       .values({ id: uploadId, claimId, challengeId: ch.id, objectKey: key, state: "PENDING", issuedAt: now });
@@ -485,7 +494,7 @@ export async function createUpload(
     upload_id: out.uploadId,
     upload_url: signed.url,
     expires_in_seconds: signed.expiresInS,
-    max_bytes: LIMITS.media.maxBytes,
+    max_bytes: body.content_type === LIMITS.media.contentType ? LIMITS.media.maxBytes : LIMITS.audio.maxBytes,
   };
 }
 
@@ -523,6 +532,9 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
       answerKind: schema.verificationRequests.answerKind,
       answerSpec: schema.verificationRequests.answerSpec,
       targetLat: schema.verificationRequests.targetLat,
+      photoRequired: schema.verificationRequests.photoRequired,
+      audioClip: schema.verificationRequests.audioClip,
+      audioMaxS: schema.verificationRequests.audioMaxS,
     })
     .from(schema.verificationRequests)
     .where(eq(schema.verificationRequests.id, claim.verificationId));
@@ -564,5 +576,10 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
       (task?.answerSpec as Record<string, unknown> | null) ?? null,
     ),
     location_required: task?.targetLat != null,
+    photo_required: task?.photoRequired ?? true,
+    audio:
+      task && task.audioClip !== "none" && task.audioMaxS !== null
+        ? { clip: task.audioClip as "optional" | "required", max_seconds: task.audioMaxS }
+        : null,
   };
 }
