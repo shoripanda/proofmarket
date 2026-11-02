@@ -52,6 +52,7 @@ const SAMPLE_QUESTIONS: Record<TaskType, string> = {
   CUSTOM_CHOICE: "Which do you see from where you are: sky, ceiling or neither?",
   CUSTOM_TASK:
     "Write down, by hand, one thing an AI could not have checked for you today, and photograph it.",
+  SENSORY_REPORT: "Measure how loud it is where you are now, and photograph your surroundings.",
 };
 
 if (a["list-types"]) {
@@ -91,6 +92,8 @@ if (spec.location === "required" && !location) {
   process.exit(2);
 }
 function answerSchemaFor(): Record<string, unknown> {
+  // docs/architecture 16: name the senses (--senses hearing,smell); the server builds the form.
+  if (type === "SENSORY_REPORT") return { type: "sensory", senses: (a.senses ?? "hearing").split(",") };
   if (spec.answer === "number") return { type: "number", ...(a.unit ? { unit: a.unit } : {}) };
   if (spec.answer === "text") return { type: "text" };
   if ("values" in spec && spec.values) return { type: "enum", values: [...spec.values] };

@@ -84,6 +84,8 @@ export const TASK_TYPES = [
   "MEASUREMENT",
   "CUSTOM_CHOICE",
   "CUSTOM_TASK",
+  // the five senses (docs/architecture 16): answered with the fixed sensory form
+  "SENSORY_REPORT",
 ] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
 
@@ -128,6 +130,7 @@ export const TASK_TYPE_SPECS = {
   MEASUREMENT: { answer: "number", location: "optional" },
   CUSTOM_CHOICE: { answer: "enum", location: "optional", values: null },
   CUSTOM_TASK: { answer: "text", location: "optional" },
+  SENSORY_REPORT: { answer: "text", location: "optional" },
 } as const satisfies Record<TaskType, TaskTypeSpec>;
 
 /** Fixed choices per enum type (CUSTOM_CHOICE has none: the requester names them). */

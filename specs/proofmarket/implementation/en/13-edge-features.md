@@ -65,6 +65,8 @@ Form fields gain `type: "scale"` with `min` and `max` (1-5 or 1-10) and `labels`
 Aggregation: with 3 or more valid submissions on the same request, return `result.aggregate[key] = { median, min, max, n }` (verdicts stay as for text; no majority vote).
 Example: `/developers` has a request "three people measure a shop's atmosphere" (four scales — smell, noise, cleanliness, brightness — with `assurance: { level: "high" }`).
 
+Since 2026-11-02 the type `SENSORY_REPORT` (docs/architecture 16) does this with a fixed catalogue instead of hand-made scales, so answers compare across requests. The aggregate also gives `{ shares, n }` for `tags` fields and `{ counts, n }` for each sense's status.
+
 ## 5. People attesting to an agent's actions (attestation)
 
 A request can carry `attestation: { subject: "agent_action", description: "..." }` (optional, up to 200 characters). The checks and verdict are the same; the wording changes.

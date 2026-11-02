@@ -77,6 +77,11 @@ export const TASK_TYPE_JA: Record<TaskType, TypeText> = {
     name: "その他の作業",
     howTo: "質問にある作業をして、結果を文章で報告します。作業の様子か結果が分かる写真を撮ってください。",
   },
+  SENSORY_REPORT: {
+    name: "五感の報告",
+    howTo:
+      "質問にある場所や物を、指定された感覚（見る・聞く・におう・味わう・触る）で確かめて答えます。対象が分かる写真を撮ってください。",
+  },
 };
 
 export const TASK_TYPE_EN: Record<TaskType, TypeText> = {
@@ -155,6 +160,11 @@ export const TASK_TYPE_EN: Record<TaskType, TypeText> = {
     howTo:
       "Do the task in the question and describe the result. Take a photo that shows the work or its result.",
   },
+  SENSORY_REPORT: {
+    name: "Senses report",
+    howTo:
+      "Check the place or thing in the question with the senses asked for (sight, hearing, smell, taste, touch) and report. Take a photo that shows what you checked.",
+  },
 };
 
 export const taskTypeText = (lang: Lang) => (lang === "en" ? TASK_TYPE_EN : TASK_TYPE_JA);
@@ -229,6 +239,15 @@ export type FormFieldView =
       min?: number;
       max: number;
       labels: [string, string];
+      required?: boolean;
+    }
+  | {
+      /** docs/architecture 16 §5: pick 1 to `max` of fixed words. */
+      type: "tags";
+      key: string;
+      label: string;
+      values: string[];
+      max: number;
       required?: boolean;
     };
 

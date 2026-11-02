@@ -22,6 +22,7 @@ import {
   PRE_CHECKS,
   RETENTION_DAYS,
   runChecks,
+  SOUND_MEASURE_S,
 } from "@proofmarket/core";
 import type { SubmitEvidenceRequest } from "@proofmarket/core/schemas/api";
 import { constraintName, type Db, pgErrorCode, schema } from "@proofmarket/db";
@@ -179,6 +180,7 @@ export async function submitEvidence(
     body.answer,
   );
   if (answer === null) throw new ApiError("ANSWER_INVALID");
+  checkSoundMeasurement(answer, body.measurements?.sound, ch.issuedAt, now);
   // Location is checked only for tasks that have one; work that can be done anywhere skips the geofence (01 §4.15).
   const target = taskLocation(task);
   const { lat, lng, accuracy_m } = body.capture;
@@ -386,6 +388,33 @@ export async function submitEvidence(
     };
   }
   return finishSubmission(tx, app, { task, claimId: claim.id, submissionId, results, attempts, now });
+}
+
+/**
+ * docs/architecture 16 §8: a measured sound level must come with when the phone measured it, after the challenge
+ * was issued and for 8-20 s. The phone's clock may be off a little (LIMITS.clientClockSkewWarnS).
+ */
+function checkSoundMeasurement(
+  answer: string,
+  sound: { started_at: string; ended_at: string } | undefined,
+  issuedAt: Date,
+  now: Date,
+): void {
+  let level: unknown;
+  try {
+    level = (JSON.parse(answer) as Record<string, unknown>)?.hearing_level_db;
+  } catch {
+    return; // not a form answer
+  }
+  if (typeof level !== "number") return;
+  const bad = (reason: string) => new ApiError("VALIDATION_FAILED", { field: "measurements.sound", reason });
+  if (!sound) throw bad("required_with_sound_level");
+  const start = new Date(sound.started_at).getTime();
+  const end = new Date(sound.ended_at).getTime();
+  const skew = LIMITS.clientClockSkewWarnS * 1000;
+  const seconds = (end - start) / 1000;
+  if (seconds < SOUND_MEASURE_S.min || seconds > SOUND_MEASURE_S.max) throw bad("duration_out_of_range");
+  if (start < issuedAt.getTime() - skew || end > now.getTime() + skew) throw bad("outside_challenge");
 }
 
 const checksMap = (results: readonly CheckOutcome[]) =>

@@ -34,6 +34,7 @@ import { LIMITS } from "../domain/limits.ts";
 import { LOCATION_PRIVACY } from "../domain/location-privacy.ts";
 import { REQUIRABLE_TIERS, WORKER_TIERS } from "../domain/trust.ts";
 import { ERROR_CATALOG, type ErrorCode } from "../errors.ts";
+import { isSensoryFieldList, SENSES, sensoryAnswerSchema } from "../task/senses.ts";
 
 // ---------- primitives ----------
 
@@ -118,14 +119,27 @@ export const FormFieldSchema = z.discriminatedUnion("type", [
       required: z.boolean().default(true),
     })
     .strict(),
+  /** Pick 1 to `max` of fixed words (docs/architecture 16 §5), e.g. the kinds of smell. Answered as an array. */
+  z
+    .object({
+      type: z.literal("tags"),
+      key: FieldKey,
+      label: FieldLabel,
+      values: z.array(ChoiceValue).min(2).max(LIMITS.answer.maxTags),
+      max: z.number().int().min(1).max(LIMITS.answer.maxTags),
+      required: z.boolean().default(true),
+    })
+    .strict(),
 ]);
 export type FormField = z.infer<typeof FormFieldSchema>;
 
 /**
  * How the worker answers. enum values must fit the type (TASK_TYPE_SPECS); checked in validateAnswerSchema.
  * form (01 §4.25): several named fields in one answer, for text types; stored and returned as one JSON object.
+ * sensory (docs/architecture 16 §4): only for SENSORY_REPORT; name the senses and the server builds the form
+ * from the fixed catalogue. Requests and results always show the built form.
  */
-export const AnswerSchemaSpec = z.discriminatedUnion("type", [
+const AnswerSchemaShapes = z.discriminatedUnion("type", [
   z
     .object({ type: z.literal("enum"), values: z.array(ChoiceValue).min(2).max(LIMITS.answer.maxChoices) })
     .strict(),
@@ -146,10 +160,29 @@ export const AnswerSchemaSpec = z.discriminatedUnion("type", [
   z
     .object({
       type: z.literal("form"),
-      fields: z.array(FormFieldSchema).min(1).max(LIMITS.answer.maxFormFields),
+      fields: z.array(FormFieldSchema).min(1),
+    })
+    .strict()
+    // A form built from the sensory catalogue may be longer than a hand-made one (16 §5).
+    .refine((f) => f.fields.length <= LIMITS.answer.maxFormFields || isSensoryFieldList(f.fields), {
+      path: ["fields"],
+      message: `at most ${LIMITS.answer.maxFormFields} fields`,
+    }),
+  z
+    .object({
+      type: z.literal("sensory"),
+      senses: z
+        .array(z.enum(SENSES))
+        .min(1)
+        .max(SENSES.length)
+        .refine((s) => new Set(s).size === s.length, "each sense once")
+        .describe("One is enough. sight, hearing, smell, taste, touch"),
     })
     .strict(),
 ]);
+export const AnswerSchemaSpec = AnswerSchemaShapes.transform((s) =>
+  s.type === "sensory" ? sensoryAnswerSchema(s.senses) : s,
+);
 export type AnswerSchemaSpec = z.infer<typeof AnswerSchemaSpec>;
 export const AnswerKindSchema = z.enum(ANSWER_KINDS);
 const LocationSchema = z.object({
@@ -471,7 +504,13 @@ export const VerificationResultSchema = z.object({
   aggregate: z
     .record(
       z.string(),
-      z.object({ median: z.number(), min: z.number(), max: z.number(), n: z.number().int() }),
+      z.union([
+        z.object({ median: z.number(), min: z.number(), max: z.number(), n: z.number().int() }),
+        /** A tags field (16 §7): the share of accepted answers that chose each word. */
+        z.object({ shares: z.record(z.string(), z.number().min(0).max(1)), n: z.number().int() }),
+        /** A sense's status (16 §7): how many reported, found nothing, or declined. */
+        z.object({ counts: z.record(z.string(), z.number().int()), n: z.number().int() }),
+      ]),
     )
     .optional(),
   answer_counts: z.record(z.string(), z.number().int()),
@@ -887,6 +926,14 @@ export const SubmitEvidenceRequestSchema = z
       accuracy_m: z.number().min(0).max(10_000).optional(),
     }),
     challenge: z.object({ nonce: z.string().min(1).max(128) }),
+    /**
+     * Sensory reports (docs/architecture 16 §8): when the answer carries `hearing_level_db`, when the phone
+     * measured it. It must start after the challenge was issued and last 8-20 s.
+     */
+    measurements: z
+      .object({ sound: z.object({ started_at: IsoDateTime, ended_at: IsoDateTime }).strict() })
+      .strict()
+      .optional(),
     evidence: z
       .array(z.object({ type: z.literal("photo"), object_ref: UploadIdSchema }))
       .min(1)

@@ -4,6 +4,7 @@ import { type AnswerKind, TASK_TYPE_SPECS, type TaskType, type TaskTypeSpec } fr
 import { LIMITS } from "../domain/limits.ts";
 import { ApiError } from "../errors.ts";
 import type { AnswerSchemaSpec, FormField } from "../schemas/api.ts";
+import { sensesOfFields, sensoryAnswerProblem } from "./senses.ts";
 
 export const answerKindOf = (type: TaskType): AnswerKind => TASK_TYPE_SPECS[type].answer;
 export const locationRequired = (type: TaskType): boolean => TASK_TYPE_SPECS[type].location === "required";
@@ -21,6 +22,16 @@ export function storedAnswerSpec(spec: AnswerSchemaSpec): Record<string, unknown
 
 /** Throws VALIDATION_FAILED unless the schema fits the type (kind, and fixed values where the type has them). */
 export function validateAnswerSchema(type: TaskType, spec: AnswerSchemaSpec): void {
+  // docs/architecture 16 §4: a sensory report is answered with the catalogue form and nothing else, and the
+  // catalogue form belongs to sensory reports only.
+  const sensory = spec.type === "form" && sensesOfFields(spec.fields) !== null;
+  if ((type === "SENSORY_REPORT") !== sensory) {
+    throw new ApiError("VALIDATION_FAILED", {
+      field: "answer_schema",
+      reason: type === "SENSORY_REPORT" ? "sensory_needs_senses" : "sensory_form_needs_sensory_report",
+      ...(type === "SENSORY_REPORT" ? { allowed: ["sensory"] } : {}),
+    });
+  }
   const want = answerKindOf(type);
   if (storedAnswerKind(spec) !== want) {
     throw new ApiError("VALIDATION_FAILED", {
@@ -51,7 +62,7 @@ export function validateAnswerSchema(type: TaskType, spec: AnswerSchemaSpec): vo
       throw new ApiError("VALIDATION_FAILED", { field: "answer_schema.fields", reason: "duplicate_keys" });
     }
     for (const [i, f] of spec.fields.entries()) {
-      if (f.type === "enum" && new Set(f.values).size !== f.values.length) {
+      if ((f.type === "enum" || f.type === "tags") && new Set(f.values).size !== f.values.length) {
         throw new ApiError("VALIDATION_FAILED", {
           field: `answer_schema.fields.${i}.values`,
           reason: "duplicates",
@@ -62,6 +73,12 @@ export function validateAnswerSchema(type: TaskType, spec: AnswerSchemaSpec): vo
           field: `answer_schema.fields.${i}.max`,
           reason: "scale_max",
           allowed: [5, 10],
+        });
+      }
+      if (f.type === "tags" && f.max > f.values.length) {
+        throw new ApiError("VALIDATION_FAILED", {
+          field: `answer_schema.fields.${i}.max`,
+          reason: "more_than_values",
         });
       }
       if (f.type === "number" && f.min !== undefined && f.max !== undefined && f.min > f.max) {
@@ -75,7 +92,7 @@ export function validateAnswerSchema(type: TaskType, spec: AnswerSchemaSpec): vo
 }
 
 /** A field as a stand-alone answer schema, for normalizing its value. */
-function fieldSpec(f: Exclude<FormField, { type: "scale" }>): AnswerSchemaSpec {
+function fieldSpec(f: Exclude<FormField, { type: "scale" | "tags" }>): AnswerSchemaSpec {
   if (f.type === "enum") return { type: "enum", values: f.values };
   if (f.type === "number") return { type: "number", unit: f.unit, min: f.min, max: f.max };
   return { type: "text", max_chars: f.max_chars };
@@ -96,12 +113,23 @@ function normalizeForm(fields: readonly FormField[], raw: string): string | null
   const given = parsed as Record<string, unknown>;
   const known = new Set(fields.map((f) => f.key));
   if (Object.keys(given).some((k) => !known.has(k))) return null;
-  const out: Record<string, string | number> = {};
+  const out: Record<string, string | number | string[]> = {};
   for (const f of fields) {
     const v = given[f.key];
-    const empty = v === undefined || v === null || (typeof v === "string" && v.trim() === "");
+    const empty =
+      v === undefined ||
+      v === null ||
+      (typeof v === "string" && v.trim() === "") ||
+      (Array.isArray(v) && v.length === 0);
     if (empty) {
       if (f.required) return null;
+      continue;
+    }
+    if (f.type === "tags") {
+      // 16 §5: 1 to max distinct words from the list, kept in the list's order.
+      if (!Array.isArray(v) || v.length > f.max || new Set(v).size !== v.length) return null;
+      if (!v.every((x) => typeof x === "string" && f.values.includes(x))) return null;
+      out[f.key] = f.values.filter((x) => v.includes(x));
       continue;
     }
     if (typeof v !== "string" && typeof v !== "number") return null;
@@ -116,6 +144,8 @@ function normalizeForm(fields: readonly FormField[], raw: string): string | null
     if (n === null) return null;
     out[f.key] = f.type === "number" ? Number(n) : n;
   }
+  const senses = sensesOfFields(fields);
+  if (senses && sensoryAnswerProblem(senses, out) !== null) return null;
   return JSON.stringify(out);
 }
 

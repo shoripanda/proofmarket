@@ -112,6 +112,8 @@ export async function witness(
     at?: { lat: number; lng: number };
     accuracy?: number;
     claimId?: string;
+    /** Extra fields for the evidence body, e.g. `measurements` (docs/architecture 16 §8). */
+    extra?: Record<string, unknown>;
   } = {},
 ) {
   const w = W(t, token);
@@ -142,6 +144,7 @@ export async function witness(
     },
     challenge: { nonce: ch.nonce },
     evidence: refs.map((object_ref) => ({ type: "photo", object_ref })),
+    ...o.extra,
   });
   return { res, claimId, body: (await res.clone().json()) as Record<string, unknown> };
 }

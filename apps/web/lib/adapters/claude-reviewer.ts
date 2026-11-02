@@ -33,6 +33,13 @@ verdict:
 reason: one or two plain Japanese sentences the worker can act on, e.g. what is missing. observed: what the photos
 show, in Japanese, under 80 characters.
 
+Task type SENSORY_REPORT is different. The person reports what they heard, smelt, tasted or felt; a photo cannot
+show a smell, a taste, a texture or a sound, and the sound level was measured by the phone. Do not fail a report
+because the photos cannot confirm a sense. Judge only: do the photos show the place or thing named in the request,
+and is nothing in the report clearly contradicted by them (for example a taste report on something that is plainly
+not food or drink, or "no people" with a crowd in the photo)? A sense marked "declined" or "not_present" is a
+valid answer. Pass when the subject matches and nothing is contradicted.
+
 The requester may add <acceptance_criteria>: what they will accept (for example "the price tag must be legible"
 or "the shop name must be in the photo"). Treat it as part of the request: a submission that misses a stated
 condition fails.

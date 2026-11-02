@@ -76,7 +76,8 @@
                       "PHONE_INQUIRY",
                       "MEASUREMENT",
                       "CUSTOM_CHOICE",
-                      "CUSTOM_TASK"
+                      "CUSTOM_TASK",
+                      "SENSORY_REPORT"
                     ]
                   },
                   "question": {
@@ -169,7 +170,6 @@
                           },
                           "fields": {
                             "minItems": 1,
-                            "maxItems": 8,
                             "type": "array",
                             "items": {
                               "oneOf": [
@@ -352,6 +352,53 @@
                                     "labels"
                                   ],
                                   "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "tags"
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    },
+                                    "values": {
+                                      "minItems": 2,
+                                      "maxItems": 12,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 40
+                                      }
+                                    },
+                                    "max": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 12
+                                    },
+                                    "required": {
+                                      "default": true,
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "key",
+                                    "label",
+                                    "values",
+                                    "max"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               ]
                             }
@@ -360,6 +407,38 @@
                         "required": [
                           "type",
                           "fields"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "sensory"
+                            ]
+                          },
+                          "senses": {
+                            "minItems": 1,
+                            "maxItems": 5,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "sight",
+                                "hearing",
+                                "smell",
+                                "taste",
+                                "touch"
+                              ]
+                            },
+                            "description": "One is enough. sight, hearing, smell, taste, touch"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "senses"
                         ],
                         "additionalProperties": false
                       }
@@ -876,7 +955,8 @@
                               "PHONE_INQUIRY",
                               "MEASUREMENT",
                               "CUSTOM_CHOICE",
-                              "CUSTOM_TASK"
+                              "CUSTOM_TASK",
+                              "SENSORY_REPORT"
                             ]
                           },
                           "status": {
@@ -1169,7 +1249,8 @@
                           "PHONE_INQUIRY",
                           "MEASUREMENT",
                           "CUSTOM_CHOICE",
-                          "CUSTOM_TASK"
+                          "CUSTOM_TASK",
+                          "SENSORY_REPORT"
                         ]
                       },
                       "question": {
@@ -1262,7 +1343,6 @@
                               },
                               "fields": {
                                 "minItems": 1,
-                                "maxItems": 8,
                                 "type": "array",
                                 "items": {
                                   "oneOf": [
@@ -1445,6 +1525,53 @@
                                         "labels"
                                       ],
                                       "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "tags"
+                                          ]
+                                        },
+                                        "key": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 80
+                                        },
+                                        "values": {
+                                          "minItems": 2,
+                                          "maxItems": 12,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 40
+                                          }
+                                        },
+                                        "max": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 12
+                                        },
+                                        "required": {
+                                          "default": true,
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "key",
+                                        "label",
+                                        "values",
+                                        "max"
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   ]
                                 }
@@ -1453,6 +1580,38 @@
                             "required": [
                               "type",
                               "fields"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "sensory"
+                                ]
+                              },
+                              "senses": {
+                                "minItems": 1,
+                                "maxItems": 5,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "sight",
+                                    "hearing",
+                                    "smell",
+                                    "taste",
+                                    "touch"
+                                  ]
+                                },
+                                "description": "One is enough. sight, hearing, smell, taste, touch"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "senses"
                             ],
                             "additionalProperties": false
                           }
@@ -1972,7 +2131,8 @@
                       "PHONE_INQUIRY",
                       "MEASUREMENT",
                       "CUSTOM_CHOICE",
-                      "CUSTOM_TASK"
+                      "CUSTOM_TASK",
+                      "SENSORY_REPORT"
                     ]
                   },
                   "question": {
@@ -2065,7 +2225,6 @@
                           },
                           "fields": {
                             "minItems": 1,
-                            "maxItems": 8,
                             "type": "array",
                             "items": {
                               "oneOf": [
@@ -2248,6 +2407,53 @@
                                     "labels"
                                   ],
                                   "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "tags"
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    },
+                                    "values": {
+                                      "minItems": 2,
+                                      "maxItems": 12,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 40
+                                      }
+                                    },
+                                    "max": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 12
+                                    },
+                                    "required": {
+                                      "default": true,
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "key",
+                                    "label",
+                                    "values",
+                                    "max"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               ]
                             }
@@ -2256,6 +2462,38 @@
                         "required": [
                           "type",
                           "fields"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "sensory"
+                            ]
+                          },
+                          "senses": {
+                            "minItems": 1,
+                            "maxItems": 5,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "sight",
+                                "hearing",
+                                "smell",
+                                "taste",
+                                "touch"
+                              ]
+                            },
+                            "description": "One is enough. sight, hearing, smell, taste, touch"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "senses"
                         ],
                         "additionalProperties": false
                       }
@@ -2751,7 +2989,8 @@
                       "PHONE_INQUIRY",
                       "MEASUREMENT",
                       "CUSTOM_CHOICE",
-                      "CUSTOM_TASK"
+                      "CUSTOM_TASK",
+                      "SENSORY_REPORT"
                     ]
                   },
                   "question": {
@@ -2844,7 +3083,6 @@
                           },
                           "fields": {
                             "minItems": 1,
-                            "maxItems": 8,
                             "type": "array",
                             "items": {
                               "oneOf": [
@@ -3027,6 +3265,53 @@
                                     "labels"
                                   ],
                                   "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "tags"
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    },
+                                    "values": {
+                                      "minItems": 2,
+                                      "maxItems": 12,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 40
+                                      }
+                                    },
+                                    "max": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 12
+                                    },
+                                    "required": {
+                                      "default": true,
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "key",
+                                    "label",
+                                    "values",
+                                    "max"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               ]
                             }
@@ -3035,6 +3320,38 @@
                         "required": [
                           "type",
                           "fields"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "sensory"
+                            ]
+                          },
+                          "senses": {
+                            "minItems": 1,
+                            "maxItems": 5,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "sight",
+                                "hearing",
+                                "smell",
+                                "taste",
+                                "touch"
+                              ]
+                            },
+                            "description": "One is enough. sight, hearing, smell, taste, touch"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "senses"
                         ],
                         "additionalProperties": false
                       }
@@ -3613,7 +3930,8 @@
                         "PHONE_INQUIRY",
                         "MEASUREMENT",
                         "CUSTOM_CHOICE",
-                        "CUSTOM_TASK"
+                        "CUSTOM_TASK",
+                        "SENSORY_REPORT"
                       ]
                     },
                     "status": {
@@ -3747,7 +4065,6 @@
                             },
                             "fields": {
                               "minItems": 1,
-                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "oneOf": [
@@ -3930,6 +4247,53 @@
                                       "labels"
                                     ],
                                     "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "tags"
+                                        ]
+                                      },
+                                      "key": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80
+                                      },
+                                      "values": {
+                                        "minItems": 2,
+                                        "maxItems": 12,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 40
+                                        }
+                                      },
+                                      "max": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 12
+                                      },
+                                      "required": {
+                                        "default": true,
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "key",
+                                      "label",
+                                      "values",
+                                      "max"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 ]
                               }
@@ -3938,6 +4302,38 @@
                           "required": [
                             "type",
                             "fields"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "sensory"
+                              ]
+                            },
+                            "senses": {
+                              "minItems": 1,
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "sight",
+                                  "hearing",
+                                  "smell",
+                                  "taste",
+                                  "touch"
+                                ]
+                              },
+                              "description": "One is enough. sight, hearing, smell, taste, touch"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "senses"
                           ],
                           "additionalProperties": false
                         }
@@ -4414,28 +4810,76 @@
                         "aggregate": {
                           "type": "object",
                           "additionalProperties": {
-                            "type": "object",
-                            "properties": {
-                              "median": {
-                                "type": "number"
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "median": {
+                                    "type": "number"
+                                  },
+                                  "min": {
+                                    "type": "number"
+                                  },
+                                  "max": {
+                                    "type": "number"
+                                  },
+                                  "n": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "median",
+                                  "min",
+                                  "max",
+                                  "n"
+                                ]
                               },
-                              "min": {
-                                "type": "number"
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "shares": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1
+                                    }
+                                  },
+                                  "n": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "shares",
+                                  "n"
+                                ]
                               },
-                              "max": {
-                                "type": "number"
-                              },
-                              "n": {
-                                "type": "integer",
-                                "minimum": -9007199254740991,
-                                "maximum": 9007199254740991
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "counts": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "n": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "counts",
+                                  "n"
+                                ]
                               }
-                            },
-                            "required": [
-                              "median",
-                              "min",
-                              "max",
-                              "n"
                             ]
                           }
                         },
@@ -4847,7 +5291,8 @@
                         "PHONE_INQUIRY",
                         "MEASUREMENT",
                         "CUSTOM_CHOICE",
-                        "CUSTOM_TASK"
+                        "CUSTOM_TASK",
+                        "SENSORY_REPORT"
                       ]
                     },
                     "status": {
@@ -4981,7 +5426,6 @@
                             },
                             "fields": {
                               "minItems": 1,
-                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "oneOf": [
@@ -5164,6 +5608,53 @@
                                       "labels"
                                     ],
                                     "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "tags"
+                                        ]
+                                      },
+                                      "key": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80
+                                      },
+                                      "values": {
+                                        "minItems": 2,
+                                        "maxItems": 12,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 40
+                                        }
+                                      },
+                                      "max": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 12
+                                      },
+                                      "required": {
+                                        "default": true,
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "key",
+                                      "label",
+                                      "values",
+                                      "max"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 ]
                               }
@@ -5172,6 +5663,38 @@
                           "required": [
                             "type",
                             "fields"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "sensory"
+                              ]
+                            },
+                            "senses": {
+                              "minItems": 1,
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "sight",
+                                  "hearing",
+                                  "smell",
+                                  "taste",
+                                  "touch"
+                                ]
+                              },
+                              "description": "One is enough. sight, hearing, smell, taste, touch"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "senses"
                           ],
                           "additionalProperties": false
                         }
@@ -5648,28 +6171,76 @@
                         "aggregate": {
                           "type": "object",
                           "additionalProperties": {
-                            "type": "object",
-                            "properties": {
-                              "median": {
-                                "type": "number"
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "median": {
+                                    "type": "number"
+                                  },
+                                  "min": {
+                                    "type": "number"
+                                  },
+                                  "max": {
+                                    "type": "number"
+                                  },
+                                  "n": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "median",
+                                  "min",
+                                  "max",
+                                  "n"
+                                ]
                               },
-                              "min": {
-                                "type": "number"
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "shares": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1
+                                    }
+                                  },
+                                  "n": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "shares",
+                                  "n"
+                                ]
                               },
-                              "max": {
-                                "type": "number"
-                              },
-                              "n": {
-                                "type": "integer",
-                                "minimum": -9007199254740991,
-                                "maximum": 9007199254740991
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "counts": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "n": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "counts",
+                                  "n"
+                                ]
                               }
-                            },
-                            "required": [
-                              "median",
-                              "min",
-                              "max",
-                              "n"
                             ]
                           }
                         },
@@ -6646,7 +7217,8 @@
                           "PHONE_INQUIRY",
                           "MEASUREMENT",
                           "CUSTOM_CHOICE",
-                          "CUSTOM_TASK"
+                          "CUSTOM_TASK",
+                          "SENSORY_REPORT"
                         ]
                       },
                       "question": {
@@ -6739,7 +7311,6 @@
                               },
                               "fields": {
                                 "minItems": 1,
-                                "maxItems": 8,
                                 "type": "array",
                                 "items": {
                                   "oneOf": [
@@ -6922,6 +7493,53 @@
                                         "labels"
                                       ],
                                       "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "tags"
+                                          ]
+                                        },
+                                        "key": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 80
+                                        },
+                                        "values": {
+                                          "minItems": 2,
+                                          "maxItems": 12,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 40
+                                          }
+                                        },
+                                        "max": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 12
+                                        },
+                                        "required": {
+                                          "default": true,
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "key",
+                                        "label",
+                                        "values",
+                                        "max"
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   ]
                                 }
@@ -6930,6 +7548,38 @@
                             "required": [
                               "type",
                               "fields"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "sensory"
+                                ]
+                              },
+                              "senses": {
+                                "minItems": 1,
+                                "maxItems": 5,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "sight",
+                                    "hearing",
+                                    "smell",
+                                    "taste",
+                                    "touch"
+                                  ]
+                                },
+                                "description": "One is enough. sight, hearing, smell, taste, touch"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "senses"
                             ],
                             "additionalProperties": false
                           }
@@ -14746,7 +15396,8 @@
                               "PHONE_INQUIRY",
                               "MEASUREMENT",
                               "CUSTOM_CHOICE",
-                              "CUSTOM_TASK"
+                              "CUSTOM_TASK",
+                              "SENSORY_REPORT"
                             ]
                           },
                           "question": {
@@ -14871,7 +15522,6 @@
                                   },
                                   "fields": {
                                     "minItems": 1,
-                                    "maxItems": 8,
                                     "type": "array",
                                     "items": {
                                       "oneOf": [
@@ -15054,6 +15704,53 @@
                                             "labels"
                                           ],
                                           "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "type": "string",
+                                              "enum": [
+                                                "tags"
+                                              ]
+                                            },
+                                            "key": {
+                                              "type": "string",
+                                              "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                            },
+                                            "label": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 80
+                                            },
+                                            "values": {
+                                              "minItems": 2,
+                                              "maxItems": 12,
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 40
+                                              }
+                                            },
+                                            "max": {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 12
+                                            },
+                                            "required": {
+                                              "default": true,
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "key",
+                                            "label",
+                                            "values",
+                                            "max"
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       ]
                                     }
@@ -15062,6 +15759,38 @@
                                 "required": [
                                   "type",
                                   "fields"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "sensory"
+                                    ]
+                                  },
+                                  "senses": {
+                                    "minItems": 1,
+                                    "maxItems": 5,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": [
+                                        "sight",
+                                        "hearing",
+                                        "smell",
+                                        "taste",
+                                        "touch"
+                                      ]
+                                    },
+                                    "description": "One is enough. sight, hearing, smell, taste, touch"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "senses"
                                 ],
                                 "additionalProperties": false
                               }
@@ -15353,7 +16082,8 @@
                         "PHONE_INQUIRY",
                         "MEASUREMENT",
                         "CUSTOM_CHOICE",
-                        "CUSTOM_TASK"
+                        "CUSTOM_TASK",
+                        "SENSORY_REPORT"
                       ]
                     },
                     "question": {
@@ -15478,7 +16208,6 @@
                             },
                             "fields": {
                               "minItems": 1,
-                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "oneOf": [
@@ -15661,6 +16390,53 @@
                                       "labels"
                                     ],
                                     "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "tags"
+                                        ]
+                                      },
+                                      "key": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80
+                                      },
+                                      "values": {
+                                        "minItems": 2,
+                                        "maxItems": 12,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 40
+                                        }
+                                      },
+                                      "max": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 12
+                                      },
+                                      "required": {
+                                        "default": true,
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "key",
+                                      "label",
+                                      "values",
+                                      "max"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 ]
                               }
@@ -15669,6 +16445,38 @@
                           "required": [
                             "type",
                             "fields"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "sensory"
+                              ]
+                            },
+                            "senses": {
+                              "minItems": 1,
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "sight",
+                                  "hearing",
+                                  "smell",
+                                  "taste",
+                                  "touch"
+                                ]
+                              },
+                              "description": "One is enough. sight, hearing, smell, taste, touch"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "senses"
                           ],
                           "additionalProperties": false
                         }
@@ -16505,6 +17313,35 @@
                       "nonce"
                     ]
                   },
+                  "measurements": {
+                    "type": "object",
+                    "properties": {
+                      "sound": {
+                        "type": "object",
+                        "properties": {
+                          "started_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "ended_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "started_at",
+                          "ended_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "sound"
+                    ],
+                    "additionalProperties": false
+                  },
                   "evidence": {
                     "minItems": 1,
                     "maxItems": 4,
@@ -16886,7 +17723,8 @@
                         "PHONE_INQUIRY",
                         "MEASUREMENT",
                         "CUSTOM_CHOICE",
-                        "CUSTOM_TASK"
+                        "CUSTOM_TASK",
+                        "SENSORY_REPORT"
                       ]
                     },
                     "question": {
@@ -17011,7 +17849,6 @@
                             },
                             "fields": {
                               "minItems": 1,
-                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "oneOf": [
@@ -17194,6 +18031,53 @@
                                       "labels"
                                     ],
                                     "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "tags"
+                                        ]
+                                      },
+                                      "key": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80
+                                      },
+                                      "values": {
+                                        "minItems": 2,
+                                        "maxItems": 12,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 40
+                                        }
+                                      },
+                                      "max": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 12
+                                      },
+                                      "required": {
+                                        "default": true,
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "key",
+                                      "label",
+                                      "values",
+                                      "max"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 ]
                               }
@@ -17202,6 +18086,38 @@
                           "required": [
                             "type",
                             "fields"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "sensory"
+                              ]
+                            },
+                            "senses": {
+                              "minItems": 1,
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "sight",
+                                  "hearing",
+                                  "smell",
+                                  "taste",
+                                  "touch"
+                                ]
+                              },
+                              "description": "One is enough. sight, hearing, smell, taste, touch"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "senses"
                           ],
                           "additionalProperties": false
                         }
@@ -17491,7 +18407,8 @@
                         "PHONE_INQUIRY",
                         "MEASUREMENT",
                         "CUSTOM_CHOICE",
-                        "CUSTOM_TASK"
+                        "CUSTOM_TASK",
+                        "SENSORY_REPORT"
                       ]
                     },
                     "question": {
@@ -17616,7 +18533,6 @@
                             },
                             "fields": {
                               "minItems": 1,
-                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "oneOf": [
@@ -17799,6 +18715,53 @@
                                       "labels"
                                     ],
                                     "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "tags"
+                                        ]
+                                      },
+                                      "key": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 80
+                                      },
+                                      "values": {
+                                        "minItems": 2,
+                                        "maxItems": 12,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 40
+                                        }
+                                      },
+                                      "max": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 12
+                                      },
+                                      "required": {
+                                        "default": true,
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "key",
+                                      "label",
+                                      "values",
+                                      "max"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 ]
                               }
@@ -17807,6 +18770,38 @@
                           "required": [
                             "type",
                             "fields"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "sensory"
+                              ]
+                            },
+                            "senses": {
+                              "minItems": 1,
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "sight",
+                                  "hearing",
+                                  "smell",
+                                  "taste",
+                                  "touch"
+                                ]
+                              },
+                              "description": "One is enough. sight, hearing, smell, taste, touch"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "senses"
                           ],
                           "additionalProperties": false
                         }
@@ -18434,7 +19429,8 @@
                         "PHONE_INQUIRY",
                         "MEASUREMENT",
                         "CUSTOM_CHOICE",
-                        "CUSTOM_TASK"
+                        "CUSTOM_TASK",
+                        "SENSORY_REPORT"
                       ]
                     },
                     "answer_kind": {
@@ -19195,7 +20191,8 @@
                               "PHONE_INQUIRY",
                               "MEASUREMENT",
                               "CUSTOM_CHOICE",
-                              "CUSTOM_TASK"
+                              "CUSTOM_TASK",
+                              "SENSORY_REPORT"
                             ]
                           },
                           "total": {
@@ -19262,7 +20259,8 @@
                               "PHONE_INQUIRY",
                               "MEASUREMENT",
                               "CUSTOM_CHOICE",
-                              "CUSTOM_TASK"
+                              "CUSTOM_TASK",
+                              "SENSORY_REPORT"
                             ]
                           },
                           "finalized_at": {
@@ -20842,7 +21840,8 @@
                               "PHONE_INQUIRY",
                               "MEASUREMENT",
                               "CUSTOM_CHOICE",
-                              "CUSTOM_TASK"
+                              "CUSTOM_TASK",
+                              "SENSORY_REPORT"
                             ]
                           },
                           "question": {
@@ -21090,7 +22089,8 @@
                               "PHONE_INQUIRY",
                               "MEASUREMENT",
                               "CUSTOM_CHOICE",
-                              "CUSTOM_TASK"
+                              "CUSTOM_TASK",
+                              "SENSORY_REPORT"
                             ]
                           },
                           "question": {
