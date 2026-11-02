@@ -21,6 +21,7 @@ The conclusion first. ProofMarket's foundation (Next.js and Supabase, the Anchor
 | 13 | [Moving to a marketplace](13-marketplace-migration.md) | Verifications and general tasks side by side, following the answers to D1-D6: tables, one on-chain Task per seat, the 15% fee, payment 24 hours after delivery, the order of the move |
 | 14 | [Public profiles](14-public-profiles.md) | Stage 8: opt-in public worker profiles, preferred and blocked workers, ratings, the public task list |
 | 15 | [Push for general tasks](15-worker-push.md) | Pushes to workers for new tasks (respecting blocks and preferred-only) and for their own seats; no requester text on lock screens |
+| 16 | [Sensory reports](16-sensory-reports.md) | A verification type for the five senses: a fixed catalogue of fields, a sound level measured on the phone, optional short clips, declining a sense, summaries across witnesses |
 
 On 2026-10-15 the owner approved implementation and decided the eight items in chapter 11 §10 (recorded there). The same day Phases 3, 1-2 and 4 and the widget went out as PRs #44-#47, and each change was added to the existing spec chapters (01 §4.29-4.30, 04 §3.28-3.29, 05 §1.2/§2.1b/§2.2a/§6.1, 06 §5.x, 08 §5-6, 12 §10.3, 15 §4.2).
 
