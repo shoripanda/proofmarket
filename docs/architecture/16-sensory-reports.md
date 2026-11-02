@@ -47,11 +47,27 @@ POST /v1/verifications
 }
 ```
 
-- `senses`: 1 to 5 of `sight`, `hearing`, `smell`, `taste`, `touch`. The requester chooses senses, **not fields**: the server builds the form from the fixed catalogue in §5. This is what makes answers comparable.
+- `senses`: any of `sight`, `hearing`, `smell`, `taste`, `touch`, **one is enough** (owner, 2026-11-02). A request for only `["hearing"]` or only `["taste"]` is normal; asking for all five is never required. The requester chooses senses, **not fields**: the server builds the form from the fixed catalogue in §5, for the chosen senses only. This is what makes answers comparable.
 - `target`: what to perceive, up to 200 characters. It is requester text, so it is never put in a push (15 §1).
 - `location`: optional, as for `PRODUCT_INSPECTION`. When given, the usual geofence, nonce and freshness apply to the photo and to the sound measurement.
 - `audio`: only with `hearing`. `clip` is `none` (default), `optional` or `required`; `max_seconds` is 5-15.
-- At least one photo is always required. It is the only thing that shows the worker was in front of the target.
+- A photo is required, except for a hearing-only request with a `location`. There the sound measurement itself is tied to the place (§8), and a photo is optional. For every other request the photo is the only thing that shows the worker was in front of the target.
+
+A hearing-only request is the smallest case: "measure how loud it is here".
+
+```json
+POST /v1/verifications
+{
+  "type": "SENSORY_REPORT",
+  "senses": ["hearing"],
+  "target": "The park entrance on the east side",
+  "location": { "lat": 35.672, "lng": 139.694, "radius_m": 100 },
+  "assurance": { "level": "high" },
+  "bounty": { "asset": "USDC", "amount": "0.3" }
+}
+```
+
+Three workers go there, each phone measures for 10 s, and the agent gets the median, min and max of `hearing_level_db` with each measurement's time.
 - `answer_kind` is stored as `form` with the generated fields in `answer_spec`, so the existing answer validation, storage and aggregation are reused unchanged.
 
 ## 5. The fixed catalogue
@@ -86,7 +102,7 @@ Each sense block has "I could not perceive it" and "I chose not to". The answer 
 
 - `not_present`: there was nothing to smell, the item had no taste worth scoring, and so on. It is an answer and counts.
 - `declined`: the worker chose not to (most likely for taste and touch). The submission still counts for the other senses.
-- A submission where every sense is `declined` is not a valid answer and is not paid.
+- A submission where every sense is `declined` is not a valid answer and is not paid. For a single-sense request, declining that sense means the worker simply does not submit.
 - Because taste is unrestricted (§1), declining must never cost the worker anything: no lower trust tier, no lower rating.
 
 ## 7. Summaries for the agent
@@ -104,7 +120,9 @@ Both are part of `result_hash`, as the existing aggregate is. As in implementati
 
 - `getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })`, then an `AnalyserNode`. RMS over 10 s gives an equivalent level, and the highest 1 s window gives the peak.
 - A phone microphone is not a calibrated sound meter. The browser gives dBFS. The app adds a fixed offset per platform (iOS, Android) and labels the result "approximate dB". Expect ±5-10 dB between phones. The API returns `"calibrated": false` and the device platform, never the model or an identifier.
+- **The level belongs to the place.** When the request has a `location`, the phone takes a GPS fix at the start of the measurement and the server applies the same geofence as for photos (inside `radius_m`, accuracy within 100 m). A measurement taken outside the area fails `geofence` and is not counted. The precise position is kept 30 days (`precise_location`), as for photos.
 - The measurement must start after the task nonce is shown, and must finish within the freshness window. The client sends the start and end time together with the values.
+- The worker screen shows a live meter while measuring, and asks the worker to hold the phone at chest height, not in a pocket or bag, with nothing covering the microphone.
 - When no clip is asked for, no audio leaves the phone. Only the two numbers do.
 - If the browser refuses the microphone, the worker can still report `hearing_loudness` and sources, and the level fields are empty with `hearing_level_status: "unavailable"`.
 
