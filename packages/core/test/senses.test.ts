@@ -37,7 +37,11 @@ describe("sensory catalogue (16 §5)", () => {
     const s = sensoryAnswerSchema(["touch"]);
     const out = normalizeAnswer(
       s,
-      JSON.stringify({ touch_status: "reported", touch_texture: ["wet", "smooth"], touch_temperature: "cold" }),
+      JSON.stringify({
+        touch_status: "reported",
+        touch_texture: ["wet", "smooth"],
+        touch_temperature: "cold",
+      }),
     );
     expect(JSON.parse(out ?? "{}").touch_texture).toEqual(["smooth", "wet"]);
   });
