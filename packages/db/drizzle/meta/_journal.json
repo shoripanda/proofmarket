@@ -253,6 +253,13 @@
       "when": 1791930000000,
       "tag": "0035_worker_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791940000000,
+      "tag": "0036_sensory_report",
+      "breakpoints": true
     }
   ]
 }

@@ -6,7 +6,15 @@ export const LIMITS = {
   publicMap: { maxAgeHours: 72, maxItems: 200 },
   /** 1000 so a request can name a book, page and passage (01 §4.15). */
   question: { maxChars: 1000 },
-  answer: { maxTextChars: 4000, maxChoiceChars: 40, maxChoices: 6, maxFormFields: 8, maxFieldLabelChars: 80 },
+  answer: {
+    maxTextChars: 4000,
+    maxChoiceChars: 40,
+    maxChoices: 6,
+    maxFormFields: 8,
+    maxFieldLabelChars: 80,
+    /** A tags field (docs/architecture 16 §5): words offered. */
+    maxTags: 12,
+  },
   /** 01 §4.25: what the requester will accept, shown to the worker and given to the AI review. */
   acceptanceCriteria: { maxChars: 500 },
   /** 13 §5: what the agent says it did, shown to the worker and on the proof page. */

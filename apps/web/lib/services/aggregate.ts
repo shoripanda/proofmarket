@@ -1,6 +1,6 @@
 // Sense index (13 §4): numbers summarised across witnesses. Computed when the result is saved (it is part of
 // result_hash) and again when the result is read, from the same accepted answers.
-import { answerSchemaOf } from "@proofmarket/core";
+import { answerSchemaOf, sensesOfFields } from "@proofmarket/core";
 import type { VerificationResult } from "@proofmarket/core/schemas/api";
 import type { TaskRow } from "./task-engine";
 
@@ -26,7 +26,30 @@ export function aggregateOf(
     }
   });
   const out: NonNullable<VerificationResult["aggregate"]> = {};
+  const sensory = sensesOfFields(spec.fields) !== null;
   for (const f of spec.fields) {
+    // docs/architecture 16 §7: the share of answers choosing each word, over the answers that filled the field.
+    if (f.type === "tags") {
+      const picked = parsed.map((p) => p[f.key]).filter((v): v is string[] => Array.isArray(v));
+      if (picked.length < 3) continue;
+      const shares: Record<string, number> = {};
+      for (const word of f.values) {
+        const k = picked.filter((v) => v.includes(word)).length;
+        if (k > 0) shares[word] = Math.round((k / picked.length) * 1000) / 1000;
+      }
+      out[f.key] = { shares, n: picked.length };
+      continue;
+    }
+    // 16 §7: for a sensory report, how many reported each sense, found nothing, or declined.
+    if (sensory && f.type === "enum" && f.key.endsWith("_status")) {
+      const counts = Object.fromEntries(f.values.map((v) => [v, 0])) as Record<string, number>;
+      for (const p of parsed) {
+        const v = p[f.key];
+        if (typeof v === "string" && v in counts) counts[v] = (counts[v] ?? 0) + 1;
+      }
+      out[f.key] = { counts, n: parsed.length };
+      continue;
+    }
     if (f.type !== "number" && f.type !== "scale") continue;
     const xs = parsed
       .map((p) => p[f.key])

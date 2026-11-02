@@ -14,6 +14,7 @@ import { cue } from "@/lib/client/sound";
 import { langHref, pick } from "@/lib/lang";
 import { AttestationBand } from "../../../attestation-band";
 import type { ClaimDetail } from "../../../lib-claim";
+import { SensoryForm, type SensoryValue } from "./sensory-form";
 
 interface Challenge {
   challenge_id: string;
@@ -48,25 +49,35 @@ export default function CapturePage() {
   const [answer, setAnswer] = useState("");
   // Form answers (01 §4.25): one value per field, sent as a single JSON object.
   const [fields, setFields] = useState<Record<string, string>>({});
+  // docs/architecture 16: a sensory report has its own blocks and may carry a measured sound level.
+  const [sensory, setSensory] = useState<SensoryValue>({ answer: null, sound: null });
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const schema = claim?.answer_schema;
   const formFields = schema?.type === "form" ? schema.fields : [];
   const formComplete = formFields.every((f) => f.required === false || (fields[f.key] ?? "").trim() !== "");
-  const answerReady = schema?.type === "form" ? formComplete : answer.trim() !== "";
+  const isSensory = claim?.type === "SENSORY_REPORT" && schema?.type === "form";
+  const answerReady = isSensory
+    ? sensory.answer !== null
+    : schema?.type === "form"
+      ? formComplete
+      : answer.trim() !== "";
   const payload = () =>
-    schema?.type === "form"
-      ? JSON.stringify(
-          Object.fromEntries(
-            formFields.flatMap((f) => {
-              const v = (fields[f.key] ?? "").trim();
-              if (!v) return [];
-              if (f.type === "number") return [[f.key, Number(v.replaceAll(",", ""))]];
-              return [[f.key, f.type === "scale" ? Number(v) : v]];
-            }),
-          ),
-        )
-      : answer;
+    isSensory
+      ? JSON.stringify(sensory.answer)
+      : schema?.type === "form"
+        ? JSON.stringify(
+            Object.fromEntries(
+              formFields.flatMap((f): [string, string | number | string[]][] => {
+                const v = (fields[f.key] ?? "").trim();
+                if (!v) return [];
+                if (f.type === "number") return [[f.key, Number(v.replaceAll(",", ""))]];
+                if (f.type === "tags") return [[f.key, v.split("\n")]];
+                return [[f.key, f.type === "scale" ? Number(v) : v]];
+              }),
+            ),
+          )
+        : answer;
   const needsLocation = claim?.location_required ?? true;
   const answers = (schema?.type === "enum" ? schema.values : (claim?.answer_values ?? [])).map((v) =>
     v in ANSWER_JA
@@ -191,6 +202,7 @@ export default function CapturePage() {
             ...(fix ? { lat: fix.lat, lng: fix.lng, accuracy_m: fix.accuracy } : {}),
           },
           challenge: { nonce: ch.nonce },
+          ...(isSensory && sensory.sound ? { measurements: { sound: sensory.sound } } : {}),
           evidence: refs.map((object_ref) => ({ type: "photo", object_ref })),
         },
       });
@@ -335,7 +347,9 @@ export default function CapturePage() {
                 : ""}
             </p>
           ) : null}
-          {schema?.type === "form" ? (
+          {isSensory && schema?.type === "form" ? (
+            <SensoryForm lang={lang} fields={schema.fields} onChange={setSensory} />
+          ) : schema?.type === "form" ? (
             <div className="grid gap-4">
               <p className="text-sm font-medium text-slate-700">
                 {pick(
@@ -378,6 +392,32 @@ export default function CapturePage() {
                         <span>{f.labels[0]}</span>
                         <span>{f.labels[1]}</span>
                       </div>
+                    </div>
+                  ) : f.type === "tags" ? (
+                    // 16 §5: pick up to `max` words; kept as lines until sent.
+                    <div className="grid grid-cols-2 gap-2">
+                      {f.values.map((w) => {
+                        const list = (fields[f.key] ?? "").split("\n").filter(Boolean);
+                        const on = list.includes(w);
+                        return (
+                          <button
+                            key={w}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => {
+                              const next = on
+                                ? list.filter((x) => x !== w)
+                                : list.length < f.max
+                                  ? [...list, w]
+                                  : list;
+                              setFields((s) => ({ ...s, [f.key]: next.join("\n") }));
+                            }}
+                            className={`rounded-xl px-3 py-2 text-sm font-bold transition ${on ? "bg-teal-600 text-white ring-4 ring-teal-200" : "bg-slate-100 text-slate-800"}`}
+                          >
+                            {w}
+                          </button>
+                        );
+                      })}
                     </div>
                   ) : f.type === "enum" ? (
                     <div className="grid grid-cols-2 gap-2">

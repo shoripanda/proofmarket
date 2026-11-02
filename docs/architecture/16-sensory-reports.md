@@ -1,6 +1,8 @@
 # 16. Sensory reports: the five senses as verification answers (2026-11-02)
 
-The owner asked for a way to collect what people perceive with all five senses. An agent can read the web, but it cannot hear how loud a street is at 11 pm, smell whether a flat is damp, taste a new snack or feel whether a fabric is rough. This chapter designs a verification type for that. **Design only; no code was changed.** Implementation starts once the owner has read it and answered §13.
+The owner asked for a way to collect what people perceive with all five senses. An agent can read the web, but it cannot hear how loud a street is at 11 pm, smell whether a flat is damp, taste a new snack or feel whether a fabric is rough. This chapter designs a verification type for that.
+
+**Status (2026-11-02).** Part 1 is implemented: the type, the catalogue, the `tags` field, declining a sense, the summaries, the sound level measured on the phone, and migration 0036. Part 2 is not built yet: audio clips (§9) and hearing-only requests without a photo (§4). Until then every submission still needs a photo, and `audio` is not accepted.
 
 ## 1. Decisions taken (owner, 2026-11-02)
 
@@ -38,20 +40,21 @@ A measured value can be checked against itself (range, duration, replay). A repo
 POST /v1/verifications
 {
   "type": "SENSORY_REPORT",
-  "senses": ["hearing", "smell"],
-  "target": "The street in front of the station's north exit",
+  "question": "The street in front of the station's north exit",
+  "answer_schema": { "type": "sensory", "senses": ["hearing", "smell"] },
   "location": { "lat": 35.658, "lng": 139.701, "radius_m": 100 },
-  "audio": { "clip": "optional", "max_seconds": 10 },
   "assurance": { "level": "high" },
-  "bounty": { "asset": "USDC", "amount": "0.5" }
+  "bounty": { "asset": "USDC", "amount": "0.5", "network": "solana-devnet" }
 }
 ```
 
-- `senses`: any of `sight`, `hearing`, `smell`, `taste`, `touch`, **one is enough** (owner, 2026-11-02). A request for only `["hearing"]` or only `["taste"]` is normal; asking for all five is never required. The requester chooses senses, **not fields**: the server builds the form from the fixed catalogue in §5, for the chosen senses only. This is what makes answers comparable.
-- `target`: what to perceive, up to 200 characters. It is requester text, so it is never put in a push (15 §1).
+(Other fields as for any verification. `audio` is part 2.)
+
+- `answer_schema: { type: "sensory", senses }`: any of `sight`, `hearing`, `smell`, `taste`, `touch`, **one is enough** (owner, 2026-11-02). A request for only `["hearing"]` or only `["taste"]` is normal; asking for all five is never required. The requester chooses senses, **not fields**: the server builds the form from the fixed catalogue in §5, for the chosen senses only. This is what makes answers comparable.
+- `question`: what to perceive. It is requester text, so it is never put in a push (15 §1).
 - `location`: optional, as for `PRODUCT_INSPECTION`. When given, the usual geofence, nonce and freshness apply to the photo and to the sound measurement.
-- `audio`: only with `hearing`. `clip` is `none` (default), `optional` or `required`; `max_seconds` is 5-15.
-- A photo is required, except for a hearing-only request with a `location`. There the sound measurement itself is tied to the place (§8), and a photo is optional. For every other request the photo is the only thing that shows the worker was in front of the target.
+- `audio` (part 2): only with `hearing`. `clip` is `none` (default), `optional` or `required`; `max_seconds` is 5-15.
+- A photo is required, except (part 2) for a hearing-only request with a `location`. There the sound measurement itself is tied to the place (§8), and a photo is optional. For every other request the photo is the only thing that shows the worker was in front of the target.
 
 A hearing-only request is the smallest case: "measure how loud it is here".
 
@@ -68,7 +71,8 @@ POST /v1/verifications
 ```
 
 Three workers go there, each phone measures for 10 s, and the agent gets the median, min and max of `hearing_level_db` with each measurement's time.
-- `answer_kind` is stored as `form` with the generated fields in `answer_spec`, so the existing answer validation, storage and aggregation are reused unchanged.
+- The form is stored like any form (`answer_kind = text`, the fields in `answer_spec`), so storage, views and aggregation are reused. Requests and results show the built form, never the shorthand. A form with exactly the catalogue fields is accepted only for `SENSORY_REPORT`, and `SENSORY_REPORT` accepts nothing else. A sensory form may exceed the usual 8 fields (all five senses make 28).
+- Optimistic verification and `publish` are refused, as for every text answer.
 
 ## 5. The fixed catalogue
 
@@ -110,9 +114,11 @@ Each sense block has "I could not perceive it" and "I chose not to". The answer 
 `result.aggregate` already covers numbers and scales. Two additions:
 
 - **Tags**: `result.aggregate[key] = { shares: { food: 0.67, smoke: 0.33 }, n }`, the share of accepted answers that chose each tag.
-- **Status**: `result.aggregate["<sense>_status"] = { reported, not_present, declined }`, as counts.
+- **Status**: `result.aggregate["<sense>_status"] = { counts: { reported, not_present, declined }, n }`.
 
-Both are part of `result_hash`, as the existing aggregate is. As in implementation spec 13 §4, there is no majority vote: the verification passes or fails per submission, and the summary is what the agent reads. `assurance: { level: "high" }` (three witnesses) is the recommended default and is shown in the examples. With one witness the response marks every reported field `"single_witness": true`.
+Like the existing aggregate, these appear once 3 or more answers are accepted; a field that fewer than 3 answers filled is left out.
+
+Both are part of `result_hash`, as the existing aggregate is. As in implementation spec 13 §4, there is no majority vote: the verification passes or fails per submission, and the summary is what the agent reads. `assurance: { level: "high" }` (three witnesses) is the recommended default and is shown in the examples.
 
 `optimistic` is not allowed for this type, for the same reason as for text: a recheck cannot "match" a smell.
 
@@ -120,8 +126,9 @@ Both are part of `result_hash`, as the existing aggregate is. As in implementati
 
 - `getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })`, then an `AnalyserNode`. RMS over 10 s gives an equivalent level, and the highest 1 s window gives the peak.
 - A phone microphone is not a calibrated sound meter. The browser gives dBFS. The app adds a fixed offset per platform (iOS, Android) and labels the result "approximate dB". Expect ±5-10 dB between phones. The API returns `"calibrated": false` and the device platform, never the model or an identifier.
-- **The level belongs to the place.** When the request has a `location`, the phone takes a GPS fix at the start of the measurement and the server applies the same geofence as for photos (inside `radius_m`, accuracy within 100 m). A measurement taken outside the area fails `geofence` and is not counted. The precise position is kept 30 days (`precise_location`), as for photos.
-- The measurement must start after the task nonce is shown, and must finish within the freshness window. The client sends the start and end time together with the values.
+- **The level belongs to the place.** When the request has a `location`, the submission's position goes through the same geofence as for photos (inside `radius_m`, accuracy within 100 m), and a submission outside the area fails `geofence` and is not counted. The precise position is kept 30 days (`precise_location`). Measuring and taking the photo happen on the same screen, a few seconds apart.
+- The submission carries `measurements.sound = { started_at, ended_at }` whenever the answer has `hearing_level_db`. The server refuses it (400 `VALIDATION_FAILED`, field `measurements.sound`) when it is missing, lasts outside 8-20 s, starts before the challenge was issued or ends after the server's time, allowing 120 s of clock difference.
+- The offset is provisional: 100 dB on every platform until real phones are compared with a sound meter (§13.3).
 - The worker screen shows a live meter while measuring, and asks the worker to hold the phone at chest height, not in a pocket or bag, with nothing covering the microphone.
 - When no clip is asked for, no audio leaves the phone. Only the two numbers do.
 - If the browser refuses the microphone, the worker can still report `hearing_loudness` and sources, and the level fields are empty with `hearing_level_status: "unavailable"`.
@@ -129,7 +136,7 @@ Both are part of `result_hash`, as the existing aggregate is. As in implementati
 ## 9. Audio clips
 
 - Formats: `audio/mp4` (AAC, what Safari records) and `audio/webm` (Opus, what Chrome records). At most `max_seconds`, at most 2 MiB. A new private bucket `evidence-audio`.
-- The same upload flow as photos: a signed upload URL under the same challenge, sha256 for exact replay, rows in `evidence_objects` (`media_type` is already free text; `width` and `height` stay empty). Migration 0036 adds `duration_ms`.
+- The same upload flow as photos: a signed upload URL under the same challenge, sha256 for exact replay, rows in `evidence_objects` (`media_type` is already free text; `width` and `height` stay empty). A later migration adds `duration_ms`.
 - Retention: 30 days, the same `raw_evidence` class as photos, and the same purge job.
 - The requester gets a signed URL valid for 300 s, as for photos.
 - Before recording, the screen says: "Record the surroundings, not a conversation. Do not record anyone who has not agreed." The worker can play the clip back, record again or delete it before sending.
@@ -149,7 +156,8 @@ Taste and touch involve the worker's body, and the owner chose not to restrict t
 | Area | Change |
 |---|---|
 | `@proofmarket/core` | `SENSORY_REPORT` in `TASK_TYPES` (answer `form`, location optional); `SENSES` and the catalogue with ja/en labels; form field type `tags`; `senses` and `audio` on the request schema |
-| DB, migration 0036 | `vr_type_chk` gains `SENSORY_REPORT`; `evidence_objects.duration_ms`; storage bucket `evidence-audio` (private, 2 MiB, the two audio types) |
+| DB, migration 0036 (part 1) | `vr_type_chk` gains `SENSORY_REPORT`; API keys that allowed every earlier type are given it too |
+| DB, part 2 | `evidence_objects.duration_ms`; storage bucket `evidence-audio` (private, 2 MiB, the two audio types) |
 | Evidence service | Audio uploads and their checks; sound measurement fields; `<sense>_status` handling |
 | Aggregation | Tag shares and status counts (§7) |
 | AI review | Prompt for this type: reported senses cannot be checked, only checked against the photo and for completeness |
@@ -165,9 +173,14 @@ Taste and touch involve the worker's body, and the owner chose not to restrict t
 - Using sense data in general tasks (chapter 13). It can be added later as an evidence type if asked for.
 - A public map of sense data. Only the requester sees the result, as for every verification.
 
-## 13. Open questions for the owner
+## 13. Questions for the owner
 
-1. **Payment when a sense is declined.** The proposal pays in full if at least one sense is reported (§6). Should a requester be able to require a given sense, so that declining it makes the submission invalid?
-2. **The vocabulary in §5.** Is it right for the first version? Requesters cannot add their own words; free text goes in `<sense>_note`.
-3. **Sound offsets.** Use one fixed offset per platform now, and measure real phones against a sound meter later?
-4. **Age and alcohol.** Decide together with the legal list: forbid alcohol in taste reports, or add an age check for workers.
+Answered on 2026-11-02:
+
+1. **Payment when a sense is declined.** Paid in full if at least one sense is reported or found not present (§6). Requesters cannot require a sense.
+2. **The vocabulary in §5.** As written. Requesters cannot add their own words; free text goes in `<sense>_note`.
+3. **Sound offsets.** One fixed offset per platform now; real phones are measured against a sound meter later.
+
+Still open:
+
+4. **Age and alcohol.** To be decided with the legal list: forbid alcohol in taste reports, or add an age check for workers. Until then the worker screen shows the note in §10.
