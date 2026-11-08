@@ -7,7 +7,7 @@ Agents that pay with x402 find services through catalogs. As of 2026-11-08 Proof
 | Catalog | How a service gets in | ProofMarket |
 |---|---|---|
 | Coinbase CDP **Bazaar** | Only after a payment is verified and settled **through the CDP facilitator**. No form, no API ([get-discovered](https://docs.cdp.coinbase.com/x402/seller/get-discovered.md)). Curation needs live mainnet payments. | Not possible while we are our own facilitator (`packages/solana/src/x402.ts`). Revisit with the mainnet move (v1.3); of 34,126 Bazaar entries on 2026-11-08, 2 were on Solana Devnet. |
-| **x402scan** (Merit Systems) | Submit the origin or URL; it reads `/openapi.json` (`x-payment-info`) and probes the endpoint for a 402 ([DISCOVERY.md](https://github.com/Merit-Systems/x402scan/blob/main/docs/DISCOVERY.md)). | This change. |
+| **x402scan** (Merit Systems) | Submit the origin or URL; it reads `/openapi.json` (`x-payment-info`) and probes the endpoint for a 402 ([DISCOVERY.md](https://github.com/Merit-Systems/x402scan/blob/main/docs/DISCOVERY.md)). **Mainnet only**: base and solana. | Ready (PR #77), but refused on 2026-11-08 because production is on Devnet: `No supported networks. Got: [solana_devnet]. Supported: [base, solana]`. Nothing else failed validation. Register again after the mainnet move. |
 
 ## What the server does for discovery
 
@@ -30,5 +30,6 @@ After deploy:
    should print `402`.
 2. Optional audit with their tool (it runs third-party code, so the owner runs it):
    `npx -y @agentcash/discovery proofmarket.fun -v`
-3. Open https://www.x402scan.com/resources/register and submit `https://proofmarket.fun`. A report says the UI may ask
-   for a wallet sign-in (SIWX); the CLI `agentcash register` is the reported alternative.
+3. Register with `npx agentcash register https://proofmarket.fun` (the web form at /resources/register needs a wallet
+   sign-in and failed). It also probes every other path; the public and API-key ones are listed only next to a paid
+   one, so those "skipped" lines are expected. Only after production moves to mainnet.
