@@ -1,6 +1,8 @@
-# Outside check of production (12 §5.5, 08 §5): every 5 minutes, GET /v1/health/ready. It answers 200 when the
-# database responds and the minute tick keeps up, 503 otherwise. A failed run makes GitHub email the owner.
-# (GitHub may delay scheduled runs by a few minutes; that is fine for this check.)
+# Backup outside check of production (12 §5.5, 08 §5): GET /v1/health/ready. It answers 200 when the database
+# responds and the tick keeps up, 503 otherwise. A failed run makes GitHub email the owner.
+# The schedule asks for every 5 minutes, but GitHub throttles it: in November 2026 it ran every 4-7 hours, and the
+# 2026-11-06 outage went unnoticed for almost two days. The primary monitor is an outside uptime service with phone
+# alerts (docs/ops/uptime-monitor.md); this job only backs it up.
 name: uptime
 
 on:

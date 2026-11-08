@@ -421,7 +421,9 @@ export type LastTick = {
 
 /**
  * ok / checks drive the 200 / 503; last_tick is information for the operator (06 §4.3): a tick that runs past
- * TICK_BUDGET_MS is slow but not down, so it does not flip the status.
+ * TICK_BUDGET_MS is slow but not down, so it does not flip the status. tick_recent fails when no tick started for
+ * TICK_STALE_MS: pg_cron calls the tick at least every 15 minutes even when idle (migration 0038), so a longer gap
+ * means the schedule or its gate stopped, which the job and deadline checks only notice once work piles up.
  */
 export async function readiness(
   app: AppContext,
@@ -443,13 +445,15 @@ export async function readiness(
         isNull(schema.verificationRequests.provisionalAt),
       ),
     );
+  const [run] = await app.db.select().from(schema.tickRuns).orderBy(desc(schema.tickRuns.id)).limit(1);
   const checks = {
     database: true,
     jobs_draining: Number(jobs?.overdue ?? 0) === 0,
     deadlines_on_time: Number(late?.n ?? 0) === 0,
     no_dead_jobs: Number(jobs?.dead ?? 0) === 0,
+    // A system that never ticked (a fresh database) is not stale; production always has tick_runs.
+    tick_recent: !run || now - run.startedAt.getTime() <= TICK_STALE_MS,
   };
-  const [run] = await app.db.select().from(schema.tickRuns).orderBy(desc(schema.tickRuns.id)).limit(1);
   const last_tick: LastTick | null = run
     ? {
         started_at: run.startedAt.toISOString(),
@@ -466,3 +470,5 @@ export async function readiness(
 
 /** 16 §7.2: a tick stops taking new jobs at 200 s so it ends inside the route's 300 s. Longer is a warning. */
 export const TICK_BUDGET_MS = 200_000;
+/** The idle tick runs every 15 minutes (06 §4.4); 25 minutes leaves room for a late or slow run. */
+export const TICK_STALE_MS = 25 * 60_000;
