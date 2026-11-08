@@ -41,7 +41,13 @@ describe("readiness", () => {
   it("is ok on a fresh system and after a tick has drained the jobs", async () => {
     expect(await readiness(t.app)).toEqual({
       ok: true,
-      checks: { database: true, jobs_draining: true, deadlines_on_time: true, no_dead_jobs: true },
+      checks: {
+        database: true,
+        jobs_draining: true,
+        deadlines_on_time: true,
+        no_dead_jobs: true,
+        tick_recent: true,
+      },
       last_tick: null,
     });
   });
@@ -85,6 +91,19 @@ describe("readiness", () => {
     expect((await readiness(t.app)).checks.deadlines_on_time).toBe(false);
     await tick(t.app);
     expect((await readiness(t.app)).checks.deadlines_on_time).toBe(true);
+  });
+
+  it("flags a tick that stopped running even when there is no work (pg_cron or its gate stopped)", async () => {
+    await tick(t.app);
+    expect((await readiness(t.app)).checks.tick_recent).toBe(true);
+    t.advance(20 * 60_000); // longer than the 15-minute idle tick, within the margin
+    expect((await readiness(t.app)).ok).toBe(true);
+    t.advance(6 * 60_000); // 26 minutes without a tick
+    const r = await readiness(t.app);
+    expect(r.checks.tick_recent).toBe(false);
+    expect(r.ok).toBe(false);
+    await tick(t.app);
+    expect((await readiness(t.app)).ok).toBe(true);
   });
 
   it("flags DEAD jobs", async () => {

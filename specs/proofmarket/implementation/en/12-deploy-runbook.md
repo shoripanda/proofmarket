@@ -80,6 +80,7 @@ pnpm --filter @proofmarket/scripts run run gen-vapid.ts --subject https://<conta
 ## 5. Vercel
 
 1. (owner) Import the repository with Root Directory `apps/web`. Leave "include files outside the Root Directory" enabled
+   - Functions run in Tokyo (`hnd1`), next to the Supabase project, through `apps/web/vercel.json` (`regions`). Until 2026-11-08 they ran in Washington (`iad1`, Vercel's default), so every database query crossed the Pacific: an idle tick took about 7 s and pages 1 to 3 s
 2. Choose Node.js 24. Set `ENABLE_EXPERIMENTAL_COREPACK=1` to use pnpm 12
 3. Set env vars (Production; mark secrets Sensitive)
 
@@ -102,7 +103,7 @@ pnpm --filter @proofmarket/scripts run run gen-vapid.ts --subject https://<conta
 Do not set `DEV_MODE` or `NEXT_PUBLIC_DEV_MODE`; with them the server refuses to start.
 
 4. After deploying, check that `https://<app>/v1/health` returns `{"ok":true}` and register the tick from §3 step 5
-5. Uptime is watched by the GitHub Actions `uptime` workflow (`.github/workflows/uptime.yml`), which checks `https://proofmarket.fun/v1/health/ready` every 5 minutes: 200 if the DB responds and the per-minute tick is keeping up, 503 otherwise, and GitHub emails the owner about failed runs (which of `jobs_draining`, `deadlines_on_time` and `no_dead_jobs` in `checks` is false tells the cause). The tick itself also checks the numbers in 08 §5 every minute (DEAD jobs, settlements sending for over 10 minutes, the operator's SOL balance) and logs a `tick_needs_operator` warning in Vercel. DEAD jobs are returned with the admin API's `requeue`
+5. Uptime is watched by an outside uptime service with phone alerts, set up as in `docs/ops/uptime-monitor.md`. It checks `https://proofmarket.fun/v1/health/ready` every 5 minutes: 200 if the DB responds and the tick is keeping up, 503 otherwise (the body says which of `jobs_draining`, `deadlines_on_time`, `no_dead_jobs` and `tick_recent` failed). The GitHub Actions `uptime` workflow (`.github/workflows/uptime.yml`) makes the same check as a backup, but GitHub throttles it to every few hours. The tick itself also checks the numbers in 08 §5 every minute (DEAD jobs, settlements sending for over 10 minutes, the operator's SOL balance) and logs a `tick_needs_operator` warning in Vercel. DEAD jobs are returned with the admin API's `requeue`
 
 ## 6. Initial data
 
