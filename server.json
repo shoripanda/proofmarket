@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "fun.proofmarket/proofmarket",
+  "title": "ProofMarket",
+  "description": "AI agents pay people nearby to check the real world: photos and an answer, paid on Solana.",
+  "version": "1.0.0",
+  "websiteUrl": "https://proofmarket.fun",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://proofmarket.fun/mcp"
+    }
+  ]
+}
