@@ -276,6 +276,49 @@ describe("POST /v1/x402/verifications", () => {
   });
 });
 
+describe("discovery (x402scan / Bazaar, docs/ops/x402-discovery.md)", () => {
+  const bare = (payment?: string) =>
+    call(
+      async (r) => (await handleX402Create(t.app, r)).res,
+      new Request("http://localhost:3917/v1/x402/verifications", {
+        method: "POST",
+        headers: payment ? { "payment-signature": payment } : {},
+      }),
+    );
+
+  it("a probe with no body or {} gets 402 with the example's terms and the Bazaar extension, nothing created", async () => {
+    for (const res of [await bare(), await post({})]) {
+      expect(res.status).toBe(402);
+      const header = decode(res.headers.get("payment-required"));
+      expect(header).toEqual(await res.json());
+      expect(header.accepts[0].amount).toBe("100000"); // the example: 0.10 USDC x 1 witness, fee 0 in tests
+      const bazaar = header.extensions.bazaar;
+      expect(bazaar.info.input).toMatchObject({ type: "http", method: "POST", bodyType: "json" });
+      expect(bazaar.info.input.body.type).toBe("CUSTOM_TASK");
+      // what x402scan reads as the input and output schemas
+      expect(bazaar.schema.properties.input.properties.body.properties.bounty).toBeDefined();
+      expect(bazaar.schema.properties.output.properties.example.properties.api_key).toBeDefined();
+      // stays well under common header limits (Vercel, proxies)
+      expect(res.headers.get("payment-required")?.length ?? 0).toBeLessThan(8_000);
+    }
+    expect(await t.db.select().from(schema.verificationRequests)).toHaveLength(0);
+  });
+
+  it("the example body is a real request: sent as is it passes every check and is priced", async () => {
+    const probe = decode((await bare()).headers.get("payment-required"));
+    const res = await post(probe.extensions.bazaar.info.input.body);
+    expect(res.status).toBe(402);
+    expect(decode(res.headers.get("payment-required")).accepts[0].amount).toBe("100000");
+  });
+
+  it("a payment with no body is still a 400, and a real body still gets its own price and checks", async () => {
+    expect((await bare("not-a-payment")).status).toBe(400);
+    const two = await post(body({ assurance: { required_witnesses: 2, quorum: 2 } }));
+    expect(decode(two.headers.get("payment-required")).accepts[0].amount).toBe("1000000");
+    expect(decode(two.headers.get("payment-required")).extensions.bazaar).toBeDefined();
+  });
+});
+
 describe("x402_enabled flag (08 §6)", () => {
   it("off: the window answers 503 FEATURE_DISABLED and offers no terms; on again: 402 as usual", async () => {
     const { setFlag } = await import("../lib/services/admin-service");
@@ -286,5 +329,16 @@ describe("x402_enabled flag (08 §6)", () => {
     expect(off.headers.get("payment-required")).toBeNull();
     await setFlag(t.db, "x402_enabled", true, "test");
     expect((await post(body())).status).toBe(402);
+  });
+});
+
+describe("/.well-known/x402", () => {
+  it("lists the one paid resource on this origin", async () => {
+    const { GET } = await import("../app/.well-known/x402/route");
+    const res = GET(new Request("https://proofmarket.fun/.well-known/x402"));
+    expect(await res.json()).toMatchObject({
+      version: 1,
+      resources: ["https://proofmarket.fun/v1/x402/verifications"],
+    });
   });
 });

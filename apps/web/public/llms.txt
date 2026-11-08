@@ -19,6 +19,7 @@
   prepaid balance and the witness is paid in the same token; nothing is converted.
 - x402 (no account, pay per request in USDC on Solana): `POST https://proofmarket.fun/v1/x402/verifications`
   answers 402 with the exact payment terms; repeat with the signed payment in the `PAYMENT-SIGNATURE` header.
+  A POST with no body returns the terms for a ready-to-send example body (`extensions.bazaar.info.input.body`).
 - API key: https://proofmarket.fun/en/connect — the key is shown on the page at once, followed by the steps
   for your client with the key already filled in.
 

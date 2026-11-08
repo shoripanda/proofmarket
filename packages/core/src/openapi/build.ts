@@ -15,6 +15,8 @@ interface Endpoint {
   priority: "P0" | "P1" | "Stretch";
   summary: string;
   idempotent?: boolean;
+  /** Paid per request with x402: marked with x-payment-info and a 402 response. */
+  x402?: boolean;
   query?: z.ZodType;
   body?: z.ZodType;
   ok: { status: number; schema: z.ZodType | null };
@@ -48,6 +50,7 @@ const ENDPOINTS: Endpoint[] = [
     priority: "Stretch",
     summary:
       "Create a verification paid with x402 v2 (exact, Solana): 402 + PAYMENT-REQUIRED without PAYMENT-SIGNATURE",
+    x402: true,
     body: S.X402CreateVerificationRequestSchema,
     ok: { status: 201, schema: S.X402CreateVerificationResponseSchema },
   },
@@ -563,7 +566,19 @@ for (const e of ENDPOINTS) {
     ...(e.body
       ? { requestBody: { required: true, content: { "application/json": { schema: json(e.body) } } } }
       : {}),
+    // x402scan / agentcash discovery reads paid operations from here (docs/ops/x402-discovery.md). The price is
+    // bounty x witnesses + fee, so it is dynamic with no fixed bounds; the live 402 gives the exact amount.
+    ...(e.x402
+      ? { "x-payment-info": { protocols: [{ x402: {} }], price: { mode: "dynamic", currency: "USD" } } }
+      : {}),
     responses: {
+      ...(e.x402
+        ? {
+            402: {
+              description: "Payment required: x402 v2 terms in the PAYMENT-REQUIRED header and the body",
+            },
+          }
+        : {}),
       [e.ok.status]: e.ok.schema
         ? { description: "OK", content: { "application/json": { schema: json(e.ok.schema) } } }
         : { description: "OK" },
