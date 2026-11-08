@@ -76,7 +76,7 @@ There are six machine checks: location (geofence), freshness, challenge nonce, r
 
 ### 4.8 Deployment and operations
 
-Production is Vercel (proofmarket.fun) and Supabase; there is no `vercel.json` and deployment is through the Git integration. pg_cron calls the tick, and GitHub Actions `uptime.yml` checks `/v1/health/ready` from outside every 5 minutes. CI (`ci.yml`) has three jobs, all required to merge: TypeScript (lint, typecheck, tests, OpenAPI in sync, `next build`, no key-like strings in the client bundle), program (`anchor build`, `cargo test`, IDL in sync) and secrets (gitleaks).
+Production is Vercel (proofmarket.fun) and Supabase; there is no `vercel.json` and deployment is through the Git integration. pg_cron calls the tick, Better Stack checks `/v1/health/ready` and the top page from outside every 3 minutes and pushes to the owner's phone (`scripts/betterstack-monitors.ts`); GitHub Actions `uptime.yml` checks the same URL as a backup, though GitHub runs its 5-minute schedule only every few hours. CI (`ci.yml`) has three jobs, all required to merge: TypeScript (lint, typecheck, tests, OpenAPI in sync, `next build`, no key-like strings in the client bundle), program (`anchor build`, `cargo test`, IDL in sync) and secrets (gitleaks).
 
 ### 4.9 Env vars and secrets
 
