@@ -17,6 +17,7 @@ import { authenticateRequester } from "../auth/requester";
 import { requireWorker } from "../auth/worker";
 import type { AppContext } from "../context";
 import { readJson } from "../http";
+import { retryAfterOwnDeposit } from "../services/deposit-service";
 import { withIdempotency } from "../services/idempotency";
 import {
   applyToTask,
@@ -65,8 +66,10 @@ export async function handleCreateTask(app: AppContext, req: Request): Promise<R
   }
   const key = req.headers.get("idempotency-key");
   if (!key) throw new ApiError("VALIDATION_FAILED", { header: "Idempotency-Key is required" });
-  const out = await withIdempotency<unknown>(app, auth.credentialId, "POST /v1/tasks", key, raw, (tx) =>
-    createTask(app, tx, auth, body, key),
+  const out = await retryAfterOwnDeposit(app, auth.credentialId, () =>
+    withIdempotency<unknown>(app, auth.credentialId, "POST /v1/tasks", key, raw, (tx) =>
+      createTask(app, tx, auth, body, key),
+    ),
   );
   return Response.json(out.body, {
     status: out.status,

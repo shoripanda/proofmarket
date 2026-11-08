@@ -60,7 +60,16 @@ Put the review's item 7 recommendation, "compare `paid_total` in `TaskSettled` w
 
 Once PR #40's parallelism is in, include per-step durations and counts in the tick's return value, and have `/v1/health/ready` check whether the latest tick went over 200 seconds. The targets stay as in 16 §7.1 (funding a batch of 50 within 5 minutes; from final to paid within 2 minutes). Measure during the first week after moving to mainnet and record it in `docs/ops/`. If the targets are missed, call several ticks in parallel from Supabase pg_cron rather than from Vercel (splitting the function's 300-second limit into two likely helps more than raising `JOB_CONCURRENCY`; guess).
 
-### 4.4 What stays
+### 4.4 Calling the tick only when there is work
+
+On 2026-11-06 Vercel paused the team for going over the Hobby plan's Fluid CPU allowance. The tick ran every minute (about 43,000 calls a month), and each call ran all ten steps, including the deposit poll on Solana, whether or not anything was waiting. Migration 0038 adds `proofmarket_tick_due()`, and pg_cron still runs every minute but calls `/api/internal/tick` only when the function returns true:
+
+- some step has work now: a job due or with an expired lease, a passed deadline, a closed challenge window or a challenge whose recheck has a result, a review waiting over 30 minutes, a claim or nonce past expiry, a schedule due, or (with `tasks_enabled` on) a general task or seat past its time
+- or no tick ran for 15 minutes. This periodic pass covers the steps the function does not mirror: deposit polling, discarding unfinished uploads, operator warnings, the daily purge and reconcile, and cancelled general tasks
+
+An error inside the function answers true, so a broken gate falls back to the old behaviour. When idle the tick runs 96 times a day instead of 1,440. Most jobs still run right after their request through `after()`, so the gate mainly delays work that waits on time, by at most one minute as before. Deposits are the exception: the periodic pass alone would credit one up to 15 minutes late, so the console's overview also polls the requester's own reference when it was last checked over a minute ago. A create (`POST /v1/verifications`, `/batch`, `/v1/tasks`) that fails with `INSUFFICIENT_BALANCE` does the same and, if a deposit was credited, tries once more; the failed attempt rolled back with its Idempotency-Key row, so the retry is a fresh attempt. `apps/web/test/tick-due.test.ts` checks that an idle database answers false; a typo in the function would make it answer true and fail that test.
+
+### 4.5 What stays
 
 The prepaid balance (D-05), x402 limited to USDC (16 §9), a platform fee of 0, and no yen payouts. None of these move until the legal questions (D-05, `legal-checklist.md` §3 and §7) are settled.
 

@@ -283,6 +283,20 @@ export async function tick(app: AppContext, maxJobs = TICK_MAX_JOBS): Promise<Ti
   return { deadlines, jobsRun, failed, warnings, duration_ms, steps };
 }
 
+/**
+ * Whether pg_cron calls the tick this minute (migration 0038, proofmarket_tick_due): some step has work, or no
+ * tick ran for `idleMaxMin` minutes. Errors inside the function answer true.
+ */
+export async function tickDue(app: AppContext, idleMaxMin = 15): Promise<boolean> {
+  const res = await app.db.execute(
+    sql`select proofmarket_tick_due(${app.now().toISOString()}::timestamptz, ${idleMaxMin} * interval '1 minute') as due`,
+  );
+  const rows = ((res as unknown as { rows?: unknown[] }).rows ?? (res as unknown as unknown[])) as {
+    due: boolean;
+  }[];
+  return rows[0]?.due === true;
+}
+
 export type TickWarnings = {
   dead_jobs: number;
   stuck_payments: number;

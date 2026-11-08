@@ -1,5 +1,5 @@
 // Supabase setup (12-deploy-runbook §3): private evidence buckets with size/type limits (01 §4.7, 16 §9),
-// and the pg_cron job that calls /api/internal/tick every minute (02 §4.1).
+// and the pg_cron job that calls /api/internal/tick when there is work (02 §4.1, migration 0038).
 //   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... run supabase-setup.ts --app-url https://<app> [--print-cron-sql]
 // The cron SQL contains INTERNAL_CRON_SECRET; it is printed to run once in the Supabase SQL editor, never saved.
 import { createClient } from "@supabase/supabase-js";
@@ -49,13 +49,16 @@ if (a["print-cron-sql"] === "true") {
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 select cron.unschedule('proofmarket-tick') where exists (select 1 from cron.job where jobname = 'proofmarket-tick');
+-- Every minute, but the app is only called when proofmarket_tick_due() (migration 0038) finds work, or at least
+-- every 15 minutes. Apply migration 0038 before running this.
 select cron.schedule('proofmarket-tick', '* * * * *', $$
   select net.http_post(
     url := '${appUrl}/api/internal/tick',
     headers := jsonb_build_object('x-internal-secret', '${secret}', 'content-type', 'application/json'),
     body := '{}'::jsonb,
     timeout_milliseconds := 55000
-  );
+  )
+  where proofmarket_tick_due();
 $$);`);
 }
 process.exit(0);

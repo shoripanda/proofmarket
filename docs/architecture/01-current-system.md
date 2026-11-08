@@ -68,7 +68,7 @@ Anchor program v1.2 (Devnet `A9frCat4fv1rKRKF4sAg6WT8LaUwm4CvJ1JZb81kgC2s`) has 
 
 ### 4.6 Request lifecycle
 
-States: CREATED → FUNDED → OPEN → CLAIMED → SUBMITTED → VERIFYING → VERIFIED → SETTLED, with branches REJECTED, EXPIRED, CANCELLED and REFUNDED (transitions T01-T19 in chapter 03). Funding/settlement and the outcome are separate axes. There is no DISPUTED state; a dispute is implemented as "create a new recheck request" (01 §4.12). Async work goes through a transactional outbox: pg_cron calls `/api/internal/tick` every minute and jobs are taken with leases.
+States: CREATED → FUNDED → OPEN → CLAIMED → SUBMITTED → VERIFYING → VERIFIED → SETTLED, with branches REJECTED, EXPIRED, CANCELLED and REFUNDED (transitions T01-T19 in chapter 03). Funding/settlement and the outcome are separate axes. There is no DISPUTED state; a dispute is implemented as "create a new recheck request" (01 §4.12). Async work goes through a transactional outbox: pg_cron calls `/api/internal/tick` each minute that has work (at least every 15 minutes, 06 §4.4) and jobs are taken with leases.
 
 ### 4.7 Verifying deliveries
 
