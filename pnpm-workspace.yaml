@@ -13,3 +13,8 @@ allowBuilds:
   bufferutil: false
   keccak: false
   "@reown/appkit": false
+
+# Security: lift ws 8.x copies pinned by wallet/viem dependencies to the patched release (GHSA ws memory DoS).
+# Only within major 8; ws 7 copies are left as they are.
+overrides:
+  "ws@>=8.0.0 <8.21.0": "^8.21.0"
