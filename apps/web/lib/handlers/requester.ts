@@ -7,6 +7,7 @@ import { authenticateRequester } from "../auth/requester";
 import type { AppContext } from "../context";
 import { readJson } from "../http";
 import { challengeVerification } from "../services/challenge-service";
+import { retryAfterOwnDeposit } from "../services/deposit-service";
 import { withIdempotency } from "../services/idempotency";
 import { evidenceUrls, publicOnchain, publicResult } from "../services/public-service";
 import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
@@ -36,8 +37,10 @@ export async function handleCreate(app: AppContext, req: Request): Promise<Respo
   if (!key) throw new ApiError("VALIDATION_FAILED", { header: "Idempotency-Key is required" });
   const raw = await readJson(req);
   const body = parseCreateBody(raw);
-  const out = await withIdempotency(app, auth.credentialId, "POST /v1/verifications", key, raw, (tx) =>
-    createVerification(app, tx, auth, body, key),
+  const out = await retryAfterOwnDeposit(app, auth.credentialId, () =>
+    withIdempotency(app, auth.credentialId, "POST /v1/verifications", key, raw, (tx) =>
+      createVerification(app, tx, auth, body, key),
+    ),
   );
   return Response.json(out.body, {
     status: out.status,
@@ -84,8 +87,10 @@ export async function handleCreateBatch(app: AppContext, req: Request): Promise<
   if (!key) throw new ApiError("VALIDATION_FAILED", { header: "Idempotency-Key is required" });
   const raw = await readJson(req);
   const bodies = parseBatchBody(raw);
-  const out = await withIdempotency(app, auth.credentialId, "POST /v1/verifications/batch", key, raw, (tx) =>
-    createVerificationBatch(app, tx, auth, bodies, key),
+  const out = await retryAfterOwnDeposit(app, auth.credentialId, () =>
+    withIdempotency(app, auth.credentialId, "POST /v1/verifications/batch", key, raw, (tx) =>
+      createVerificationBatch(app, tx, auth, bodies, key),
+    ),
   );
   return Response.json(out.body, {
     status: out.status,

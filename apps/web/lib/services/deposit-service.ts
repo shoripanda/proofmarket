@@ -4,7 +4,7 @@ import "server-only";
 // by reference and credits a TOPUP, one row per transaction signature so nothing is counted twice.
 
 import { generateKeyPairSync } from "node:crypto";
-import { fromBaseUnits, fromMicro, toMicro } from "@proofmarket/core";
+import { ApiError, fromBaseUnits, fromMicro, toMicro } from "@proofmarket/core";
 import { schema } from "@proofmarket/db";
 import { type ChainDeposit, solanaPayUrls } from "@proofmarket/solana";
 import bs58 from "bs58";
@@ -15,6 +15,8 @@ import { log } from "../log";
 
 /** Credentials polled per tick; the least recently checked go first, so everyone gets a turn. */
 export const DEPOSIT_POLL_PER_TICK = 25;
+/** How often the console's overview may poll the requester's own reference. */
+const OWN_POLL_EVERY_MS = 60_000;
 
 /** A fresh ed25519 public key as the reference: on the curve, so every wallet accepts it as an account. */
 export function newDepositReference(): string {
@@ -38,7 +40,51 @@ export async function ensureDepositReference(app: AppContext, auth: RequesterAut
   return ensureDepositReference(app, auth);
 }
 
+/**
+ * The tick polls deposits only every 15 minutes when idle (docs/architecture 06 §4.4), so the console's overview
+ * checks the requester's own reference itself, at most once a minute, before it reads the balances. A failed RPC
+ * only means the tick credits the deposit later.
+ */
+export async function pollOwnDeposit(app: AppContext, credentialId: string): Promise<number> {
+  const [row] = await app.db
+    .select({
+      ref: schema.requesterCredentials.depositReference,
+      checkedAt: schema.requesterCredentials.depositCheckedAt,
+    })
+    .from(schema.requesterCredentials)
+    .where(eq(schema.requesterCredentials.id, credentialId));
+  if (!row?.ref) return 0;
+  if (row.checkedAt && app.now().getTime() - row.checkedAt.getTime() < OWN_POLL_EVERY_MS) return 0;
+  try {
+    return await pollOne(app, credentialId, row.ref);
+  } catch (e) {
+    log("warn", "deposit_poll_failed", { credential_id: credentialId, error: String(e) });
+    return 0;
+  }
+}
+
+/**
+ * An agent that deposits and creates right away would otherwise see INSUFFICIENT_BALANCE until the next periodic
+ * tick (up to 15 minutes). On that error only, poll the requester's own reference and, if a deposit was credited,
+ * run `fn` once more. The failed attempt rolled back in full, its Idempotency-Key row included, so the retry is a
+ * fresh attempt.
+ */
+export async function retryAfterOwnDeposit<T>(
+  app: AppContext,
+  credentialId: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    if (!(e instanceof ApiError && e.code === "INSUFFICIENT_BALANCE")) throw e;
+    if ((await pollOwnDeposit(app, credentialId)) === 0) throw e;
+    return fn();
+  }
+}
+
 /** What the console shows: addresses and links when a reference exists, plus the recent deposits. */
+
 export async function depositView(app: AppContext, auth: RequesterAuth) {
   const [row] = await app.db
     .select({ ref: schema.requesterCredentials.depositReference })

@@ -8,7 +8,7 @@ import { and, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import { authenticateApiKey, credentialAuth, type RequesterAuth } from "../auth/requester";
 import type { AppContext } from "../context";
 import { randomToken, sha256 } from "./crypto";
-import { depositView } from "./deposit-service";
+import { depositView, pollOwnDeposit } from "./deposit-service";
 import { consumeRateLimit } from "./rate-limit";
 import { startOfSpendDay } from "./requester-service";
 import { listSchedules } from "./schedule-service";
@@ -80,6 +80,7 @@ export function clearedCookie(): string {
 }
 
 export async function dashboard(app: AppContext, auth: RequesterAuth) {
+  await pollOwnDeposit(app, auth.credentialId);
   const now = app.now();
   const [cred] = await app.db
     .select()

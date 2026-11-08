@@ -5,11 +5,12 @@ import bs58 from "bs58";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { handleConsoleDeposit, handleConsoleLogin } from "../lib/handlers/console";
+import { handleCreate } from "../lib/handlers/requester";
 import { issueApiKey } from "../lib/services/admin-service";
 import { consoleAuth, dashboard } from "../lib/services/console-service";
 import { runDeposits } from "../lib/services/deposit-service";
 import { tick } from "../lib/services/jobs";
-import { call, createTestApp } from "./support/app";
+import { call, createBody, createTestApp, jsonReq } from "./support/app";
 
 let t: Awaited<ReturnType<typeof createTestApp>>;
 beforeEach(async () => {
@@ -139,5 +140,53 @@ describe("deposits", () => {
       throw new Error("rpc down");
     };
     expect(await runDeposits(t.app)).toBe(1);
+  });
+});
+
+describe("the console overview polls the requester's own reference", () => {
+  it("credits a new deposit on the next overview, at most once a minute", async () => {
+    const { cookie, auth } = await login();
+    const r = await call((r) => handleConsoleDeposit(t.app, r), post("/v1/console/deposit", cookie));
+    const { reference } = (await r.json()) as { reference: string };
+    t.chain.deposits.set(reference, [
+      { signature: "sigO", slot: 20, blockTime: null, asset: "USDC", amount: 2_000_000n, from: "Payer1" },
+    ]);
+    let d = await dashboard(t.app, auth);
+    expect(d.deposit.deposits.map((x) => x.signature)).toEqual(["sigO"]);
+    expect(Object.fromEntries(d.balances.map((b) => [b.asset, b.amount]))).toMatchObject({ USDC: "12" });
+
+    const calls = t.chain.depositCalls.length;
+    t.advance(30_000);
+    d = await dashboard(t.app, auth);
+    expect(t.chain.depositCalls.length).toBe(calls);
+    t.advance(31_000);
+    d = await dashboard(t.app, auth);
+    expect(t.chain.depositCalls.length).toBe(calls + 1);
+  });
+});
+
+describe("a create that finds no balance polls the requester's own reference once", () => {
+  it("refuses before the deposit lands, then accepts the same Idempotency-Key once it is on chain", async () => {
+    const { cookie } = await login();
+    const r = await call((r) => handleConsoleDeposit(t.app, r), post("/v1/console/deposit", cookie));
+    const { reference } = (await r.json()) as { reference: string };
+    await t.db.delete(schema.requesterLedger); // nothing to pay with until the deposit is credited
+    const idem = crypto.randomUUID();
+    const create = () =>
+      call(
+        (r) => handleCreate(t.app, r),
+        jsonReq("POST", "/v1/verifications", { key: t.apiKey, body: createBody(t.principalId), idem }),
+      );
+
+    const refused = await create();
+    expect(((await refused.json()) as { error: { code: string } }).error.code).toBe("INSUFFICIENT_BALANCE");
+
+    t.chain.deposits.set(reference, [
+      { signature: "sigC", slot: 30, blockTime: null, asset: "USDC", amount: 2_000_000n, from: "Payer1" },
+    ]);
+    t.advance(61_000);
+    expect((await create()).status).toBe(201);
+    const [dep] = await t.db.select().from(schema.deposits).where(eq(schema.deposits.signature, "sigC"));
+    expect(dep).toBeDefined();
   });
 });

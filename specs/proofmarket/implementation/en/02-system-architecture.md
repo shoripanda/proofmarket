@@ -113,7 +113,7 @@ API request
       └ Add to outbox_jobs (e.g. FUND_TASK, FINALIZE_AND_SETTLE, REFUND_TASK, DELIVER_WEBHOOK)
   └ After returning the response, try running the relevant job once with Next.js after() (not counted in response time)
 
-pg_cron (every minute) → pg_net POST /api/internal/tick (with shared secret)
+pg_cron (every minute, only when proofmarket_tick_due() finds work or 15 minutes passed; docs/architecture 06 §4.4) → pg_net POST /api/internal/tick (with shared secret)
   └ Detect expirations (tasks, claims, nonces)
   └ Take a lease on runnable outbox jobs and run them
   └ Delete evidence past its retention period (once a day)
