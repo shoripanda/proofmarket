@@ -5,24 +5,7 @@ import { flagEnabled } from "@/lib/services/flags";
 import { openPublicTaskIds } from "@/lib/services/market-task-service";
 import { indexableProfileIds } from "@/lib/services/profile-service";
 import { SITE_URL } from "@/lib/site-url";
-
-const PAGES = [
-  "",
-  "/how-it-works",
-  "/connect",
-  "/developers",
-  "/pricing",
-  "/workers",
-  "/join",
-  "/try",
-  "/demo",
-  "/map",
-  "/stats",
-  "/data",
-  "/faq",
-  "/rules",
-  "/legal",
-];
+import { SITEMAP_PAGES as PAGES } from "@/lib/sitemap-pages";
 
 export const dynamic = "force-dynamic";
 
