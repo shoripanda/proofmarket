@@ -75,7 +75,7 @@ The prepaid balance (D-05), x402 limited to USDC (16 §9), a platform fee of 0, 
 
 ## 5. Rationale
 
-Reconciliation goes into the tick to avoid a new long-running process; once a day fits inside a Vercel function. Throughput goes into `/v1/health/ready` because external monitoring (`uptime.yml`) already checks it every 5 minutes, so no new alert path is needed.
+Reconciliation goes into the tick to avoid a new long-running process; once a day fits inside a Vercel function. Throughput goes into `/v1/health/ready` because external monitoring (Better Stack every 3 minutes, with `uptime.yml` as a backup; 12 §5 step 5) already checks it, so no new alert path is needed.
 
 ## 6. Alternatives
 
@@ -90,7 +90,7 @@ As in the table in 08 §1.5, double payment is prevented in three layers. Reconc
 ## 8. Implementation issues
 
 - Reconciliation reads Task accounts, and for requests settled more than a year ago (365-day retention) the `payment_records` are gone. Limiting it to the previous day avoids the problem
-- More checks in `/v1/health/ready` could make `uptime.yml` fail more often. Report throughput warnings in a body field rather than as 503; keep 503 for whether the DB and tick are alive
+- More checks in `/v1/health/ready` could make the uptime monitors fail more often. Report throughput warnings in a body field rather than as 503; keep 503 for whether the DB and tick are alive
 
 ## 9. Test strategy
 
