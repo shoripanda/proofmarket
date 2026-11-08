@@ -159,6 +159,7 @@ describe("POST /mcp", () => {
     expect(c.mimeType).toBe("text/html+skybridge");
     expect(c.text).toContain("window.openai");
     expect(c.text).not.toMatch(/<script src=|https?:\/\//); // self-contained: nothing loaded from outside
+    expect(c.text).toMatch(/body \{[^}]*overflow-wrap: anywhere/); // long URLs in a summary wrap at phone width
     const { tools } = await mcp.listTools();
     const meta = (n: string) => tools.find((x) => x.name === n)?._meta as Record<string, unknown> | undefined;
     expect(meta("get_reality_verification")?.["openai/outputTemplate"]).toBe("ui://widget/verification.html");

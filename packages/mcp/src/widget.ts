@@ -24,8 +24,8 @@ export const WIDGET_HTML = `<!doctype html>
 <title>ProofMarket</title>
 <style>
   :root { --ink: #0f172a; --muted: #64748b; --line: #e2e8f0; --ok: #0f766e; --warn: #b45309; --bad: #b91c1c; --bg: #fff; }
-  @media (prefers-color-scheme: dark) { :root { --ink: #e2e8f0; --muted: #94a3b8; --line: #334155; --bg: #0b1220; } }
-  body { margin: 0; padding: 16px; font: 14px/1.5 -apple-system, "Segoe UI", Roboto, "Hiragino Sans", sans-serif; color: var(--ink); background: var(--bg); }
+  @media (prefers-color-scheme: dark) { :root { --ink: #e2e8f0; --muted: #94a3b8; --line: #334155; --bg: #0b1220; --ok: #2dd4bf; --warn: #fbbf24; --bad: #f87171; } }
+  body { margin: 0; padding: 16px; font: 14px/1.5 -apple-system, "Segoe UI", Roboto, "Hiragino Sans", sans-serif; color: var(--ink); background: var(--bg); overflow-wrap: anywhere; }
   .head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; font-weight: 600; }
   .pill.ok { color: var(--ok); border-color: var(--ok); }
