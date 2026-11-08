@@ -5,11 +5,18 @@ import "server-only";
 import { ApiError } from "@proofmarket/core";
 import { encodeHeader } from "@proofmarket/solana";
 import type { AppContext } from "../context";
-import { readJson } from "../http";
 import { flagEnabled } from "../services/flags";
 import { clientIp } from "../services/oauth-service";
 import { consumeRateLimit, rateLimitHeaders } from "../services/rate-limit";
 import { createWithPayment, X402_LIMITS } from "../services/x402-service";
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new ApiError("VALIDATION_FAILED", { body: "invalid JSON" });
+  }
+}
 
 const EXPOSE = { "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE" };
 
@@ -20,12 +27,10 @@ export async function handleX402Create(
   // The window can be stopped on its own (08 §6): no terms are offered while it is off.
   if (!(await flagEnabled(app.db, "x402_enabled"))) throw new ApiError("FEATURE_DISABLED");
   const rl = await consumeRateLimit(app, `x402:${clientIp(req)}`, X402_LIMITS.rateLimitPerMin);
-  const out = await createWithPayment(
-    app,
-    req.url,
-    await readJson(req),
-    req.headers.get("payment-signature"),
-  );
+  // An empty body is a probe (createWithPayment answers 402 with the example's terms); anything else must be JSON.
+  const text = await req.text();
+  const raw = text.trim() === "" ? undefined : parseJson(text);
+  const out = await createWithPayment(app, req.url, raw, req.headers.get("payment-signature"));
   const base = { ...rateLimitHeaders(rl), ...EXPOSE };
   switch (out.kind) {
     case "required":

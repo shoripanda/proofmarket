@@ -2821,6 +2821,17 @@
             }
           }
         },
+        "x-payment-info": {
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ],
+          "price": {
+            "mode": "dynamic",
+            "currency": "USD"
+          }
+        },
         "responses": {
           "201": {
             "description": "OK",
@@ -2912,6 +2923,9 @@
                 }
               }
             }
+          },
+          "402": {
+            "description": "Payment required: x402 v2 terms in the PAYMENT-REQUIRED header and the body"
           },
           "default": {
             "description": "Error",

@@ -7,6 +7,7 @@ import { ApiError, fromMicro, newId, platformFeeMicro, TASK_TYPES, toMicro } fro
 import {
   type CreateVerificationRequest,
   X402CreateVerificationRequestSchema,
+  X402CreateVerificationResponseSchema,
 } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
 import {
@@ -17,6 +18,7 @@ import {
   type X402Facilitator,
 } from "@proofmarket/solana";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import type { RequesterAuth } from "../auth/requester";
 import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
@@ -82,16 +84,129 @@ export function paymentRequirements(
   };
 }
 
-export function paymentRequired(resourceUrl: string, req: PaymentRequirements, error: string) {
+/**
+ * A body an agent can send as it is: a hands-on task that needs no place, one witness, 0.10 USDC. It is the
+ * example in the Bazaar extension below and what an empty probe is priced at (docs/ops/x402-discovery.md).
+ */
+export function exampleX402Body(app: AppContext): CreateVerificationRequest {
+  return {
+    type: "CUSTOM_TASK",
+    question: "Write down, by hand, one thing an AI could not have checked for you today, and photograph it.",
+    answer_schema: { type: "text" },
+    deadline: new Date(app.now().getTime() + 60 * 60_000).toISOString(),
+    freshness: { max_age_seconds: 300 },
+    evidence_requirements: { photo: true, task_nonce: true },
+    assurance: { required_witnesses: 1, quorum: 1 },
+    bounty: { asset: "USDC", amount: "0.10", network: clusterText(app.config.cluster).network },
+  } as CreateVerificationRequest;
+}
+
+/**
+ * The top level of a request or response schema: each field with its type (and enum or const), nested objects
+ * left open. The full schema (all task types) is about 14 KB and would ride in the PAYMENT-REQUIRED header, past
+ * what some proxies pass; the details are in /openapi.json.
+ */
+function shallowSchema(s: z.ZodType, description: string) {
+  const full = z.toJSONSchema(s, { target: "draft-2020-12", io: "input", unrepresentable: "any" }) as {
+    properties?: Record<string, Record<string, unknown>>;
+    required?: string[];
+  };
+  const keep = (p: Record<string, unknown>) => {
+    const out: Record<string, unknown> = {};
+    for (const k of ["type", "enum", "const", "description"] as const) if (k in p) out[k] = p[k];
+    if (!("type" in out) && !("enum" in out) && !("const" in out)) {
+      const alt = (p.anyOf ?? p.oneOf) as Record<string, unknown>[] | undefined;
+      const types = [...new Set((alt ?? []).map((a) => a.type).filter(Boolean))];
+      if (types.length === 1) out.type = types[0];
+      else if (types.length > 1) out.type = types;
+    }
+    return out;
+  };
+  return {
+    type: "object",
+    description,
+    properties: Object.fromEntries(Object.entries(full.properties ?? {}).map(([k, v]) => [k, keep(v)])),
+    required: full.required ?? [],
+  };
+}
+let bazaarSchemas: { body: unknown; output: unknown } | null = null;
+
+/**
+ * The x402 Bazaar discovery extension (coinbase/x402 specs/extensions/bazaar.md): how to call this resource and
+ * what comes back, so directories such as x402scan can index it and an agent can build a valid body.
+ */
+function bazaarExtension(example: CreateVerificationRequest) {
+  bazaarSchemas ??= {
+    body: shallowSchema(
+      X402CreateVerificationRequestSchema,
+      "Same body as POST /v1/verifications without principal_ref; bounty.asset must be USDC. Every field: /openapi.json",
+    ),
+    output: shallowSchema(X402CreateVerificationResponseSchema, "201 response"),
+  };
+  return {
+    info: {
+      input: { type: "http", method: "POST", bodyType: "json", body: example },
+      output: {
+        type: "json",
+        example: {
+          verification_id: "vrf_01JEXAMPLE0000000000000000",
+          status: "CREATED",
+          created_at: "2026-11-08T12:00:00.000Z",
+          funding: { status: "PENDING" },
+          api_key: "<shown once: reads the result with GET /v1/verifications/{id}>",
+          payment: {
+            signature: "<base58 transaction signature>",
+            explorer_url: "https://explorer.solana.com/tx/<signature>",
+            network: example.bounty.network,
+            payer: "<payer wallet>",
+            amount: "<bounty x witnesses + fee>",
+          },
+        },
+      },
+    },
+    schema: {
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      properties: {
+        input: {
+          type: "object",
+          properties: {
+            type: { type: "string", const: "http" },
+            method: { type: "string", enum: ["POST"] },
+            bodyType: { type: "string", enum: ["json"] },
+            body: bazaarSchemas.body,
+          },
+          required: ["type", "method", "bodyType", "body"],
+          additionalProperties: false,
+        },
+        output: {
+          type: "object",
+          properties: { type: { type: "string" }, example: bazaarSchemas.output },
+          required: ["type"],
+        },
+      },
+      required: ["input"],
+    },
+  };
+}
+
+export function paymentRequired(
+  resourceUrl: string,
+  req: PaymentRequirements,
+  error: string,
+  example: CreateVerificationRequest,
+) {
   return {
     x402Version: X402_VERSION,
     error,
     resource: {
       url: resourceUrl,
-      description: "Create a ProofMarket verification: a person checks it in the real world.",
+      description:
+        "Create a ProofMarket verification: a person nearby checks something in the real world (a place, a printed page, an object, a phone call) and sends photos and an answer. Price = bounty x witnesses + 15%. The 201 response holds an API key to read the result.",
       mimeType: "application/json",
     },
     accepts: [req],
+    extensions: { bazaar: bazaarExtension(example) },
   };
 }
 
@@ -185,19 +300,36 @@ export type X402Outcome =
       verificationId: string | null;
     };
 
+const isEmptyObject = (v: unknown) =>
+  typeof v === "object" && v !== null && !Array.isArray(v) && Object.keys(v).length === 0;
+
 export async function createWithPayment(
   app: AppContext,
   resourceUrl: string,
   raw: unknown,
   paymentHeader: string | null,
 ): Promise<X402Outcome> {
-  const body = parseX402Body(raw);
   const f = app.x402();
+  const example = exampleX402Body(app);
+  // A probe (no body, or {}) without a payment gets the terms for the example body rather than a 400, so
+  // discovery tools (x402scan, docs/ops/x402-discovery.md) see a 402. A real body is still validated in full.
+  if (!paymentHeader && (raw === undefined || isEmptyObject(raw))) {
+    return {
+      kind: "required",
+      body: paymentRequired(
+        resourceUrl,
+        paymentRequirements(f, example, app.config.platformFeeBps),
+        "PAYMENT-SIGNATURE header is required; send a body like extensions.bazaar.info.input.body",
+        example,
+      ),
+    };
+  }
+  const body = parseX402Body(raw);
   const req = paymentRequirements(f, body, app.config.platformFeeBps);
   const reject = (reason: string, status: 400 | 402 = 402, payer = ""): X402Outcome => ({
     kind: "rejected",
     status,
-    body: paymentRequired(resourceUrl, req, reason),
+    body: paymentRequired(resourceUrl, req, reason, example),
     settlement: { success: false, errorReason: reason, transaction: "", network: f.network, payer },
   });
 
@@ -208,7 +340,7 @@ export async function createWithPayment(
   if (!paymentHeader) {
     return {
       kind: "required",
-      body: paymentRequired(resourceUrl, req, "PAYMENT-SIGNATURE header is required"),
+      body: paymentRequired(resourceUrl, req, "PAYMENT-SIGNATURE header is required", example),
     };
   }
   const payload = decodePaymentHeader(paymentHeader);
