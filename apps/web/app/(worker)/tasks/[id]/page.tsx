@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   ListenButton,
+  Loading,
   Notice,
   remaining,
   Shell,
@@ -66,6 +67,7 @@ export default function TaskDetailPage() {
   return (
     <Shell title={pick(lang, "タスクの内容", "Task details")} back="/tasks">
       {err ? <Notice tone="error">{err}</Notice> : null}
+      {!t && !err ? <Loading /> : null}
       {t ? (
         <>
           <Card>

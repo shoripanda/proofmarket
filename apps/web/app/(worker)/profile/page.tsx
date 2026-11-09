@@ -50,7 +50,11 @@ export default function ProfilePage() {
           setIndexable(r.profile.indexable);
         }
       },
-      (e) => setMsg({ tone: "error", text: errorText(e, lang) }),
+      (e) =>
+        setMsg({
+          tone: e instanceof ApiErr && e.code === "TASKS_NOT_ENABLED" ? "info" : "error",
+          text: errorText(e, lang),
+        }),
     );
   }, [api, lang]);
 

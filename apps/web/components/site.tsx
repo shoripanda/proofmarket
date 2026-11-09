@@ -54,6 +54,8 @@ function LogoMark({ className }: { className?: string }) {
   );
 }
 
+const LEGAL_LINK = "inline-flex min-h-9 items-center px-1.5 hover:text-teal-700";
+
 export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode }) {
   const h = (href: string) => langHref(lang, href);
   return (
@@ -106,28 +108,29 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
         <main>{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-slate-50">
           <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
-            <nav className="flex flex-wrap gap-x-4 gap-y-1">
+            {/* Each link is a 36 px row on phones so a thumb hits the one it means (UX pass F8). */}
+            <nav className="-mx-1.5 flex flex-wrap gap-x-1">
               {siteNav(lang).map((n) => (
                 <Link
                   key={n.href}
                   href={h(n.href)}
-                  className="underline-offset-8 hover:text-teal-700 hover:underline"
+                  className="inline-flex min-h-9 items-center px-1.5 underline-offset-8 hover:text-teal-700 hover:underline"
                 >
                   {n.label}
                 </Link>
               ))}
             </nav>
-            <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              <Link href={h("/legal/worker-terms")} className="hover:text-teal-700">
+            <nav className="-mx-1.5 flex flex-wrap gap-x-1 text-xs">
+              <Link href={h("/legal/worker-terms")} className={LEGAL_LINK}>
                 {pick(lang, "worker 参加規約", "Worker terms")}
               </Link>
-              <Link href={h("/legal/requester-terms")} className="hover:text-teal-700">
+              <Link href={h("/legal/requester-terms")} className={LEGAL_LINK}>
                 {pick(lang, "依頼者規約", "Requester terms")}
               </Link>
-              <Link href={h("/legal/privacy")} className="hover:text-teal-700">
+              <Link href={h("/legal/privacy")} className={LEGAL_LINK}>
                 {pick(lang, "プライバシーポリシー", "Privacy policy")}
               </Link>
-              <Link href={h("/legal/operator")} className="hover:text-teal-700">
+              <Link href={h("/legal/operator")} className={LEGAL_LINK}>
                 {pick(lang, "運営者情報", "Operator")}
               </Link>
             </nav>

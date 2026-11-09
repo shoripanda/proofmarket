@@ -2,7 +2,7 @@
 // W-07 Verdict — pass/fail, the reason and how to retry, attempts left.
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, Notice, Shell } from "@/components/ui";
+import { Button, Card, Loading, Notice, Shell } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
 import { langHref, pick } from "@/lib/lang";
@@ -40,6 +40,7 @@ export default function ResultPage() {
   return (
     <Shell title={pick(lang, "判定結果", "Verdict")} back="/tasks">
       {err ? <Notice tone="error">{err}</Notice> : null}
+      {!c && !err ? <Loading /> : null}
       {c && last ? (
         reviewing ? (
           <Card>
@@ -53,10 +54,19 @@ export default function ResultPage() {
         ) : last.state === "VALID" ? (
           <>
             <Card>
-              <p className="text-5xl">✓</p>
-              <p className="mt-2 text-xl font-bold text-emerald-700">
-                {pick(lang, "確認できました", "Accepted")}
-              </p>
+              <div className="flex flex-col items-center py-4 text-center">
+                <SuccessMark />
+                <p className="mt-4 text-2xl font-bold text-teal-800">
+                  {pick(lang, "確認できました", "Accepted")}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {pick(
+                    lang,
+                    "ありがとうございました。報酬の状況は「報酬」の画面で確かめられます。",
+                    "Thank you. You can follow your payment under Earnings.",
+                  )}
+                </p>
+              </div>
             </Card>
             <Button onClick={() => go("/payouts")}>{pick(lang, "報酬を見る", "See earnings")}</Button>
             <Button variant="secondary" onClick={() => go("/tasks")}>
@@ -93,5 +103,41 @@ export default function ResultPage() {
         <Notice>{pick(lang, "まだ送信していません。", "Nothing submitted yet.")}</Notice>
       ) : null}
     </Shell>
+  );
+}
+
+/** A teal circle and check that draw themselves once (globals.css .success-mark; static under reduced motion). */
+function SuccessMark() {
+  return (
+    <svg viewBox="0 0 56 56" className="success-mark size-20 text-teal-700" aria-hidden="true">
+      <circle
+        cx="28"
+        cy="28"
+        r="24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3.5"
+        className="opacity-25"
+      />
+      <circle
+        cx="28"
+        cy="28"
+        r="24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3.5"
+        transform="rotate(-90 28 28)"
+        className="draw"
+      />
+      <path
+        className="draw"
+        d="M17 29l7.5 7.5L39.5 21"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
