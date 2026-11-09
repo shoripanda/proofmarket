@@ -188,10 +188,10 @@ export default function ProfilePage() {
             ))}
           </div>
         </fieldset>
-        <label className="mb-4 flex items-start gap-2 text-sm">
+        <label className="mb-4 flex items-start gap-3 text-sm">
           <input
             type="checkbox"
-            className="mt-1"
+            className="mt-0.5 size-5 shrink-0 accent-teal-700"
             checked={indexable}
             onChange={(e) => setIndexable(e.target.checked)}
           />
