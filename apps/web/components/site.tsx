@@ -66,7 +66,7 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
             desktop width and hid it behind a sideways scroll on phones). Sticky from tablet up only: on a phone
             the two rows would cover a quarter of the screen. */}
         <header className="z-10 border-b border-slate-200 bg-white/95 backdrop-blur sm:sticky sm:top-0">
-          <div className="mx-auto max-w-5xl space-y-3 px-4 py-3">
+          <div className="mx-auto max-w-7xl space-y-3 px-4 lg:px-8 py-3">
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
               <Link
                 href={h("/")}
@@ -107,7 +107,7 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
         </header>
         <main>{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-slate-50">
-          <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
+          <div className="mx-auto max-w-7xl space-y-3 px-4 lg:px-8 py-8 text-sm text-slate-500">
             {/* Each link is a 36 px row on phones so a thumb hits the one it means (UX pass F8). */}
             <nav className="-mx-1.5 flex flex-wrap gap-x-1">
               {siteNav(lang).map((n) => (
@@ -153,12 +153,12 @@ export function Section({
   id?: string;
 }) {
   return (
-    <section id={id} className="mx-auto max-w-5xl px-4 py-10">
-      <h2 data-reveal className="text-2xl font-bold tracking-tight">
+    <section id={id} className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
+      <h2 data-reveal className="text-2xl font-bold tracking-tight lg:text-3xl">
         {title}
       </h2>
       {lead ? (
-        <p data-reveal className="mt-2 max-w-3xl leading-relaxed text-slate-600">
+        <p data-reveal className="mt-2 max-w-3xl leading-relaxed text-slate-600 lg:max-w-4xl lg:text-lg">
           {lead}
         </p>
       ) : null}
@@ -182,12 +182,16 @@ export function PageHero({
 }) {
   return (
     <div className="hero-bg border-b border-slate-100 bg-gradient-to-b from-teal-50 to-white">
-      <div className="hero-in mx-auto max-w-5xl px-4 py-12 sm:py-16">
+      <div className="hero-in mx-auto max-w-7xl px-4 lg:px-8 py-12 sm:py-16">
         <p className="text-sm font-semibold tracking-wide text-teal-700">{eyebrow}</p>
-        <h1 className="mt-2 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+        <h1 className="mt-2 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:max-w-5xl lg:text-5xl">
           {title}
         </h1>
-        {children ? <div className="mt-4 max-w-3xl leading-relaxed text-slate-600">{children}</div> : null}
+        {children ? (
+          <div className="mt-4 max-w-3xl leading-relaxed text-slate-600 lg:max-w-4xl lg:text-lg">
+            {children}
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -79,7 +79,7 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
   const h = (p: string) => langHref(lang, p);
   return (
     <LangProvider lang={lang}>
-      <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-white p-6">
+      <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-white p-6 lg:max-w-3xl">
         <p className="text-sm font-semibold tracking-wide text-teal-700">
           {pick(lang, "ProofMarket｜人が確かめた結果", "ProofMarket | Checked by a person")}
         </p>

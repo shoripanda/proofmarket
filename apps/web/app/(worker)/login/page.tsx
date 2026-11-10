@@ -11,7 +11,7 @@ export default function LoginPage() {
   const s = useSession();
   const [name, setName] = useState("");
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 bg-white p-6">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center md:max-w-xl gap-6 bg-white p-6">
       <div className="space-y-2">
         <p className="text-sm font-semibold tracking-wide text-teal-700">ProofMarket</p>
         <h1 className="text-3xl font-bold leading-tight">

@@ -266,8 +266,11 @@ export default function CapturePage() {
       ) : null}
       {err ? <Notice tone="error">{err}</Notice> : null}
 
-      {/* Stays mounted so the camera keeps running; hidden once the photo limit is reached. */}
-      <div className={`relative overflow-hidden rounded-2xl bg-black ${full ? "hidden" : ""}`}>
+      {/* Stays mounted so the camera keeps running; hidden once the photo limit is reached. On wide screens the
+          preview keeps phone width, so the answer buttons below stay on screen. */}
+      <div
+        className={`relative mx-auto w-full max-w-md overflow-hidden rounded-2xl bg-black ${full ? "hidden" : ""}`}
+      >
         <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full object-cover" />
         {guide.length ? (
           <ul

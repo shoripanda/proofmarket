@@ -139,7 +139,7 @@ export default async function WorkersPage() {
     <>
       <PageHero eyebrow={c.eyebrow} title={c.title} />
 
-      <section className="mx-auto max-w-5xl px-4 py-10">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <ol className="grid gap-6 sm:grid-cols-3">
           {c.three.map(([k, line], i) => (
             <li
@@ -183,7 +183,7 @@ export default async function WorkersPage() {
         </ul>
       </Section>
 
-      <div className="mx-auto max-w-5xl px-4">
+      <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <details className="rounded-2xl border border-slate-200">
           <summary className="cursor-pointer select-none p-4 text-sm font-semibold text-teal-700">
             {c.more}

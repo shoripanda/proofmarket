@@ -253,7 +253,7 @@ export default function TasksPage() {
           </Card>
         </LLink>
       ))}
-      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md bg-gradient-to-t from-white p-4">
+      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md md:max-w-2xl lg:max-w-3xl bg-gradient-to-t from-white p-4">
         <Button variant="secondary" onClick={() => load()}>
           {pick(lang, "更新", "Refresh")}
         </Button>

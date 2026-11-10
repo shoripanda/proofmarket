@@ -12,7 +12,7 @@ export function NotFoundBody({ lang }: { lang: Lang }) {
     { href: "/connect", label: pick(lang, "エージェントをつなぐ", "Connect your agent") },
   ];
   return (
-    <div className="mx-auto max-w-5xl px-4 py-16 sm:py-24">
+    <div className="mx-auto max-w-7xl px-4 lg:px-8 py-16 sm:py-24">
       <p className="text-sm font-semibold tracking-wide text-teal-700">404</p>
       <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
         {pick(lang, "このページは見つかりませんでした", "We could not find this page")}

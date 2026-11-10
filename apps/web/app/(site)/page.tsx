@@ -331,7 +331,7 @@ export default async function Home() {
       </PageHero>
 
       <section className="border-b border-slate-100 py-6" aria-label={c.marqueeTitle}>
-        <p className="mx-auto mb-3 flex max-w-5xl items-center gap-2 px-4 text-sm font-semibold text-slate-500">
+        <p className="mx-auto mb-3 flex max-w-7xl items-center gap-2 px-4 lg:px-8 text-sm font-semibold text-slate-500">
           <span className="live-dot" aria-hidden="true" />
           {c.marqueeTitle}
         </p>
@@ -500,7 +500,10 @@ export default async function Home() {
               className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700"
             >
               <Icon k={t.icon} className="h-8 w-8 shrink-0" />
-              <Plain>{t.text}</Plain>
+              {/* One flex item: Plain splits the text around glossary terms, which otherwise became columns. */}
+              <span className="min-w-0">
+                <Plain>{t.text}</Plain>
+              </span>
             </li>
           ))}
         </ul>

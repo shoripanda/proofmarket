@@ -9,7 +9,7 @@ import { type Lang, pick } from "@/lib/lang";
 export function Shell({ title, back, children }: { title: string; back?: string; children: ReactNode }) {
   const lang = useLang();
   return (
-    <div className="mx-auto min-h-dvh max-w-md bg-white shadow-sm">
+    <div className="mx-auto min-h-dvh max-w-md bg-white shadow-sm md:max-w-2xl lg:max-w-3xl">
       <header className="sticky top-0 z-10 flex items-center gap-1 border-b border-slate-200 bg-white/95 px-4 py-1.5 backdrop-blur">
         {back ? (
           <LLink
