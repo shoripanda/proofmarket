@@ -47,7 +47,7 @@ export default async function ConnectPage() {
           </Plain>
         </p>
       </PageHero>
-      <div className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <ConnectFlow base={await baseUrl()} cluster={publicCluster()} />
       </div>
     </>

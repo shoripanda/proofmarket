@@ -62,7 +62,7 @@ export default async function DataPage() {
           "Older observations stay in the dataset.",
         )}
       >
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
           <div>
             <Code>
               {pick(

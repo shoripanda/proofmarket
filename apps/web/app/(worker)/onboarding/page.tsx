@@ -45,7 +45,7 @@ export default function OnboardingPage() {
     <label className="flex items-start gap-3 py-2">
       <input
         type="checkbox"
-        className="mt-1 size-5 accent-teal-700"
+        className="mt-1 size-5 shrink-0 accent-teal-700"
         checked={agree[key]}
         onChange={(e) => setAgree({ ...agree, [key]: e.target.checked })}
       />

@@ -215,15 +215,18 @@ function DailyChart({ days, lang }: { days: { date: string; count: number }[]; l
           `Completed requests over the last 14 days, ${total} in total`,
         )}
       >
-        {days.map((d) => (
-          <div key={d.date} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
+        {days.map((d, i) => (
+          <div key={d.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
             <span className="text-xs tabular-nums text-slate-600">{d.count || ""}</span>
             <div
               className="w-full rounded-t bg-teal-600"
               style={{ height: `${(d.count / max) * 100}%`, minHeight: d.count ? 4 : 1 }}
               title={`${d.date}: ${d.count}`}
             />
-            <span className="text-[10px] tabular-nums text-slate-500">
+            {/* Phones: every other date (and always the last) so 14 labels fit in 360 px; all of them from sm up. */}
+            <span
+              className={`whitespace-nowrap text-[10px] tabular-nums text-slate-500 ${(days.length - 1 - i) % 2 ? "invisible sm:visible" : ""}`}
+            >
               {Number(d.date.slice(5, 7))}/{Number(d.date.slice(8, 10))}
             </span>
           </div>

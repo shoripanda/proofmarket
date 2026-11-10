@@ -79,18 +79,35 @@ export default async function PublicResultPage({ params }: { params: Promise<{ i
   const h = (p: string) => langHref(lang, p);
   return (
     <LangProvider lang={lang}>
-      <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-white p-6">
+      <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-white p-6 lg:max-w-3xl">
         <p className="text-sm font-semibold tracking-wide text-teal-700">
           {pick(lang, "ProofMarket｜人が確かめた結果", "ProofMarket | Checked by a person")}
         </p>
         {!r ? (
-          <p className="rounded-xl bg-slate-100 p-4 text-slate-600">
-            {pick(
-              lang,
-              "まだ結果がありません。人が確かめている途中か、この番号の依頼がありません。",
-              "No result yet. Either someone is still checking, or there is no request with this ID.",
-            )}
-          </p>
+          <>
+            <p className="rounded-xl bg-slate-100 p-4 text-slate-600">
+              {pick(
+                lang,
+                "まだ結果がありません。人が確かめている途中か、この番号の依頼がありません。",
+                "No result yet. Either someone is still checking, or there is no request with this ID.",
+              )}
+            </p>
+            {/* A dead end otherwise: someone who followed an old or mistyped link needs a way on (UX pass F5). */}
+            <nav className="flex flex-wrap gap-3 text-sm font-semibold">
+              <Link
+                href={h("/")}
+                className="inline-flex min-h-11 items-center rounded-full bg-teal-700 px-5 text-white hover:bg-teal-800"
+              >
+                {pick(lang, "ProofMarket のトップへ", "Go to ProofMarket")}
+              </Link>
+              <Link
+                href={h("/demo")}
+                className="inline-flex min-h-11 items-center rounded-full px-5 text-teal-800 ring-1 ring-teal-700 hover:bg-teal-50"
+              >
+                {pick(lang, "結果の見本を見る", "See a sample result")}
+              </Link>
+            </nav>
+          </>
         ) : (
           <>
             <section

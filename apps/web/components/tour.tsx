@@ -76,7 +76,11 @@ export function Tour() {
               />
             ))}
           </div>
-          <button type="button" onClick={close} className="px-2 py-1 text-sm font-semibold text-slate-500">
+          <button
+            type="button"
+            onClick={close}
+            className="-mr-2 inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-slate-500 hover:bg-slate-100"
+          >
             {pick(lang, "飛ばす", "Skip")}
           </button>
         </div>

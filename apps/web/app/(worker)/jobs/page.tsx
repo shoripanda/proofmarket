@@ -1,8 +1,8 @@
 "use client";
 // W-20 Tasks — general tasks next to verifications (docs/architecture 13 §8): open tasks, and the worker's own seats.
 import { useEffect, useState } from "react";
-import { Card, Notice, Shell, yen } from "@/components/ui";
-import { errorText, useApi } from "@/lib/client/api";
+import { Card, Loading, Notice, Shell, yen } from "@/components/ui";
+import { ApiErr, errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
 import { pick } from "@/lib/lang";
 import { SEAT_TEXT } from "./seat-state";
@@ -14,10 +14,13 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [seats, setSeats] = useState<MySeat[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // Tasks switched off by the operator is a state, not a failure: say so calmly and show nothing else (UX pass F10).
+  const [closed, setClosed] = useState(false);
   useEffect(() => {
     api<{ tasks: Job[] }>("/v1/worker/market-tasks").then(
       (r) => setJobs(r.tasks),
-      (e) => setErr(errorText(e, lang)),
+      (e) =>
+        e instanceof ApiErr && e.code === "TASKS_NOT_ENABLED" ? setClosed(true) : setErr(errorText(e, lang)),
     );
     api<{ seats: MySeat[] }>("/v1/worker/market-seats").then(
       (r) => setSeats(r.seats),
@@ -29,6 +32,16 @@ export default function JobsPage() {
   return (
     <Shell title={pick(lang, "仕事", "Tasks")} back="/tasks">
       {err ? <Notice tone="error">{err}</Notice> : null}
+      {closed ? (
+        <Notice>
+          {pick(
+            lang,
+            "仕事の受付はまだ始まっていません。始まったら、この画面に募集中の仕事が並びます。",
+            "Tasks are not open yet. Once they open, the tasks you can take will be listed here.",
+          )}
+        </Notice>
+      ) : null}
+      {!jobs && !err && !closed ? <Loading /> : null}
       <p className="text-right text-sm">
         <LLink href="/profile" className="text-teal-700 underline">
           {pick(lang, "公開プロフィール", "Public profile")}
@@ -47,7 +60,7 @@ export default function JobsPage() {
           ))}
         </section>
       ) : null}
-      <section className="space-y-2">
+      <section className={`space-y-2 ${jobs ? "" : "hidden"}`}>
         <h2 className="text-sm font-bold text-slate-500">{pick(lang, "募集中", "Open")}</h2>
         {jobs && jobs.length === 0 ? (
           <Notice>{pick(lang, "いま募集中の仕事はありません。", "No open tasks right now.")}</Notice>
