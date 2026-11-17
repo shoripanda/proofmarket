@@ -2,7 +2,7 @@
 
 **Why:** the GitHub Actions check (`.github/workflows/uptime.yml`) asks for every 5 minutes, but GitHub throttles scheduled runs. In November 2026 it ran every 4 to 7 hours. When Vercel paused the team on 2026-11-06, the site answered 402 for almost two days before anyone noticed. GitHub's failure email was the only alert.
 
-**What:** an outside uptime service checks `/v1/health/ready` every 5 minutes and sends a push alert to the owner's phone. The GitHub job stays as a backup.
+**What:** Better Stack (free plan) checks `/v1/health/ready` every 5 minutes and sends a push alert to the owner's phone. `scripts/betterstack-monitors.ts` creates the monitor, so its settings live in the repo. The GitHub job stays as a backup.
 
 ## What the endpoint tells the monitor
 
@@ -20,12 +20,21 @@ A Vercel pause (402), a DNS failure or a timeout also counts as down.
 
 ## Setup (owner, about 5 minutes)
 
-UptimeRobot's free plan is enough (5-minute checks and push alerts from its phone app). Any service that checks an HTTPS URL and alerts on non-2xx works the same way.
+1. Sign up at https://betterstack.com (free plan).
+2. Install the Better Stack app on the phone, sign in and allow notifications. Push goes to team members who have the app.
+3. Create an Uptime API token under Settings → API tokens and add `BETTERSTACK_API_TOKEN=<token>` to `~/.config/proofmarket/env.accounts`. Never put it in the repo.
+4. Create the monitor:
 
-1. Sign up at https://uptimerobot.com.
-2. Add a monitor: type **HTTP(s)**, URL `https://proofmarket.fun/v1/health/ready`, interval **5 minutes**, timeout **30 seconds**.
-3. Install the UptimeRobot app on the phone, sign in, and allow notifications. Add the app as an alert contact on the monitor (email can stay as a second contact).
-4. Test once: pause the monitor and resume it, or point a second monitor at `https://proofmarket.fun/v1/health/ready-nonexistent` (404) for a minute and check that the phone alert arrives. Delete the test monitor afterwards.
+   ```sh
+   set -a && source ~/.config/proofmarket/env.accounts && set +a
+   pnpm --filter @proofmarket/scripts run run betterstack-monitors.ts --dry-run   # shows create/update
+   pnpm --filter @proofmarket/scripts run run betterstack-monitors.ts
+   ```
+
+   It is safe to run again: a monitor with the same URL is updated, not duplicated. It checks every 5 minutes with a 30-second timeout, re-checks once before raising an incident, and alerts by email and push.
+5. Test once: pause and resume the monitor in the Better Stack app, or add a temporary monitor for `https://proofmarket.fun/v1/health/ready-nonexistent` (404) and check that the phone alert arrives. Delete the test monitor afterwards.
+
+Any other service that checks an HTTPS URL and alerts on non-2xx (UptimeRobot's free plan, for example) works the same way if Better Stack is not wanted; set it up by hand with the same URL, interval and timeout.
 
 ## What not to do
 
