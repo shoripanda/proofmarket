@@ -22,6 +22,8 @@ export interface ClaimDetail {
   attestation: AttestationView | null;
   answer_values: string[];
   answer_schema: AnswerSchemaView;
+  /** 01 §4.31: what to show for each choice value in this language. */
+  answer_labels?: Record<string, string>;
   location_required: boolean;
   /** False only on a hearing-only sensory report at a place (docs/architecture 16 §4). */
   photo_required: boolean;

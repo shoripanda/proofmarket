@@ -1,21 +1,9 @@
 "use client";
-import type { TaskType } from "@proofmarket/core";
-// W-04 Task detail — question, map link, radius, reward, deadline, photo notes, "Take this".
+// W-04 Task detail — question, what the photo must show, reward, deadline, place, "Take this".
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  Button,
-  Card,
-  ListenButton,
-  Loading,
-  Notice,
-  remaining,
-  Shell,
-  safetyNotes,
-  useNow,
-  yen,
-} from "@/components/ui";
-import { type AnswerSchemaView, answerFormat, taskTypeText } from "@/lib/answers";
+import { Button, Card, ListenButton, Loading, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
+import type { AnswerSchemaView } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
 import { langHref, pick } from "@/lib/lang";
@@ -39,7 +27,6 @@ interface Task {
 
 export default function TaskDetailPage() {
   const lang = useLang();
-  const types = taskTypeText(lang);
   const { id } = useParams<{ id: string }>();
   const api = useApi();
   const router = useRouter();
@@ -65,36 +52,22 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <Shell title={pick(lang, "タスクの内容", "Task details")} back="/tasks">
+    <Shell title={pick(lang, "依頼", "Task")} back="/tasks">
       {err ? <Notice tone="error">{err}</Notice> : null}
       {!t && !err ? <Loading /> : null}
       {t ? (
         <>
           <Card>
-            <p className="text-sm text-slate-500">
-              {pick(lang, "確かめること・", "What to check · ")}
-              {types[t.type as TaskType]?.name ?? t.type}
-            </p>
-            <AttestationBand lang={lang} attestation={t.attestation} className="mt-2" />
-            <div className="mt-1 flex items-start gap-2">
+            <AttestationBand lang={lang} attestation={t.attestation} className="mb-2" />
+            <div className="flex items-start gap-2">
               <p className="flex-1 text-xl font-bold leading-snug">{t.question}</p>
-              <ListenButton
-                text={[
-                  t.question,
-                  t.acceptance_criteria
-                    ? `${pick(lang, "受け取りの条件。", "Accepted when: ")}${t.acceptance_criteria}`
-                    : "",
-                ].join("\n")}
-              />
+              <ListenButton text={t.question} />
             </div>
             {t.acceptance_criteria ? (
-              <p className="mt-3 whitespace-pre-wrap rounded-xl bg-amber-50 p-3 text-sm leading-relaxed text-amber-900">
-                <span className="font-bold">{pick(lang, "受け取りの条件: ", "Accepted when: ")}</span>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-500">
                 {t.acceptance_criteria}
               </p>
             ) : null}
-            <p className="mt-3 text-sm text-slate-600">{answerFormat(lang, t.answer_schema)}</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">{types[t.type as TaskType]?.howTo}</p>
           </Card>
           <Card>
             <dl className="grid grid-cols-2 gap-y-3 text-sm">
@@ -135,14 +108,6 @@ export default function TaskDetailPage() {
                     )
                   : pick(lang, "どこでも", "anywhere")}
               </dd>
-              <dt className="text-slate-500">{pick(lang, "撮影の受付時間", "Capture window")}</dt>
-              <dd className="text-right font-medium">
-                {pick(
-                  lang,
-                  `「撮影を始める」から ${Math.round(t.freshness_max_age_seconds / 60)} 分`,
-                  `${Math.round(t.freshness_max_age_seconds / 60)} min from “Start capture”`,
-                )}
-              </dd>
             </dl>
             {t.location ? (
               <a
@@ -154,14 +119,6 @@ export default function TaskDetailPage() {
                 {pick(lang, "地図アプリで場所を開く", "Open the place in a map app")}
               </a>
             ) : null}
-          </Card>
-          <Card>
-            <h2 className="mb-2 font-bold">{pick(lang, "撮影の注意", "Before you shoot")}</h2>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-              {safetyNotes(lang).map((n) => (
-                <li key={n}>{n}</li>
-              ))}
-            </ul>
           </Card>
           <Button onClick={claim} disabled={busy || t.open_slots <= 0}>
             {busy

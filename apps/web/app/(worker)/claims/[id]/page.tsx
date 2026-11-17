@@ -34,7 +34,14 @@ export default function ClaimPage() {
 
   const active = c?.state === "ACTIVE";
   return (
-    <Shell title={pick(lang, "現地へ向かう", "Heading there")} back="/tasks">
+    <Shell
+      title={
+        c && !c.location_required
+          ? pick(lang, "引き受け中", "Claimed")
+          : pick(lang, "現地へ向かう", "Heading there")
+      }
+      back="/tasks"
+    >
       {err ? <Notice tone="error">{err}</Notice> : null}
       {!c && !err ? <Loading /> : null}
       {c ? (
@@ -48,20 +55,17 @@ export default function ClaimPage() {
               href={`/tasks/${c.verification_id}`}
               className="mt-3 inline-block text-sm text-teal-700 underline"
             >
-              {pick(lang, "タスクの内容と地図を見る", "See the task and the map")}
+              {c.location_required
+                ? pick(lang, "依頼と地図を見る", "See the task and the map")
+                : pick(lang, "依頼を見る", "See the task")}
             </LLink>
           </Card>
           {active ? (
             <>
-              <Notice>
-                {pick(
-                  lang,
-                  "お店の前に着いたら「現地に着いた」を押してください。そこから撮影の受付時間が始まります。",
-                  "When you reach the shop, tap “I'm here”. The capture window starts from that moment.",
-                )}
-              </Notice>
               <Button onClick={() => router.push(langHref(lang, `/claims/${id}/capture`))}>
-                {pick(lang, "現地に着いた（撮影を始める）", "I'm here (start capture)")}
+                {c.location_required
+                  ? pick(lang, "現地に着いた（撮影を始める）", "I'm here (start capture)")
+                  : pick(lang, "撮影を始める", "Start capture")}
               </Button>
               <Button variant="danger" onClick={abandon}>
                 {pick(lang, "やめる", "Quit")}

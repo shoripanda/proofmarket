@@ -332,6 +332,7 @@ export async function buildVerificationView(
     question: task.question,
     acceptance_criteria: task.acceptanceCriteria ?? null,
     attestation: attestationOf(task),
+    translations: (task.translations as GetVerificationResponse["translations"]) ?? null,
     answer_schema: answerSchemaOf(
       task.answerKind,
       task.answerValues,

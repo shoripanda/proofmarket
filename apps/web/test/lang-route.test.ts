@@ -1,6 +1,6 @@
 // One language everywhere (13 §7): the proxy's decision, as a pure function.
 import { describe, expect, it } from "vitest";
-import { resolveLangRoute } from "@/lib/lang";
+import { isCrawler, resolveLangRoute } from "@/lib/lang";
 
 describe("resolveLangRoute", () => {
   it("renders Japanese paths as Japanese when nothing was chosen", () => {
@@ -36,5 +36,32 @@ describe("resolveLangRoute", () => {
       lang: "en",
       redirectTo: "/en/pricing?lang=fr",
     });
+  });
+
+  it("shows English to a reader outside Japan who never chose, without remembering it", () => {
+    expect(resolveLangRoute("/tasks", "?a=1", undefined, "US")).toEqual({
+      lang: "en",
+      redirectTo: "/en/tasks?a=1",
+    });
+    expect(resolveLangRoute("/tasks", "", undefined, "de")).toEqual({ lang: "en", redirectTo: "/en/tasks" });
+    expect(resolveLangRoute("/tasks", "", undefined, "JP")).toEqual({ lang: "ja" });
+    expect(resolveLangRoute("/tasks", "", undefined, null)).toEqual({ lang: "ja" });
+  });
+
+  it("keeps Japanese for a reader abroad who chose it", () => {
+    expect(resolveLangRoute("/tasks", "", "ja", "FR")).toEqual({ lang: "ja" });
+    expect(resolveLangRoute("/tasks", "?lang=ja", undefined, "FR")).toEqual({
+      lang: "ja",
+      redirectTo: "/tasks",
+      setCookie: "ja",
+    });
+  });
+});
+
+describe("isCrawler", () => {
+  it("tells search engines from people", () => {
+    expect(isCrawler("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")).toBe(true);
+    expect(isCrawler("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1")).toBe(false);
+    expect(isCrawler(null)).toBe(false);
   });
 });

@@ -47,7 +47,7 @@ test("login -> onboarding -> claim -> capture -> VALID -> payout -> public resul
   // W-03 list -> W-04 detail
   await expect(page).toHaveURL(/\/tasks$/);
   await page.getByText("Is this shop open right now? (e2e)").first().click();
-  await expect(page.getByText("確かめること")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "依頼" })).toBeVisible();
   await page.getByRole("button", { name: "引き受ける" }).click();
 
   // W-05 -> W-06

@@ -124,6 +124,8 @@ export function remaining(iso: string, now: number, lang: Lang = "ja") {
   if (ms <= 0) return pick(lang, "終了", "ended");
   const m = Math.floor(ms / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
+  // Two days or more: whole days are easier to read than hours and minutes.
+  if (m >= 48 * 60) return pick(lang, `${Math.floor(m / 1440)}日`, `${Math.floor(m / 1440)} days`);
   if (lang === "en")
     return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m ${String(s).padStart(2, "0")}s`;
   return m >= 60 ? `${Math.floor(m / 60)}時間${m % 60}分` : `${m}分${String(s).padStart(2, "0")}秒`;
@@ -244,16 +246,13 @@ export function SoundToggle() {
 }
 
 /**
- * "0.30 USDC (about ¥45)": the amount with a yen estimate, so no one has to know what USDC is worth. Other
- * dollar stablecoins get the same hint; any other asset reads "0.01 SOL" with none (16 §6).
+ * "0.30 USDC（約 45 円）": in Japanese the amount carries a yen estimate, so no one has to know what USDC is
+ * worth. Other dollar stablecoins get the same hint; any other asset reads "0.01 SOL" with none (16 §6). English
+ * readers are mostly outside Japan, where a dollar stablecoin needs no conversion, so English shows the amount only.
  */
 export const yen = (amount: string, lang: Lang = "ja", asset = "USDC") =>
-  USD_STABLE.includes(asset)
-    ? pick(
-        lang,
-        `${amount} ${asset}（${yenHint(amount, lang)}）`,
-        `${amount} ${asset} (${yenHint(amount, lang)})`,
-      )
+  lang === "ja" && USD_STABLE.includes(asset)
+    ? `${amount} ${asset}（${yenHint(amount, lang)}）`
     : `${amount} ${asset}`;
 
 export { SAFETY_NOTES, safetyNotes } from "./safety";

@@ -219,6 +219,8 @@ export const verificationRequests = pgTable(
     question: text("question").notNull(),
     /** What the requester will accept, shown to the worker and the reviewer (01 §4.25). */
     acceptanceCriteria: text("acceptance_criteria"),
+    /** 01 §4.31: { ja?, en? } each { question, acceptance_criteria?, labels? }; display only. */
+    translations: jsonb("translations"),
     answerValues: text("answer_values").array().notNull(),
     /** enum | number | text (01 §4.15). answer_values is empty unless enum. */
     answerKind: text("answer_kind").notNull().default("enum"),

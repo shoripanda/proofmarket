@@ -213,6 +213,7 @@ function workerTaskView(t: TaskRow, distanceM: number | null, slots: number, now
     type: t.type,
     question: t.question,
     acceptance_criteria: t.acceptanceCriteria ?? null,
+    translations: t.translations ?? null,
     attestation: attestationOf(t),
     answer_values: t.answerValues,
     answer_schema: answerSchemaOf(
@@ -528,6 +529,7 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
       question: schema.verificationRequests.question,
       acceptanceCriteria: schema.verificationRequests.acceptanceCriteria,
       attestation: schema.verificationRequests.attestation,
+      translations: schema.verificationRequests.translations,
       answerValues: schema.verificationRequests.answerValues,
       answerKind: schema.verificationRequests.answerKind,
       answerSpec: schema.verificationRequests.answerSpec,
@@ -568,6 +570,7 @@ export async function claimDetail(app: AppContext, workerId: string, claimId: st
     type: task?.type ?? "PLACE_STATUS_VERIFICATION",
     question: task?.question ?? "",
     acceptance_criteria: task?.acceptanceCriteria ?? null,
+    translations: task?.translations ?? null,
     attestation: task ? attestationOf(task) : null,
     answer_values: task?.answerValues ?? [],
     answer_schema: answerSchemaOf(

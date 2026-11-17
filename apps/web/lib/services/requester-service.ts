@@ -307,6 +307,7 @@ export async function createVerification(
       question: body.question,
       acceptanceCriteria: body.acceptance_criteria ?? null,
       attestation: body.attestation ?? null,
+      translations: body.translations ?? null,
       answerValues: body.answer_schema.type === "enum" ? body.answer_schema.values : [],
       answerKind: storedAnswerKind(body.answer_schema),
       answerSpec: storedAnswerSpec(body.answer_schema),

@@ -16,6 +16,7 @@ import { submitEvidence } from "../services/evidence-service";
 import { withIdempotency } from "../services/idempotency";
 import { workerPayouts } from "../services/public-service";
 import { deletePushSubscription, pushStatus, savePushSubscription } from "../services/push-service";
+import { localizeForWorker, workerLang } from "../services/request-translation";
 import {
   abandonClaim,
   claimDetail,
@@ -64,12 +65,14 @@ export async function handleOnboarding(app: AppContext, req: Request) {
 export async function handleListTasks(app: AppContext, req: Request) {
   const w = await requireWorker(app, req);
   const q = parse(WorkerTaskQuerySchema, Object.fromEntries(new URL(req.url).searchParams));
-  return Response.json(await listTasks(app, w.workerId, q));
+  const lang = workerLang(req);
+  const r = await listTasks(app, w.workerId, q);
+  return Response.json({ ...r, tasks: r.tasks.map((t) => localizeForWorker(t, lang)) });
 }
 
 export async function handleTaskDetail(app: AppContext, req: Request, id: string) {
   await requireWorker(app, req);
-  return Response.json(await taskDetail(app, verId(id)));
+  return Response.json(localizeForWorker(await taskDetail(app, verId(id)), workerLang(req)));
 }
 
 export async function handleClaim(app: AppContext, req: Request, id: string) {
@@ -129,7 +132,7 @@ export async function handleAbandon(app: AppContext, req: Request, id: string) {
 
 export async function handleClaimDetail(app: AppContext, req: Request, id: string) {
   const w = await requireWorker(app, req);
-  return Response.json(await claimDetail(app, w.workerId, claimId(id)));
+  return Response.json(localizeForWorker(await claimDetail(app, w.workerId, claimId(id)), workerLang(req)));
 }
 
 export async function handlePayouts(app: AppContext, req: Request) {

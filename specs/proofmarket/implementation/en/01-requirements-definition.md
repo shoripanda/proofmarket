@@ -400,6 +400,16 @@ The design in `docs/architecture/` (04 §4.2-4.3, 08 §4.1) was implemented foll
 By the owner's decisions D1-D6 (`docs/architecture/12-rentahuman-benchmark.md` §8), general tasks are offered next to verifications: applications or first come, seats, deliveries the requester approves (or that are paid automatically 24 hours after delivery), conversations, and a 15% fee on top. The requirements are REQ-T-001 to REQ-T-008 in `specs/proofmarket/requirements.md` §7, and the design and its implementation status are in `docs/architecture/13-marketplace-migration.md`. Hidden behind the `tasks_enabled` flag until the legal items in `legal-checklist.md` §10 are decided.
 
 
+### 4.31 Request text by the worker's language (2026-11-17)
+
+Workers outside Japan read English, so a request may carry its text in both languages. The owner asked that the worker's country choose the language, with Japanese for Japan and English elsewhere.
+
+- Create: an optional `translations` object with `ja` and/or `en`, each `{ question, acceptance_criteria?, labels? }`. `labels` maps a choice value or a form field key to what the worker sees. Stored as is (migration 0039, column `verification_requests.translations`)
+- Workers: the app sends the page language in `x-pm-lang`; `/v1/worker/tasks`, `/v1/worker/tasks/{id}` and `/v1/worker/claims/{id}` answer with that version of the question, the criteria and the field labels, plus `answer_labels` for choice values. Without a version for that language, the original text
+- Display only: answers keep the original values and keys, the evidence bundle hashes the original `question`, and AI review reads the original text
+- Pages: a reader who has not chosen a language and whose request comes from outside Japan (`x-vercel-ip-country`) is sent to the English page. Not remembered, so the switch still wins; crawlers are not redirected
+- Acceptance: a request with `translations.en` shows the English question and labels on `/en/tasks`, the original on `/tasks`; a submitted answer is the original value
+
 ## 5. Business flow
 
 ### 5.1 Normal case (1 witness)

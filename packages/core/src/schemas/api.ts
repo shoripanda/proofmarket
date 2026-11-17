@@ -294,6 +294,27 @@ export const AudioRequestSchema = z
   })
   .strict();
 
+/**
+ * The request's text in one language (01 §4.31). `labels` names what the worker sees for a choice value or a form
+ * field key; the stored answer keeps the original value or key.
+ */
+export const RequestTranslationSchema = z
+  .object({
+    question: z.string().trim().min(1).max(LIMITS.question.maxChars),
+    acceptance_criteria: z.string().trim().min(1).max(LIMITS.acceptanceCriteria.maxChars).optional(),
+    labels: z
+      .record(z.string().min(1).max(64), z.string().trim().min(1).max(LIMITS.answer.maxFieldLabelChars))
+      .refine((r) => Object.keys(r).length <= 64, "at most 64 labels")
+      .optional(),
+  })
+  .strict();
+export type RequestTranslation = z.infer<typeof RequestTranslationSchema>;
+/** Workers see the version for their language and the original text otherwise (01 §4.31). */
+export const RequestTranslationsSchema = z
+  .object({ ja: RequestTranslationSchema.optional(), en: RequestTranslationSchema.optional() })
+  .strict();
+export type RequestTranslations = z.infer<typeof RequestTranslationsSchema>;
+
 export const CreateVerificationRequestSchema = z
   .object({
     type: z.enum(TASK_TYPES),
@@ -307,6 +328,8 @@ export const CreateVerificationRequestSchema = z
     acceptance_criteria: z.string().trim().min(1).max(LIMITS.acceptanceCriteria.maxChars).optional(),
     /** Confirm an action the agent says it took (13 §5). Shown to the worker and on the proof page. */
     attestation: AgentAttestationSchema.optional(),
+    /** The same request in Japanese and/or English, shown to workers by their language (01 §4.31). */
+    translations: RequestTranslationsSchema.optional(),
     /** Required for at-a-place types; may be omitted for work that can be done anywhere (TASK_TYPE_SPECS). */
     location: LocationSchema.optional(),
     /** Within 24 h for work at a place; up to 7 days for work with no location (01 §4.25). */
@@ -576,6 +599,8 @@ export const GetVerificationResponseSchema = z.object({
   /** What the agent asked a person to confirm it did (13 §5); null on an ordinary task. */
   attestation: AgentAttestationSchema.nullable(),
   answer_schema: AnswerSchemaSpec,
+  /** The translations sent with the request (01 §4.31); null when none were sent. */
+  translations: RequestTranslationsSchema.nullable(),
   location: LocationSchema.nullable(),
   location_privacy: z.enum(LOCATION_PRIVACY),
   /**
@@ -897,6 +922,8 @@ export const WorkerTaskSchema = z.object({
   attestation: AgentAttestationSchema.nullable(),
   answer_values: z.array(AnswerValueSchema),
   answer_schema: AnswerSchemaSpec,
+  /** What to show for each choice value in the worker's language (01 §4.31); empty when there is nothing to change. */
+  answer_labels: z.record(z.string(), z.string()),
   /** null: the work can be done anywhere. */
   location: LocationSchema.nullable(),
   distance_m: z.number().int().nullable(),
@@ -1022,6 +1049,7 @@ export const ClaimDetailResponseSchema = z.object({
   attestation: AgentAttestationSchema.nullable(),
   answer_values: z.array(AnswerValueSchema),
   answer_schema: AnswerSchemaSpec,
+  answer_labels: z.record(z.string(), z.string()),
   location_required: z.boolean(),
   /** False only on a hearing-only sensory report at a place (docs/architecture 16 §4). */
   photo_required: z.boolean(),

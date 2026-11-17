@@ -274,6 +274,13 @@
       "when": 1792120000000,
       "tag": "0038_tick_due",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792210000000,
+      "tag": "0039_request_translations",
+      "breakpoints": true
     }
   ]
 }

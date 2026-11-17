@@ -470,6 +470,66 @@
                     ],
                     "additionalProperties": false
                   },
+                  "translations": {
+                    "type": "object",
+                    "properties": {
+                      "ja": {
+                        "type": "object",
+                        "properties": {
+                          "question": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "acceptance_criteria": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "labels": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          }
+                        },
+                        "required": [
+                          "question"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "en": {
+                        "type": "object",
+                        "properties": {
+                          "question": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "acceptance_criteria": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "labels": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          }
+                        },
+                        "required": [
+                          "question"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  },
                   "location": {
                     "type": "object",
                     "properties": {
@@ -1663,6 +1723,66 @@
                         ],
                         "additionalProperties": false
                       },
+                      "translations": {
+                        "type": "object",
+                        "properties": {
+                          "ja": {
+                            "type": "object",
+                            "properties": {
+                              "question": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1000
+                              },
+                              "acceptance_criteria": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 500
+                              },
+                              "labels": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              }
+                            },
+                            "required": [
+                              "question"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "en": {
+                            "type": "object",
+                            "properties": {
+                              "question": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1000
+                              },
+                              "acceptance_criteria": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 500
+                              },
+                              "labels": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              }
+                            },
+                            "required": [
+                              "question"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
+                      },
                       "location": {
                         "type": "object",
                         "properties": {
@@ -2565,6 +2685,66 @@
                     ],
                     "additionalProperties": false
                   },
+                  "translations": {
+                    "type": "object",
+                    "properties": {
+                      "ja": {
+                        "type": "object",
+                        "properties": {
+                          "question": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "acceptance_criteria": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "labels": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          }
+                        },
+                        "required": [
+                          "question"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "en": {
+                        "type": "object",
+                        "properties": {
+                          "question": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "acceptance_criteria": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "labels": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          }
+                        },
+                        "required": [
+                          "question"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  },
                   "location": {
                     "type": "object",
                     "properties": {
@@ -3455,6 +3635,66 @@
                       "subject",
                       "description"
                     ],
+                    "additionalProperties": false
+                  },
+                  "translations": {
+                    "type": "object",
+                    "properties": {
+                      "ja": {
+                        "type": "object",
+                        "properties": {
+                          "question": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "acceptance_criteria": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "labels": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          }
+                        },
+                        "required": [
+                          "question"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "en": {
+                        "type": "object",
+                        "properties": {
+                          "question": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "acceptance_criteria": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "labels": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          }
+                        },
+                        "required": [
+                          "question"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "additionalProperties": false
                   },
                   "location": {
@@ -4433,6 +4673,67 @@
                         }
                       ]
                     },
+                    "translations": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "ja": {
+                          "type": "object",
+                          "properties": {
+                            "question": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1000
+                            },
+                            "acceptance_criteria": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "labels": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
+                              }
+                            }
+                          },
+                          "required": [
+                            "question"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "en": {
+                          "type": "object",
+                          "properties": {
+                            "question": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1000
+                            },
+                            "acceptance_criteria": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "labels": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
+                              }
+                            }
+                          },
+                          "required": [
+                            "question"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "location": {
                       "nullable": true,
                       "type": "object",
@@ -5254,6 +5555,7 @@
                     "acceptance_criteria",
                     "attestation",
                     "answer_schema",
+                    "translations",
                     "location",
                     "location_privacy",
                     "location_salt",
@@ -5836,6 +6138,67 @@
                         }
                       ]
                     },
+                    "translations": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "ja": {
+                          "type": "object",
+                          "properties": {
+                            "question": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1000
+                            },
+                            "acceptance_criteria": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "labels": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
+                              }
+                            }
+                          },
+                          "required": [
+                            "question"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "en": {
+                          "type": "object",
+                          "properties": {
+                            "question": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1000
+                            },
+                            "acceptance_criteria": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "labels": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
+                              }
+                            }
+                          },
+                          "required": [
+                            "question"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "location": {
                       "nullable": true,
                       "type": "object",
@@ -6657,6 +7020,7 @@
                     "acceptance_criteria",
                     "attestation",
                     "answer_schema",
+                    "translations",
                     "location",
                     "location_privacy",
                     "location_salt",
@@ -7796,6 +8160,66 @@
                           "subject",
                           "description"
                         ],
+                        "additionalProperties": false
+                      },
+                      "translations": {
+                        "type": "object",
+                        "properties": {
+                          "ja": {
+                            "type": "object",
+                            "properties": {
+                              "question": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1000
+                              },
+                              "acceptance_criteria": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 500
+                              },
+                              "labels": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              }
+                            },
+                            "required": [
+                              "question"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "en": {
+                            "type": "object",
+                            "properties": {
+                              "question": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1000
+                              },
+                              "acceptance_criteria": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 500
+                              },
+                              "labels": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              }
+                            },
+                            "required": [
+                              "question"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "additionalProperties": false
                       },
                       "location": {
@@ -16003,6 +16427,12 @@
                               }
                             ]
                           },
+                          "answer_labels": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          },
                           "location": {
                             "nullable": true,
                             "type": "object",
@@ -16121,6 +16551,7 @@
                           "attestation",
                           "answer_values",
                           "answer_schema",
+                          "answer_labels",
                           "location",
                           "distance_m",
                           "reward",
@@ -16690,6 +17121,12 @@
                         }
                       ]
                     },
+                    "answer_labels": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
                     "location": {
                       "nullable": true,
                       "type": "object",
@@ -16808,6 +17245,7 @@
                     "attestation",
                     "answer_values",
                     "answer_schema",
+                    "answer_labels",
                     "location",
                     "distance_m",
                     "reward",
@@ -18352,6 +18790,12 @@
                         }
                       ]
                     },
+                    "answer_labels": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
                     "location_required": {
                       "type": "boolean"
                     },
@@ -18395,6 +18839,7 @@
                     "attestation",
                     "answer_values",
                     "answer_schema",
+                    "answer_labels",
                     "location_required",
                     "photo_required",
                     "audio"
@@ -19063,6 +19508,12 @@
                         }
                       ]
                     },
+                    "answer_labels": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
                     "location_required": {
                       "type": "boolean"
                     },
@@ -19106,6 +19557,7 @@
                     "attestation",
                     "answer_values",
                     "answer_schema",
+                    "answer_labels",
                     "location_required",
                     "photo_required",
                     "audio"
