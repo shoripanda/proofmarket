@@ -30,7 +30,7 @@ export default async function ConsoleWorkersPage() {
   const marks = enabled ? (await listWorkerPreferences(app, auth)).workers : [];
   return (
     <>
-      <p className="mx-auto max-w-5xl px-4 pt-8 text-sm">
+      <p className="mx-auto max-w-7xl px-4 lg:px-8 pt-8 text-sm">
         <Link href={langHref(lang, "/console/tasks")} className="font-semibold text-teal-700 underline">
           {pick(lang, "← 仕事", "← Tasks")}
         </Link>

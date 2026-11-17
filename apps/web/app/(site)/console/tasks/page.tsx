@@ -67,7 +67,7 @@ export default async function ConsoleTasksPage() {
   const auth = await consoleAuth(app, (await cookies()).get(CONSOLE_COOKIE)?.value);
   if (!auth) redirect(langHref(lang, "/console/login"));
   const back = (
-    <p className="mx-auto max-w-5xl px-4 pt-8 text-sm">
+    <p className="mx-auto max-w-7xl px-4 lg:px-8 pt-8 text-sm">
       <Link href={langHref(lang, "/console")} className="font-semibold text-teal-700 underline">
         {pick(lang, "← 依頼者の画面", "← Requester console")}
       </Link>

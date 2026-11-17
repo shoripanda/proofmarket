@@ -82,7 +82,7 @@ export default async function ConsolePage() {
   const assetList = d.balances.map((b) => b.asset).join(pick(lang, "、", ", "));
   return (
     <>
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 pt-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 lg:px-8 pt-8">
         <div>
           <p className="text-sm font-semibold text-teal-700">
             {pick(lang, "依頼者の画面", "Requester console")}

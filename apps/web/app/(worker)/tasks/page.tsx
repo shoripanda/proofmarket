@@ -5,7 +5,7 @@ import type { TaskType } from "@proofmarket/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PushOptIn } from "@/components/push-opt-in";
 import { Tour } from "@/components/tour";
-import { Button, Card, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
+import { Button, Card, Loading, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
 import { taskTypeText } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
@@ -184,9 +184,7 @@ export default function TasksPage() {
         </Notice>
       ) : null}
       <PushOptIn />
-      {tasks === null && !err && !noLocation ? (
-        <p className="text-center text-slate-400">{pick(lang, "探しています…", "Looking…")}</p>
-      ) : null}
+      {tasks === null && !err && !noLocation ? <Loading /> : null}
       {tasks?.length === 0 ? (
         <Notice>
           {scope === "anywhere"
@@ -255,7 +253,7 @@ export default function TasksPage() {
           </Card>
         </LLink>
       ))}
-      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md bg-gradient-to-t from-white p-4">
+      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md md:max-w-2xl lg:max-w-3xl bg-gradient-to-t from-white p-4">
         <Button variant="secondary" onClick={() => load()}>
           {pick(lang, "更新", "Refresh")}
         </Button>

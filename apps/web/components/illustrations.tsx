@@ -193,7 +193,7 @@ export function PictureSection({
   id?: string;
 }) {
   return (
-    <section id={id} className="mx-auto max-w-5xl px-4 py-10">
+    <section id={id} className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
       <div className="grid items-center gap-4 sm:grid-cols-[200px_1fr] sm:gap-8">
         <div className="mx-auto w-40 sm:w-full">
           <Picture k={k} lang={lang} />

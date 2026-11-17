@@ -2,7 +2,7 @@
 // W-05 On the way — time left, "I've arrived", "Give up".
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button, Card, Notice, remaining, Shell, useNow } from "@/components/ui";
+import { Button, Card, Loading, Notice, remaining, Shell, useNow } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
 import { langHref, pick } from "@/lib/lang";
@@ -36,6 +36,7 @@ export default function ClaimPage() {
   return (
     <Shell title={pick(lang, "現地へ向かう", "Heading there")} back="/tasks">
       {err ? <Notice tone="error">{err}</Notice> : null}
+      {!c && !err ? <Loading /> : null}
       {c ? (
         <>
           <Card>

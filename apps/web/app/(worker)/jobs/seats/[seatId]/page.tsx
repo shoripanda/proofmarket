@@ -1,7 +1,7 @@
 "use client";
 // W-22 My task — deliver the work, see the review clock and the requester's decision.
 import { use, useCallback, useEffect, useState } from "react";
-import { Button, Card, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
+import { Button, Card, Loading, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
 import { pick } from "@/lib/lang";
@@ -58,6 +58,7 @@ export default function SeatPage({ params }: { params: Promise<{ seatId: string 
   return (
     <Shell title={pick(lang, "担当している仕事", "Your task")} back="/jobs">
       {err ? <Notice tone="error">{err}</Notice> : null}
+      {!seat && !err ? <Loading /> : null}
       {seat ? (
         <>
           <Card>

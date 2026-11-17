@@ -9,12 +9,12 @@ import { type Lang, pick } from "@/lib/lang";
 export function Shell({ title, back, children }: { title: string; back?: string; children: ReactNode }) {
   const lang = useLang();
   return (
-    <div className="mx-auto min-h-dvh max-w-md bg-white shadow-sm">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
+    <div className="mx-auto min-h-dvh max-w-md bg-white shadow-sm md:max-w-2xl lg:max-w-3xl">
+      <header className="sticky top-0 z-10 flex items-center gap-1 border-b border-slate-200 bg-white/95 px-4 py-1.5 backdrop-blur">
         {back ? (
           <LLink
             href={back}
-            className="-ml-2 rounded-lg px-2 py-1 text-2xl leading-none text-slate-500"
+            className="-ml-3 inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-2xl leading-none text-slate-500 hover:bg-slate-100"
             aria-label={pick(lang, "戻る", "Back")}
           >
             ‹
@@ -22,7 +22,11 @@ export function Shell({ title, back, children }: { title: string; back?: string;
         ) : null}
         <h1 className="flex-1 text-lg font-bold">{title}</h1>
         <SoundToggle />
-        <LLink href="/payouts" className="text-sm font-medium text-teal-700">
+        {/* 44 px targets for the back arrow, the sound toggle and this link (UX pass F7). */}
+        <LLink
+          href="/payouts"
+          className="-mr-2 inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-teal-700 hover:bg-teal-50"
+        >
           {pick(lang, "報酬", "Earnings")}
         </LLink>
       </header>
@@ -67,6 +71,33 @@ export function Button({
 
 export function Card({ children }: { children: ReactNode }) {
   return <div className="rounded-2xl border border-slate-200 bg-white p-4">{children}</div>;
+}
+
+/**
+ * Stand-in while a worker screen waits for its first answer from the API (UX pass F6): two card-shaped
+ * placeholders instead of an empty screen under the header. Screen readers hear "Loading…" once; the pulse
+ * stops under reduced motion (motion-safe).
+ */
+export function Loading() {
+  const lang = useLang();
+  return (
+    <div className="space-y-4" aria-busy="true">
+      <p role="status" className="sr-only">
+        {pick(lang, "読み込み中…", "Loading…")}
+      </p>
+      {[0, 1].map((i) => (
+        <div
+          key={i}
+          aria-hidden="true"
+          className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 motion-safe:animate-pulse"
+        >
+          <div className="h-3 w-1/3 rounded bg-slate-200" />
+          <div className="h-6 w-2/3 rounded bg-slate-200" />
+          <div className="h-3 w-1/2 rounded bg-slate-100" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function Notice({ tone = "info", children }: { tone?: "info" | "error" | "ok"; children: ReactNode }) {
@@ -205,7 +236,7 @@ export function SoundToggle() {
           ? pick(lang, "音と振動: オン", "Sound and vibration: on")
           : pick(lang, "音と振動: オフ", "Sound and vibration: off")
       }
-      className={`rounded-lg p-1.5 ${on ? "text-teal-700" : "text-slate-400"}`}
+      className={`inline-flex size-11 items-center justify-center rounded-lg hover:bg-slate-100 ${on ? "text-teal-700" : "text-slate-400"}`}
     >
       <Icon d={on ? ICON.speaker : ICON.muted} />
     </button>

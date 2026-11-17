@@ -1,7 +1,7 @@
 "use client";
 // W-21 Task detail — what to do, what "done" means, the pay, how the requester has decided before, and apply.
 import { use, useEffect, useState } from "react";
-import { Button, Card, Notice, Shell, yen } from "@/components/ui";
+import { Button, Card, Loading, Notice, Shell, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
 import { pick } from "@/lib/lang";
@@ -41,6 +41,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   return (
     <Shell title={pick(lang, "仕事の内容", "Task details")} back="/jobs">
       {err ? <Notice tone="error">{err}</Notice> : null}
+      {!job && !err ? <Loading /> : null}
       {job ? (
         <>
           <Card>

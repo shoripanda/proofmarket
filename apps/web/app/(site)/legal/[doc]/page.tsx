@@ -30,7 +30,7 @@ export default async function LegalDocPage({ params }: { params: Promise<{ doc: 
       <PageHero eyebrow={pick(lang, `版: ${d.version}`, `Version ${d.version}`)} title={d.title}>
         <p>{d.lead}</p>
       </PageHero>
-      <div className="mx-auto max-w-5xl px-4 pt-8">
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-8">
         <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900 ring-1 ring-amber-200">
           {pick(
             lang,

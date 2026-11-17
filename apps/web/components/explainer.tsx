@@ -83,7 +83,7 @@ export function Explainer() {
   const k = Math.max(scene, 0);
   const stage = FLOW_STAGES[k]?.key ?? "ask";
   return (
-    <section className="mx-auto max-w-5xl px-4 py-10" aria-labelledby="explainer-title">
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10" aria-labelledby="explainer-title">
       <div className="rounded-3xl border border-teal-100 bg-gradient-to-b from-teal-50/60 to-white p-5 sm:p-8">
         <div className="flex items-center gap-4">
           <button

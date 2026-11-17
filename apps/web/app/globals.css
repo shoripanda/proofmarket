@@ -363,3 +363,17 @@ html {
     animation: pm-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 }
+
+/* Worker verdict: the check in a circle draws itself once (UX pass F9). Static under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .success-mark circle.draw {
+    stroke-dasharray: 152;
+    stroke-dashoffset: 152;
+    animation: draw 0.5s ease-out forwards;
+  }
+  .success-mark path.draw {
+    stroke-dasharray: 40;
+    stroke-dashoffset: 40;
+    animation: draw 0.35s ease-out 0.4s forwards;
+  }
+}

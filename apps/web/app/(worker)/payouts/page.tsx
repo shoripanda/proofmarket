@@ -2,7 +2,7 @@
 // W-08 Payout history — amount, date and time, status, "View transaction".
 import { fromMicro, toMicro } from "@proofmarket/core";
 import { useEffect, useState } from "react";
-import { Button, Card, Notice, Shell, yen } from "@/components/ui";
+import { Button, Card, Loading, Notice, Shell, yen } from "@/components/ui";
 import { errorText, useApi } from "@/lib/client/api";
 import { useLang } from "@/lib/client/lang";
 import { rateNote } from "@/lib/client/rate";
@@ -147,15 +147,19 @@ export default function PayoutsPage() {
   return (
     <Shell title={pick(lang, "報酬", "Earnings")} back="/tasks">
       {err ? <Notice tone="error">{err}</Notice> : null}
-      <Card>
-        <p className="text-sm text-slate-500">{pick(lang, "受け取り済みの合計", "Total received")}</p>
-        {[...totals].map(([asset, micro]) => (
-          <p key={asset} className="mt-1 text-3xl font-bold text-teal-700">
-            {yen(fromMicro(micro), lang, asset)}
-          </p>
-        ))}
-        <p className="mt-1 text-xs text-slate-400">{rateNote(lang)}</p>
-      </Card>
+      {list === null && !err ? (
+        <Loading />
+      ) : (
+        <Card>
+          <p className="text-sm text-slate-500">{pick(lang, "受け取り済みの合計", "Total received")}</p>
+          {[...totals].map(([asset, micro]) => (
+            <p key={asset} className="mt-1 text-3xl font-bold text-teal-700">
+              {yen(fromMicro(micro), lang, asset)}
+            </p>
+          ))}
+          <p className="mt-1 text-xs text-slate-400">{rateNote(lang)}</p>
+        </Card>
+      )}
       {trust ? (
         <Card>
           <p className="text-sm text-slate-500">
