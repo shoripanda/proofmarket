@@ -26,7 +26,7 @@ beforeEach(async () => {
     dailySpendLimit: "20",
     operator: "test",
   });
-  await topUp(t.db, other.credentialId, "10");
+  await topUp(t.db, other.credentialId, "10", "solana-devnet");
   alice = (await onboardWorker(t, "alice")).token;
   bob = (await onboardWorker(t, "bob")).token;
   carol = (await onboardWorker(t, "carol")).token;

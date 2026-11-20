@@ -10,6 +10,7 @@ import { type ChainDeposit, solanaPayUrls } from "@proofmarket/solana";
 import bs58 from "bs58";
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
+import { networkOf } from "../cluster";
 import type { AppContext } from "../context";
 import { log } from "../log";
 
@@ -176,6 +177,7 @@ async function credit(app: AppContext, credentialId: string, d: ChainDeposit): P
       entryType: "TOPUP",
       amount,
       asset: d.asset,
+      network: networkOf(app.config.cluster),
       createdAt: app.now(),
     });
     log("info", "deposit_credited", {

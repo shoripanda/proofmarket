@@ -28,7 +28,7 @@ const code = async (res: Response) => ((await res.json()) as { error?: { code: s
 describe("SOL rewards", () => {
   it("are refused while SOL is not enabled", async () => {
     t.app.config.assets = t.app.config.assets.filter((a) => a.symbol !== "SOL");
-    await topUp(t.db, t.credentialId, "1", "SOL");
+    await topUp(t.db, t.credentialId, "1", "solana-devnet", "SOL");
     const res = await create(sol());
     expect(res.status).toBe(400);
     expect(await code(res)).toBe("UNSUPPORTED_ASSET");
@@ -36,7 +36,7 @@ describe("SOL rewards", () => {
 
   it("draw on the SOL balance only: 10 USDC does not pay a SOL reward", async () => {
     expect(await code(await create(sol()))).toBe("INSUFFICIENT_BALANCE");
-    await topUp(t.db, t.credentialId, "0.5", "SOL");
+    await topUp(t.db, t.credentialId, "0.5", "solana-devnet", "SOL");
     const res = await create(sol("0.02"));
     expect(res.status).toBe(201);
     const { verification_id } = (await res.json()) as { verification_id: string };
@@ -56,13 +56,13 @@ describe("SOL rewards", () => {
   });
 
   it("have a floor of 0.001 SOL", async () => {
-    await topUp(t.db, t.credentialId, "1", "SOL");
+    await topUp(t.db, t.credentialId, "1", "solana-devnet", "SOL");
     expect(await code(await create(sol("0.0009")))).toBe("VALIDATION_FAILED");
     expect((await create(sol("0.001"))).status).toBe(201);
   });
 
   it("are escrowed in lamports as wSOL: 0.02 SOL x 1 witness = 20,000,000", async () => {
-    await topUp(t.db, t.credentialId, "1", "SOL");
+    await topUp(t.db, t.credentialId, "1", "solana-devnet", "SOL");
     const { verification_id } = (await (await create(sol("0.02"))).json()) as { verification_id: string };
     expect(await runFundTask(t.app, verification_id, 1)).toMatchObject({ kind: "done" });
     const [task] = await t.db

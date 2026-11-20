@@ -22,7 +22,7 @@ import {
   toMicro,
   type WebhookEvent,
 } from "@proofmarket/core";
-import type { CreateTaskRequest, TaskView } from "@proofmarket/core/schemas/api";
+import type { CreateTaskRequest, Network, TaskView } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
 import { and, asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
@@ -131,8 +131,8 @@ export async function createTask(
   };
 
   await lockCredential(tx, auth.credentialId);
-  await checkSpendPolicy(tx, auth, body.price.asset, total, now);
-  const balance = await balanceMicro(tx, auth.credentialId, body.price.asset);
+  await checkSpendPolicy(tx, auth, body.price.asset, expectedNetwork(app), total, now);
+  const balance = await balanceMicro(tx, auth.credentialId, body.price.asset, expectedNetwork(app));
   if (body.dry_run) {
     return {
       status: 200,
@@ -188,6 +188,7 @@ export async function createTask(
     entryType: "RESERVE",
     amount: microToDecimal(-total),
     asset: body.price.asset,
+    network: expectedNetwork(app),
     createdAt: now,
   });
   await appendAudit(tx, {
@@ -657,6 +658,7 @@ async function finishIfOver(tx: Db, app: AppContext, t: TaskRow): Promise<void> 
         entryType: "REFUND",
         amount: microToDecimal(perSeat),
         asset: t.asset,
+        network: t.network as Network,
         createdAt: app.now(),
       })
       .onConflictDoNothing();

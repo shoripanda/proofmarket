@@ -4,6 +4,7 @@ import "server-only";
 // verification through the same createVerification path the API key flow uses (TOPUP then RESERVE).
 
 import { ApiError, fromMicro, newId, platformFeeMicro, TASK_TYPES, toMicro } from "@proofmarket/core";
+import type { Network } from "@proofmarket/core/schemas/api";
 import {
   type CreateVerificationRequest,
   X402CreateVerificationRequestSchema,
@@ -20,6 +21,7 @@ import {
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { RequesterAuth } from "../auth/requester";
+import { networkOf } from "../cluster";
 import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { createPrincipal, issueApiKey, topUp } from "./admin-service";
@@ -226,7 +228,7 @@ function authFor(credentialId: string, principalId: string, keyPrefix: string): 
 }
 
 /** Wallet -> principal (created on first payment), then a fresh credential holding exactly this payment. */
-async function creditWallet(tx: Db, payer: string, amount: string) {
+async function creditWallet(tx: Db, payer: string, amount: string, network: Network) {
   await tx
     .insert(schema.x402Wallets)
     .values({ pubkey: payer, principalId: await createPrincipalFor(tx, payer) })
@@ -241,7 +243,7 @@ async function creditWallet(tx: Db, payer: string, amount: string) {
     rateLimitPerMin: X402_LIMITS.rateLimitPerMin,
     operator: "x402",
   });
-  await topUp(tx, credentialId, amount);
+  await topUp(tx, credentialId, amount, network);
   const prefix = apiKey.split("_")[2] ?? "";
   return { auth: authFor(credentialId, w.principalId, prefix), apiKey };
 }
@@ -266,7 +268,12 @@ export async function dryRun(app: AppContext, body: CreateVerificationRequest): 
   try {
     await app.db.transaction(async (tx) => {
       const amount = fromMicro(x402TotalMicro(body, app.config.platformFeeBps));
-      const { auth } = await creditWallet(tx, `dry-run-${newId("principal")}`, amount);
+      const { auth } = await creditWallet(
+        tx,
+        `dry-run-${newId("principal")}`,
+        amount,
+        networkOf(app.config.cluster),
+      );
       const result = await createVerification(
         app,
         tx,
@@ -421,7 +428,7 @@ export async function createWithPayment(
   // (something changed since the dry run), the money stays as balance on the returned key instead.
   try {
     return await app.db.transaction(async (tx) => {
-      const { auth, apiKey } = await creditWallet(tx, v.payer, amount);
+      const { auth, apiKey } = await creditWallet(tx, v.payer, amount, networkOf(app.config.cluster));
       const created = await createVerification(
         app,
         tx,
@@ -449,7 +456,7 @@ export async function createWithPayment(
   } catch (e) {
     if (!(e instanceof ApiError)) throw e;
     const apiKey = await app.db.transaction(async (tx) => {
-      const c = await creditWallet(tx, v.payer, amount);
+      const c = await creditWallet(tx, v.payer, amount, networkOf(app.config.cluster));
       await tx
         .update(schema.x402Payments)
         .set({ state: "CONFIRMED", credentialId: c.auth.credentialId, updatedAt: app.now() })

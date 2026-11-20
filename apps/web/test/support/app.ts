@@ -64,7 +64,7 @@ export async function createTestApp(start = new Date("2026-10-09T03:00:00Z")) {
     dailySpendLimit: null,
     operator: "test",
   });
-  await topUp(db, credentialId, "10");
+  await topUp(db, credentialId, "10", "solana-devnet");
   const placeId = await registerPlace(db, { name: "test shop", ...SHOP, category: "retail", by: "test" });
   return {
     app,

@@ -18,6 +18,9 @@ export const CLUSTERS = {
   },
 } as const;
 
+/** The `network` a cluster's money and requests carry (`bounty.network`, `requester_ledger.network`). */
+export const networkOf = (c: Cluster) => CLUSTERS[c].network;
+
 /** The native mint: SOL held in token accounts (15 §3.1). The same address on every cluster. */
 export const WSOL_MINT = "So11111111111111111111111111111111111111112";
 

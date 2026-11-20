@@ -11,6 +11,7 @@ import {
   TASK_TYPES,
   type TaskType,
 } from "@proofmarket/core";
+import type { Network } from "@proofmarket/core/schemas/api";
 import { type Db, schema } from "@proofmarket/db";
 import { and, eq } from "drizzle-orm";
 import { appendAudit } from "./audit";
@@ -74,9 +75,12 @@ export async function topUp(
   db: Db,
   credentialId: string,
   amount: string,
+  network: Network,
   asset: string = "USDC",
 ): Promise<void> {
-  await db.insert(schema.requesterLedger).values({ credentialId, entryType: "TOPUP", amount, asset });
+  await db
+    .insert(schema.requesterLedger)
+    .values({ credentialId, entryType: "TOPUP", amount, asset, network });
 }
 
 export async function registerPlace(
