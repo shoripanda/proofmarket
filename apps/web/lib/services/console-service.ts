@@ -6,6 +6,7 @@ import { ApiError, assetInfo, fromMicro, newId, toMicro } from "@proofmarket/cor
 import { schema } from "@proofmarket/db";
 import { and, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import { authenticateApiKey, credentialAuth, type RequesterAuth } from "../auth/requester";
+import { networkOf } from "../cluster";
 import type { AppContext } from "../context";
 import { randomToken, sha256 } from "./crypto";
 import { depositView, pollOwnDeposit } from "./deposit-service";
@@ -90,7 +91,12 @@ export async function dashboard(app: AppContext, auth: RequesterAuth) {
   const balRows = await app.db
     .select({ asset: schema.requesterLedger.asset, s: sql<string>`coalesce(sum(amount), 0)` })
     .from(schema.requesterLedger)
-    .where(eq(schema.requesterLedger.credentialId, auth.credentialId))
+    .where(
+      and(
+        eq(schema.requesterLedger.credentialId, auth.credentialId),
+        eq(schema.requesterLedger.network, networkOf(app.config.cluster)),
+      ),
+    )
     .groupBy(schema.requesterLedger.asset);
   const bal = balRows.find((r) => r.asset === "USDC");
   const [today] = await app.db
@@ -101,6 +107,7 @@ export async function dashboard(app: AppContext, auth: RequesterAuth) {
         eq(schema.requesterLedger.credentialId, auth.credentialId),
         eq(schema.requesterLedger.entryType, "RESERVE"),
         eq(schema.requesterLedger.asset, "USDC"),
+        eq(schema.requesterLedger.network, networkOf(app.config.cluster)),
         gte(schema.requesterLedger.createdAt, startOfSpendDay(now)),
       ),
     );

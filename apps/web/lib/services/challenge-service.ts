@@ -268,6 +268,7 @@ async function resolveChallenge(tx: Db, app: AppContext, challengeId: string): P
           entryType: "RESERVE",
           amount: microToDecimal(-bond),
           asset: orig.bountyAsset,
+          network: orig.bountyNetwork,
           createdAt: now,
         },
         // ... and the bond goes back to the challenger in full
@@ -277,6 +278,7 @@ async function resolveChallenge(tx: Db, app: AppContext, challengeId: string): P
           entryType: "REFUND",
           amount: microToDecimal(bond),
           asset: orig.bountyAsset,
+          network: orig.bountyNetwork,
           createdAt: now,
         },
       ]);

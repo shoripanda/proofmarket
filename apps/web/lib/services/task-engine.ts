@@ -184,6 +184,7 @@ export async function applyTaskEvent(
             entryType: e.entry,
             amount: microToDecimal(amt),
             asset: task.bountyAsset,
+            network: task.bountyNetwork,
           });
         }
         break;

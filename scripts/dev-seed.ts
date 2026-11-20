@@ -24,7 +24,7 @@ const { credentialId, apiKey } = await issueApiKey(db, {
   dailySpendLimit: "50",
   operator: "dev-seed",
 });
-await topUp(db, credentialId, "100");
+await topUp(db, credentialId, "100", "solana-devnet");
 const places = [
   { name: "dev: Shibuya Hachiko exit shop", lat: 35.6595, lng: 139.7005 },
   { name: "dev: Shinjuku south exit shop", lat: 35.6884, lng: 139.7006 },

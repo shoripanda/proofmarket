@@ -281,6 +281,13 @@
       "when": 1792210000000,
       "tag": "0039_request_translations",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792469200000,
+      "tag": "0040_ledger_network",
+      "breakpoints": true
     }
   ]
 }

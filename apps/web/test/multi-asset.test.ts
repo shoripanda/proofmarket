@@ -39,7 +39,7 @@ describe("requests in other tokens", () => {
   });
 
   it("refuse more fraction digits than the token has (BONK: 5)", async () => {
-    await topUp(t.db, t.credentialId, "100000", "BONK");
+    await topUp(t.db, t.credentialId, "100000", "solana-devnet", "BONK");
     const res = await create(body("BONK", "1.000001"));
     expect(await json(res)).toMatchObject({
       error: {
@@ -52,7 +52,7 @@ describe("requests in other tokens", () => {
 
   it("draw on that token's balance only, and escrow it in its own mint and base units", async () => {
     expect((await json(await create(body("BONK", "1500")))).error.code).toBe("INSUFFICIENT_BALANCE");
-    await topUp(t.db, t.credentialId, "2000", "BONK");
+    await topUp(t.db, t.credentialId, "2000", "solana-devnet", "BONK");
     const { verification_id } = await json(await create(body("BONK", "1500.5")));
     expect(await runFundTask(t.app, verification_id, 1)).toMatchObject({ kind: "done" });
     const [task] = await t.db
@@ -73,7 +73,7 @@ describe("requests in other tokens", () => {
   });
 
   it("fund a Token-2022 reward (PYUSD) on its mint", async () => {
-    await topUp(t.db, t.credentialId, "5", "PYUSD");
+    await topUp(t.db, t.credentialId, "5", "solana-devnet", "PYUSD");
     const { verification_id } = await json(await create(body("PYUSD", "0.25")));
     await runFundTask(t.app, verification_id, 1);
     const [task] = await t.db

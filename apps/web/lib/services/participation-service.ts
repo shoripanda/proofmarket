@@ -6,7 +6,7 @@ import { ApiError, newId, PARTICIPATION_AREAS, PARTICIPATION_ROLES } from "@proo
 import { type Db, schema } from "@proofmarket/db";
 import { eq, lte } from "drizzle-orm";
 import { z } from "zod";
-import type { Cluster } from "../cluster";
+import { type Cluster, networkOf } from "../cluster";
 import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { log } from "../log";
@@ -100,7 +100,7 @@ export async function createParticipationRequest(
       operator: "signup",
     });
     const trial = trialBalanceFor(app.config.cluster);
-    if (trial !== "0") await topUp(tx, issued.credentialId, trial);
+    if (trial !== "0") await topUp(tx, issued.credentialId, trial, networkOf(app.config.cluster));
     await tx
       .insert(schema.participationRequests)
       .values({ id, ...row, status: "contacted", credentialId: issued.credentialId });

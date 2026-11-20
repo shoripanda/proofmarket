@@ -47,6 +47,7 @@ import {
 import { type Db, schema } from "@proofmarket/db";
 import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { RequesterAuth } from "../auth/requester";
+import { networkOf } from "../cluster";
 import { clusterText } from "../cluster-public";
 import type { AppContext } from "../context";
 import { appendAudit } from "./audit";
@@ -291,8 +292,8 @@ export async function createVerification(
     await consumeQuote(tx, auth, quote_id, requestHash(quoted), now);
   }
   // Spend policy (docs/architecture 04 §4.3): the key's own ceilings, when the operator set any, then the balance.
-  await checkSpendPolicy(tx, auth, body.bounty.asset, total, now);
-  if ((await balanceMicro(tx, auth.credentialId, body.bounty.asset)) < total) {
+  await checkSpendPolicy(tx, auth, body.bounty.asset, body.bounty.network, total, now);
+  if ((await balanceMicro(tx, auth.credentialId, body.bounty.asset, body.bounty.network)) < total) {
     throw new ApiError("INSUFFICIENT_BALANCE");
   }
 
@@ -352,6 +353,7 @@ export async function createVerification(
     entryType: "RESERVE",
     amount: microToDecimal(-total),
     asset: body.bounty.asset,
+    network: body.bounty.network,
     createdAt: now,
   });
   await tx.insert(schema.paymentRecords).values({
@@ -388,13 +390,25 @@ export async function createVerification(
   return { status: 201, body: createdBody(row) };
 }
 
-/** The balance of one asset, in micro units (each asset is its own balance, 15 §3.3). */
-export async function balanceMicro(tx: Db, credentialId: string, asset: string): Promise<bigint> {
+/**
+ * The balance of one asset on one network, in micro units (each asset is its own balance, 15 §3.3; Devnet money
+ * never counts on mainnet, migration 0040).
+ */
+export async function balanceMicro(
+  tx: Db,
+  credentialId: string,
+  asset: string,
+  network: Network,
+): Promise<bigint> {
   const [bal] = await tx
     .select({ s: sql<string>`coalesce(sum(amount), 0)` })
     .from(schema.requesterLedger)
     .where(
-      and(eq(schema.requesterLedger.credentialId, credentialId), eq(schema.requesterLedger.asset, asset)),
+      and(
+        eq(schema.requesterLedger.credentialId, credentialId),
+        eq(schema.requesterLedger.asset, asset),
+        eq(schema.requesterLedger.network, network),
+      ),
     );
   return toMicro(String(bal?.s ?? "0"));
 }
@@ -409,6 +423,7 @@ export async function checkSpendPolicy(
   tx: Db,
   auth: RequesterAuth,
   asset: string,
+  network: Network,
   total: bigint,
   now: Date,
 ): Promise<void> {
@@ -424,6 +439,7 @@ export async function checkSpendPolicy(
       and(
         eq(schema.requesterLedger.credentialId, auth.credentialId),
         eq(schema.requesterLedger.asset, asset),
+        eq(schema.requesterLedger.network, network),
         inArray(schema.requesterLedger.entryType, ["RESERVE", "RELEASE", "REFUND"]),
         gte(schema.requesterLedger.createdAt, startOfSpendDay(now)),
       ),
@@ -490,7 +506,12 @@ export async function quoteVerification(
     BigInt(n);
   const fee = platformFeeMicro(bountyTotal, app.config.platformFeeBps);
   const total = bountyTotal + fee;
-  const balance = await balanceMicro(app.db, auth.credentialId, body.bounty.asset);
+  const balance = await balanceMicro(
+    app.db,
+    auth.credentialId,
+    body.bounty.asset,
+    networkOf(app.config.cluster),
+  );
   const id = newId("quote");
   const expiresAt = new Date(now.getTime() + QUOTE_TTL_MS);
   await app.db.insert(schema.verificationQuotes).values({

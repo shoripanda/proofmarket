@@ -249,6 +249,7 @@ If any one is missing, the gate stops at the first request and the server does n
 
 ### 10.4 On switch-over day
 
+0. **Before anything else (2026-11-20).** Migration 0040 must be in production (it lets `verification_requests` hold `solana` and tags every `requester_ledger` row with its network, so Devnet trial and test balances are not spendable on mainnet; apply it before the code that writes the column). Then wind down Devnet: stop new requests, cancel or let expire every open Devnet request (the board requests in `~/.config/proofmarket/requests/`, `swap.mjs cancel-old`), and wait until no settlement job is pending. The server talks to one cluster, so a Devnet task still open after the switch cannot be paid or refunded on chain
 1. Trial balances are 0 when `SOLANA_CLUSTER=mainnet-beta` (`trialBalanceFor` in `participation-service.ts`), so there is nothing to stop by hand, and key emails show no balance line
 2. Finish §10.2 and §10.3 and see `/v1/health/ready` return 200
 3. The operator makes one request of 0.10 USDC × 1 person and one of 0.001 SOL × 1 person, goes round from request to payout, and checks on Solscan

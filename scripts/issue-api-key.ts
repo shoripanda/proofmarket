@@ -22,7 +22,9 @@ const { credentialId, apiKey } = await issueApiKey(d, {
   ...(a["task-types"] ? { allowedTaskTypes: a["task-types"].split(",") as TaskType[] } : {}),
   operator: need(a, "by"),
 });
-if (a.topup) await topUp(d, credentialId, a.topup);
+// The top-up belongs to the cluster this database serves (requester_ledger.network, migration 0040).
+const network = process.env.SOLANA_CLUSTER === "mainnet-beta" ? "solana" : "solana-devnet";
+if (a.topup) await topUp(d, credentialId, a.topup, network);
 console.log(
   JSON.stringify({ principal_id: principalId, credential_id: credentialId, api_key: apiKey }, null, 2),
 );

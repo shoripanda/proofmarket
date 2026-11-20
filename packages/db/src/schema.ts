@@ -131,9 +131,17 @@ export const requesterLedger = pgTable(
     entryType: text("entry_type").notNull(),
     amount: money("amount").notNull(),
     asset: text("asset").notNull().default("USDC"),
+    /**
+     * The chain this money belongs to (`solana-devnet` | `solana`, migration 0040). Balances are summed for the
+     * server's own cluster only, so Devnet test balances never spend on mainnet (15 §4.5). The database keeps
+     * the default 'solana-devnet' for the rollout; here it has none, so every writer names it and a RESERVE
+     * cannot silently land on the other cluster.
+     */
+    network: text("network").notNull(),
     createdAt: tsz("created_at").notNull().defaultNow(),
   },
   (t) => [
+    check("requester_ledger_network_chk", oneOf("network", ["solana-devnet", "solana"])),
     check("requester_ledger_entry_chk", oneOf("entry_type", ["TOPUP", "RESERVE", "RELEASE", "REFUND"])),
     // one RESERVE per task (seat null) and one REFUND per seat
     uniqueIndex("requester_ledger_market_entry_uq")
@@ -319,7 +327,7 @@ export const verificationRequests = pgTable(
     check("vr_bounty_ramp_chk", sql`bounty_ramp_minutes is null or bounty_ramp_minutes between 10 and 1440`),
     check("vr_challenge_chk", sql`challenge_minutes is null or challenge_minutes between 10 and 120`),
     check("vr_location_privacy_chk", sql`location_privacy in ('exact','coarse')`),
-    check("vr_network_chk", sql`bounty_network = 'solana-devnet'`),
+    check("vr_network_chk", oneOf("bounty_network", ["solana-devnet", "solana"])),
     check("vr_status_chk", oneOf("status", TASK_STATUSES)),
     check("vr_funding_chk", oneOf("funding_status", FUNDING_STATUSES)),
     check("vr_settlement_chk", oneOf("settlement_status", SETTLEMENT_STATUSES)),

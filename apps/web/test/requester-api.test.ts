@@ -237,7 +237,7 @@ describe("POST /v1/verifications", () => {
     expect(await errCode(await create(amt("5")))).toBe("INSUFFICIENT_BALANCE");
     await t.db
       .insert(schema.requesterLedger)
-      .values({ credentialId: t.credentialId, entryType: "TOPUP", amount: "1000" });
+      .values({ credentialId: t.credentialId, entryType: "TOPUP", amount: "1000", network: "solana-devnet" });
     expect((await create(amt("300", 3))).status).toBe(201); // 900 in one request
     expect((await create(amt("50"))).status).toBe(201); // today 955.2, well past 20
     expect(await errCode(await create(amt("60")))).toBe("INSUFFICIENT_BALANCE"); // 54.8 left
@@ -259,7 +259,7 @@ describe("POST /v1/verifications", () => {
     await t.db.delete(schema.requesterLedger);
     await t.db
       .insert(schema.requesterLedger)
-      .values({ credentialId: t.credentialId, entryType: "TOPUP", amount: "1" });
+      .values({ credentialId: t.credentialId, entryType: "TOPUP", amount: "1", network: "solana-devnet" });
     const results = await Promise.all(Array.from({ length: 10 }, () => create(createBody(t.principalId))));
     expect(results.filter((r) => r.status === 201)).toHaveLength(2);
     const reserves = (await t.db.select().from(schema.requesterLedger)).filter(
@@ -572,7 +572,7 @@ describe("spend policy", () => {
       dailySpendLimit: "12",
       operator: "test",
     });
-    await topUp(t.db, capped.credentialId, "100");
+    await topUp(t.db, capped.credentialId, "100", "solana-devnet");
     const c = (body: unknown) => create(body, crypto.randomUUID(), capped.apiKey);
     // 2.6 × 2 = 5.2 > 5 per request
     const over = await c(amt("2.6", 2));
