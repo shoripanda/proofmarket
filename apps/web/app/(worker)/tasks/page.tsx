@@ -1,15 +1,12 @@
 "use client";
-import type { TaskType } from "@proofmarket/core";
 // W-03 Task list — "Nearby" sorts by distance from the current position (rounded to 3 decimals); "From home" lists only
 // place-free requests and never uses location (01 §4.20). While open it refetches every 30 s and marks new arrivals.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PushOptIn } from "@/components/push-opt-in";
 import { Tour } from "@/components/tour";
 import { Button, Card, Loading, Notice, remaining, Shell, useNow, yen } from "@/components/ui";
-import { taskTypeText } from "@/lib/answers";
 import { errorText, useApi } from "@/lib/client/api";
 import { LLink, useLang } from "@/lib/client/lang";
-import { rateNote } from "@/lib/client/rate";
 import { pick } from "@/lib/lang";
 import { JobsLink } from "../jobs/jobs-link";
 
@@ -30,7 +27,6 @@ interface Task {
 
 export default function TasksPage() {
   const lang = useLang();
-  const types = taskTypeText(lang);
   const api = useApi();
   const now = useNow(1000);
   const [tasks, setTasks] = useState<Task[] | null>(null);
@@ -238,17 +234,11 @@ export default function TasksPage() {
                 </span>
               </span>
             </div>
-            <p className="mt-1 text-xs font-medium text-slate-500">
-              {types[t.type as TaskType]?.name ?? t.type}
-            </p>
-            <p className="mt-1 line-clamp-3 font-medium">{t.question}</p>
+            <p className="mt-1 line-clamp-2 font-medium">{t.question}</p>
             <p className="mt-2 text-sm text-slate-500">
-              {pick(lang, "締切まで ", "Deadline in ")}
+              {pick(lang, "あと ", "")}
               {remaining(t.deadline, now, lang)}
-              {pick(lang, "・", " · ")}
-              {t.distance_m === null
-                ? pick(lang, "写真が必要", "photo required")
-                : pick(lang, "写真と位置が必要", "photo and location required")}
+              {pick(lang, "", " left")}
             </p>
           </Card>
         </LLink>
@@ -257,11 +247,6 @@ export default function TasksPage() {
         <Button variant="secondary" onClick={() => load()}>
           {pick(lang, "更新", "Refresh")}
         </Button>
-        <p className="mt-2 text-center text-xs text-slate-400">
-          {pick(lang, "開いている間は30秒ごとに自動で更新します", "Refreshes every 30 seconds while open")}
-          {pick(lang, "。", ". ")}
-          {rateNote(lang)}
-        </p>
       </div>
     </Shell>
   );

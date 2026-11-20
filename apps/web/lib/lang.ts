@@ -31,13 +31,16 @@ export const isLang = (v: unknown): v is Lang => v === "ja" || v === "en";
  * Where a request should go so the reader sees one language everywhere (13 §7, 2026-10-09).
  * - `?lang=` is an explicit choice: remember it and redirect to the same page in that language (without the param)
  * - /en/* is English: remember "en" and render as is
- * - anything else is Japanese, but a reader who chose English before is sent to /en/<path>
+ * - anything else is Japanese, but a reader who chose English before is sent to /en/<path>, and so is one who
+ *   never chose and is outside Japan
  * Pure, so it can be tested; proxy.ts turns it into a redirect / rewrite.
  */
 export function resolveLangRoute(
   pathname: string,
   search: string,
   cookie: string | undefined,
+  /** Where the reader is (two-letter code from the host, e.g. Vercel's x-vercel-ip-country), if known. */
+  country?: string | null,
 ): { lang: Lang; redirectTo?: string; setCookie?: Lang } {
   const params = new URLSearchParams(search);
   const chosen = params.get(LANG_PARAM);
@@ -50,8 +53,19 @@ export function resolveLangRoute(
   }
   if (pathLang === "en") return { lang: "en", setCookie: cookie === "en" ? undefined : "en" };
   if (cookie === "en") return { lang: "en", redirectTo: langHref("en", path) + search };
+  // 2026-11-17: a reader who never chose is shown English outside Japan. Not remembered, so the switch still works
+  // and a later visit from Japan is Japanese again.
+  if (cookie !== "ja" && country && !JAPANESE_COUNTRIES.has(country.toUpperCase()))
+    return { lang: "en", redirectTo: langHref("en", path) + search };
   return { lang: "ja" };
 }
+
+/** Countries whose readers get Japanese when they have not chosen a language. */
+export const JAPANESE_COUNTRIES = new Set(["JP"]);
+
+/** Crawlers keep the URL they asked for, so the Japanese pages stay indexed as Japanese. */
+export const isCrawler = (userAgent: string | null) =>
+  !!userAgent && /bot|crawl|spider|slurp|facebookexternalhit|embedly|preview/i.test(userAgent);
 
 /** Pick one of two values by language. Keeps call sites short: pick(lang, ja, "Try it"). */
 export const pick = <T>(lang: Lang, ja: T, en: T): T => (lang === "en" ? en : ja);

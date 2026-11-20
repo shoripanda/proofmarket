@@ -1,7 +1,8 @@
 "use client";
 import { useCallback } from "react";
-import { type Lang, pick } from "@/lib/lang";
+import { LANG_HEADER, type Lang, pick } from "@/lib/lang";
 import { useSession } from "./auth";
+import { useLang } from "./lang";
 
 export class ApiErr extends Error {
   constructor(
@@ -17,6 +18,7 @@ export class ApiErr extends Error {
 /** fetch with the worker's bearer token; throws ApiErr with the spec error code. */
 export function useApi() {
   const { getToken } = useSession();
+  const lang = useLang();
   return useCallback(
     async <T>(path: string, init: { method?: string; body?: unknown; idem?: string } = {}): Promise<T> => {
       const token = await getToken();
@@ -26,6 +28,8 @@ export function useApi() {
           ...(token ? { authorization: `Bearer ${token}` } : {}),
           ...(init.body !== undefined ? { "content-type": "application/json" } : {}),
           ...(init.idem ? { "idempotency-key": init.idem } : {}),
+          // 01 §4.31: the request text comes back in the language the page is shown in.
+          [LANG_HEADER]: lang,
         },
         ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
       });
@@ -42,7 +46,7 @@ export function useApi() {
       }
       return json as T;
     },
-    [getToken],
+    [getToken, lang],
   );
 }
 

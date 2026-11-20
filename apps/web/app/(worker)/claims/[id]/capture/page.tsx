@@ -86,10 +86,13 @@ export default function CapturePage() {
   const photoRequired = claim?.photo_required ?? true;
   const clipMissing = claim?.audio?.clip === "required" && !clip;
   const evidenceReady = photos.length > 0 || (!photoRequired && sensory.sound !== null);
+  // 01 §4.31: a translated label when the request has one; the value itself is what gets sent.
+  const shown = (v: string) =>
+    claim?.answer_labels?.[v] ?? (v in ANSWER_JA ? answerText(lang, v as AnswerValue).label : v);
   const answers = (schema?.type === "enum" ? schema.values : (claim?.answer_values ?? [])).map((v) =>
     v in ANSWER_JA
-      ? { value: v, ...answerText(lang, v as AnswerValue) }
-      : { value: v, label: v, tone: "bg-slate-700" },
+      ? { value: v, ...answerText(lang, v as AnswerValue), label: shown(v) }
+      : { value: v, label: shown(v), tone: "bg-slate-700" },
   );
 
   const newChallenge = useCallback(async () => {
@@ -249,12 +252,6 @@ export default function CapturePage() {
           />
         </div>
       ) : null}
-      {claim?.acceptance_criteria ? (
-        <p className="whitespace-pre-wrap rounded-2xl bg-amber-50 p-3 text-sm leading-relaxed text-amber-900">
-          <span className="font-bold">{pick(lang, "受け取りの条件: ", "Accepted when: ")}</span>
-          {claim.acceptance_criteria}
-        </p>
-      ) : null}
       {ch ? (
         <Notice tone={expired ? "error" : "info"}>
           {pick(lang, "撮影の受付時間: ", "Capture window: ")}
@@ -286,22 +283,15 @@ export default function CapturePage() {
           </ul>
         ) : null}
       </div>
-      <p className="text-xs text-slate-500">
-        {types[claim?.type as TaskType]?.howTo ??
-          pick(lang, "確かめた物が分かる写真を撮ってください。", "Take a photo that shows what you checked.")}
-        {pick(
-          lang,
-          `人の顔が大きく写らないようにしてください。写真は${MAX_PHOTOS}枚まで送れます。`,
-          ` Keep people's faces out of the frame. You can send up to ${MAX_PHOTOS} photos.`,
-        )}
-        {photoRequired
-          ? ""
-          : pick(
-              lang,
-              "この依頼では写真は任意です。写真を送らない場合は、下で音の大きさを測ってください。",
-              " A photo is optional here. Without one, measure the sound level below.",
-            )}
-      </p>
+      {photoRequired ? null : (
+        <p className="text-xs text-slate-500">
+          {pick(
+            lang,
+            "写真なしで送るときは、下で音の大きさを測ってください。",
+            "No photo? Measure the sound level below.",
+          )}
+        </p>
+      )}
 
       {photos.length ? (
         <ul className="grid grid-cols-4 gap-2">
@@ -458,7 +448,7 @@ export default function CapturePage() {
                             }}
                             className={`rounded-xl px-3 py-2 text-sm font-bold transition ${on ? "bg-teal-600 text-white ring-4 ring-teal-200" : "bg-slate-100 text-slate-800"}`}
                           >
-                            {w}
+                            {shown(w)}
                           </button>
                         );
                       })}
@@ -472,7 +462,7 @@ export default function CapturePage() {
                           onClick={() => setFields((s) => ({ ...s, [f.key]: s[f.key] === v ? "" : v }))}
                           className={`rounded-xl px-3 py-3 text-base font-bold transition ${fields[f.key] === v ? "bg-teal-600 text-white ring-4 ring-teal-200" : "bg-slate-100 text-slate-800"}`}
                         >
-                          {v in ANSWER_JA ? answerText(lang, v as AnswerValue).label : v}
+                          {shown(v)}
                         </button>
                       ))}
                     </div>

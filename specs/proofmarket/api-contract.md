@@ -83,6 +83,18 @@ Response:
 }
 ```
 
+Optional `translations` gives the request in Japanese and/or English (01 §4.31). `labels` maps a choice value or form field key to what workers see; answers keep the original values.
+
+```json
+"translations": {
+  "en": {
+    "question": "Open an umbrella and count its ribs.",
+    "acceptance_criteria": "A photo of the open umbrella",
+    "labels": { "count": "Ribs", "8本": "8" }
+  }
+}
+```
+
 ## 2. Get verification
 
 `GET /v1/verifications/{verification_id}`
@@ -100,6 +112,8 @@ Only valid from states defined in `requirements.md`.
 `GET /v1/worker/tasks?lat=...&lng=...&radius_km=...`
 
 Must not return sensitive requester data not necessary to perform task.
+
+The app sends `x-pm-lang: ja | en`. Task and claim views carry the question, criteria and field labels in that language when the request has them, and `answer_labels` for choice values (01 §4.31).
 
 ## 5. Worker: claim
 
